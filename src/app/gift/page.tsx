@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PublicPageShell } from '@/components/public/PublicPageShell';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Gift,
   Sparkles,
@@ -16,7 +16,14 @@ import {
   Crown,
   Heart,
   Calendar,
-  Languages
+  Languages,
+  Wand2,
+  Undo2,
+  CheckCheck,
+  AlertCircle,
+  PenTool,
+  Quote,
+  Sparkle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -30,13 +37,108 @@ import {
   GiftCheckoutParams
 } from '@/types/gift';
 
+type DedicationTone = 'heartfelt' | 'poetic' | 'celebratory' | 'understated';
+
+interface DedicationPreset {
+  id: string;
+  icon: string;
+  label: string;
+  category: string;
+  template: (name: string) => string;
+}
+
+const DEDICATION_PRESETS: DedicationPreset[] = [
+  {
+    id: 'milestone',
+    icon: '🎂',
+    label: 'Milestone 70th / 80th',
+    category: 'Milestone',
+    template: (name) =>
+      `Dear ${name || 'Mum'}, on your milestone birthday, we want to listen to and preserve every chapter of your extraordinary journey for generations to come.`,
+  },
+  {
+    id: 'roots',
+    icon: '🌳',
+    label: 'Family Roots & Diaspora',
+    category: 'Heritage',
+    template: (name) =>
+      `Dear ${name || 'Storyteller'}, your courage, your traditions, and your wisdom are the roots our family stands on. We want to cherish your voice forever.`,
+  },
+  {
+    id: 'retirement',
+    icon: '🕊️',
+    label: 'Retirement & Wisdom',
+    category: 'Milestone',
+    template: (name) =>
+      `Dear ${name || 'Dad'}, after a lifetime of hard work and quiet wisdom, it is time for your stories to take centre stage. Here is your studio to weave your memoir.`,
+  },
+  {
+    id: 'devotion',
+    icon: '💍',
+    label: 'Decades of Devotion',
+    category: 'Love',
+    template: (name) =>
+      `To our beloved ${name || 'Grandmother'}, the memories you have built across the decades are the greatest treasure of our family. This is our gift of remembrance.`,
+  },
+  {
+    id: 'gratitude',
+    icon: '💛',
+    label: 'Voice of Gratitude',
+    category: 'Family',
+    template: (name) =>
+      `Dear ${name || 'Storyteller'}, thank you for every bedtime story, every lesson, and every sacrifice. We are giving you this space so your voice is never forgotten.`,
+  },
+  {
+    id: 'memoir',
+    icon: '✨',
+    label: 'Living History',
+    category: 'Legacy',
+    template: (name) =>
+      `For ${name || 'our beloved family anchor'}: your memories are not just the past—they are the roadmap for our children and grandchildren. Welcome to your memoir.`,
+  },
+];
+
+interface SalutationPreset {
+  id: string;
+  label: string;
+  culture: string;
+  prefix: (name: string) => string;
+}
+
+const SALUTATION_PRESETS: SalutationPreset[] = [
+  {
+    id: 'british',
+    label: 'To our dearest...',
+    culture: 'Classic British',
+    prefix: (name) => `To our dearest ${name || 'Mum'}, `,
+  },
+  {
+    id: 'gujarati',
+    label: 'Mara Vhala... (મારા વ્હાલા)',
+    culture: 'Gujarati',
+    prefix: (name) => `Mara Vhala ${name || 'Ba'}, `,
+  },
+  {
+    id: 'punjabi',
+    label: 'Pujya... Ji (ਪੂਜਨੀਕ)',
+    culture: 'Punjabi',
+    prefix: (name) => `Pujya ${name || 'Pitaji'} Ji, `,
+  },
+  {
+    id: 'hindi',
+    label: 'Pujya... Ji (पूज्य)',
+    culture: 'Hindi',
+    prefix: (name) => `Pujya ${name || 'Mataji'} Ji, `,
+  },
+];
+
 export default function GiftPage() {
   const { user } = useAuth();
   const router = useRouter();
 
   // Tier selection
   const [selectedTier, setSelectedTier] = useState<GiftTier>('generational_vault');
-  
+
   // Customization Form
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
@@ -44,10 +146,179 @@ export default function GiftPage() {
   const [scheduledDate, setScheduledDate] = useState('');
   const [unboxingLanguage, setUnboxingLanguage] = useState<UnboxingLanguage>('en');
   const [giftMessage, setGiftMessage] = useState('');
-  
+
+  // AI Dedication Muse State
+  const [selectedTone, setSelectedTone] = useState<DedicationTone>('heartfelt');
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [historyStack, setHistoryStack] = useState<string[]>([]);
+  const [lastPolishedTone, setLastPolishedTone] = useState<string | null>(null);
+
+  // Template Replacement Confirmation Popover State
+  const [pendingTemplate, setPendingTemplate] = useState<DedicationPreset | null>(null);
+
   const [isLoading, setIsLoading] = useState(false);
 
   const activeTierConfig = GIFT_TIER_DISPLAY[selectedTier];
+
+  // 4-Stage Card Fit Calculation
+  const cardFitInfo = useMemo(() => {
+    const len = giftMessage.trim().length;
+    if (len === 0) {
+      return {
+        stage: 'empty',
+        badgeColor: 'text-gray-500 bg-gray-900 border-gray-800',
+        label: '0/250 Characters • 5"×7" Card Fit',
+        description: 'Type a message or select an occasion spark above.',
+      };
+    }
+    if (len <= 50) {
+      return {
+        stage: 'brief',
+        badgeColor: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
+        label: `${len}/250 Characters • A bit brief`,
+        description: 'A few more sentences will create a richer keepsake layout.',
+      };
+    }
+    if (len <= 240) {
+      return {
+        stage: 'optimal',
+        badgeColor: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30 shadow-sm shadow-emerald-500/20',
+        label: `✨ ${len}/250 Characters • Optimal 5"×7" Card Fit`,
+        description: 'Perfect typographical proportion for the gold-bordered keepsake.',
+      };
+    }
+    if (len <= 320) {
+      return {
+        stage: 'dense',
+        badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/40',
+        label: `⚠️ ${len}/250 Characters • Dense Typography`,
+        description: 'Text size will automatically scale down on the printed card.',
+      };
+    }
+    return {
+      stage: 'overflow',
+      badgeColor: 'text-rose-400 bg-rose-500/10 border-rose-500/40',
+      label: `⛔ ${len}/250 Characters • Exceeds Margin`,
+      description: 'Please shorten slightly to prevent margin overflow on physical printouts.',
+    };
+  }, [giftMessage]);
+
+  // Handle Preset Click
+  const handleSelectPreset = (preset: DedicationPreset) => {
+    const formatted = preset.template(recipientName.trim());
+    if (giftMessage.trim().length > 0 && giftMessage.trim() !== formatted) {
+      setPendingTemplate(preset);
+    } else {
+      setHistoryStack((prev) => [giftMessage, ...prev]);
+      setGiftMessage(formatted);
+      setPendingTemplate(null);
+      setLastPolishedTone(null);
+      toast.success(`Applied ${preset.label} dedication template.`);
+    }
+  };
+
+  const confirmTemplateReplace = () => {
+    if (!pendingTemplate) return;
+    setHistoryStack((prev) => [giftMessage, ...prev]);
+    const formatted = pendingTemplate.template(recipientName.trim());
+    setGiftMessage(formatted);
+    setPendingTemplate(null);
+    setLastPolishedTone(null);
+    toast.success(`Applied ${pendingTemplate.label} template.`);
+  };
+
+  // Handle Salutation Click
+  const handleApplySalutation = (salutation: SalutationPreset) => {
+    const prefix = salutation.prefix(recipientName.trim());
+    setHistoryStack((prev) => [giftMessage, ...prev]);
+
+    // Replace or prepend opening salutation
+    const current = giftMessage.trim();
+    if (!current) {
+      setGiftMessage(prefix);
+    } else if (/^(Dear|To|For|Mara|Pujya)\b/i.test(current)) {
+      const rest = current.replace(/^(Dear|To|For|Mara|Pujya)[^,\n]*,\s*/i, '');
+      setGiftMessage(`${prefix}${rest}`);
+    } else {
+      setGiftMessage(`${prefix}${current}`);
+    }
+    toast.success(`Applied ${salutation.culture} salutation.`);
+  };
+
+  // AI Polish Execution
+  const handleAIPolish = async () => {
+    const trimmed = giftMessage.trim();
+    if (!trimmed) {
+      toast.error('Please type a draft message or select an occasion template first.');
+      return;
+    }
+
+    setIsPolishing(true);
+
+    try {
+      const res = await fetch('/api/gift/polish-dedication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: trimmed,
+          tone: selectedTone,
+          recipientName: recipientName.trim() || undefined,
+          unboxingLanguage,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.polishedText) {
+        throw new Error(data.error || 'Failed to polish dedication.');
+      }
+
+      setHistoryStack((prev) => [giftMessage, ...prev]);
+      setGiftMessage(data.polishedText);
+      setLastPolishedTone(selectedTone);
+      toast.success(`Polished with AI Muse (${selectedTone.toUpperCase()} tone).`);
+    } catch (err: any) {
+      console.error('AI polish error:', err);
+      toast.error(err.message || 'Unable to polish dedication right now.');
+    } finally {
+      setIsPolishing(false);
+    }
+  };
+
+  // Undo / Revert Execution
+  const handleRevert = () => {
+    if (historyStack.length === 0) return;
+    const [prev, ...rest] = historyStack;
+    setGiftMessage(prev);
+    setHistoryStack(rest);
+    setLastPolishedTone(null);
+    toast.info('Reverted to previous draft.');
+  };
+
+  // Tidy & Grammar Quick Fix (Punctuation, Curly Quotes, Capitalization)
+  const handleTidyText = () => {
+    let text = giftMessage.trim();
+    if (!text) return;
+
+    setHistoryStack((prev) => [giftMessage, ...prev]);
+
+    // Capitalize first letter
+    text = text.charAt(0).toUpperCase() + text.slice(1);
+
+    // Replace straight quotes with typographic quotes
+    text = text.replace(/"([^"]*)"/g, '“$1”').replace(/'([^']*)'/g, '‘$1’');
+
+    // Remove double spaces
+    text = text.replace(/\s{2,}/g, ' ');
+
+    // Ensure ending punctuation
+    if (!/[.!?]$/.test(text)) {
+      text += '.';
+    }
+
+    setGiftMessage(text);
+    toast.success('Punctuation and typography tidied.');
+  };
 
   const handleCheckout = async () => {
     if (!recipientName.trim()) {
@@ -214,7 +485,7 @@ export default function GiftPage() {
 
         </div>
 
-        {/* CUSTOMISATION & DEDICATION FORM */}
+        {/* CUSTOMISATION & DEDICATION MUSE FORM */}
         <div className="bg-gray-900/80 rounded-2xl p-6 sm:p-10 border border-gray-800 space-y-8">
           
           <div className="border-b border-gray-800 pb-4">
@@ -257,7 +528,7 @@ export default function GiftPage() {
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('printable_pdf')}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
+                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'printable_pdf'
                         ? 'border-amber-500 bg-amber-500/10 text-amber-300'
                         : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700'
@@ -271,7 +542,7 @@ export default function GiftPage() {
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('instant_link')}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
+                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'instant_link'
                         ? 'border-amber-500 bg-amber-500/10 text-amber-300'
                         : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700'
@@ -285,7 +556,7 @@ export default function GiftPage() {
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('scheduled_email')}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition ${
+                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'scheduled_email'
                         ? 'border-amber-500 bg-amber-500/10 text-amber-300'
                         : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700'
@@ -352,33 +623,213 @@ export default function GiftPage() {
                 </p>
               </div>
 
-              {/* DEDICATION MESSAGE */}
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-gray-300 mb-2">
-                  Personal Gift Dedication Message
-                </label>
-                <textarea
-                  rows={4}
-                  placeholder="Dear Mum, for your 70th birthday, we want to listen to and preserve every single story of your journey for generations to come..."
-                  value={giftMessage}
-                  onChange={(e) => setGiftMessage(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm font-sans"
-                />
+              {/* ─────────────────────────────────────────────────────────────
+                  HEIRLOOM DEDICATION MUSE & OCCASION SPARKS
+              ───────────────────────────────────────────────────────────── */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+                    <PenTool className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Personal Gift Dedication Message</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-amber-400/80">Printed on 5&quot;×7&quot; Keepsake</span>
+                </div>
+
+                {/* OCCASION SPARKS CHIP CAROUSEL */}
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <span>Occasion Sparks (1-Click Presets):</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
+                    {DEDICATION_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handleSelectPreset(preset)}
+                        className="px-2.5 py-1 rounded-lg bg-gray-950 hover:bg-gray-800 border border-gray-800 hover:border-amber-500/40 text-[11px] text-gray-300 hover:text-amber-300 font-sans shrink-0 flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <span>{preset.icon}</span>
+                        <span>{preset.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SMART SALUTATIONS CHIPS */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[10px] font-mono text-gray-400">
+                  <span className="shrink-0">Salutations:</span>
+                  {SALUTATION_PRESETS.map((sal) => (
+                    <button
+                      key={sal.id}
+                      type="button"
+                      onClick={() => handleApplySalutation(sal)}
+                      className="px-2 py-0.5 rounded bg-gray-950 hover:bg-gray-800 border border-gray-800/80 text-gray-300 hover:text-amber-300 shrink-0 transition cursor-pointer"
+                    >
+                      {sal.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* INLINE REPLACEMENT CONFIRMATION POPOVER */}
+                <AnimatePresence>
+                  {pendingTemplate && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="text-amber-200">
+                        Replace your current draft with the <strong>[{pendingTemplate.label}]</strong> template?
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={confirmTemplateReplace}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold font-mono text-[11px] transition cursor-pointer"
+                        >
+                          Replace Draft
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPendingTemplate(null)}
+                          className="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-[11px] transition cursor-pointer"
+                        >
+                          Keep Current
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* MAIN DEDICATION TEXTAREA */}
+                <div className="relative">
+                  <textarea
+                    rows={4}
+                    placeholder="Dear Mum, for your 70th birthday, we want to listen to and preserve every single story of your journey for generations to come..."
+                    value={giftMessage}
+                    onChange={(e) => {
+                      setGiftMessage(e.target.value);
+                      if (pendingTemplate) setPendingTemplate(null);
+                    }}
+                    className="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm font-sans leading-relaxed"
+                  />
+                </div>
+
+                {/* 4-STAGE CARD FIT INDICATOR BADGE */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-0.5 rounded-full font-mono text-[11px] border font-bold ${cardFitInfo.badgeColor}`}>
+                      {cardFitInfo.label}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-gray-400 italic">
+                    {cardFitInfo.description}
+                  </span>
+                </div>
+
+                {/* AI DEDICATION MUSE TOOLBAR */}
+                <div className="p-3 rounded-xl bg-gray-950 border border-gray-800/80 flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    
+                    {/* TONE SELECTOR */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-mono text-gray-400 uppercase">Tone:</span>
+                      <select
+                        value={selectedTone}
+                        onChange={(e) => setSelectedTone(e.target.value as DedicationTone)}
+                        className="px-2 py-1 rounded-lg bg-gray-900 border border-gray-800 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500"
+                      >
+                        <option value="heartfelt">💛 Heartfelt & Warm</option>
+                        <option value="poetic">📜 Poetic & Heritage</option>
+                        <option value="celebratory">🎉 Celebratory</option>
+                        <option value="understated">🖋️ Understated Classic</option>
+                      </select>
+                    </div>
+
+                    {/* AI POLISH BUTTON */}
+                    <button
+                      type="button"
+                      onClick={handleAIPolish}
+                      disabled={isPolishing || !giftMessage.trim()}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40"
+                    >
+                      {isPolishing ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Elevating Draft...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-3.5 h-3.5 text-amber-400" />
+                          <span>✨ Polish with AI Muse</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* TIDY & FORMAT BUTTON */}
+                    <button
+                      type="button"
+                      onClick={handleTidyText}
+                      disabled={!giftMessage.trim()}
+                      className="px-2.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs font-mono flex items-center gap-1 transition cursor-pointer disabled:opacity-40"
+                      title="Fix capitalization, punctuation & typographic quotes"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5 text-gray-400" />
+                      <span>Tidy</span>
+                    </button>
+                  </div>
+
+                  {/* UNDO / REVERT AFFORDANCE */}
+                  {historyStack.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleRevert}
+                      className="px-2.5 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-400 text-xs font-mono flex items-center gap-1 transition cursor-pointer"
+                      title="Revert to previous draft"
+                    >
+                      <Undo2 className="w-3 h-3" />
+                      <span>Undo</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* POST-POLISH NOTIFICATION BANNER */}
+                {lastPolishedTone && (
+                  <div className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-xs text-amber-200">
+                    <span>✨ Polished to <strong>{lastPolishedTone.toUpperCase()}</strong> tone with UK English.</span>
+                    <button
+                      type="button"
+                      onClick={handleRevert}
+                      className="underline text-amber-400 hover:text-amber-300 text-[11px] font-mono ml-2 cursor-pointer"
+                    >
+                      Revert to original
+                    </button>
+                  </div>
+                )}
+
               </div>
 
             </div>
 
-            {/* RIGHT: LIVE CARD PREVIEW */}
+            {/* RIGHT: REAL-TIME PHYSICAL CARD MICRO-PREVIEW (5"x7" FOLDING CARD) */}
             <div className="flex flex-col justify-between space-y-6">
               
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-gray-400 mb-2">
-                  Live Keepsake Preview (5&quot;×7&quot; Vector Voucher)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                    <Quote className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Real-Time 5&quot;×7&quot; Keepsake Micro-Preview</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-amber-400/80">Playfair Display Serif</span>
+                </div>
                 
+                {/* 5x7 PHYSICAL CARD REPLICA */}
                 <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-gray-950 via-gray-900 to-amber-950/30 border border-amber-500/40 shadow-2xl relative overflow-hidden space-y-6">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
                   
+                  {/* CARD HEADER */}
                   <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
                     <div className="text-amber-400 font-serif font-bold text-lg tracking-wide">
                       MEMORY WEAVER
@@ -388,24 +839,29 @@ export default function GiftPage() {
                     </span>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="text-xs font-mono text-gray-400">PRESENTED TO:</div>
-                    <div className="text-xl font-serif font-bold text-white">
+                  {/* SALUTATION / RECIPIENT */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">PRESENTED WITH LOVE TO:</div>
+                    <div className="text-2xl font-serif font-bold text-white tracking-tight">
                       {recipientName || 'Dear Storyteller'}
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-gray-900/60 border border-gray-800 text-xs text-gray-300 italic line-clamp-3">
-                    &quot;{giftMessage || 'A gift of living history to capture your life\'s memories for generations to come...'}&quot;
+                  {/* DEDICATION PROSE (SERIF TYPOGRAPHY) */}
+                  <div className="p-4 rounded-xl bg-gray-900/70 border border-amber-500/20 text-gray-200 font-serif text-sm leading-relaxed italic shadow-inner relative">
+                    &quot;{giftMessage || 'A gift of living history to capture and preserve your life\'s memories for generations to come...'}&quot;
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between">
+                  {/* CARD FOOTER & WAX SEAL INSIGNIA */}
+                  <div className="pt-2 flex items-center justify-between border-t border-amber-500/10">
                     <div className="space-y-0.5">
-                      <div className="text-[10px] font-mono text-gray-400">TIER</div>
-                      <div className="text-xs font-bold text-amber-300">{activeTierConfig.editorialName}</div>
+                      <div className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">TIER ARCHIVAL</div>
+                      <div className="text-xs font-bold text-amber-300 font-serif">{activeTierConfig.editorialName}</div>
                     </div>
-                    <div className="w-12 h-12 rounded-full border border-amber-400/50 bg-amber-500/10 flex items-center justify-center text-amber-300 font-serif text-xs font-bold shadow-inner">
-                      SEAL
+                    
+                    {/* WAX SEAL INSIGNIA */}
+                    <div className="w-12 h-12 rounded-full border-2 border-amber-400/60 bg-gradient-to-br from-amber-500/30 via-amber-600/20 to-amber-950/60 flex items-center justify-center text-amber-300 font-serif text-xs font-bold shadow-lg shadow-amber-500/20">
+                      <span>MW</span>
                     </div>
                   </div>
                 </div>

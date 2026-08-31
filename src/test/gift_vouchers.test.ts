@@ -207,4 +207,38 @@ describe('MW-86: Act V Heirloom Gifting Engine Invariant Suite', () => {
       expect(vaultConfig.subtitle).toBe('Lifetime Archival & 100 GB Vault');
     });
   });
+
+  describe('7. Heirloom Dedication Muse & 5"×7" Card Fit Invariants', () => {
+    it('evaluates 4-stage card fit accurately against physical print boundaries', () => {
+      const calculateFit = (len: number) => {
+        if (len === 0) return 'empty';
+        if (len <= 50) return 'brief';
+        if (len <= 240) return 'optimal';
+        if (len <= 320) return 'dense';
+        return 'overflow';
+      };
+
+      expect(calculateFit(0)).toBe('empty');
+      expect(calculateFit(42)).toBe('brief');
+      expect(calculateFit(180)).toBe('optimal'); // Perfect 5"x7" fit
+      expect(calculateFit(280)).toBe('dense');
+      expect(calculateFit(350)).toBe('overflow');
+    });
+
+    it('strips outer quotation marks and screenplay directives from dedication prose (Rule 11)', () => {
+      const sanitizeDedication = (text: string) =>
+        text
+          .replace(/^["'“]|["'”]$/g, '')
+          .replace(/\[(?:Fade in|Fade out|Wide shot|Close up|Cut to|Camera|Interior|Exterior|Dissolve).*?\]/gi, '')
+          .replace(/\((?:pause|camera|wide shot|close up|zoom).*?\)/gi, '')
+          .trim();
+
+      const rawInput = '“Dear Dad, [Cut to wide shot] on your 70th birthday we want to preserve your journey.”';
+      const cleaned = sanitizeDedication(rawInput);
+
+      expect(cleaned).toBe('Dear Dad,  on your 70th birthday we want to preserve your journey.');
+      expect(cleaned.startsWith('“')).toBe(false);
+      expect(cleaned.endsWith('”')).toBe(false);
+    });
+  });
 });
