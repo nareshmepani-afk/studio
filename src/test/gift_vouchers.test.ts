@@ -228,17 +228,44 @@ describe('MW-86: Act V Heirloom Gifting Engine Invariant Suite', () => {
     it('strips outer quotation marks and screenplay directives from dedication prose (Rule 11)', () => {
       const sanitizeDedication = (text: string) =>
         text
-          .replace(/^["'“]|["'”]$/g, '')
+          .replace(/^["'"\u201C]|["'"\u201D]$/g, '')
           .replace(/\[(?:Fade in|Fade out|Wide shot|Close up|Cut to|Camera|Interior|Exterior|Dissolve).*?\]/gi, '')
           .replace(/\((?:pause|camera|wide shot|close up|zoom).*?\)/gi, '')
           .trim();
 
-      const rawInput = '“Dear Dad, [Cut to wide shot] on your 70th birthday we want to preserve your journey.”';
+      const rawInput = '\u201CDear Dad, [Cut to wide shot] on your 70th birthday we want to preserve your journey.\u201D';
       const cleaned = sanitizeDedication(rawInput);
 
       expect(cleaned).toBe('Dear Dad,  on your 70th birthday we want to preserve your journey.');
-      expect(cleaned.startsWith('“')).toBe(false);
-      expect(cleaned.endsWith('”')).toBe(false);
+      expect(cleaned.startsWith('\u201C')).toBe(false);
+      expect(cleaned.endsWith('\u201D')).toBe(false);
+    });
+
+    it('sanitises recipient name: title-cases, trims, and collapses internal whitespace', () => {
+      const sanitiseRecipientName = (raw: string): string => {
+        return raw
+          .trim()
+          .replace(/\s{2,}/g, ' ')
+          .split(' ')
+          .map((word) => (word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : ''))
+          .join(' ');
+      };
+
+      // Basic title-casing
+      expect(sanitiseRecipientName('mum')).toBe('Mum');
+      expect(sanitiseRecipientName('grandad arthur')).toBe('Grandad Arthur');
+      expect(sanitiseRecipientName('ELENA')).toBe('Elena');
+
+      // Whitespace collapse
+      expect(sanitiseRecipientName('  grandad   arthur  ')).toBe('Grandad Arthur');
+      expect(sanitiseRecipientName('   mum   ')).toBe('Mum');
+
+      // Empty string fallback
+      expect(sanitiseRecipientName('')).toBe('');
+      expect(sanitiseRecipientName('   ')).toBe('');
+
+      // Mixed case preservation
+      expect(sanitiseRecipientName('uncle rAj')).toBe('Uncle Raj');
     });
   });
 });

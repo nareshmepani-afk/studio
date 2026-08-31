@@ -889,3 +889,26 @@ The final **Production-Ready Audit & Retrospective** (Rule 16) MUST explicitly c
     2. Provide an interactive `[ ⚡ Send Live Probe ]` execution harness with pre-filled test payloads for instant edge verification.
 
 
+# 35. Input Sanitisation, AI Token Budget Enforcement & Multi-Script PDF Font Embedding Standard
+
+## 35.1 Recipient Name Interpolation Safety
+- **Mandatory Sanitisation**: ALL user-entered names that flow into templates (occasion sparks, cultural salutations, AI polish payloads, PDF keepsake cards, email subjects) MUST pass through a `sanitiseRecipientName()` utility that:
+  1. Trims leading/trailing whitespace.
+  2. Collapses multiple internal spaces to a single space.
+  3. Title-cases each word (e.g. `mum` → `Mum`, `grandad  arthur` → `Grandad Arthur`, `ELENA` → `Elena`).
+- **Anti-Pattern**: Raw `.trim()` alone is INSUFFICIENT for print-quality keepsake typography. Uncapitalised or multi-space names degrade the physical card appearance.
+- **Vitest Regression**: Name sanitisation boundary conditions (empty strings, ALL-CAPS, multi-space, single word) MUST be covered by automated Vitest assertions.
+
+## 35.2 AI Generation Token Budget Enforcement
+- **Max Output Tokens**: All low-latency AI generation endpoints (e.g. `/api/gift/polish-dedication`) MUST specify `maxOutputTokens: 150` (or an appropriate ceiling matched to the use case) to guarantee sub-500ms round-trip times.
+- **Temperature Ceiling**: Dedication polish and grammar-check endpoints MUST use `temperature ≤ 0.35` to prevent hallucinated prose or over-elaboration.
+- **Rationale**: Unbounded token generation on Gemini Flash can produce 2–5 second latency spikes that break the instant-feedback UX expectation of the Dedication Muse toolbar.
+
+## 35.3 Multi-Script PDF Font Embedding for Physical Print Artefacts (Sprint 3)
+- **Unicode Range Detection**: When generating physical 5"×7" keepsake PDFs via `pdf-lib`, the generator MUST scan dedication prose for non-Latin Unicode ranges:
+  - Gujarati: U+0A80–U+0AFF (ગુજરાતી)
+  - Devanagari: U+0900–U+097F (हिन्दी)
+  - Gurmukhi: U+0A00–U+0A7F (ਪੰਜਾਬੀ)
+- **Dynamic Font Subset Embedding**: If Indic glyphs are detected, dynamically embed the corresponding Noto Sans font subset (`NotoSansGujarati-Regular.ttf`, `NotoSansDevanagari-Regular.ttf`, `NotoSansGurmukhi-Regular.ttf`) from `public/fonts/noto/`.
+- **Anti-Pattern (Tofu Rendering)**: Standard Latin-only TTF fonts (Playfair Display, Inter) do NOT contain Indic glyph ranges and will render as □□□ (tofu boxes) on printed cards.
+- **Graceful Fallback**: If a font subset file is missing or fails to load, log a warning and fall back to the system Unicode font rather than silently producing tofu.

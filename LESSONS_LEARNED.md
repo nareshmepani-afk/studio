@@ -113,3 +113,19 @@ This document codifies the critical lessons learned from our development Sprints
 1. **Automated Vitest Invariants (Tier 1)**: All backend transaction rules, mathematical date projections (+31 days), duplicate claim rejections, rate limiter resets, storage quota expansions (`Math.max`), and Base32 Crockford sanitizations MUST be 100% verified via automated Vitest regression suites (`src/test/*.test.ts`).
 2. **Human UI Flow Testing (Tier 2)**: Human verification in interactive QA suites (`qa_checklist_interactive.html`) must focus on real end-to-end user journeys (buying gifts on `/gift`, 1-click test minting on `/admin?suite=vouchers`, experiencing `/unboxing/[code]` ceremony, breaking wax seals, haptics, and email receipts).
 3. **Backend API QA Cards**: For backend-only routes in early sprint stages, provide clear Vitest automation status alongside 1-click `[ ⚡ Send Live Probe ]` execution harnesses for instant live edge verification.
+
+---
+
+### Lesson 11: On Input Sanitisation, AI Token Budgets, and Multi-Script Font Embedding for Physical Print Artefacts
+
+**Verdict:** Proactive Architecture Gate
+**User Feedback:** "Ensure {Name} replacement sanitises against extra spaces or uncapitalised recipient names entered in Step 1 (e.g. converting mum → Mum)." / "Keep the temperature on /api/gift/polish-dedication low (≈ 0.35) with a max-token limit of 150 to keep API round-trip times well under 500ms." / "Standard embedded Latin fonts may not contain glyphs for Indic scripts (Gujarati ગુજરાતી, Devanagari हिन्दी, Gurmukhi ਪੰਜਾਬੀ). Ensure your PDF generator falls back gracefully to a bundled Unicode/Noto font."
+**Root Cause:**
+- Raw `.trim()` on recipient names is insufficient: users frequently enter all-lowercase (`mum`), ALL-CAPS (`GRANDAD ARTHUR`), or multi-space input (`  grandad   arthur  `) that prints poorly on keepsake cards.
+- Unbounded AI generation tokens cause unpredictable latency spikes (sometimes 2–5 seconds) when the model over-elaborates, breaking the sub-500ms UX expectation.
+- Standard Latin TTF fonts (Playfair Display, Inter) do not include Gujarati, Devanagari, or Gurmukhi glyph ranges; `pdf-lib` renders them as tofu boxes (□□□) without explicit Unicode font embedding.
+
+**The Protocol:**
+1. **Name Interpolation Safety**: ALL template interpolation points (occasion sparks, salutations, AI polish payloads) MUST pass recipient names through a `sanitiseRecipientName()` function that trims, collapses internal whitespace, and title-cases each word before injection.
+2. **AI Token Budget Enforcement**: All low-latency AI generation endpoints (e.g. `/api/gift/polish-dedication`) MUST specify `maxOutputTokens: 150` (or appropriate ceiling) alongside `temperature: 0.35` to guarantee sub-500ms round-trip times on Gemini Flash.
+3. **Multi-Script PDF Font Fallback (Sprint 3)**: When generating physical 5"×7" keepsake PDFs via `pdf-lib`, the generator MUST detect non-Latin Unicode ranges (Gujarati U+0A80–U+0AFF, Devanagari U+0900–U+097F, Gurmukhi U+0A00–U+0A7F) in the dedication prose and dynamically embed the corresponding Noto Sans font subset to prevent tofu rendering on printed cards. Bundle `NotoSansGujarati-Regular.ttf`, `NotoSansDevanagari-Regular.ttf`, and `NotoSansGurmukhi-Regular.ttf` in `public/fonts/noto/`.

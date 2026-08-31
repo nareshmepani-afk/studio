@@ -132,6 +132,7 @@ Raw user draft to elevate:
         prompt: systemPrompt,
         config: {
           temperature: 0.35,
+          maxOutputTokens: 150,
         },
       });
 

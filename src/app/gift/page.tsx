@@ -47,6 +47,21 @@ interface DedicationPreset {
   template: (name: string) => string;
 }
 
+/**
+ * Sanitise recipient name for template interpolation:
+ * - Trims leading/trailing whitespace
+ * - Collapses multiple internal spaces to single space
+ * - Title-cases each word (e.g. "mum" → "Mum", "grandad arthur" → "Grandad Arthur")
+ */
+function sanitiseRecipientName(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\s{2,}/g, ' ')
+    .split(' ')
+    .map((word) => (word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : ''))
+    .join(' ');
+}
+
 const DEDICATION_PRESETS: DedicationPreset[] = [
   {
     id: 'milestone',
@@ -205,7 +220,8 @@ export default function GiftPage() {
 
   // Handle Preset Click
   const handleSelectPreset = (preset: DedicationPreset) => {
-    const formatted = preset.template(recipientName.trim());
+    const sanitisedName = sanitiseRecipientName(recipientName);
+    const formatted = preset.template(sanitisedName);
     if (giftMessage.trim().length > 0 && giftMessage.trim() !== formatted) {
       setPendingTemplate(preset);
     } else {
@@ -220,7 +236,7 @@ export default function GiftPage() {
   const confirmTemplateReplace = () => {
     if (!pendingTemplate) return;
     setHistoryStack((prev) => [giftMessage, ...prev]);
-    const formatted = pendingTemplate.template(recipientName.trim());
+    const formatted = pendingTemplate.template(sanitiseRecipientName(recipientName));
     setGiftMessage(formatted);
     setPendingTemplate(null);
     setLastPolishedTone(null);
@@ -229,7 +245,7 @@ export default function GiftPage() {
 
   // Handle Salutation Click
   const handleApplySalutation = (salutation: SalutationPreset) => {
-    const prefix = salutation.prefix(recipientName.trim());
+    const prefix = salutation.prefix(sanitiseRecipientName(recipientName));
     setHistoryStack((prev) => [giftMessage, ...prev]);
 
     // Replace or prepend opening salutation
@@ -262,7 +278,7 @@ export default function GiftPage() {
         body: JSON.stringify({
           message: trimmed,
           tone: selectedTone,
-          recipientName: recipientName.trim() || undefined,
+          recipientName: sanitiseRecipientName(recipientName) || undefined,
           unboxingLanguage,
         }),
       });
