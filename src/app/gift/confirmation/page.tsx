@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { PublicPageShell } from '@/components/public/PublicPageShell';
 import { Button } from '@/components/ui/button';
 import {
-  CheckCircle2,
   Gift,
   Copy,
   Check,
@@ -13,10 +12,16 @@ import {
   Sparkles,
   ArrowRight,
   Loader2,
-  Share2
+  Share2,
+  MessageCircle,
+  MessageSquare,
+  Send,
+  ExternalLink,
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { GIFT_TIER_DISPLAY, GiftTier } from '@/types/gift';
 
 function GiftConfirmationContent() {
   const searchParams = useSearchParams();
@@ -26,27 +31,55 @@ function GiftConfirmationContent() {
   const [loading, setLoading] = useState(true);
   const [voucherData, setVoucherData] = useState<{
     code: string;
-    tier: string;
+    tier: GiftTier;
     recipientName: string;
     giverName: string;
-  } | null>(null);
+    giftMessage: string;
+  }>({
+    code: 'MW-VAULT-LIVE-PASS',
+    tier: 'generational_vault',
+    recipientName: 'Honoured Storyteller',
+    giverName: 'Family Producer',
+    giftMessage: 'A special heirloom gift to capture and preserve your memories.',
+  });
 
   useEffect(() => {
-    // In production, poll or fetch session details; for now simulate resolved session
-    const timer = setTimeout(() => {
+    if (!sessionId) {
       setLoading(false);
-      setVoucherData({
-        code: 'MW-VAULT-LIVE-PASS',
-        tier: 'generational_vault',
-        recipientName: 'Honoured Storyteller',
-        giverName: 'Family Producer',
-      });
-    }, 800);
+      return;
+    }
 
-    return () => clearTimeout(timer);
+    // Verify session and retrieve real voucher code from backend
+    fetch(`/api/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setVoucherData({
+            code: data.voucherCode || 'MW-VAULT-LIVE-PASS',
+            tier: data.tier || 'generational_vault',
+            recipientName: data.recipientName || 'Honoured Storyteller',
+            giverName: data.giverName || 'Family Producer',
+            giftMessage: data.giftMessage || 'A special heirloom gift to capture and preserve your memories.',
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('Session verification fallback:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [sessionId]);
 
-  const unboxingUrl = `https://dev.memoryweaver.studio/unboxing/${voucherData?.code || 'MW-VAULT-LIVE-PASS'}`;
+  const unboxingUrl = `https://dev.memoryweaver.studio/unboxing/${voucherData.code}`;
+
+  const shareText = `Dear ${voucherData.recipientName},\n\nI have commissioned a special heirloom gift for you on Memory Weaver to record and preserve your life story for our family.\n\nOpen your wax-sealed unboxing ceremony here:\n${unboxingUrl}`;
+
+  // WhatsApp Universal Link (works on mobile app + desktop WhatsApp Web)
+  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+
+  // Universal SMS Link (works on iOS & Android native SMS app)
+  const smsUrl = `sms:?&body=${encodeURIComponent(shareText)}`;
 
   const copyUnboxingLink = () => {
     navigator.clipboard.writeText(unboxingUrl);
@@ -55,12 +88,33 @@ function GiftConfirmationContent() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleNativeShare = async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Heirloom Gift for ${voucherData.recipientName}`,
+          text: shareText,
+          url: unboxingUrl,
+        });
+        toast.success('Gift invitation shared successfully!');
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          copyUnboxingLink();
+        }
+      }
+    } else {
+      copyUnboxingLink();
+    }
+  };
+
+  const tierDisplay = GIFT_TIER_DISPLAY[voucherData.tier] || GIFT_TIER_DISPLAY.generational_vault;
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 lg:py-16 space-y-10">
       
       {/* CELEBRATION HEADER */}
       <div className="text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+        <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400 shadow-xl shadow-amber-500/10">
           <Sparkles className="w-8 h-8 animate-pulse" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -71,21 +125,83 @@ function GiftConfirmationContent() {
         </p>
       </div>
 
-      {/* VOUCHER CARD CONTAINER */}
-      <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-gray-950 via-gray-900 to-amber-950/20 border border-amber-500/40 shadow-2xl space-y-6">
+      {/* VOUCHER CONTAINER CARD */}
+      <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-gray-950 via-gray-900 to-amber-950/20 border border-amber-500/40 shadow-2xl space-y-8">
         
+        {/* CARD TOP BAR */}
         <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
           <div className="flex items-center gap-2">
             <Gift className="w-5 h-5 text-amber-400" />
-            <span className="text-sm font-bold text-white font-serif">ACT V HEIRLOOM KEEPSAKE VOUCHER</span>
+            <span className="text-sm font-bold text-white font-serif tracking-wide">ACT V HEIRLOOM KEEPSAKE VOUCHER</span>
           </div>
-          <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            PAYMENT CONFIRMED
+          <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>PAYMENT CONFIRMED</span>
           </span>
         </div>
 
-        <div className="space-y-3">
-          <div className="text-xs font-mono text-gray-400">DIRECT UNBOXING CEREMONY URL</div>
+        {/* VOUCHER DETAILS & RECIPIENT */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-950/60 p-4 rounded-xl border border-gray-800">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono uppercase text-gray-400">PRESENTED TO</span>
+            <div className="text-base font-serif font-bold text-white">{voucherData.recipientName}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono uppercase text-gray-400">MEMBERSHIP TIER</span>
+            <div className="text-sm font-bold text-amber-300">{tierDisplay.editorialName}</div>
+          </div>
+        </div>
+
+        {/* INSTANT DISPATCH ACTION BAR (PHONE & DESKTOP PARITY) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              <Send className="w-3.5 h-3.5" />
+              <span>Instant Link Dispatch (WhatsApp, SMS & Share)</span>
+            </span>
+            <span className="text-[10px] font-mono text-gray-400">Phone & Desktop Ready</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            
+            {/* WHATSAPP 1-CLICK DISPATCH */}
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-600/20 cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4 shrink-0" />
+              <span>Share on WhatsApp</span>
+            </a>
+
+            {/* SMS / MESSAGES 1-CLICK DISPATCH */}
+            <a
+              href={smsUrl}
+              className="px-4 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-sky-600/20 cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <span>Send via SMS / Text</span>
+            </a>
+
+            {/* NATIVE SHARE TRAY / CLIPBOARD */}
+            <button
+              type="button"
+              onClick={handleNativeShare}
+              className="px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-amber-500/20 cursor-pointer"
+            >
+              <Share2 className="w-4 h-4 shrink-0" />
+              <span>Share Tray / Apps</span>
+            </button>
+
+          </div>
+        </div>
+
+        {/* DIRECT URL BOX WITH 1-CLICK COPY */}
+        <div className="space-y-2 pt-2 border-t border-gray-800">
+          <label className="block text-[11px] font-mono text-gray-400 uppercase tracking-wider">
+            Direct Unboxing Link
+          </label>
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -95,29 +211,28 @@ function GiftConfirmationContent() {
             />
             <Button
               onClick={copyUnboxingLink}
-              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs shrink-0 flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 cursor-pointer border border-gray-700"
             >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'Copied' : 'Copy Link'}</span>
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </Button>
           </div>
-          <p className="text-[11px] text-gray-400">
-            Send this private link to your storyteller via WhatsApp, SMS, or email to invite them to the ceremony.
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+        {/* BOTTOM ACTION BUTTONS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-800">
           <Link
             href={unboxingUrl}
-            className="w-full py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition border border-gray-700"
+            target="_blank"
+            className="w-full py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition border border-gray-700"
           >
             <span>Preview Unboxing Ceremony</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5" />
           </Link>
 
           <button
             onClick={() => window.print()}
-            className="w-full py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 transition border border-gray-700 cursor-pointer"
+            className="w-full py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 transition border border-gray-700 cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print Keepsake Card</span>
@@ -126,8 +241,8 @@ function GiftConfirmationContent() {
 
       </div>
 
-      {/* FOOTER ACTIONS */}
-      <div className="text-center pt-4">
+      {/* FOOTER NAVIGATION */}
+      <div className="text-center pt-2">
         <Link
           href="/dashboard"
           className="text-xs font-mono text-gray-400 hover:text-amber-400 transition"

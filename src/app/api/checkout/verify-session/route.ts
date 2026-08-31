@@ -40,9 +40,39 @@ export async function GET(req: NextRequest) {
 
     const uid = userSession.uid;
     const isPaid = stripeSession.payment_status === 'paid';
+    const isGift = stripeSession.metadata?.isGift === 'true';
     const tier = (stripeSession.metadata?.tier || 'director') as 'director' | 'generational_vault';
     const isLifetime = tier === 'generational_vault';
     const now = new Date();
+
+    // ── Gift Purchase Fork ──────────────────────────────────────────
+    if (isGift && adminDb) {
+      // Find voucher created for this session
+      const voucherQuery = await adminDb
+        .collection('gift_vouchers')
+        .where('stripeSessionId', '==', stripeSession.id)
+        .limit(1)
+        .get();
+
+      let voucherCode = '';
+      let giftDocData: any = null;
+      if (!voucherQuery.empty) {
+        voucherCode = voucherQuery.docs[0].id;
+        giftDocData = voucherQuery.docs[0].data();
+      }
+
+      return NextResponse.json({
+        success: true,
+        verified: isPaid,
+        isGift: true,
+        tier,
+        voucherCode: voucherCode || null,
+        recipientName: giftDocData?.recipientName || stripeSession.metadata?.recipientName || 'Honoured Storyteller',
+        giverName: giftDocData?.giverName || stripeSession.metadata?.giverName || 'Family Producer',
+        giftMessage: giftDocData?.giftMessage || stripeSession.metadata?.giftMessage || '',
+        deliveryMode: giftDocData?.deliveryMode || stripeSession.metadata?.deliveryMode || 'instant_link',
+      });
+    }
 
     if (isPaid && adminDb) {
       const userRef = adminDb.collection('users').doc(uid);
