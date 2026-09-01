@@ -1138,8 +1138,8 @@ export default function GiftPage() {
                       </div>
                       
                       {/* WAX SEAL INSIGNIA */}
-                      <div className="w-12 h-12 rounded-full border-2 border-amber-400/60 bg-gradient-to-br from-amber-500/30 via-amber-600/20 to-amber-950/60 flex items-center justify-center text-amber-300 font-serif text-xs font-bold shadow-lg shadow-amber-500/20">
-                        <span>MW</span>
+                      <div className="w-12 h-12 rounded-full border-2 border-amber-400/60 bg-gradient-to-br from-blue-950/80 via-indigo-950/70 to-slate-950/90 flex items-center justify-center text-amber-300 shadow-lg shadow-blue-950/40 ring-1 ring-amber-500/20">
+                        <Film className="w-5 h-5 text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
                       </div>
                     </div>
                   </motion.div>
@@ -1160,13 +1160,11 @@ export default function GiftPage() {
 
                     {/* Ceremony HUD */}
                     <div className="relative z-10 flex items-center justify-between border-b border-amber-500/20 pb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                        <span className="text-[10px] font-mono tracking-widest text-amber-400 uppercase">
-                          2.39:1 CINEMATIC CEREMONY
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        <span>2.39:1 CINEMATIC CEREMONY</span>
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
                         {ceremonyContent.badge}
                       </span>
                     </div>
@@ -1187,19 +1185,22 @@ export default function GiftPage() {
                             </p>
                           </div>
 
-                          <div className="flex justify-center pt-1">
+                          {/* Optical & Mathematical Vertical Center Alignment */}
+                          <div className="flex flex-col items-center justify-center mx-auto text-center pt-2">
                             <button
                               type="button"
                               onClick={() => {
                                 unboxingAudio.playWaxSealBreak();
                                 setIsMicroSealBroken(true);
                               }}
-                              className="group relative cursor-pointer"
+                              className="group relative flex flex-col items-center justify-center cursor-pointer focus:outline-none"
                             >
-                              <div className="w-16 h-16 rounded-full border-2 border-amber-400/90 bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950 flex flex-col items-center justify-center text-amber-300 font-serif font-extrabold text-base shadow-xl shadow-blue-950/60 group-hover:scale-105 transition ring-2 ring-amber-500/30">
-                                <span className="bg-gradient-to-b from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">MW</span>
+                              {/* Wax Seal Circle */}
+                              <div className="w-16 h-16 rounded-full border-2 border-amber-400/90 bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950 flex items-center justify-center shadow-xl shadow-blue-950/60 group-hover:scale-105 transition ring-2 ring-amber-500/30">
+                                <Film className="w-7 h-7 text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
                               </div>
-                              <div className="mt-2 px-3 py-1 rounded-full bg-blue-950/40 border border-amber-500/40 text-amber-300 text-[10px] font-mono flex items-center justify-center gap-1 shadow-sm">
+                              {/* Centered Pill Subscript */}
+                              <div className="mt-2.5 px-3 py-1 rounded-full bg-blue-950/60 border border-amber-500/40 text-amber-300 text-[10px] font-mono flex items-center justify-center gap-1 shadow-sm group-hover:bg-amber-500 group-hover:text-gray-950 transition">
                                 <Sparkles className="w-3 h-3 text-amber-400" />
                                 <span>{ceremonyContent.envelopeSealText}</span>
                               </div>
@@ -1375,22 +1376,23 @@ export default function GiftPage() {
                       </p>
                     </div>
 
-                    {/* Royal Midnight Sapphire & Gold Interactive Wax Seal */}
-                    <div className="relative flex justify-center py-6">
+                    {/* Royal Midnight Sapphire & Gold Interactive Wax Seal with 35mm Film Icon */}
+                    <div className="relative flex flex-col items-center justify-center mx-auto py-6">
                       <button
                         type="button"
                         onClick={() => {
                           unboxingAudio.playWaxSealBreak();
                           setIsAuditionSealBroken(true);
                         }}
-                        className="group relative cursor-pointer"
+                        className="group relative flex flex-col items-center justify-center cursor-pointer focus:outline-none"
                       >
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/90 bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950 flex flex-col items-center justify-center text-amber-300 font-serif font-extrabold text-2xl shadow-2xl shadow-blue-950/80 group-hover:scale-110 transition duration-300 ring-4 ring-amber-500/30">
-                          <span className="bg-gradient-to-b from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent drop-shadow-sm">MW</span>
-                          <span className="text-[9px] font-mono tracking-wider text-amber-400 font-bold uppercase mt-0.5">HEIRLOOM</span>
+                        {/* Wax Seal Circle */}
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/90 bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950 flex items-center justify-center shadow-2xl shadow-blue-950/80 group-hover:scale-110 transition duration-300 ring-4 ring-amber-500/30">
+                          <Film className="w-11 h-11 sm:w-13 sm:h-13 text-amber-300 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] drop-shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
                         </div>
-                        <div className="mt-4 px-4 py-1.5 rounded-full bg-blue-950/60 border border-amber-500/40 text-amber-300 text-xs font-mono flex items-center justify-center gap-1.5 shadow-lg group-hover:bg-amber-500 group-hover:text-gray-950 transition">
-                          <Sparkles className="w-3.5 h-3.5" />
+                        {/* Centered Pill Subscript */}
+                        <div className="mt-4 px-4 py-1.5 rounded-full bg-blue-950/80 border border-amber-500/40 text-amber-300 text-xs font-mono flex items-center justify-center gap-1.5 shadow-lg group-hover:bg-amber-500 group-hover:text-gray-950 transition">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                           <span>{ceremonyContent.envelopeSealText}</span>
                         </div>
                       </button>
