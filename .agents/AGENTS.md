@@ -130,9 +130,10 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Interactive Beat Seek Contracts**: Emotional Beats timestamp buttons inside `DirectorsNotepad` MUST pass explicit time values to `onSeek` callbacks and provide hover tooltips (`"Click timestamp to seek master video playback to [time]"`).
 - **Ambient Soundtrack Player Integration**: Fusion Protocol tabs inside `DirectorsNotepad` MUST provide an embedded ambient soundtrack player card allowing users to audition and toggle background scores with real-time visual waveform feedback and clear play/pause tooltips.
 
-# 25. Zero Uncertainty — Team Escalation Protocol
-- **We Are a Team of Three**: The user, Claude (Gatekeeper), and the agent operate as a collaborative team. The agent MUST NEVER declare a status as "uncertain" or "unknown" and leave it unresolved. If the agent cannot programmatically verify a state (e.g., build deployment, data integrity, Firestore document status), it MUST immediately escalate to the team with a clear, actionable question.
-- **Ask, Don't Declare Uncertainty**: Instead of saying "Build status: UNCERTAIN", the agent MUST say "Could you check [specific thing] and confirm [specific question]?" — giving the user a concrete action to take.
+# 25. Zero Uncertainty — Equal Partnership & Team Escalation Protocol
+- **We Are an Equal Partnership Team of Three**: The user, Claude (Gatekeeper), and the agent operate as an equal partnership team of three. The agent MUST ALWAYS ask if in doubt rather than making assumptions or acting unilaterally.
+- **Never Leave Uncertainty Unresolved**: The agent MUST NEVER declare a status as "uncertain" or "unknown" and leave it unresolved. If the agent cannot programmatically verify a state (e.g., build deployment, data integrity, Firestore document status), it MUST immediately consult the team with a clear, actionable question.
+- **Ask, Don't Guess or Declare Uncertainty**: Instead of guessing or stating "Build status: UNCERTAIN", the agent MUST say "Could you check [specific thing] and confirm [specific question]?" — giving the user a concrete action to take.
 - **Exhaust All Diagnostic Avenues First**: Before escalating, the agent MUST attempt every available diagnostic tool (MCP tools, API calls, log inspection, version string checks). Only if ALL programmatic avenues fail should the agent escalate to the user.
 - **Never Leave Work Hanging**: Every escalation MUST include: (1) what was attempted, (2) why it failed, (3) exactly what the user needs to check, and (4) what the next step is once the answer is known.
 # 26. Model Triage & Token Economy Architecture

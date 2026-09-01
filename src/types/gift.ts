@@ -26,6 +26,9 @@ export type DeliveryMode = 'printable_pdf' | 'scheduled_email' | 'instant_link';
  */
 export type UnboxingLanguage = 'en' | 'gu' | 'pa' | 'hi';
 
+/** Tone presets for AI Dedication Muse */
+export type DedicationTone = 'heartfelt' | 'poetic' | 'celebratory' | 'understated';
+
 /** Human-readable labels for unboxing languages */
 export const UNBOXING_LANGUAGE_LABELS: Record<UnboxingLanguage, string> = {
   en: 'English',

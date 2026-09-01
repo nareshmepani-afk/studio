@@ -14,7 +14,10 @@ import {
   RefreshCw,
   Clock,
   ShieldCheck,
-  Languages
+  Languages,
+  Wand2,
+  RotateCcw,
+  CheckCircle2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -22,7 +25,8 @@ import {
   DeliveryMode,
   UnboxingLanguage,
   UNBOXING_LANGUAGE_LABELS,
-  GIFT_TIER_DISPLAY
+  GIFT_TIER_DISPLAY,
+  DedicationTone
 } from '@/types/gift';
 
 interface MintedVoucherItem {
@@ -35,14 +39,126 @@ interface MintedVoucherItem {
   giftMessage: string;
 }
 
+interface DedicationPreset {
+  id: string;
+  icon: string;
+  label: string;
+  category: string;
+  template: (name: string) => string;
+}
+
+const OCCASION_SPARKS: DedicationPreset[] = [
+  {
+    id: 'milestone',
+    icon: '🎂',
+    label: 'Milestone 70th / 80th',
+    category: 'Birthday',
+    template: (name) =>
+      `Dear ${name || 'Mum'}, for your milestone celebration, we want to listen to and preserve every single story of your remarkable journey for generations to come.`,
+  },
+  {
+    id: 'roots',
+    icon: '🌳',
+    label: 'Family Roots & Diaspora',
+    category: 'Heritage',
+    template: (name) =>
+      `To our dearest ${name || 'Ba'}, your courage in crossing oceans built the life we have today. This is our gift to ensure your voice and wisdom echo forever.`,
+  },
+  {
+    id: 'retirement',
+    icon: '🕊️',
+    label: 'Retirement & Wisdom',
+    category: 'Milestone',
+    template: (name) =>
+      `Dear ${name || 'Dad'}, after a lifetime of hard work and quiet wisdom, it is time for your stories to take centre stage. Here is your studio to weave your memoir.`,
+  },
+  {
+    id: 'devotion',
+    icon: '💍',
+    label: 'Decades of Devotion',
+    category: 'Love',
+    template: (name) =>
+      `To our beloved ${name || 'Grandmother'}, the memories you have built across the decades are the greatest treasure of our family. This is our gift of remembrance.`,
+  },
+  {
+    id: 'gratitude',
+    icon: '💛',
+    label: 'Voice of Gratitude',
+    category: 'Family',
+    template: (name) =>
+      `Dear ${name || 'Storyteller'}, thank you for every bedtime story, every lesson, and every sacrifice. We are giving you this space so your voice is never forgotten.`,
+  },
+  {
+    id: 'memoir',
+    icon: '✨',
+    label: 'Living History',
+    category: 'Legacy',
+    template: (name) =>
+      `For ${name || 'our beloved family anchor'}: your memories are not just the past—they are the roadmap for our children and grandchildren. Welcome to your memoir.`,
+  },
+];
+
+interface SalutationPreset {
+  id: string;
+  label: string;
+  culture: string;
+  prefix: (name: string) => string;
+}
+
+const SALUTATION_PRESETS: SalutationPreset[] = [
+  {
+    id: 'british',
+    label: 'To our dearest...',
+    culture: 'Classic British',
+    prefix: (name) => `To our dearest ${name || 'Mum'}, `,
+  },
+  {
+    id: 'gujarati',
+    label: 'Mara Vhala... (મારા વ્હાલા)',
+    culture: 'Gujarati',
+    prefix: (name) => `Mara Vhala ${name || 'Ba'}, `,
+  },
+  {
+    id: 'punjabi',
+    label: 'Pujya... Ji (ਪੂਜਨੀਕ)',
+    culture: 'Punjabi',
+    prefix: (name) => `Pujya ${name || 'Pitaji'} Ji, `,
+  },
+  {
+    id: 'hindi',
+    label: 'Pujya... Ji (पूज्य)',
+    culture: 'Hindi',
+    prefix: (name) => `Pujya ${name || 'Mataji'} Ji, `,
+  },
+];
+
+/**
+ * Strips all common salutation prefixes iteratively to prevent stacked greetings
+ */
+function stripAllSalutations(raw: string): string {
+  let cleaned = raw;
+  const SALUTATION_STRIP_REGEX = /^(?:To\s+(?:our|my)\s+(?:dearest|beloved)\s+[^,:\n]+[,:\s-]+|To\s+(?:our|my)\s+[^,:\n]+[,:\s-]+|Dear\s+[^,:\n]+[,:\s-]+|Dearest\s+[^,:\n]+[,:\s-]+|For\s+(?:our|my)\s+[^,:\n]+[,:\s-]+|For\s+[^,:\n]+[,:\s-]+|Mara\s+Vhala\s+[^,:\n]+[,:\s-]+|Pujya\s+[^,:\n]+(?:\s+Ji)?[,:\s-]+|Pujneek\s+[^,:\n]+(?:\s+Ji)?[,:\s-]+|Honoured\s+[^,:\n]+[,:\s-]+|Beloved\s+[^,:\n]+[,:\s-]+)/i;
+  for (let i = 0; i < 5; i++) {
+    const next = cleaned.replace(SALUTATION_STRIP_REGEX, '').trim();
+    if (next === cleaned) break;
+    cleaned = next;
+  }
+  return cleaned;
+}
+
 export function VoucherMintingConsole() {
   const [tier, setTier] = useState<GiftTier>('generational_vault');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
-  const [vanityCode, setVanityCode] = useState('');
+  const [vanitySuffix, setVanitySuffix] = useState('');
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('instant_link');
   const [unboxingLanguage, setUnboxingLanguage] = useState<UnboxingLanguage>('en');
   const [giftMessage, setGiftMessage] = useState('');
+
+  // AI Dedication Muse State
+  const [selectedTone, setSelectedTone] = useState<DedicationTone>('heartfelt');
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [historyStack, setHistoryStack] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [mintedList, setMintedList] = useState<MintedVoucherItem[]>([
@@ -58,9 +174,88 @@ export function VoucherMintingConsole() {
   ]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  // Apply Occasion Spark preset
+  const handleSelectSpark = (preset: DedicationPreset) => {
+    if (giftMessage.trim()) {
+      setHistoryStack((prev) => [...prev, giftMessage]);
+    }
+    setGiftMessage(preset.template(recipientName.trim()));
+    toast.success(`Applied "${preset.label}" dedication spark!`);
+  };
+
+  // Apply Salutation prefix
+  const handleApplySalutation = (salutation: SalutationPreset) => {
+    const baseText = stripAllSalutations(giftMessage);
+    const newPrefix = salutation.prefix(recipientName.trim());
+    if (giftMessage.trim()) {
+      setHistoryStack((prev) => [...prev, giftMessage]);
+    }
+    setGiftMessage(`${newPrefix}${baseText}`.trim());
+    toast.info(`Updated salutation to ${salutation.label}`);
+  };
+
+  // AI Muse Polish handler
+  const handlePolishMessage = async () => {
+    if (!giftMessage.trim()) {
+      toast.error('Please enter a draft message or select an occasion spark first.');
+      return;
+    }
+
+    setIsPolishing(true);
+    setHistoryStack((prev) => [...prev, giftMessage]);
+
+    try {
+      const res = await fetch('/api/gift/polish-dedication', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: giftMessage,
+          tone: selectedTone,
+          recipientName: recipientName.trim() || undefined,
+          unboxingLanguage,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.polished) {
+        setGiftMessage(data.polished);
+        toast.success(`✨ Dedication polished with ${selectedTone} tone!`);
+      } else {
+        toast.info('Message already in optimal heirloom format.');
+      }
+    } catch (err) {
+      console.error('AI Polish error:', err);
+      toast.error('AI Muse is temporarily resting. Draft preserved.');
+    } finally {
+      setIsPolishing(false);
+    }
+  };
+
+  // Undo last polish/preset edit
+  const handleUndo = () => {
+    if (historyStack.length === 0) return;
+    const previous = historyStack[historyStack.length - 1];
+    setHistoryStack((prev) => prev.slice(0, -1));
+    setGiftMessage(previous);
+    toast.info('Reverted to previous draft.');
+  };
+
+  // Tidy message formatting
+  const handleTidy = () => {
+    if (!giftMessage.trim()) return;
+    setHistoryStack((prev) => [...prev, giftMessage]);
+    const cleaned = giftMessage
+      .replace(/\s+/g, ' ')
+      .replace(/["'“”]/g, '')
+      .trim();
+    setGiftMessage(cleaned.slice(0, 250));
+    toast.success('Cleaned formatting and whitespace.');
+  };
+
   const handleMint = async (overrideTier?: GiftTier, overrideRecipient?: string) => {
     const targetTier = overrideTier || tier;
     const targetRecipient = overrideRecipient || recipientName || 'Honoured Storyteller';
+    const computedVanityCode = vanitySuffix.trim() ? `MW-${vanitySuffix.trim()}` : undefined;
 
     setIsLoading(true);
 
@@ -78,7 +273,7 @@ export function VoucherMintingConsole() {
           recipientEmail: recipientEmail || undefined,
           deliveryMode,
           unboxingLanguage,
-          vanityCode: vanityCode.trim() || undefined,
+          vanityCode: computedVanityCode,
           amountPaid: 0,
           currency: 'gbp',
         }),
@@ -104,10 +299,11 @@ export function VoucherMintingConsole() {
       toast.success(`Voucher ${data.code} minted successfully!`);
 
       // Reset form
-      setVanityCode('');
+      setVanitySuffix('');
       setRecipientName('');
       setRecipientEmail('');
       setGiftMessage('');
+      setHistoryStack([]);
     } catch (err: any) {
       console.error('Minting error:', err);
       toast.error(err.message || 'Error minting voucher pass');
@@ -207,20 +403,25 @@ export function VoucherMintingConsole() {
             </div>
           </div>
 
-          {/* VANITY CODE (OPTIONAL) */}
+          {/* FIXED [ MW- ] PREFIX VANITY CODE INPUT */}
           <div>
             <label className="block text-xs font-mono text-slate-400 uppercase tracking-wider mb-2">
               Custom Vanity Code (Optional)
             </label>
-            <input
-              type="text"
-              placeholder="e.g. MW-FOUNDER-MUM"
-              value={vanityCode}
-              onChange={(e) => setVanityCode(e.target.value.toUpperCase())}
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-amber-300 font-mono text-xs placeholder-slate-600 focus:outline-none focus:border-amber-500"
-            />
+            <div className="flex items-center rounded-xl bg-slate-950 border border-slate-800 focus-within:border-amber-500 overflow-hidden">
+              <span className="px-3.5 py-2.5 bg-slate-900 border-r border-slate-800 text-amber-400 font-mono text-xs font-bold shrink-0 select-none">
+                MW-
+              </span>
+              <input
+                type="text"
+                placeholder="FOUNDER-MUM or VIP-STORYTELLER"
+                value={vanitySuffix}
+                onChange={(e) => setVanitySuffix(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
+                className="w-full px-3 py-2.5 bg-transparent text-amber-300 font-mono text-xs placeholder-slate-600 focus:outline-none"
+              />
+            </div>
             <p className="text-[10px] text-slate-500 mt-1">
-              Must start with &quot;MW-&quot; followed by 3–18 uppercase letters/digits/hyphens.
+              Prefix <code className="text-amber-400/90 font-bold">MW-</code> is locked. Enter 3–18 uppercase letters, digits, or hyphens.
             </p>
           </div>
 
@@ -231,7 +432,7 @@ export function VoucherMintingConsole() {
             </label>
             <input
               type="text"
-              placeholder="e.g. Arthur Pendelton"
+              placeholder="e.g. Mum, Grandad Arthur, Elena"
               value={recipientName}
               onChange={(e) => setRecipientName(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-amber-500"
@@ -259,18 +460,150 @@ export function VoucherMintingConsole() {
 
         </div>
 
-        {/* DEDICATION MESSAGE */}
-        <div>
-          <label className="block text-xs font-mono text-slate-400 uppercase tracking-wider mb-2">
-            Personal Gift Message (Optional)
-          </label>
-          <textarea
-            rows={2}
-            placeholder="A special heirloom gift to capture and preserve your memories..."
-            value={giftMessage}
-            onChange={(e) => setGiftMessage(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-amber-500 font-sans"
-          />
+        {/* FULL DEDICATION MUSE & OCCASION SPARKS */}
+        <div className="space-y-4 pt-4 border-t border-slate-800/80">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-mono uppercase tracking-wider text-amber-300 font-bold">
+                Personal Gift Dedication Message
+              </span>
+            </div>
+            <span className="text-[10px] font-mono text-slate-500">
+              Printed on 5&quot;×7&quot; Keepsake &amp; Unboxing Ceremony
+            </span>
+          </div>
+
+          {/* Occasion Sparks (1-Click Presets) */}
+          <div className="space-y-2">
+            <span className="text-[11px] font-mono text-slate-400 block">
+              Occasion Sparks (1-Click Presets):
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              {OCCASION_SPARKS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => handleSelectSpark(preset)}
+                  className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/80 hover:border-amber-500/50 hover:bg-amber-500/5 text-left transition group cursor-pointer"
+                >
+                  <span className="text-lg block mb-1 group-hover:scale-110 transition duration-200">
+                    {preset.icon}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-300 block truncate group-hover:text-amber-300">
+                    {preset.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Multilingual Salutation Chips */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-mono text-slate-400 block">
+              Salutations:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {SALUTATION_PRESETS.map((salutation) => (
+                <button
+                  key={salutation.id}
+                  type="button"
+                  onClick={() => handleApplySalutation(salutation)}
+                  className="px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-950 text-slate-300 hover:border-amber-500/50 hover:text-amber-300 text-xs font-mono transition cursor-pointer"
+                >
+                  {salutation.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Dedication Textarea & Character Meter */}
+          <div className="space-y-2">
+            <div className="relative">
+              <textarea
+                rows={3}
+                placeholder="Dear Storyteller, we want to listen to and preserve every single memory for generations to come..."
+                value={giftMessage}
+                onChange={(e) => setGiftMessage(e.target.value.slice(0, 250))}
+                className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-amber-500 font-sans leading-relaxed"
+              />
+              <div className="absolute bottom-3 right-3 text-[10px] font-mono text-slate-500 bg-slate-950/80 px-2 py-0.5 rounded">
+                <span className={giftMessage.length > 230 ? 'text-amber-400 font-bold' : 'text-slate-400'}>
+                  {giftMessage.length}
+                </span>
+                /250 Characters • 5&quot;×7&quot; Card Fit
+              </div>
+            </div>
+
+            {/* AI Dedication Muse Polish Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+              {/* Tone Selection */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-mono text-slate-400">Tone:</span>
+                {[
+                  { id: 'heartfelt', label: '💛 Heartfelt & Warm' },
+                  { id: 'poetic', label: '📜 Poetic & Heritage' },
+                  { id: 'celebratory', label: '🎉 Celebratory' },
+                  { id: 'understated', label: '🏛️ Understated' },
+                ].map((tone) => (
+                  <button
+                    key={tone.id}
+                    type="button"
+                    onClick={() => setSelectedTone(tone.id as DedicationTone)}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono transition cursor-pointer ${
+                      selectedTone === tone.id
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                        : 'bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    {tone.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {historyStack.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono flex items-center gap-1 transition cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Undo</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleTidy}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono flex items-center gap-1 transition cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Tidy</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePolishMessage}
+                  disabled={isPolishing || !giftMessage.trim()}
+                  className="px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-[10px] font-mono flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40 shadow-sm"
+                >
+                  {isPolishing ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Polishing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3" />
+                      <span>✨ Polish with AI Muse</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* MINT ACTION BUTTON */}
@@ -345,6 +678,7 @@ export function VoucherMintingConsole() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-mono border border-amber-500/30 flex items-center gap-1.5 transition"
+                  title="Unboxing ceremonial route (Sprint 3 / Ticket #225)"
                 >
                   <span>Open Unboxing</span>
                   <ExternalLink className="w-3 h-3" />
