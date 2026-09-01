@@ -268,4 +268,39 @@ describe('MW-86: Act V Heirloom Gifting Engine Invariant Suite', () => {
       expect(sanitiseRecipientName('uncle rAj')).toBe('Uncle Raj');
     });
   });
+
+  describe('8. Smart Salutation Replacement & Cultural Unboxing Matrix (MW-86)', () => {
+    const applySalutation = (currentText: string, newPrefix: string): string => {
+      const current = currentText.trim();
+      if (!current) return newPrefix;
+      const greetingPattern = /^(?:(?:Dear|To our dearest|To my dearest|To our beloved|To my beloved|Mara Vhala|Pujya|For)\s+[^,:\n]+[,:\n]\s*)/i;
+      const strippedText = current.replace(greetingPattern, '').trimStart();
+      return `${newPrefix}${strippedText}`;
+    };
+
+    it('cleanly replaces existing "Dear Granddad," without doubling greeting', () => {
+      const initial = 'Dear Granddad, on your milestone birthday we want to preserve your story.';
+      const result = applySalutation(initial, 'To our dearest Granddad, ');
+      expect(result).toBe('To our dearest Granddad, on your milestone birthday we want to preserve your story.');
+      expect(result).not.toContain('Dear Granddad');
+    });
+
+    it('cleanly replaces Gujarati "Mara Vhala Ba," with Hindi "Pujya Mataji Ji,"', () => {
+      const initial = 'Mara Vhala Ba, tamari yaad hamara parivar no varso che.';
+      const result = applySalutation(initial, 'Pujya Mataji Ji, ');
+      expect(result).toBe('Pujya Mataji Ji, tamari yaad hamara parivar no varso che.');
+      expect(result).not.toContain('Mara Vhala');
+    });
+
+    it('prepends salutation if no existing greeting pattern is matched', () => {
+      const initial = 'On your 80th milestone, we celebrate everything you have built for our family.';
+      const result = applySalutation(initial, 'Dear Mum, ');
+      expect(result).toBe('Dear Mum, On your 80th milestone, we celebrate everything you have built for our family.');
+    });
+
+    it('handles empty message by returning salutation prefix', () => {
+      expect(applySalutation('', 'Dear Granddad, ')).toBe('Dear Granddad, ');
+      expect(applySalutation('   ', 'To our dearest Dad, ')).toBe('To our dearest Dad, ');
+    });
+  });
 });

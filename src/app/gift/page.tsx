@@ -23,7 +23,16 @@ import {
   AlertCircle,
   PenTool,
   Quote,
-  Sparkle
+  Sparkle,
+  Film,
+  Maximize2,
+  Eye,
+  Volume2,
+  VolumeX,
+  X,
+  Play,
+  RefreshCw,
+  Layers
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -38,6 +47,45 @@ import {
 } from '@/types/gift';
 
 type DedicationTone = 'heartfelt' | 'poetic' | 'celebratory' | 'understated';
+
+interface UnboxingCeremonyContent {
+  badge: string;
+  welcome: (name: string) => string;
+  subtitle: string;
+  ceremonyTitle: string;
+  envelopeSealText: string;
+}
+
+const UNBOXING_CEREMONY_CONTENT: Record<UnboxingLanguage, UnboxingCeremonyContent> = {
+  en: {
+    badge: 'HEIRLOOM PASS',
+    welcome: (name) => `Welcome, ${name || 'Storyteller'}`,
+    subtitle: 'Your memories are the foundation of our family.',
+    ceremonyTitle: 'A Commissioned Living Memoir',
+    envelopeSealText: 'Click Wax Seal to Open'
+  },
+  gu: {
+    badge: 'વારસાગત ભેટ',
+    welcome: (name) => `સ્વાગત છે, ${name || 'દાદા / બા'}`,
+    subtitle: 'તમારી જીવનયાત્રા અમારા પરિવારનો અમૂલ્ય વારસો છે.',
+    ceremonyTitle: 'તમારા જીવનની અમૂલ્ય સ્મૃતિઓ',
+    envelopeSealText: 'મુદ્રા તોડીને પ્રવેશ કરો'
+  },
+  pa: {
+    badge: 'ਵਿਰਾਸਤੀ ਤੋਹਫ਼ਾ',
+    welcome: (name) => `ਜੀ ਆਇਆਂ ਨੂੰ, ${name || 'ਬਾਬਾ ਜੀ / ਮਾਤਾ ਜੀ'}`,
+    subtitle: 'ਤੁਹਾਡੀਆਂ ਯਾਦਾਂ ਸਾਡੇ ਪਰਿਵਾਰ ਦਾ ਅਨਮੋਲ ਖ਼ਜ਼ਾਨਾ ਹਨ।',
+    ceremonyTitle: 'ਤੁਹਾਡੀ ਜ਼ਿੰਦਗੀ ਦਾ ਅਨਮੋਲ ਸਫ਼ਰ',
+    envelopeSealText: 'ਮੋਹਰ ਤੋੜ ਕੇ ਖੋਲ੍ਹੋ'
+  },
+  hi: {
+    badge: 'धरोहर उपहार',
+    welcome: (name) => `हार्दिक स्वागत, ${name || 'दादाजी / माताजी'}`,
+    subtitle: 'आपकी यादें और अनुभव हमारे परिवार की अनमोल धरोहर हैं।',
+    ceremonyTitle: 'आपके जीवन की अनमोल स्मृतियाँ',
+    envelopeSealText: 'मुद्रा तोड़कर खोलें'
+  }
+};
 
 interface DedicationPreset {
   id: string;
@@ -162,6 +210,13 @@ export default function GiftPage() {
   const [unboxingLanguage, setUnboxingLanguage] = useState<UnboxingLanguage>('en');
   const [giftMessage, setGiftMessage] = useState('');
 
+  // Dual-View Preview & Audition Modal State
+  const [previewTab, setPreviewTab] = useState<'keepsake' | 'unboxing'>('keepsake');
+  const [showAuditionModal, setShowAuditionModal] = useState(false);
+  const [isAuditionSealBroken, setIsAuditionSealBroken] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const [isMicroSealBroken, setIsMicroSealBroken] = useState(false);
+
   // AI Dedication Muse State
   const [selectedTone, setSelectedTone] = useState<DedicationTone>('heartfelt');
   const [isPolishing, setIsPolishing] = useState(false);
@@ -174,6 +229,10 @@ export default function GiftPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const activeTierConfig = GIFT_TIER_DISPLAY[selectedTier];
+
+  const ceremonyContent = useMemo(() => {
+    return UNBOXING_CEREMONY_CONTENT[unboxingLanguage] || UNBOXING_CEREMONY_CONTENT.en;
+  }, [unboxingLanguage]);
 
   // 4-Stage Card Fit Calculation
   const cardFitInfo = useMemo(() => {
@@ -243,20 +302,19 @@ export default function GiftPage() {
     toast.success(`Applied ${pendingTemplate.label} template.`);
   };
 
-  // Handle Salutation Click
+  // Handle Salutation Click (Clean Regex Replacement per MW-86)
   const handleApplySalutation = (salutation: SalutationPreset) => {
     const prefix = salutation.prefix(sanitiseRecipientName(recipientName));
     setHistoryStack((prev) => [giftMessage, ...prev]);
 
-    // Replace or prepend opening salutation
+    // Enhanced greeting pattern: clean replacement of all existing prefixes
     const current = giftMessage.trim();
     if (!current) {
       setGiftMessage(prefix);
-    } else if (/^(Dear|To|For|Mara|Pujya)\b/i.test(current)) {
-      const rest = current.replace(/^(Dear|To|For|Mara|Pujya)[^,\n]*,\s*/i, '');
-      setGiftMessage(`${prefix}${rest}`);
     } else {
-      setGiftMessage(`${prefix}${current}`);
+      const greetingPattern = /^(?:(?:Dear|To our dearest|To my dearest|To our beloved|To my beloved|Mara Vhala|Pujya|For)\s+[^,:\n]+[,:\n]\s*)/i;
+      const strippedText = current.replace(greetingPattern, '').trimStart();
+      setGiftMessage(`${prefix}${strippedText}`);
     }
     toast.success(`Applied ${salutation.culture} salutation.`);
   };
@@ -551,7 +609,10 @@ export default function GiftPage() {
                   
                   <button
                     type="button"
-                    onClick={() => setDeliveryMode('printable_pdf')}
+                    onClick={() => {
+                      setDeliveryMode('printable_pdf');
+                      setPreviewTab('keepsake');
+                    }}
                     className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'printable_pdf'
                         ? 'border-amber-500 bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/60 shadow-lg shadow-amber-500/10'
@@ -570,7 +631,10 @@ export default function GiftPage() {
 
                   <button
                     type="button"
-                    onClick={() => setDeliveryMode('instant_link')}
+                    onClick={() => {
+                      setDeliveryMode('instant_link');
+                      setPreviewTab('unboxing');
+                    }}
                     className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'instant_link'
                         ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/60 shadow-lg shadow-emerald-500/10'
@@ -589,7 +653,10 @@ export default function GiftPage() {
 
                   <button
                     type="button"
-                    onClick={() => setDeliveryMode('scheduled_email')}
+                    onClick={() => {
+                      setDeliveryMode('scheduled_email');
+                      setPreviewTab('unboxing');
+                    }}
                     className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'scheduled_email'
                         ? 'border-purple-500 bg-purple-500/15 text-purple-300 ring-1 ring-purple-500/60 shadow-lg shadow-purple-500/10'
@@ -722,10 +789,24 @@ export default function GiftPage() {
 
               {/* UNBOXING LANGUAGE SELECTOR */}
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-gray-300 mb-2 flex items-center gap-1.5">
-                  <Languages className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Unboxing Ceremony Language</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
+                    <Languages className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Unboxing Ceremony Language</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAuditionSealBroken(false);
+                      setShowAuditionModal(true);
+                    }}
+                    className="text-[11px] font-mono text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer transition underline"
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>Audition in {UNBOXING_LANGUAGE_LABELS[unboxingLanguage].split(' ')[0]}</span>
+                  </button>
+                </div>
+
                 <select
                   value={unboxingLanguage}
                   onChange={(e) => setUnboxingLanguage(e.target.value as UnboxingLanguage)}
@@ -932,80 +1013,229 @@ export default function GiftPage() {
 
             </div>
 
-            {/* RIGHT: REAL-TIME PHYSICAL CARD MICRO-PREVIEW (5"x7" FOLDING CARD) */}
+            {/* RIGHT: DUAL-VIEW REAL-TIME PREVIEW CANVAS (5"x7" CARD ⇄ 🎬 DIGITAL UNBOXING) */}
             <div className="flex flex-col justify-between space-y-6">
               
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-                    <Quote className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Real-Time 5&quot;×7&quot; Keepsake Micro-Preview</span>
-                  </label>
-                  <span className="text-[10px] font-mono text-amber-400/80">Playfair Display Serif</span>
+                {/* DUAL-VIEW SEGMENTED TOGGLE BAR */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center p-1 rounded-xl bg-gray-950 border border-gray-800">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab('keepsake')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition cursor-pointer ${
+                        previewTab === 'keepsake'
+                          ? 'bg-amber-500 text-gray-950 font-bold shadow-md shadow-amber-500/20'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>5&quot;×7&quot; Keepsake Card</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab('unboxing')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition cursor-pointer ${
+                        previewTab === 'unboxing'
+                          ? 'bg-amber-500 text-gray-950 font-bold shadow-md shadow-amber-500/20'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      <Film className="w-3.5 h-3.5" />
+                      <span>Cinematic Unboxing</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAuditionSealBroken(false);
+                      setShowAuditionModal(true);
+                    }}
+                    className="text-xs font-mono text-amber-400 hover:text-amber-300 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/50 transition cursor-pointer"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Audition Fullscreen</span>
+                  </button>
                 </div>
                 
-                {/* 5x7 PHYSICAL CARD REPLICA */}
-                <div className="rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-gray-950 via-gray-900 to-amber-950/30 border border-amber-500/40 shadow-2xl relative overflow-hidden space-y-6">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
-                  
-                  {/* CARD HEADER */}
-                  <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
-                    <div className="text-amber-400 font-serif font-bold text-lg tracking-wide">
-                      MEMORY WEAVER
+                {/* TAB 1: 5x7 PHYSICAL CARD REPLICA */}
+                {previewTab === 'keepsake' && (
+                  <motion.div
+                    key="keepsake"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="rounded-2xl p-6 sm:p-8 bg-gradient-to-br from-gray-950 via-gray-900 to-amber-950/30 border border-amber-500/40 shadow-2xl relative overflow-hidden space-y-6"
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                    
+                    {/* CARD HEADER */}
+                    <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
+                      <div className="text-amber-400 font-serif font-bold text-lg tracking-wide">
+                        MEMORY WEAVER
+                      </div>
+                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
+                        {deliveryMode === 'printable_pdf' && (
+                          <>
+                            <Printer className="w-3 h-3 text-amber-400" />
+                            <span>5&quot;×7&quot; PRINTABLE KEEPSAKE</span>
+                          </>
+                        )}
+                        {deliveryMode === 'instant_link' && (
+                          <>
+                            <LinkIcon className="w-3 h-3 text-emerald-400" />
+                            <span>INSTANT DIGITAL PASS</span>
+                          </>
+                        )}
+                        {deliveryMode === 'scheduled_email' && (
+                          <>
+                            <Mail className="w-3 h-3 text-purple-400" />
+                            <span>SCHEDULED EMAIL CEREMONY</span>
+                          </>
+                        )}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
-                      {deliveryMode === 'printable_pdf' && (
-                        <>
-                          <Printer className="w-3 h-3 text-amber-400" />
-                          <span>5&quot;×7&quot; PRINTABLE KEEPSAKE</span>
-                        </>
-                      )}
-                      {deliveryMode === 'instant_link' && (
-                        <>
-                          <LinkIcon className="w-3 h-3 text-emerald-400" />
-                          <span>INSTANT DIGITAL PASS</span>
-                        </>
-                      )}
-                      {deliveryMode === 'scheduled_email' && (
-                        <>
-                          <Mail className="w-3 h-3 text-purple-400" />
-                          <span>SCHEDULED EMAIL CEREMONY</span>
-                        </>
-                      )}
-                    </span>
-                  </div>
 
-                  {/* SALUTATION / RECIPIENT */}
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">PRESENTED WITH LOVE TO:</div>
-                    <div className="text-2xl font-serif font-bold text-white tracking-tight">
-                      {recipientName || 'Dear Storyteller'}
-                    </div>
-                  </div>
-
-                  {/* DEDICATION PROSE (SERIF TYPOGRAPHY) */}
-                  <div className="p-4 rounded-xl bg-gray-900/70 border border-amber-500/20 text-gray-200 font-serif text-sm leading-relaxed italic shadow-inner relative">
-                    &quot;{giftMessage || 'A gift of living history to capture and preserve your life\'s memories for generations to come...'}&quot;
-                  </div>
-
-                  {/* CARD FOOTER & WAX SEAL INSIGNIA */}
-                  <div className="pt-2 flex items-center justify-between border-t border-amber-500/10">
-                    <div className="space-y-0.5">
-                      <div className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">TIER &amp; DISPATCH</div>
-                      <div className="text-xs font-bold text-amber-300 font-serif">{activeTierConfig.editorialName}</div>
-                      <div className="text-[10px] font-mono text-gray-400 flex items-center gap-1 mt-0.5">
-                        {deliveryMode === 'printable_pdf' && '🖨️ Print-at-Home PDF Card'}
-                        {deliveryMode === 'instant_link' && '⚡ Instant WhatsApp / SMS'}
-                        {deliveryMode === 'scheduled_email' && `✉️ Scheduled (${scheduledDate ? new Date(scheduledDate).toLocaleDateString('en-GB') : 'Milestone Date'})`}
+                    {/* SALUTATION / RECIPIENT */}
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">PRESENTED WITH LOVE TO:</div>
+                      <div className="text-2xl font-serif font-bold text-white tracking-tight">
+                        {sanitiseRecipientName(recipientName) || 'Dear Storyteller'}
                       </div>
                     </div>
-                    
-                    {/* WAX SEAL INSIGNIA */}
-                    <div className="w-12 h-12 rounded-full border-2 border-amber-400/60 bg-gradient-to-br from-amber-500/30 via-amber-600/20 to-amber-950/60 flex items-center justify-center text-amber-300 font-serif text-xs font-bold shadow-lg shadow-amber-500/20">
-                      <span>MW</span>
+
+                    {/* DEDICATION PROSE (SERIF TYPOGRAPHY) */}
+                    <div className="p-4 rounded-xl bg-gray-900/70 border border-amber-500/20 text-gray-200 font-serif text-sm leading-relaxed italic shadow-inner relative">
+                      &quot;{giftMessage || 'A gift of living history to capture and preserve your life\'s memories for generations to come...'}&quot;
                     </div>
-                  </div>
-                </div>
+
+                    {/* CARD FOOTER & WAX SEAL INSIGNIA */}
+                    <div className="pt-2 flex items-center justify-between border-t border-amber-500/10">
+                      <div className="space-y-0.5">
+                        <div className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">TIER &amp; DISPATCH</div>
+                        <div className="text-xs font-bold text-amber-300 font-serif">{activeTierConfig.editorialName}</div>
+                        <div className="text-[10px] font-mono text-gray-400 flex items-center gap-1 mt-0.5">
+                          {deliveryMode === 'printable_pdf' && '🖨️ Print-at-Home PDF Card'}
+                          {deliveryMode === 'instant_link' && '⚡ Instant WhatsApp / SMS'}
+                          {deliveryMode === 'scheduled_email' && `✉️ Scheduled (${scheduledDate ? new Date(scheduledDate).toLocaleDateString('en-GB') : 'Milestone Date'})`}
+                        </div>
+                      </div>
+                      
+                      {/* WAX SEAL INSIGNIA */}
+                      <div className="w-12 h-12 rounded-full border-2 border-amber-400/60 bg-gradient-to-br from-amber-500/30 via-amber-600/20 to-amber-950/60 flex items-center justify-center text-amber-300 font-serif text-xs font-bold shadow-lg shadow-amber-500/20">
+                        <span>MW</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* TAB 2: 2.39:1 CINEMATIC UNBOXING DIGITAL PREVIEW */}
+                {previewTab === 'unboxing' && (
+                  <motion.div
+                    key="unboxing"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="rounded-2xl bg-black border border-amber-500/40 shadow-2xl relative overflow-hidden flex flex-col justify-between p-6 sm:p-8 space-y-6"
+                  >
+                    {/* Cinematic Ambient Glow */}
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-700/10 rounded-full blur-3xl pointer-events-none" />
+
+                    {/* Ceremony HUD */}
+                    <div className="relative z-10 flex items-center justify-between border-b border-amber-500/20 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                        <span className="text-[10px] font-mono tracking-widest text-amber-400 uppercase">
+                          2.39:1 CINEMATIC CEREMONY
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                        {ceremonyContent.badge}
+                      </span>
+                    </div>
+
+                    {/* Main Stage Content */}
+                    <div className="relative z-10 text-center py-2 space-y-4">
+                      {!isMicroSealBroken ? (
+                        <div className="space-y-4">
+                          <div className="space-y-1">
+                            <span className="text-[11px] font-mono uppercase tracking-widest text-amber-400/80 block">
+                              {ceremonyContent.ceremonyTitle}
+                            </span>
+                            <h3 className="text-xl sm:text-2xl font-serif font-bold text-white tracking-tight">
+                              {ceremonyContent.welcome(sanitiseRecipientName(recipientName))}
+                            </h3>
+                            <p className="text-xs text-amber-200/70 font-serif italic max-w-sm mx-auto">
+                              {ceremonyContent.subtitle}
+                            </p>
+                          </div>
+
+                          <div className="flex justify-center pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setIsMicroSealBroken(true)}
+                              className="group relative cursor-pointer"
+                            >
+                              <div className="w-16 h-16 rounded-full border-2 border-amber-400 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-950 flex flex-col items-center justify-center text-gray-950 font-serif font-extrabold text-base shadow-xl shadow-amber-500/40 group-hover:scale-105 transition ring-2 ring-amber-500/30">
+                                <span>MW</span>
+                              </div>
+                              <div className="mt-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-mono flex items-center justify-center gap-1 shadow-sm">
+                                <Sparkles className="w-3 h-3" />
+                                <span>{ceremonyContent.envelopeSealText}</span>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="space-y-3 text-left p-4 rounded-xl bg-gray-900/80 border border-amber-500/30"
+                        >
+                          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                            <span className="text-[10px] font-mono text-amber-400 font-bold">
+                              {ceremonyContent.welcome(sanitiseRecipientName(recipientName))}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setIsMicroSealBroken(false)}
+                              className="text-[10px] font-mono text-gray-400 hover:text-amber-300 underline cursor-pointer"
+                            >
+                              Reset Seal
+                            </button>
+                          </div>
+                          <p className="text-xs font-serif italic text-gray-200 leading-relaxed">
+                            &quot;{giftMessage || 'A gift of living history to capture and preserve your life\'s memories for generations to come...'}&quot;
+                          </p>
+                          <p className="text-[10px] font-serif text-amber-300/80 italic border-t border-amber-500/10 pt-2">
+                            {ceremonyContent.subtitle}
+                          </p>
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Ceremony Footer */}
+                    <div className="relative z-10 flex items-center justify-between border-t border-amber-500/10 pt-3 text-[10px] font-mono text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <Languages className="w-3 h-3 text-amber-400" />
+                        <span>{UNBOXING_LANGUAGE_LABELS[unboxingLanguage]}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAuditionSealBroken(false);
+                          setShowAuditionModal(true);
+                        }}
+                        className="text-amber-400 hover:text-amber-300 underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Launch Fullscreen Audition</span>
+                        <Maximize2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               {/* CHECKOUT ACTION BUTTON */}
@@ -1046,6 +1276,191 @@ export default function GiftPage() {
         </div>
 
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          FULLSCREEN THEATRICAL UNBOXING AUDITION MODAL (MW-86)
+      ───────────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showAuditionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 sm:p-8 overflow-y-auto"
+          >
+            {/* Top HUD */}
+            <div className="flex items-center justify-between w-full max-w-5xl mx-auto border-b border-amber-500/20 pb-4">
+              <div className="flex items-center gap-3">
+                <span className="px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5 text-amber-400" />
+                  <span>UNBOXING CEREMONY AUDITION</span>
+                </span>
+                <span className="text-xs font-mono text-gray-400 hidden sm:inline">
+                  Pre-Purchase Simulation • {UNBOXING_LANGUAGE_LABELS[unboxingLanguage]}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Audio Gating Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAudioEnabled(!isAudioEnabled);
+                    toast.info(!isAudioEnabled ? 'Ambient ceremony audio enabled (simulation).' : 'Ambient audio muted.');
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition cursor-pointer ${
+                    isAudioEnabled
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                      : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {isAudioEnabled ? <Volume2 className="w-3.5 h-3.5 text-amber-400" /> : <VolumeX className="w-3.5 h-3.5" />}
+                  <span>{isAudioEnabled ? 'Sound On' : 'Play With Sound'}</span>
+                </button>
+
+                {/* Close Modal Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowAuditionModal(false)}
+                  className="p-2 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white border border-gray-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Center 2.39:1 Theatrical Letterbox Stage */}
+            <div className="w-full max-w-4xl mx-auto my-auto py-6">
+              <div className="relative rounded-3xl bg-gradient-to-b from-gray-950 via-black to-gray-950 border border-amber-500/40 shadow-2xl shadow-amber-500/10 p-8 sm:p-12 text-center overflow-hidden">
+                
+                {/* Ambient Lighting Orbs */}
+                <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-700/10 rounded-full blur-3xl pointer-events-none" />
+
+                {!isAuditionSealBroken ? (
+                  <div className="space-y-6 relative z-10 py-8">
+                    <div className="space-y-2">
+                      <span className="text-xs font-mono uppercase tracking-widest text-amber-400/80">
+                        {ceremonyContent.ceremonyTitle}
+                      </span>
+                      <h3 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-tight">
+                        {ceremonyContent.welcome(sanitiseRecipientName(recipientName))}
+                      </h3>
+                      <p className="text-sm text-amber-200/70 font-serif italic max-w-md mx-auto">
+                        {ceremonyContent.subtitle}
+                      </p>
+                    </div>
+
+                    {/* Interactive Wax Seal with Particle Scatter */}
+                    <div className="relative flex justify-center py-6">
+                      <button
+                        type="button"
+                        onClick={() => setIsAuditionSealBroken(true)}
+                        className="group relative cursor-pointer"
+                      >
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/80 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-950 flex flex-col items-center justify-center text-gray-950 font-serif font-extrabold text-2xl shadow-2xl shadow-amber-500/50 group-hover:scale-110 transition duration-300 ring-4 ring-amber-500/20">
+                          <span>MW</span>
+                          <span className="text-[9px] font-mono tracking-wider text-amber-950 font-bold uppercase mt-0.5">HEIRLOOM</span>
+                        </div>
+                        <div className="mt-4 px-4 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono flex items-center justify-center gap-1.5 shadow-lg group-hover:bg-amber-500 group-hover:text-gray-950 transition">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>{ceremonyContent.envelopeSealText}</span>
+                        </div>
+                      </button>
+                    </div>
+
+                    <p className="text-xs font-mono text-gray-500">
+                      Click the gold wax seal to test the unboxing ritual
+                    </p>
+                  </div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="space-y-6 relative z-10 py-6"
+                  >
+                    {/* Gold Particle Burst Scatter (12 particles) */}
+                    <div className="relative flex justify-center h-0">
+                      {[...Array(12)].map((_, i) => {
+                        const angle = (i / 12) * Math.PI * 2;
+                        const distance = 80 + (i % 3) * 30;
+                        const x = Math.cos(angle) * distance;
+                        const y = Math.sin(angle) * distance;
+                        return (
+                          <motion.div
+                            key={i}
+                            initial={{ x: 0, y: 0, opacity: 1, scale: 1.2 }}
+                            animate={{ x, y, opacity: 0, scale: 0.2 }}
+                            transition={{ duration: 0.7, ease: 'easeOut' }}
+                            className="absolute w-2.5 h-2.5 rounded-full pointer-events-none"
+                            style={{
+                              backgroundColor: i % 2 === 0 ? '#F59E0B' : '#D4AF37',
+                              boxShadow: '0 0 10px rgba(245, 158, 11, 0.9)'
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="inline-block px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold">
+                        {ceremonyContent.badge}
+                      </div>
+                      <h3 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-tight">
+                        {ceremonyContent.welcome(sanitiseRecipientName(recipientName))}
+                      </h3>
+                      <p className="text-sm font-serif text-amber-200/80 italic max-w-lg mx-auto">
+                        {ceremonyContent.subtitle}
+                      </p>
+                    </div>
+
+                    {/* Revealed Dedication Card Replica */}
+                    <div className="p-6 sm:p-8 rounded-2xl bg-gray-900/90 border border-amber-500/30 max-w-2xl mx-auto shadow-2xl text-left space-y-4">
+                      <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
+                        <span className="text-xs font-mono text-gray-400 uppercase tracking-widest">
+                          PERSONAL DEDICATION MESSAGE
+                        </span>
+                        <span className="text-xs font-mono text-amber-400">
+                          {activeTierConfig.editorialName}
+                        </span>
+                      </div>
+                      <p className="text-base sm:text-lg font-serif italic text-gray-100 leading-relaxed">
+                        &quot;{giftMessage || 'A gift of living history to capture and preserve your life\'s memories for generations to come...'}&quot;
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-4 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setIsAuditionSealBroken(false)}
+                        className="px-4 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs font-mono border border-gray-800 flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Re-Seal Ceremony</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAuditionModal(false)}
+                        className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 text-xs font-mono font-bold shadow-lg shadow-amber-500/20 transition cursor-pointer"
+                      >
+                        Return to Customisation
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+              </div>
+            </div>
+
+            {/* Bottom HUD */}
+            <div className="w-full max-w-5xl mx-auto flex items-center justify-between border-t border-amber-500/20 pt-4 text-xs font-mono text-gray-500">
+              <span>MEMORY WEAVER ACT V CINEMATIC UNBOXING</span>
+              <span>2.39:1 THEATRICAL WIDESCREEN LETTERBOX</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PublicPageShell>
   );
 }
