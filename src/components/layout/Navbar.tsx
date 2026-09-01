@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, Video, Settings, Film, History, Home, UserCircle2, Clapperboard, Lock, BookOpen, Coffee, MessageSquare, Gift } from 'lucide-react';
+import { LogOut, Video, Settings, Film, History, Home, UserCircle2, Clapperboard, Lock, BookOpen, Coffee, MessageSquare, Gift, Menu } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -177,7 +177,7 @@ export function Navbar() {
                     </TooltipContent>
                   </Tooltip>
 
-                  <div className="hidden xl:flex items-center space-x-3 xl:space-x-5 pl-2 border-l border-white/10 shrink-0">
+                  <div className="hidden lg:flex items-center space-x-2 lg:space-x-3 xl:space-x-5 pl-2 border-l border-white/10 shrink-0">
                     <Link
                       href="/how-it-works"
                       className={`${navLinkClass} ${pathname === '/how-it-works' ? activeNavLinkClass : ''}`}
@@ -235,7 +235,7 @@ export function Navbar() {
             </nav>
           )}
 
-          <div className="flex items-center ml-auto space-x-2 sm:space-x-4 shrink-0">
+          <div className="flex items-center ml-auto space-x-1.5 sm:space-x-3 shrink-0">
             <StudioUpgradeBadge />
             {isStudio && <OpticsPrivacyShield />}
             {isStudioWorkspace && (
@@ -253,11 +253,12 @@ export function Navbar() {
             ) : isAuthenticated ? (
               <>
                 {!isStudio && (
-                  <Link href="/studio" className="hidden sm:inline-flex shrink-0">
-                    <Button className="h-8 px-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 whitespace-nowrap">
+                  <Link href="/studio" className="inline-flex shrink-0">
+                    <Button className="h-8 px-2.5 sm:px-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 whitespace-nowrap">
                       <Clapperboard className="w-3.5 h-3.5 shrink-0" />
                       <span className="hidden lg:inline">Enter Studio Stage ↗</span>
-                      <span className="lg:hidden">Studio ↗</span>
+                      <span className="hidden sm:inline lg:hidden">Studio ↗</span>
+                      <span className="sm:hidden text-[11px]">Studio</span>
                     </Button>
                   </Link>
                 )}
@@ -323,7 +324,7 @@ export function Navbar() {
               <>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" onClick={() => router.push('/login')}>Login</Button>
+                    <Button variant="ghost" className="hidden sm:inline-flex h-8 px-3 text-xs" onClick={() => router.push('/login')}>Login</Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
                     Log in to your account
@@ -331,12 +332,50 @@ export function Navbar() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => router.push('/register')}>Sign Up</Button>
+                    <Button className="h-8 px-3 text-xs bg-amber-500 hover:bg-amber-400 text-black font-bold" onClick={() => router.push('/register')}>Sign Up</Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
                     Create a new account
                   </TooltipContent>
                 </Tooltip>
+
+                {/* Mobile Unauthenticated Drawer / Menu (Never Disappears) */}
+                <div className="md:hidden">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-white" aria-label="Open Navigation Menu">
+                        <Menu className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-slate-950 border-slate-800" align="end">
+                      <DropdownMenuItem onClick={() => router.push('/gift')}>
+                        <Gift className="mr-2 h-4 w-4 text-amber-400" />
+                        <span className="text-amber-300 font-bold">🎁 Gift a Memoir</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push('/how-it-works')}>
+                        <BookOpen className="mr-2 h-4 w-4 text-slate-400" />
+                        <span>How It Works</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push('/pricing')}>
+                        <Coffee className="mr-2 h-4 w-4 text-slate-400" />
+                        <span>Pricing &amp; Plans</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push('/contact')}>
+                        <MessageSquare className="mr-2 h-4 w-4 text-slate-400" />
+                        <span>Contact Support</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-slate-800" />
+                      <DropdownMenuItem onClick={() => router.push('/login')}>
+                        <UserCircle2 className="mr-2 h-4 w-4 text-slate-400" />
+                        <span>Login</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push('/register')}>
+                        <Clapperboard className="mr-2 h-4 w-4 text-amber-400" />
+                        <span className="text-amber-400 font-bold">Sign Up</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </>
             )}
           </div>
