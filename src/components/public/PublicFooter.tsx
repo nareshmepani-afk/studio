@@ -7,6 +7,7 @@ const footerLinks = {
   product: [
     { label: 'How It Works', href: '/how-it-works' },
     { label: 'Pricing', href: '/pricing' },
+    { label: 'Gift an Heirloom', href: '/gift' },
     { label: 'Memory Cinema', href: '/cinema' },
   ],
   legal: [

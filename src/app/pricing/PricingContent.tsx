@@ -5,7 +5,7 @@ import { PublicPageShell } from '@/components/public/PublicPageShell';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { motion } from 'framer-motion';
-import { Check, Coffee, Sparkles, Loader2, ArrowRight } from 'lucide-react';
+import { Check, Coffee, Sparkles, Loader2, ArrowRight, Gift } from 'lucide-react';
 import { StorageCalculator } from '@/components/public/StorageCalculator';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -294,6 +294,40 @@ export function PricingContent() {
               );
             })}
           </div>
+
+          {/* HEIRLOOM GIFTING CROSS-LINK RIBBON */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mb-20 max-w-4xl mx-auto rounded-2xl bg-gradient-to-r from-neutral-900 via-amber-950/20 to-neutral-900 border border-amber-500/30 p-6 sm:p-8 shadow-2xl shadow-amber-500/5 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+              <div className="space-y-1.5 text-center sm:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-medium">
+                  <Gift className="w-3.5 h-3.5 text-amber-400" />
+                  <span>ACT V HEIRLOOM GIFTING STUDIO</span>
+                </div>
+                <h3 className="font-serif text-xl sm:text-2xl font-medium text-white">
+                  Commissioning a memoir for parents or grandparents?
+                </h3>
+                <p className="text-sm text-neutral-400 max-w-xl">
+                  Personalise a luxury 5&quot;×7&quot; Keepsake Card, audition the cinematic unboxing ceremony in Gujarati, Punjabi, or Hindi, or send an instant unboxing pass.
+                </p>
+              </div>
+              <Button
+                asChild
+                className="shrink-0 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-xl px-6 py-6 shadow-lg shadow-amber-500/20 cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2 text-sm"
+              >
+                <Link href="/gift">
+                  <span>Personalise an Heirloom Keepsake Card & Pass</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
+          </motion.div>
 
           <div className="mb-24">
             <div className="text-center mb-12">

@@ -14,6 +14,7 @@ describe('Public Platform & Compliance Shield (MW-84)', () => {
       expect(allowList).toContain('/');
       expect(allowList).toContain('/how-it-works');
       expect(allowList).toContain('/pricing');
+      expect(allowList).toContain('/gift');
       expect(allowList).toContain('/contact');
       expect(allowList).toContain('/legal/');
       expect(allowList).toContain('/cinema');
@@ -46,6 +47,7 @@ describe('Public Platform & Compliance Shield (MW-84)', () => {
       expect(urls).toContain('https://memoryweaver.studio');
       expect(urls).toContain('https://memoryweaver.studio/how-it-works');
       expect(urls).toContain('https://memoryweaver.studio/pricing');
+      expect(urls).toContain('https://memoryweaver.studio/gift');
       expect(urls).toContain('https://memoryweaver.studio/contact');
       expect(urls).toContain('https://memoryweaver.studio/cinema');
       expect(urls).toContain('https://memoryweaver.studio/legal/terms');

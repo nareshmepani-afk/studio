@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, Video, Settings, Film, History, Home, UserCircle2, Clapperboard, Lock, BookOpen, Coffee, MessageSquare } from 'lucide-react';
+import { LogOut, Video, Settings, Film, History, Home, UserCircle2, Clapperboard, Lock, BookOpen, Coffee, MessageSquare, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -191,6 +191,12 @@ export function Navbar() {
                       Pricing
                     </Link>
                     <Link
+                      href="/gift"
+                      className={`${navLinkClass} ${pathname === '/gift' ? 'text-amber-400 font-semibold drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'hover:text-amber-300'}`}
+                    >
+                      Gift a Memoir
+                    </Link>
+                    <Link
                       href="/contact"
                       className={`${navLinkClass} ${pathname === '/contact' ? activeNavLinkClass : ''}`}
                     >
@@ -213,6 +219,12 @@ export function Navbar() {
                 className={`${navLinkClass} ${pathname === '/pricing' ? activeNavLinkClass : ''}`}
               >
                 Pricing
+              </Link>
+              <Link
+                href="/gift"
+                className={`${navLinkClass} ${pathname === '/gift' ? 'text-amber-400 font-semibold drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'hover:text-amber-300'}`}
+              >
+                Gift a Memoir
               </Link>
               <Link
                 href="/contact"
@@ -284,6 +296,10 @@ export function Navbar() {
                     <DropdownMenuItem onClick={() => router.push('/pricing')}>
                       <Coffee className="mr-2 h-4 w-4" />
                       <span>Pricing & Plans</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/gift')}>
+                      <Gift className="mr-2 h-4 w-4 text-amber-400" />
+                      <span>Gift a Memoir</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/contact')}>
                       <MessageSquare className="mr-2 h-4 w-4" />

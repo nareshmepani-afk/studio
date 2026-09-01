@@ -9,6 +9,7 @@ export default function robots(): MetadataRoute.Robots {
           '/',
           '/how-it-works',
           '/pricing',
+          '/gift',
           '/contact',
           '/legal/',
           '/cinema',
