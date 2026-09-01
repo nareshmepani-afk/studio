@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAI } from '@/ai/genkit';
-import { getActiveModel } from '@/ai/models.server';
-import { z } from 'genkit';
+import pRetry from 'p-retry';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +49,7 @@ function sanitizeDedication(text: string): string {
     .replace(/^["'“]|["'”]$/g, '') // strip outer quotation marks
     .replace(/\[(?:Fade in|Fade out|Wide shot|Close up|Cut to|Camera|Interior|Exterior|Dissolve).*?\]/gi, '')
     .replace(/\((?:pause|camera|wide shot|close up|zoom).*?\)/gi, '')
+    .replace(/^(?:Polished dedication|Here is the polished dedication|Elevated text|Dedication):\s*/i, '')
     .trim();
 }
 
@@ -105,44 +105,40 @@ export async function POST(req: NextRequest) {
 
     const toneGuide = TONE_GUIDES[tone] || TONE_GUIDES.heartfelt;
 
-    const systemPrompt = `
+    const prompt = `
 You are the Memory Weaver Heirloom Dedication Muse.
-Your task is to take a raw, unpolished gift message written by a user and elevate it into an elegant, deeply moving personal dedication for a 5"×7" physical keepsake card.
+Your task is to elevate a personal gift dedication message for a 5"×7" physical keepsake card.
 
-Strict Constraints (Mandatory):
-1. BRITISH ENGLISH ORTHOGRAPHY (UK): You MUST strictly use British English spelling (e.g. honour, centre, realise, favourite, programme, colour).
-2. PRESERVE AUTHENTIC FACTS: Retain all personal details, specific memories, names, cities, relationships, and inside references mentioned in the raw draft. Do NOT invent false biographical facts.
-3. PHYSICAL CARD FIT: Keep the final output length strictly between 120 and 230 characters so it fits a 5"×7" vector PDF print layout.
-4. TONE GUIDANCE (${tone.toUpperCase()}): ${toneGuide}
-${recipientName ? `5. RECIPIENT: The dedication is addressed to "${recipientName}". Ensure it opens or addresses them warmly.` : ''}
-6. CLEAN OUTPUT: Output ONLY the final polished dedication text without preamble, commentary, quotation marks, or stage directions.
+[RAW DRAFT WRITTEN BY USER]
+${trimmedInput}
 
-Raw user draft to elevate:
-"${trimmedInput}"
+[ELEVATION GUIDELINES]
+- TONE: ${toneGuide}
+${recipientName ? `- RECIPIENT: Addressed to "${recipientName}". Ensure it opens or addresses them warmly.` : ''}
+- ORTHOGRAPHY: British English (UK) spelling exclusively (honour, favourite, centre, realise, colour).
+- PRESERVATION: Retain all personal details, relationships, inside jokes, and authentic memories from the draft. Do not invent false biographical facts.
+- CARD FIT: Concise, elegant length (approx. 120–220 characters) suitable for a luxury printed card.
+- CLEAN OUTPUT: Return ONLY the final polished dedication text. Do not include quotes, preamble, or commentary.
 `;
 
     let polishedText = '';
 
     try {
       const ai = await getAI();
-      const activeModel = await getActiveModel('genkit');
-
-      const response = await ai.generate({
-        model: activeModel,
-        prompt: systemPrompt,
-        config: {
-          temperature: 0.35,
-          maxOutputTokens: 150,
+      const { text: resultText } = await pRetry(
+        async () => {
+          return await ai.generate(prompt);
         },
-      });
+        { retries: 2 }
+      );
 
-      polishedText = sanitizeDedication(response.text || '');
+      polishedText = sanitizeDedication(resultText || '');
     } catch (aiErr: any) {
       console.warn('[polish-dedication] Genkit call failed, applying heuristic fallback:', aiErr.message);
       polishedText = heuristicPolish(trimmedInput, recipientName);
     }
 
-    if (!polishedText) {
+    if (!polishedText || polishedText.length < 10) {
       polishedText = heuristicPolish(trimmedInput, recipientName);
     }
 
