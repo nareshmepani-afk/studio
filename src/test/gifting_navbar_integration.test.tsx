@@ -114,6 +114,22 @@ describe('MW-86: Global Navigation, Footer & Pricing Ribbon Integration (/gift)'
       const giftLinks = screen.getAllByRole('link', { name: /gift a memoir/i });
       expect(giftLinks.length).toBeGreaterThanOrEqual(1);
     });
+
+    it('renders [ 🧭 Explore ▾ ] contextual pill for tablet viewports', () => {
+      mockUsePathname.mockReturnValue('/studio');
+      render(<Navbar />);
+
+      const exploreButton = screen.getByRole('button', { name: /explore more pages/i });
+      expect(exploreButton).toBeDefined();
+    });
+
+    it('renders mobile drawer trigger button ([ ☰ Menu ]) on mobile viewports', () => {
+      mockUsePathname.mockReturnValue('/studio');
+      render(<Navbar />);
+
+      const mobileMenuButton = screen.getByRole('button', { name: /open navigation menu/i });
+      expect(mobileMenuButton).toBeDefined();
+    });
   });
 
   describe('PublicFooter Integration', () => {
