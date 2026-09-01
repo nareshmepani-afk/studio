@@ -37,6 +37,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { unboxingAudio } from '@/lib/audio/unboxingAudio';
 import {
   GIFT_TIER_DISPLAY,
   UNBOXING_LANGUAGE_LABELS,
@@ -47,6 +48,22 @@ import {
 } from '@/types/gift';
 
 type DedicationTone = 'heartfelt' | 'poetic' | 'celebratory' | 'understated';
+
+/**
+ * Strips any number of stacked greeting prefixes from dedication prose.
+ */
+function stripAllSalutations(text: string): string {
+  let cleaned = text.trim();
+  const greetingTokenPattern = /^(?:(?:Dear|To\s+(?:our|my)\s+(?:dearest|beloved)|To\s+(?:our|my)|To|For|Mara\s+Vhala|Pujya|Honoured|Beloved)\s+[^,:\n]*[,:\n]?\s*)/i;
+  let iterations = 0;
+  while (greetingTokenPattern.test(cleaned) && iterations < 5) {
+    const before = cleaned;
+    cleaned = cleaned.replace(greetingTokenPattern, '').trimStart();
+    if (cleaned === before) break;
+    iterations++;
+  }
+  return cleaned;
+}
 
 interface UnboxingCeremonyContent {
   badge: string;
@@ -302,18 +319,16 @@ export default function GiftPage() {
     toast.success(`Applied ${pendingTemplate.label} template.`);
   };
 
-  // Handle Salutation Click (Clean Regex Replacement per MW-86)
+  // Handle Salutation Click (Clean Compositional Replacement per MW-86)
   const handleApplySalutation = (salutation: SalutationPreset) => {
     const prefix = salutation.prefix(sanitiseRecipientName(recipientName));
     setHistoryStack((prev) => [giftMessage, ...prev]);
 
-    // Enhanced greeting pattern: clean replacement of all existing prefixes
     const current = giftMessage.trim();
     if (!current) {
       setGiftMessage(prefix);
     } else {
-      const greetingPattern = /^(?:(?:Dear|To our dearest|To my dearest|To our beloved|To my beloved|Mara Vhala|Pujya|For)\s+[^,:\n]+[,:\n]\s*)/i;
-      const strippedText = current.replace(greetingPattern, '').trimStart();
+      const strippedText = stripAllSalutations(current);
       setGiftMessage(`${prefix}${strippedText}`);
     }
     toast.success(`Applied ${salutation.culture} salutation.`);
@@ -1175,14 +1190,17 @@ export default function GiftPage() {
                           <div className="flex justify-center pt-1">
                             <button
                               type="button"
-                              onClick={() => setIsMicroSealBroken(true)}
+                              onClick={() => {
+                                unboxingAudio.playWaxSealBreak();
+                                setIsMicroSealBroken(true);
+                              }}
                               className="group relative cursor-pointer"
                             >
-                              <div className="w-16 h-16 rounded-full border-2 border-amber-400 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-950 flex flex-col items-center justify-center text-gray-950 font-serif font-extrabold text-base shadow-xl shadow-amber-500/40 group-hover:scale-105 transition ring-2 ring-amber-500/30">
-                                <span>MW</span>
+                              <div className="w-16 h-16 rounded-full border-2 border-amber-400/90 bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950 flex flex-col items-center justify-center text-amber-300 font-serif font-extrabold text-base shadow-xl shadow-blue-950/60 group-hover:scale-105 transition ring-2 ring-amber-500/30">
+                                <span className="bg-gradient-to-b from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent">MW</span>
                               </div>
-                              <div className="mt-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-mono flex items-center justify-center gap-1 shadow-sm">
-                                <Sparkles className="w-3 h-3" />
+                              <div className="mt-2 px-3 py-1 rounded-full bg-blue-950/40 border border-amber-500/40 text-amber-300 text-[10px] font-mono flex items-center justify-center gap-1 shadow-sm">
+                                <Sparkles className="w-3 h-3 text-amber-400" />
                                 <span>{ceremonyContent.envelopeSealText}</span>
                               </div>
                             </button>
@@ -1305,12 +1323,18 @@ export default function GiftPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setIsAudioEnabled(!isAudioEnabled);
-                    toast.info(!isAudioEnabled ? 'Ambient ceremony audio enabled (simulation).' : 'Ambient audio muted.');
+                    const nextState = !isAudioEnabled;
+                    setIsAudioEnabled(nextState);
+                    if (nextState) {
+                      unboxingAudio.playAmbientChime();
+                      toast.success('🔊 Ceremony sound enabled (Web Audio acoustic engine).');
+                    } else {
+                      toast.info('Ceremony audio muted.');
+                    }
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 border transition cursor-pointer ${
                     isAudioEnabled
-                      ? 'bg-amber-500/20 border-amber-500 text-amber-300'
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-sm shadow-amber-500/20'
                       : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-white'
                   }`}
                 >
@@ -1351,18 +1375,21 @@ export default function GiftPage() {
                       </p>
                     </div>
 
-                    {/* Interactive Wax Seal with Particle Scatter */}
+                    {/* Royal Midnight Sapphire & Gold Interactive Wax Seal */}
                     <div className="relative flex justify-center py-6">
                       <button
                         type="button"
-                        onClick={() => setIsAuditionSealBroken(true)}
+                        onClick={() => {
+                          unboxingAudio.playWaxSealBreak();
+                          setIsAuditionSealBroken(true);
+                        }}
                         className="group relative cursor-pointer"
                       >
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/80 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-950 flex flex-col items-center justify-center text-gray-950 font-serif font-extrabold text-2xl shadow-2xl shadow-amber-500/50 group-hover:scale-110 transition duration-300 ring-4 ring-amber-500/20">
-                          <span>MW</span>
-                          <span className="text-[9px] font-mono tracking-wider text-amber-950 font-bold uppercase mt-0.5">HEIRLOOM</span>
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-amber-400/90 bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950 flex flex-col items-center justify-center text-amber-300 font-serif font-extrabold text-2xl shadow-2xl shadow-blue-950/80 group-hover:scale-110 transition duration-300 ring-4 ring-amber-500/30">
+                          <span className="bg-gradient-to-b from-amber-200 via-amber-400 to-amber-500 bg-clip-text text-transparent drop-shadow-sm">MW</span>
+                          <span className="text-[9px] font-mono tracking-wider text-amber-400 font-bold uppercase mt-0.5">HEIRLOOM</span>
                         </div>
-                        <div className="mt-4 px-4 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono flex items-center justify-center gap-1.5 shadow-lg group-hover:bg-amber-500 group-hover:text-gray-950 transition">
+                        <div className="mt-4 px-4 py-1.5 rounded-full bg-blue-950/60 border border-amber-500/40 text-amber-300 text-xs font-mono flex items-center justify-center gap-1.5 shadow-lg group-hover:bg-amber-500 group-hover:text-gray-950 transition">
                           <Sparkles className="w-3.5 h-3.5" />
                           <span>{ceremonyContent.envelopeSealText}</span>
                         </div>
@@ -1370,7 +1397,7 @@ export default function GiftPage() {
                     </div>
 
                     <p className="text-xs font-mono text-gray-500">
-                      Click the gold wax seal to test the unboxing ritual
+                      Click the royal sapphire wax seal to audition the unboxing ritual
                     </p>
                   </div>
                 ) : (
@@ -1380,23 +1407,26 @@ export default function GiftPage() {
                     transition={{ duration: 0.5 }}
                     className="space-y-6 relative z-10 py-6"
                   >
-                    {/* Gold Particle Burst Scatter (12 particles) */}
+                    {/* Sapphire & Gold Particle Burst Scatter (14 particles) */}
                     <div className="relative flex justify-center h-0">
-                      {[...Array(12)].map((_, i) => {
-                        const angle = (i / 12) * Math.PI * 2;
+                      {[...Array(14)].map((_, i) => {
+                        const angle = (i / 14) * Math.PI * 2;
                         const distance = 80 + (i % 3) * 30;
                         const x = Math.cos(angle) * distance;
                         const y = Math.sin(angle) * distance;
+                        const isGold = i % 3 !== 0;
+                        const color = isGold ? (i % 2 === 0 ? '#F59E0B' : '#D4AF37') : '#3B82F6';
+                        const shadow = isGold ? 'rgba(245, 158, 11, 0.9)' : 'rgba(59, 130, 246, 0.9)';
                         return (
                           <motion.div
                             key={i}
-                            initial={{ x: 0, y: 0, opacity: 1, scale: 1.2 }}
+                            initial={{ x: 0, y: 0, opacity: 1, scale: 1.3 }}
                             animate={{ x, y, opacity: 0, scale: 0.2 }}
-                            transition={{ duration: 0.7, ease: 'easeOut' }}
+                            transition={{ duration: 0.75, ease: 'easeOut' }}
                             className="absolute w-2.5 h-2.5 rounded-full pointer-events-none"
                             style={{
-                              backgroundColor: i % 2 === 0 ? '#F59E0B' : '#D4AF37',
-                              boxShadow: '0 0 10px rgba(245, 158, 11, 0.9)'
+                              backgroundColor: color,
+                              boxShadow: `0 0 10px ${shadow}`
                             }}
                           />
                         );

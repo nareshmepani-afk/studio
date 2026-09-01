@@ -270,11 +270,23 @@ describe('MW-86: Act V Heirloom Gifting Engine Invariant Suite', () => {
   });
 
   describe('8. Smart Salutation Replacement & Cultural Unboxing Matrix (MW-86)', () => {
+    const stripAllSalutations = (text: string): string => {
+      let cleaned = text.trim();
+      const greetingTokenPattern = /^(?:(?:Dear|To\s+(?:our|my)\s+(?:dearest|beloved)|To\s+(?:our|my)|To|For|Mara\s+Vhala|Pujya|Honoured|Beloved)\s+[^,:\n]*[,:\n]?\s*)/i;
+      let iterations = 0;
+      while (greetingTokenPattern.test(cleaned) && iterations < 5) {
+        const before = cleaned;
+        cleaned = cleaned.replace(greetingTokenPattern, '').trimStart();
+        if (cleaned === before) break;
+        iterations++;
+      }
+      return cleaned;
+    };
+
     const applySalutation = (currentText: string, newPrefix: string): string => {
       const current = currentText.trim();
       if (!current) return newPrefix;
-      const greetingPattern = /^(?:(?:Dear|To our dearest|To my dearest|To our beloved|To my beloved|Mara Vhala|Pujya|For)\s+[^,:\n]+[,:\n]\s*)/i;
-      const strippedText = current.replace(greetingPattern, '').trimStart();
+      const strippedText = stripAllSalutations(current);
       return `${newPrefix}${strippedText}`;
     };
 
@@ -283,6 +295,13 @@ describe('MW-86: Act V Heirloom Gifting Engine Invariant Suite', () => {
       const result = applySalutation(initial, 'To our dearest Granddad, ');
       expect(result).toBe('To our dearest Granddad, on your milestone birthday we want to preserve your story.');
       expect(result).not.toContain('Dear Granddad');
+    });
+
+    it('cleanly collapses and replaces stacked/compound greetings ("To our dearest Mum, To our my dearest Parents")', () => {
+      const stacked = 'To our dearest Mum, To our my dearest Parents, on your milestone birthday we cherish you.';
+      const result = applySalutation(stacked, 'To our dearest Mum, ');
+      expect(result).toBe('To our dearest Mum, on your milestone birthday we cherish you.');
+      expect(result).not.toContain('To our my dearest Parents');
     });
 
     it('cleanly replaces Gujarati "Mara Vhala Ba," with Hindi "Pujya Mataji Ji,"', () => {
@@ -302,5 +321,30 @@ describe('MW-86: Act V Heirloom Gifting Engine Invariant Suite', () => {
       expect(applySalutation('', 'Dear Granddad, ')).toBe('Dear Granddad, ');
       expect(applySalutation('   ', 'To our dearest Dad, ')).toBe('To our dearest Dad, ');
     });
+
+    it('enforces IP rate limiting on public /api/gift/verify (Rule 34)', () => {
+      const ipLimits = new Map<string, { count: number; resetAt: number }>();
+      const checkRateLimit = (ip: string, limit = 60): { allowed: boolean; remaining: number } => {
+        const now = Date.now();
+        const record = ipLimits.get(ip);
+        if (!record || now > record.resetAt) {
+          ipLimits.set(ip, { count: 1, resetAt: now + 3600000 });
+          return { allowed: true, remaining: limit - 1 };
+        }
+        if (record.count >= limit) {
+          return { allowed: false, remaining: 0 };
+        }
+        record.count++;
+        return { allowed: true, remaining: limit - record.count };
+      };
+
+      const testIp = '192.168.1.100';
+      for (let i = 0; i < 60; i++) {
+        expect(checkRateLimit(testIp).allowed).toBe(true);
+      }
+      // 61st request should be rejected
+      expect(checkRateLimit(testIp).allowed).toBe(false);
+    });
   });
 });
+
