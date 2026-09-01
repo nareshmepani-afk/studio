@@ -535,36 +535,54 @@ export default function GiftPage() {
               </div>
 
               {/* DELIVERY MODE SELECTOR */}
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-gray-300 mb-2">
-                  Keepsake Delivery Mode *
-                </label>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-gray-300">
+                    Keepsake Delivery Mode *
+                  </label>
+                  <span className="text-[10px] font-mono text-amber-400/80">
+                    {deliveryMode === 'printable_pdf' && '🖨️ Print at home'}
+                    {deliveryMode === 'instant_link' && '⚡ Instant digital sharing'}
+                    {deliveryMode === 'scheduled_email' && '✉️ Future automated email'}
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('printable_pdf')}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                    className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'printable_pdf'
-                        ? 'border-amber-500 bg-amber-500/10 text-amber-300'
-                        : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700'
+                        ? 'border-amber-500 bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/60 shadow-lg shadow-amber-500/10'
+                        : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700 hover:text-gray-200'
                     }`}
                   >
-                    <Printer className="w-4 h-4 mb-2" />
+                    <div className="flex items-center justify-between w-full mb-2">
+                      <Printer className={`w-4 h-4 ${deliveryMode === 'printable_pdf' ? 'text-amber-400' : 'text-gray-400'}`} />
+                      {deliveryMode === 'printable_pdf' && (
+                        <span className="w-2 h-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400"></span>
+                      )}
+                    </div>
                     <span className="text-xs font-bold block text-white">5&quot;×7&quot; Keepsake PDF</span>
-                    <span className="text-[10px] text-gray-400 mt-0.5">Print at home card</span>
+                    <span className="text-[10px] text-gray-400 mt-0.5">Print-at-home card</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('instant_link')}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                    className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'instant_link'
-                        ? 'border-amber-500 bg-amber-500/10 text-amber-300'
-                        : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700'
+                        ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/60 shadow-lg shadow-emerald-500/10'
+                        : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700 hover:text-gray-200'
                     }`}
                   >
-                    <LinkIcon className="w-4 h-4 mb-2" />
+                    <div className="flex items-center justify-between w-full mb-2">
+                      <LinkIcon className={`w-4 h-4 ${deliveryMode === 'instant_link' ? 'text-emerald-400' : 'text-gray-400'}`} />
+                      {deliveryMode === 'instant_link' && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"></span>
+                      )}
+                    </div>
                     <span className="text-xs font-bold block text-white">Instant Link</span>
                     <span className="text-[10px] text-gray-400 mt-0.5">WhatsApp / SMS</span>
                   </button>
@@ -572,50 +590,135 @@ export default function GiftPage() {
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('scheduled_email')}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
+                    className={`p-3.5 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${
                       deliveryMode === 'scheduled_email'
-                        ? 'border-amber-500 bg-amber-500/10 text-amber-300'
-                        : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700'
+                        ? 'border-purple-500 bg-purple-500/15 text-purple-300 ring-1 ring-purple-500/60 shadow-lg shadow-purple-500/10'
+                        : 'border-gray-800 bg-gray-950 text-gray-400 hover:border-gray-700 hover:text-gray-200'
                     }`}
                   >
-                    <Mail className="w-4 h-4 mb-2" />
+                    <div className="flex items-center justify-between w-full mb-2">
+                      <Mail className={`w-4 h-4 ${deliveryMode === 'scheduled_email' ? 'text-purple-400' : 'text-gray-400'}`} />
+                      {deliveryMode === 'scheduled_email' && (
+                        <span className="w-2 h-2 rounded-full bg-purple-400 shadow-sm shadow-purple-400"></span>
+                      )}
+                    </div>
                     <span className="text-xs font-bold block text-white">Scheduled Email</span>
                     <span className="text-[10px] text-gray-400 mt-0.5">Automated dispatch</span>
                   </button>
 
                 </div>
-              </div>
 
-              {/* CONDITIONAL SCHEDULED FIELDS */}
-              {deliveryMode === 'scheduled_email' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-gray-950 border border-gray-800">
-                  <div>
-                    <label className="block text-[11px] font-mono text-gray-400 mb-1">
-                      Recipient Email *
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="storyteller@family.com"
-                      value={recipientEmail}
-                      onChange={(e) => setRecipientEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg bg-gray-900 border border-gray-800 text-white text-xs"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-mono text-gray-400 mb-1">
-                      Delivery Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg bg-gray-900 border border-gray-800 text-white text-xs"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+                {/* DYNAMIC MODE GUIDANCE & CONDITIONAL INPUTS */}
+                <AnimatePresence mode="wait">
+                  {deliveryMode === 'printable_pdf' && (
+                    <motion.div
+                      key="printable_pdf"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3.5"
+                    >
+                      <div className="p-2 rounded-lg bg-amber-500/20 text-amber-300 shrink-0 mt-0.5">
+                        <Printer className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-amber-200">5&quot;×7&quot; Physical Keepsake Voucher (Print-at-Home)</span>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] border border-amber-500/40">
+                            In-Person Presentation
+                          </span>
+                        </div>
+                        <p className="text-gray-300 leading-relaxed">
+                          You will receive a print-ready vector PDF formatted for standard 5&quot;×7&quot; cardstock with gold filigree, folding guides, and wax seal insignia immediately upon checkout to hand to the storyteller.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {deliveryMode === 'instant_link' && (
+                    <motion.div
+                      key="instant_link"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3.5"
+                    >
+                      <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 shrink-0 mt-0.5">
+                        <LinkIcon className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-emerald-200">Instant Link (WhatsApp, SMS & Share Tray)</span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] border border-emerald-500/40">
+                            Instant Digital Dispatch
+                          </span>
+                        </div>
+                        <p className="text-gray-300 leading-relaxed">
+                          You will get 1-click WhatsApp and SMS dispatch buttons, native device Share Tray, and a direct ceremony URL on the confirmation screen to send immediately from your phone or desktop.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {deliveryMode === 'scheduled_email' && (
+                    <motion.div
+                      key="scheduled_email"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.2 }}
+                      className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 space-y-3.5"
+                    >
+                      <div className="flex items-start gap-3.5">
+                        <div className="p-2 rounded-lg bg-purple-500/20 text-purple-300 shrink-0 mt-0.5">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-purple-200">Automated Time-Capsule Email Dispatch</span>
+                            <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono text-[10px] border border-purple-500/40">
+                              Future Milestone Dispatch
+                            </span>
+                          </div>
+                          <p className="text-gray-300 leading-relaxed">
+                            Memory Weaver will automatically deliver the invitation and unboxing ceremony pass directly to the recipient&apos;s inbox on the morning of your chosen milestone date.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-purple-500/20">
+                        <div>
+                          <label className="block text-[11px] font-mono text-purple-200 mb-1">
+                            Recipient Email *
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="storyteller@family.com"
+                            value={recipientEmail}
+                            onChange={(e) => setRecipientEmail(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-gray-950 border border-purple-500/40 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-purple-400 font-sans"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-mono text-purple-200 mb-1">
+                            Scheduled Delivery Date *
+                          </label>
+                          <input
+                            type="date"
+                            value={scheduledDate}
+                            onChange={(e) => setScheduledDate(e.target.value)}
+                            className="w-full px-3 py-2 rounded-lg bg-gray-950 border border-purple-500/40 text-white text-xs focus:outline-none focus:border-purple-400 font-sans"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* UNBOXING LANGUAGE SELECTOR */}
               <div>
@@ -850,8 +953,25 @@ export default function GiftPage() {
                     <div className="text-amber-400 font-serif font-bold text-lg tracking-wide">
                       MEMORY WEAVER
                     </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      HEIRLOOM PASS
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5">
+                      {deliveryMode === 'printable_pdf' && (
+                        <>
+                          <Printer className="w-3 h-3 text-amber-400" />
+                          <span>5&quot;×7&quot; PRINTABLE KEEPSAKE</span>
+                        </>
+                      )}
+                      {deliveryMode === 'instant_link' && (
+                        <>
+                          <LinkIcon className="w-3 h-3 text-emerald-400" />
+                          <span>INSTANT DIGITAL PASS</span>
+                        </>
+                      )}
+                      {deliveryMode === 'scheduled_email' && (
+                        <>
+                          <Mail className="w-3 h-3 text-purple-400" />
+                          <span>SCHEDULED EMAIL CEREMONY</span>
+                        </>
+                      )}
                     </span>
                   </div>
 
@@ -871,8 +991,13 @@ export default function GiftPage() {
                   {/* CARD FOOTER & WAX SEAL INSIGNIA */}
                   <div className="pt-2 flex items-center justify-between border-t border-amber-500/10">
                     <div className="space-y-0.5">
-                      <div className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">TIER ARCHIVAL</div>
+                      <div className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">TIER &amp; DISPATCH</div>
                       <div className="text-xs font-bold text-amber-300 font-serif">{activeTierConfig.editorialName}</div>
+                      <div className="text-[10px] font-mono text-gray-400 flex items-center gap-1 mt-0.5">
+                        {deliveryMode === 'printable_pdf' && '🖨️ Print-at-Home PDF Card'}
+                        {deliveryMode === 'instant_link' && '⚡ Instant WhatsApp / SMS'}
+                        {deliveryMode === 'scheduled_email' && `✉️ Scheduled (${scheduledDate ? new Date(scheduledDate).toLocaleDateString('en-GB') : 'Milestone Date'})`}
+                      </div>
                     </div>
                     
                     {/* WAX SEAL INSIGNIA */}
@@ -901,6 +1026,12 @@ export default function GiftPage() {
                     </>
                   )}
                 </Button>
+
+                <div className="text-[11px] text-gray-400 font-sans text-center px-2">
+                  {deliveryMode === 'printable_pdf' && '🖨️ Includes print-ready 5"×7" PDF voucher download & unboxing pass.'}
+                  {deliveryMode === 'instant_link' && '⚡ Includes 1-click WhatsApp, SMS & direct shareable unboxing link.'}
+                  {deliveryMode === 'scheduled_email' && `✉️ Automated delivery to ${recipientEmail || 'recipient email'} on ${scheduledDate ? new Date(scheduledDate).toLocaleDateString('en-GB') : 'your chosen milestone date'}.`}
+                </div>
 
                 <div className="flex items-center justify-center gap-2 text-xs text-gray-500 font-mono">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
