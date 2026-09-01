@@ -32,12 +32,14 @@ import {
   X,
   Play,
   RefreshCw,
-  Layers
+  Layers,
+  BookOpen
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { unboxingAudio } from '@/lib/audio/unboxingAudio';
+import { checkAndPolishGrammar } from '@/actions/aiWeaver';
 import {
   GIFT_TIER_DISPLAY,
   UNBOXING_LANGUAGE_LABELS,
@@ -237,6 +239,7 @@ export default function GiftPage() {
   // AI Dedication Muse State
   const [selectedTone, setSelectedTone] = useState<DedicationTone>('heartfelt');
   const [isPolishing, setIsPolishing] = useState(false);
+  const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
   const [historyStack, setHistoryStack] = useState<string[]>([]);
   const [lastPolishedTone, setLastPolishedTone] = useState<string | null>(null);
 
@@ -407,6 +410,42 @@ export default function GiftPage() {
 
     setGiftMessage(text);
     toast.success('Punctuation and typography tidied.');
+  };
+
+  // Dictionary & Grammar Proofreading Execution
+  const handleCheckGrammar = async () => {
+    const trimmed = giftMessage.trim();
+    if (!trimmed) {
+      toast.error('Please type a draft message first.');
+      return;
+    }
+
+    setIsCheckingGrammar(true);
+    setHistoryStack((prev) => [giftMessage, ...prev]);
+
+    toast('Proofreading Dedication...', {
+      description: 'Checking dictionary spelling, grammar agreement & UK English.',
+      icon: <BookOpen className="w-4 h-4 text-amber-400" />
+    });
+
+    try {
+      const corrected = await checkAndPolishGrammar(trimmed);
+      if (corrected && corrected !== trimmed) {
+        setGiftMessage(corrected);
+        toast.success('Spelling & Grammar Polished!', {
+          description: 'Corrected typos and grammatical agreement while preserving voice.'
+        });
+      } else {
+        toast.success('Dedication Clean & Print Ready', {
+          description: 'No spelling or grammar errors detected.'
+        });
+      }
+    } catch (err: any) {
+      console.error('Grammar check error:', err);
+      toast.error('Grammar proofreader unavailable. Draft preserved.');
+    } finally {
+      setIsCheckingGrammar(false);
+    }
   };
 
   const handleCheckout = async () => {
@@ -993,6 +1032,27 @@ export default function GiftPage() {
                     >
                       <CheckCheck className="w-3.5 h-3.5 text-gray-400" />
                       <span>Tidy</span>
+                    </button>
+
+                    {/* GRAMMAR & SPELLING PROOFREADER */}
+                    <button
+                      type="button"
+                      onClick={handleCheckGrammar}
+                      disabled={isCheckingGrammar || isPolishing || !giftMessage.trim()}
+                      className="px-2.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-300 border border-slate-700/50 text-xs font-mono flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40"
+                      title="Check dictionary spelling, grammar agreement & UK English"
+                    >
+                      {isCheckingGrammar ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Checking...</span>
+                        </>
+                      ) : (
+                        <>
+                          <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Grammar &amp; Spelling</span>
+                        </>
+                      )}
                     </button>
                   </div>
 

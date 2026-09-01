@@ -17,9 +17,11 @@ import {
   Languages,
   Wand2,
   RotateCcw,
-  CheckCircle2
+  CheckCircle2,
+  BookOpen
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { checkAndPolishGrammar } from '@/actions/aiWeaver';
 import {
   GiftTier,
   DeliveryMode,
@@ -158,6 +160,7 @@ export function VoucherMintingConsole() {
   // AI Dedication Muse State
   const [selectedTone, setSelectedTone] = useState<DedicationTone>('heartfelt');
   const [isPolishing, setIsPolishing] = useState(false);
+  const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
   const [historyStack, setHistoryStack] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -194,6 +197,41 @@ export function VoucherMintingConsole() {
     toast.info(`Updated salutation to ${salutation.label}`);
   };
 
+  // Dictionary & Grammar Proofreading Handler
+  const handleCheckGrammar = async () => {
+    if (!giftMessage.trim()) {
+      toast.error('Please enter a draft message first.');
+      return;
+    }
+
+    setIsCheckingGrammar(true);
+    setHistoryStack((prev) => [...prev, giftMessage]);
+
+    toast('Proofreading Dedication...', {
+      description: 'Checking dictionary spelling, grammar agreement & UK English.',
+      icon: <BookOpen className="w-4 h-4 text-amber-400" />
+    });
+
+    try {
+      const corrected = await checkAndPolishGrammar(giftMessage);
+      if (corrected && corrected !== giftMessage) {
+        setGiftMessage(corrected);
+        toast.success('Spelling & Grammar Polished!', {
+          description: 'Corrected typos and grammatical agreement while preserving voice.'
+        });
+      } else {
+        toast.success('Dedication Clean & Print Ready', {
+          description: 'No spelling or grammar errors detected.'
+        });
+      }
+    } catch (err: any) {
+      console.error('Grammar check error:', err);
+      toast.error('Grammar proofreader unavailable. Draft preserved.');
+    } finally {
+      setIsCheckingGrammar(false);
+    }
+  };
+
   // AI Muse Polish handler
   const handlePolishMessage = async () => {
     if (!giftMessage.trim()) {
@@ -217,8 +255,9 @@ export function VoucherMintingConsole() {
       });
 
       const data = await res.json();
-      if (data.polished) {
-        setGiftMessage(data.polished);
+      const polishedResult = data.polishedText || data.polished;
+      if (polishedResult) {
+        setGiftMessage(polishedResult);
         toast.success(`✨ Dedication polished with ${selectedTone} tone!`);
       } else {
         toast.info('Message already in optimal heirloom format.');
@@ -578,6 +617,7 @@ export function VoucherMintingConsole() {
                   type="button"
                   onClick={handleTidy}
                   className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono flex items-center gap-1 transition cursor-pointer"
+                  title="Fix punctuation, curly quotes and whitespace"
                 >
                   <CheckCircle2 className="w-3 h-3" />
                   <span>Tidy</span>
@@ -585,8 +625,28 @@ export function VoucherMintingConsole() {
 
                 <button
                   type="button"
+                  onClick={handleCheckGrammar}
+                  disabled={isCheckingGrammar || isPolishing || !giftMessage.trim()}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-[10px] font-mono border border-slate-700 flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40"
+                  title="Check dictionary spelling, grammar agreement & UK English"
+                >
+                  {isCheckingGrammar ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Checking...</span>
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="w-3 h-3 text-amber-400" />
+                      <span>Grammar &amp; Spelling</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
                   onClick={handlePolishMessage}
-                  disabled={isPolishing || !giftMessage.trim()}
+                  disabled={isPolishing || isCheckingGrammar || !giftMessage.trim()}
                   className="px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-[10px] font-mono flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40 shadow-sm"
                 >
                   {isPolishing ? (
