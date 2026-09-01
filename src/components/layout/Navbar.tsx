@@ -48,7 +48,7 @@ export function Navbar() {
     }
   };
 
-  const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center";
+  const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center whitespace-nowrap shrink-0";
   const activeNavLinkClass = "text-primary";
 
   if (loading) {
@@ -104,9 +104,9 @@ export function Navbar() {
         <div className="container flex h-16 items-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link href={isAuthenticated ? "/studio" : "/"} data-hotspot-id="HS_NAV_LOGO" className="mr-6 flex items-center space-x-2" aria-label="Memory Weaver Homepage">
-                <Film className="h-6 w-6 text-primary ml-2" /> 
-                <span className="font-headline text-xl font-bold">Memory Weaver</span>
+              <Link href={isAuthenticated ? "/studio" : "/"} data-hotspot-id="HS_NAV_LOGO" className="mr-3 sm:mr-4 lg:mr-6 flex items-center space-x-2 shrink-0" aria-label="Memory Weaver Homepage">
+                <Film className="h-6 w-6 text-primary ml-1 sm:ml-2 shrink-0" /> 
+                <span className="font-headline text-lg sm:text-xl font-bold whitespace-nowrap">Memory Weaver</span>
               </Link>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
@@ -115,13 +115,13 @@ export function Navbar() {
           </Tooltip>
           
           {(isAuthenticated || isGuestDirectorView) ? (
-            <nav className="flex flex-1 items-center space-x-3 sm:space-x-4 lg:space-x-6 overflow-x-auto no-scrollbar">
+            <nav className="flex flex-1 items-center space-x-2 sm:space-x-3 lg:space-x-4 xl:space-x-6 overflow-x-auto no-scrollbar">
               {isGuestDirectorView ? (
                 // Focused Guest Director View
                  <Tooltip>
                    <TooltipTrigger asChild>
                      <div className={`${navLinkClass} ${activeNavLinkClass}`}>
-                       <Video className="mr-1.5 h-4 w-4" strokeWidth={2.5} /> Memory Collaboration
+                       <Video className="mr-1.5 h-4 w-4 shrink-0" strokeWidth={2.5} /> Memory Collaboration
                      </div>
                    </TooltipTrigger>
                    <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
@@ -145,11 +145,11 @@ export function Navbar() {
                           })}
                           className={`${navLinkClass} opacity-30 cursor-pointer grayscale group-hover:grayscale-0 transition-all`}
                         >
-                           <Clapperboard className="mr-1.5 h-4 w-4" strokeWidth={2.5} /> Memory Studio 
+                           <Clapperboard className="mr-1.5 h-4 w-4 shrink-0" strokeWidth={2.5} /> Memory Studio 
                         </div>
                       ) : (
                         <Link href="/studio" data-hotspot-id="HS_NAV_MEMORY_STUDIO" className={`${navLinkClass} ${(pathname === '/studio' || pathname?.startsWith('/add-memory')) ? activeNavLinkClass : ''}`}> 
-                          <Clapperboard className="mr-1.5 h-4 w-4" strokeWidth={2.5} /> Memory Studio 
+                          <Clapperboard className="mr-1.5 h-4 w-4 shrink-0" strokeWidth={2.5} /> Memory Studio 
                         </Link>
                       )}
                     </TooltipTrigger>
@@ -169,7 +169,7 @@ export function Navbar() {
                         }}
                         className={`${navLinkClass} ${pathname === '/cinema' ? activeNavLinkClass : ''}`}
                       >
-                        <Film className="mr-1.5 h-4 w-4 text-primary" strokeWidth={2.5} /> Memory Cinema
+                        <Film className="mr-1.5 h-4 w-4 text-primary shrink-0" strokeWidth={2.5} /> Memory Cinema
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
@@ -177,7 +177,7 @@ export function Navbar() {
                     </TooltipContent>
                   </Tooltip>
 
-                  <div className="hidden md:flex items-center space-x-3 sm:space-x-4 lg:space-x-6 pl-2 border-l border-white/10">
+                  <div className="hidden xl:flex items-center space-x-3 xl:space-x-5 pl-2 border-l border-white/10 shrink-0">
                     <Link
                       href="/how-it-works"
                       className={`${navLinkClass} ${pathname === '/how-it-works' ? activeNavLinkClass : ''}`}
@@ -207,7 +207,7 @@ export function Navbar() {
               )}
             </nav>
           ) : (
-            <nav className="hidden flex-1 items-center space-x-4 md:flex lg:space-x-6">
+            <nav className="hidden md:flex flex-1 items-center space-x-3 lg:space-x-6 shrink-0">
               <Link
                 href="/how-it-works"
                 className={`${navLinkClass} ${pathname === '/how-it-works' ? activeNavLinkClass : ''}`}
@@ -235,7 +235,7 @@ export function Navbar() {
             </nav>
           )}
 
-          <div className="flex items-center ml-auto space-x-2 sm:space-x-4">
+          <div className="flex items-center ml-auto space-x-2 sm:space-x-4 shrink-0">
             <StudioUpgradeBadge />
             {isStudio && <OpticsPrivacyShield />}
             {isStudioWorkspace && (
@@ -247,15 +247,17 @@ export function Navbar() {
               <ThemeToggle />
             </div>
             {isGuestDirectorView ? (
-              <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-full">
+              <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-full whitespace-nowrap">
                 Guest Remote
               </div>
             ) : isAuthenticated ? (
               <>
                 {!isStudio && (
-                  <Link href="/studio" className="hidden sm:inline-flex">
-                    <Button className="h-8 px-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
-                      <Clapperboard className="w-3.5 h-3.5" /> Enter Studio Stage ↗
+                  <Link href="/studio" className="hidden sm:inline-flex shrink-0">
+                    <Button className="h-8 px-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 whitespace-nowrap">
+                      <Clapperboard className="w-3.5 h-3.5 shrink-0" />
+                      <span className="hidden lg:inline">Enter Studio Stage ↗</span>
+                      <span className="lg:hidden">Studio ↗</span>
                     </Button>
                   </Link>
                 )}
