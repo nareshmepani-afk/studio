@@ -117,6 +117,7 @@ interface DedicationPreset {
   id: string;
   icon: string;
   label: string;
+  shortLabel?: string;
   category: string;
   template: (name: string) => string;
 }
@@ -141,6 +142,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
     id: 'milestone',
     icon: '🎂',
     label: 'Milestone 70th / 80th',
+    shortLabel: 'Milestone 70th/80th',
     category: 'Milestone',
     template: (name) =>
       `Dear ${name || 'Mum'}, on your milestone birthday, we want to listen to and preserve every chapter of your extraordinary journey for generations to come.`,
@@ -149,6 +151,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
     id: 'roots',
     icon: '🌳',
     label: 'Family Roots & Diaspora',
+    shortLabel: 'Family Roots',
     category: 'Heritage',
     template: (name) =>
       `Dear ${name || 'Storyteller'}, your courage, your traditions, and your wisdom are the roots our family stands on. We want to cherish your voice forever.`,
@@ -157,6 +160,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
     id: 'retirement',
     icon: '🕊️',
     label: 'Retirement & Wisdom',
+    shortLabel: 'Retirement Story',
     category: 'Milestone',
     template: (name) =>
       `Dear ${name || 'Dad'}, after a lifetime of hard work and quiet wisdom, it is time for your stories to take centre stage. Here is your studio to weave your memoir.`,
@@ -165,6 +169,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
     id: 'devotion',
     icon: '💍',
     label: 'Decades of Devotion',
+    shortLabel: 'Decades of Love',
     category: 'Love',
     template: (name) =>
       `To our beloved ${name || 'Grandmother'}, the memories you have built across the decades are the greatest treasure of our family. This is our gift of remembrance.`,
@@ -173,6 +178,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
     id: 'gratitude',
     icon: '💛',
     label: 'Voice of Gratitude',
+    shortLabel: 'Voice of Gratitude',
     category: 'Family',
     template: (name) =>
       `Dear ${name || 'Storyteller'}, thank you for every bedtime story, every lesson, and every sacrifice. We are giving you this space so your voice is never forgotten.`,
@@ -181,6 +187,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
     id: 'memoir',
     icon: '✨',
     label: 'Living History',
+    shortLabel: 'Living History',
     category: 'Legacy',
     template: (name) =>
       `For ${name || 'our beloved family anchor'}: your memories are not just the past—they are the roadmap for our children and grandchildren. Welcome to your memoir.`,
@@ -190,6 +197,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
 interface SalutationPreset {
   id: string;
   label: string;
+  shortLabel?: string;
   culture: string;
   prefix: (name: string) => string;
 }
@@ -198,24 +206,28 @@ const SALUTATION_PRESETS: SalutationPreset[] = [
   {
     id: 'british',
     label: 'To our dearest...',
+    shortLabel: 'To our dearest...',
     culture: 'Classic British',
     prefix: (name) => `To our dearest ${name || 'Mum'}, `,
   },
   {
     id: 'gujarati',
     label: 'Mara Vhala... (મારા વ્હાલા)',
+    shortLabel: 'Mara Vhala (ગુજરાતી)',
     culture: 'Gujarati',
     prefix: (name) => `Mara Vhala ${name || 'Ba'}, `,
   },
   {
     id: 'punjabi',
     label: 'Pujya... Ji (ਪੂਜਨੀਕ)',
+    shortLabel: 'Pujya... Ji (ਪੰਜਾਬੀ)',
     culture: 'Punjabi',
     prefix: (name) => `Pujya ${name || 'Pitaji'} Ji, `,
   },
   {
     id: 'hindi',
     label: 'Pujya... Ji (पूज्य)',
+    shortLabel: 'Pujya... Ji (हिन्दी)',
     culture: 'Hindi',
     prefix: (name) => `Pujya ${name || 'Mataji'} Ji, `,
   },
@@ -897,41 +909,41 @@ export default function GiftPage() {
                   <span className="text-[10px] font-mono text-amber-400/80">Printed on 5&quot;×7&quot; Keepsake</span>
                 </div>
 
-                {/* OCCASION SPARKS CHIP CAROUSEL */}
+                {/* OCCASION SPARKS GRID */}
                 <div className="space-y-1.5">
                   <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1">
                     <Sparkles className="w-3 h-3 text-amber-400" />
                     <span>Occasion Sparks (1-Click Presets):</span>
                   </div>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                     {DEDICATION_PRESETS.map((preset) => (
                       <button
                         key={preset.id}
                         type="button"
                         onClick={() => handleSelectPreset(preset)}
-                        className="px-3 py-2 min-h-[40px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800 hover:border-amber-500/40 text-xs text-gray-300 hover:text-amber-300 font-sans shrink-0 flex items-center gap-2 transition cursor-pointer active:scale-95 shadow-sm"
+                        className="px-2.5 sm:px-3 py-2 min-h-[42px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800 hover:border-amber-500/40 text-xs text-gray-300 hover:text-amber-300 font-sans flex items-center gap-1.5 sm:gap-2 transition cursor-pointer active:scale-95 shadow-sm text-left w-full"
                       >
-                        <span className="text-base leading-none">{preset.icon}</span>
-                        <span className="font-medium">{preset.label}</span>
+                        <span className="text-sm sm:text-base leading-none shrink-0">{preset.icon}</span>
+                        <span className="font-medium text-[11px] sm:text-xs leading-tight line-clamp-1">{preset.shortLabel || preset.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* SMART SALUTATIONS CHIPS */}
-                <div className="space-y-1.5">
+                {/* SMART SALUTATIONS GRID */}
+                <div className="space-y-1.5 pt-1">
                   <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1">
                     <span>Cultural Salutations:</span>
                   </div>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none text-xs font-mono text-gray-400">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono text-gray-400">
                     {SALUTATION_PRESETS.map((sal) => (
                       <button
                         key={sal.id}
                         type="button"
                         onClick={() => handleApplySalutation(sal)}
-                        className="px-3 py-2 min-h-[38px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800/80 text-xs text-gray-300 hover:text-amber-300 shrink-0 transition cursor-pointer active:scale-95 flex items-center justify-center font-sans shadow-sm"
+                        className="px-2.5 sm:px-3 py-2 min-h-[40px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800/80 text-xs text-gray-300 hover:text-amber-300 transition cursor-pointer active:scale-95 flex items-center justify-center font-sans shadow-sm text-center w-full"
                       >
-                        {sal.label}
+                        <span className="text-[11px] sm:text-xs leading-tight line-clamp-1">{sal.shortLabel || sal.label}</span>
                       </button>
                     ))}
                   </div>
