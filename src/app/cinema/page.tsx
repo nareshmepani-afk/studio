@@ -275,7 +275,7 @@ function CinemaContent() {
 
   return (
     <AuthenticatedPageWrapper>
-      <div className='container mx-auto py-12 px-6 lg:px-12 max-w-7xl min-h-screen'>
+      <div className='container mx-auto py-8 sm:py-12 px-3 sm:px-6 lg:px-12 max-w-7xl min-h-screen'>
         
         {/* Top Controls when viewing a shared memory pass */}
         {publicMemory && (
@@ -619,27 +619,27 @@ function CinemaContent() {
         )}
 
         {/* Cinematic Header Section */}
-        <div className="relative mb-10">
+        <div className="relative mb-8 sm:mb-10">
            <div className="absolute -top-32 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
            
-           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
-              <div className="space-y-3">
+           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6 relative z-10">
+              <div className="space-y-2 sm:space-y-3">
                  <div className="inline-flex items-center gap-2 group">
-                    <span className="h-px w-10 bg-primary/40 group-hover:w-16 transition-all duration-700" />
-                    <span className="text-[11px] uppercase tracking-[0.5em] text-primary font-black">A Chronicle Cinema Production</span>
+                    <span className="h-px w-8 sm:w-10 bg-primary/40 group-hover:w-16 transition-all duration-700" />
+                    <span className="text-[9px] sm:text-[11px] uppercase tracking-[0.3em] sm:tracking-[0.5em] text-primary font-black">A Chronicle Cinema Production</span>
                  </div>
-                 <h1 className='text-5xl md:text-7xl font-headline italic tracking-tight bg-gradient-to-br from-white via-white/95 to-white/30 bg-clip-text text-transparent drop-shadow-2xl'>
+                 <h1 className='text-3xl sm:text-5xl md:text-7xl font-headline italic tracking-tight bg-gradient-to-br from-white via-white/95 to-white/30 bg-clip-text text-transparent drop-shadow-2xl'>
                     The Memory Cinema
                  </h1>
-                 <div className="flex items-center gap-4 text-white/40">
+                 <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-white/40">
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm">
                        <User className="h-3 w-3 text-primary/60" />
-                       <span className="text-[10px] uppercase font-bold tracking-widest">Director: {user?.displayName || 'Legacy Host'}</span>
+                       <span className="text-[10px] uppercase font-bold tracking-wider sm:tracking-widest">Director: {user?.displayName || 'Legacy Host'}</span>
                     </div>
                     {!isGuest && (
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/10">
                          <Sparkles className="h-3 w-3 text-primary" />
-                         <span className="text-[10px] uppercase font-bold tracking-widest text-primary">{filteredMemories.length} Stories Available</span>
+                         <span className="text-[10px] uppercase font-bold tracking-wider sm:tracking-widest text-primary">{filteredMemories.length} {filteredMemories.length === 1 ? 'Story' : 'Stories'} Available</span>
                       </div>
                     )}
                  </div>
@@ -654,68 +654,88 @@ function CinemaContent() {
         </div>
 
         {/* 3-SECTION CINEMA DASHBOARD ARCHITECTURE */}
-        <div className="space-y-12">
+        <div className="space-y-10 sm:space-y-12">
 
           {/* Smart Filter Bar */}
-          <div className="mb-8 flex flex-wrap items-center gap-3">
-            {/* Source Filter */}
-            <div className="flex items-center gap-1 bg-slate-900/80 border border-white/10 rounded-xl px-1 py-1">
+          <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center gap-3">
+            {/* Source Filter Tabs */}
+            <div className="flex items-center bg-slate-900/80 border border-white/10 rounded-xl p-1 w-full sm:w-auto">
               {(['all', 'mine', 'shared'] as const).map(value => (
                 <button
                   key={value}
+                  type="button"
                   onClick={() => setSourceFilter(value)}
-                  className={`px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all ${
+                  className={`flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider transition-all text-center ${
                     sourceFilter === value
-                      ? 'bg-amber-500 text-slate-950 shadow-lg'
+                      ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                       : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  {value === 'all' ? 'All' : value === 'mine' ? 'My Productions' : 'Shared With Me'}
+                  {value === 'all' ? 'All' : value === 'mine' ? (
+                    <>
+                      <span className="sm:hidden">Mine</span>
+                      <span className="hidden sm:inline">My Productions</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="sm:hidden">Shared</span>
+                      <span className="hidden sm:inline">Shared With Me</span>
+                    </>
+                  )}
                 </button>
               ))}
             </div>
 
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-white/80 appearance-none cursor-pointer"
-            >
-              <option value="all">All Statuses</option>
-              <option value="published">🎬 Published</option>
-              <option value="pre-release">🌟 Pre-Release</option>
-            </select>
+            {/* Filter Controls Row */}
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-1">
+              {/* Status Filter */}
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider text-white/80 appearance-none cursor-pointer pr-8 focus:border-amber-500/50 focus:outline-none"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="published">🎬 Published</option>
+                  <option value="pre-release">🌟 Pre-Release</option>
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40 pointer-events-none" />
+              </div>
 
-            {/* Shared By Filter (only when shared tab or all) */}
-            {sourceFilter !== 'mine' && sharedByOptions.length > 0 && (
-              <select
-                value={sharedByFilter}
-                onChange={(e) => setSharedByFilter(e.target.value)}
-                className="bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-white/80 appearance-none cursor-pointer"
-              >
-                <option value="all">All Directors</option>
-                {sharedByOptions.map(opt => (
-                  <option key={opt.uid} value={opt.uid}>{opt.name}</option>
-                ))}
-              </select>
-            )}
+              {/* Shared By Filter */}
+              {sourceFilter !== 'mine' && sharedByOptions.length > 0 && (
+                <div className="relative">
+                  <select
+                    value={sharedByFilter}
+                    onChange={(e) => setSharedByFilter(e.target.value)}
+                    className="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider text-white/80 appearance-none cursor-pointer pr-8 focus:border-amber-500/50 focus:outline-none"
+                  >
+                    <option value="all">All Directors</option>
+                    {sharedByOptions.map(opt => (
+                      <option key={opt.uid} value={opt.uid}>{opt.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40 pointer-events-none" />
+                </div>
+              )}
 
-            {/* Search */}
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-              <input
-                type="text"
-                placeholder="Search stories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono text-white/80 placeholder:text-white/30 focus:border-amber-500/50 focus:outline-none transition-colors"
-              />
+              {/* Search Box */}
+              <div className="relative flex-1 min-w-[140px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
+                <input
+                  type="text"
+                  placeholder="Search stories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-[11px] sm:text-xs font-mono text-white/80 placeholder:text-white/30 focus:border-amber-500/50 focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Results Count on Desktop */}
+              <span className="hidden sm:inline text-[10px] font-mono text-white/40 uppercase tracking-widest shrink-0">
+                {filteredMemories.length} {filteredMemories.length === 1 ? 'Story' : 'Stories'}
+              </span>
             </div>
-
-            {/* Results Count */}
-            <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
-              {filteredMemories.length} {filteredMemories.length === 1 ? 'Story' : 'Stories'}
-            </span>
           </div>
 
           {/* Poster Card Grid */}
@@ -752,60 +772,81 @@ function CinemaContent() {
               })}
             </div>
           ) : (
-            <div className="text-center py-20 px-8">
-              <Film className="w-16 h-16 text-white/10 mx-auto mb-4" />
-              <p className="text-sm text-white/40 font-mono">
-                {sourceFilter === 'shared'
-                  ? 'No shared memories yet. When family or friends share their stories with you, they will appear here.'
-                  : sourceFilter === 'mine'
-                  ? 'Your screening room awaits. Complete Act V in Studio to premiere your first memory.'
-                  : searchQuery
-                  ? 'No memories match your search.'
-                  : 'No memories to display yet.'}
-              </p>
+            <div className="text-center py-12 sm:py-20 px-6 sm:px-8 rounded-3xl bg-slate-900/30 border border-white/5 backdrop-blur-sm space-y-4">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.15)]">
+                <Film className="w-7 h-7 sm:w-8 sm:h-8" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-base sm:text-xl font-serif text-white font-medium">
+                  {sourceFilter === 'shared' ? 'No Shared Memories Yet' : 'Your Screening Room Awaits'}
+                </h3>
+                <p className="text-xs sm:text-sm text-white/50 leading-relaxed font-light">
+                  {sourceFilter === 'shared'
+                    ? 'When family members or friends share their memoir screenings with you, they will appear here.'
+                    : sourceFilter === 'mine'
+                    ? 'Complete Act V in the Studio to master and premiere your first cinematic memory reel.'
+                    : searchQuery
+                    ? 'No memories match your current search criteria.'
+                    : 'Complete Act V in the Studio to master and premiere your first cinematic memory reel.'}
+                </p>
+              </div>
+
+              {user && sourceFilter === 'mine' && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/studio')}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold uppercase tracking-wider transition-all shadow-lg cursor-pointer"
+                  >
+                    <Clapperboard className="w-4 h-4" />
+                    <span>Open Studio</span>
+                  </button>
+                </div>
+              )}
+
               {(searchQuery || statusFilter !== 'all' || sourceFilter !== 'all' || sharedByFilter !== 'all') && (
                 <button
                   onClick={() => { setSearchQuery(''); setStatusFilter('all'); setSourceFilter('all'); setSharedByFilter('all'); }}
-                  className="mt-4 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-white/60 hover:bg-white/10 transition-colors"
+                  className="mt-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-white/60 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
                 >
-                  Clear Filters
+                  Reset Filters
                 </button>
               )}
             </div>
           )}
 
           {/* SECTION 3: 🔖 MY SAVED FAMILY CINEMA (Bookmarked Shared Stories) */}
-          <section data-hotspot-id="HS_CINEMA_SECTION_SAVED" className="space-y-8">
-            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
-                <h2 className="text-2xl md:text-4xl font-headline italic text-white font-bold">
+          <section data-hotspot-id="HS_CINEMA_SECTION_SAVED" className="space-y-6 pt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-500/20 pb-4">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-headline italic text-white font-bold">
                   🔖 My Saved Family Cinema
                 </h2>
-                <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full">
-                  Auto-Bookmarked Family Stories
+                <span className="px-2.5 py-0.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider rounded-full">
+                  Auto-Bookmarked
                 </span>
               </div>
-              <span className="text-xs font-mono text-white/40">{savedStories.length} Bookmarked</span>
+              <span className="text-[11px] font-mono text-cyan-400/60">{savedStories.length} Bookmarked</span>
             </div>
 
             {savedStories.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {savedStories.map((saved) => (
                   <div 
                     key={saved.id}
                     onClick={() => router.push(`/cinema?id=${saved.id}`)}
-                    className="p-6 rounded-2xl bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400 transition-all cursor-pointer space-y-4 group shadow-lg"
+                    className="p-5 sm:p-6 rounded-2xl bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400 transition-all cursor-pointer space-y-3 group shadow-lg"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 text-[9px] font-mono font-bold uppercase tracking-widest rounded-full">
+                      <span className="px-2 py-0.5 bg-cyan-500/20 text-cyan-300 text-[9px] font-mono font-bold uppercase tracking-wider rounded-full">
                         🔖 Saved Reel
                       </span>
                       <span className="text-[10px] text-white/40 font-mono">
                         {saved.savedAt ? format(new Date(saved.savedAt), 'dd MMM yyyy') : 'Recently Saved'}
                       </span>
                     </div>
-                    <h4 className="text-lg font-headline font-bold text-white group-hover:text-cyan-300 transition-colors">
+                    <h4 className="text-base sm:text-lg font-headline font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1">
                       {saved.title}
                     </h4>
                     <p className="text-xs font-mono text-white/60">
@@ -815,7 +856,7 @@ function CinemaContent() {
                 ))}
               </div>
             ) : (
-              <div className="p-8 rounded-2xl bg-black/40 border border-white/10 text-center text-white/40 text-xs font-mono">
+              <div className="p-6 sm:p-8 rounded-2xl bg-slate-900/30 border border-white/5 text-center text-white/40 text-xs font-mono leading-relaxed">
                 Shared family memory links you view will be automatically bookmarked here!
               </div>
             )}
@@ -823,13 +864,13 @@ function CinemaContent() {
         </div>
 
         {/* Global Stats Footer */}
-        <div className="mt-40 pt-20 border-t border-white/5 text-center text-white/20 pb-20">
-           <div className="inline-flex items-center gap-4 mb-8">
-              <Film className="h-5 w-5 text-current" />
-              <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              <p className="text-[11px] uppercase tracking-[.5em] font-black">All scenes recorded in high fidelity</p>
+        <div className="mt-20 sm:mt-32 pt-12 sm:pt-16 border-t border-white/5 text-center text-white/30 pb-16">
+           <div className="inline-flex items-center gap-3 mb-4">
+              <Film className="h-4 w-4 text-amber-400/60" />
+              <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.25em] sm:tracking-[0.5em] font-black text-white/60">All scenes recorded in high fidelity</p>
            </div>
-           <p className="text-xs max-w-md mx-auto leading-relaxed">
+           <p className="text-xs max-w-md mx-auto leading-relaxed text-white/40 font-light px-4">
               Your memory weaving journey is approximately {stats.completionPercentage}% complete. 
               {stats.totalRequests > 0 && ` You have ${stats.totalRequests} pending story requests from your audience.`}
            </p>
