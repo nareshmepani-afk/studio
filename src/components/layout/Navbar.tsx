@@ -111,12 +111,12 @@ export function Navbar() {
   return (
     <TooltipProvider delayDuration={300}>
       <header className="sticky top-0 z-[100] w-full transition-all duration-300 ease-in-out border-b bg-background/40 backdrop-blur-md border-white/5 shadow-2xl group/nav">
-        <div className="container flex h-16 items-center">
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-8 flex h-16 items-center justify-between">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link href={isAuthenticated ? "/studio" : "/"} data-hotspot-id="HS_NAV_LOGO" className="mr-3 sm:mr-4 lg:mr-6 flex items-center space-x-2 shrink-0" aria-label="Memory Weaver Homepage">
-                <Film className="h-6 w-6 text-primary ml-1 sm:ml-2 shrink-0" /> 
-                <span className="font-headline text-lg sm:text-xl font-bold whitespace-nowrap">Memory Weaver</span>
+              <Link href={isAuthenticated ? "/studio" : "/"} data-hotspot-id="HS_NAV_LOGO" className="mr-2 sm:mr-4 lg:mr-6 flex items-center space-x-1.5 sm:space-x-2 shrink-0" aria-label="Memory Weaver Homepage">
+                <Film className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" /> 
+                <span className="font-headline text-base sm:text-xl font-bold whitespace-nowrap">Memory Weaver</span>
               </Link>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
@@ -380,7 +380,7 @@ export function Navbar() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button className="h-8 px-3 text-xs bg-amber-500 hover:bg-amber-400 text-black font-bold" onClick={() => router.push('/register')}>Sign Up</Button>
+                    <Button className="hidden sm:inline-flex h-8 px-3 text-xs bg-amber-500 hover:bg-amber-400 text-black font-bold" onClick={() => router.push('/register')}>Sign Up</Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
                     Create a new account
@@ -393,8 +393,13 @@ export function Navbar() {
             <div className="md:hidden">
               <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-white hover:bg-white/5" aria-label="Open Navigation Menu">
-                    <Menu className="h-5 w-5" />
+                  <Button 
+                    variant="outline" 
+                    className="h-8 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 text-xs font-semibold shadow-sm shadow-amber-500/10 active:scale-95 transition-all" 
+                    aria-label="Open Navigation Menu"
+                  >
+                    <Menu className="h-4 w-4 text-amber-400 shrink-0" />
+                    <span className="text-xs font-medium">Menu</span>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-4/5 max-w-sm bg-[#0A0A0A] border-l border-amber-500/20 text-white p-6 overflow-y-auto custom-scrollbar flex flex-col justify-between">
