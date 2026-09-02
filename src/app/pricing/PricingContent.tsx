@@ -301,29 +301,30 @@ export function PricingContent() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="mb-20 max-w-4xl mx-auto rounded-2xl bg-gradient-to-r from-neutral-900 via-amber-950/20 to-neutral-900 border border-amber-500/30 p-6 sm:p-8 shadow-2xl shadow-amber-500/5 relative overflow-hidden"
+            className="mb-20 max-w-4xl mx-auto rounded-2xl bg-gradient-to-r from-neutral-900 via-amber-950/20 to-neutral-900 border border-amber-500/30 p-5 sm:p-8 shadow-2xl shadow-amber-500/5 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
-              <div className="space-y-1.5 text-center sm:text-left">
+              <div className="space-y-1.5 text-center sm:text-left w-full sm:w-auto">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-medium">
-                  <Gift className="w-3.5 h-3.5 text-amber-400" />
+                  <Gift className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span>ACT V HEIRLOOM GIFTING STUDIO</span>
                 </div>
-                <h3 className="font-serif text-xl sm:text-2xl font-medium text-white">
+                <h3 className="font-serif text-lg sm:text-2xl font-medium text-white leading-tight">
                   Commissioning a memoir for parents or grandparents?
                 </h3>
-                <p className="text-sm text-neutral-400 max-w-xl">
+                <p className="text-xs sm:text-sm text-neutral-400 max-w-xl leading-relaxed">
                   Personalise a luxury 5&quot;×7&quot; Keepsake Card, audition the cinematic unboxing ceremony in Gujarati, Punjabi, or Hindi, or send an instant unboxing pass.
                 </p>
               </div>
               <Button
                 asChild
-                className="shrink-0 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-xl px-6 py-6 shadow-lg shadow-amber-500/20 cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2 text-sm"
+                className="w-full sm:w-auto shrink-0 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold rounded-xl px-5 sm:px-6 py-3.5 sm:py-4 min-h-[48px] h-auto shadow-lg shadow-amber-500/20 cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm text-center whitespace-normal leading-snug"
               >
-                <Link href="/gift">
-                  <span>Personalise an Heirloom Keepsake Card & Pass</span>
-                  <ArrowRight className="w-4 h-4" />
+                <Link href="/gift" className="flex items-center justify-center gap-2">
+                  <span className="hidden sm:inline">Personalise an Heirloom Keepsake Card &amp; Pass</span>
+                  <span className="sm:hidden font-bold">Personalise Keepsake Card &amp; Pass</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
                 </Link>
               </Button>
             </div>
@@ -359,18 +360,28 @@ export function PricingContent() {
           </div>
 
           <div className="text-center">
-            <div className="inline-block p-12 rounded-3xl bg-neutral-900/50 border border-white/10 backdrop-blur-sm w-full max-w-4xl relative overflow-hidden">
+            <div className="inline-block p-6 sm:p-10 md:p-12 rounded-2xl sm:rounded-3xl bg-neutral-900/50 border border-white/10 backdrop-blur-sm w-full max-w-4xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-amber-500/10 to-transparent pointer-events-none" />
-              <h2 className="font-serif text-3xl sm:text-4xl font-medium text-white mb-6 relative z-10">
+              <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-medium text-white mb-4 sm:mb-6 relative z-10 leading-tight">
                 Ready to weave your family&apos;s history?
               </h2>
-              <p className="text-lg text-neutral-400 mb-8 max-w-2xl mx-auto relative z-10">
+              <p className="text-sm sm:text-base md:text-lg text-neutral-400 mb-6 sm:mb-8 max-w-2xl mx-auto relative z-10 leading-relaxed">
                 Join Memory Weaver today and ensure your stories are never lost to time. 
                 Your first 6 months of comprehensive studio access are on us.
               </p>
-              <Button asChild size="lg" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-lg px-8 h-14 relative z-10">
-                <Link href={user ? "/studio" : "/register"}>
-                  {user ? "Enter Memory Studio" : "Start Free — Claim Your 6-Month Director Host Pass"}
+              <Button 
+                asChild 
+                className="w-full sm:w-auto h-auto min-h-[50px] bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs sm:text-base md:text-lg px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl relative z-10 shadow-lg shadow-amber-500/20 whitespace-normal leading-tight text-center justify-center"
+              >
+                <Link href={user ? "/studio" : "/register"} className="flex items-center justify-center text-center">
+                  {user ? (
+                    "Enter Memory Studio ↗"
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">Start Free — Claim Your 6-Month Director Host Pass ↗</span>
+                      <span className="sm:hidden">Start Free — Claim 6-Month Pass ↗</span>
+                    </>
+                  )}
                 </Link>
               </Button>
             </div>

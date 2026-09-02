@@ -20,6 +20,7 @@ const mockUseRouter = vi.fn();
 
 vi.mock('next/navigation', () => ({
   usePathname: () => mockUsePathname(),
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     push: vi.fn(),
     replace: vi.fn(),
@@ -44,9 +45,21 @@ vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+import { PricingContent } from '@/app/pricing/PricingContent';
+
 describe('MW-86: Global Navigation, Footer & Pricing Ribbon Integration (/gift)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    global.IntersectionObserver = class IntersectionObserver {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    } as any;
+    global.ResizeObserver = class ResizeObserver {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    } as any;
   });
 
   describe('Unauthenticated Visitors (Landing & Public Pages)', () => {
@@ -138,6 +151,30 @@ describe('MW-86: Global Navigation, Footer & Pricing Ribbon Integration (/gift)'
       const giftFooterLink = screen.getByRole('link', { name: /gift an heirloom/i });
       expect(giftFooterLink).toBeDefined();
       expect(giftFooterLink.getAttribute('href')).toBe('/gift');
+    });
+  });
+
+  describe('Pricing Page Responsive Buttons (/pricing)', () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({
+        user: null,
+        loading: false,
+        logout: vi.fn(),
+      });
+    });
+
+    it('renders responsive Heirloom Gifting Ribbon button linking to /gift', () => {
+      render(<PricingContent />);
+      const ribbonLinks = screen.getAllByRole('link', { name: /personalise/i });
+      expect(ribbonLinks.length).toBeGreaterThanOrEqual(1);
+      expect(ribbonLinks[0].getAttribute('href')).toBe('/gift');
+    });
+
+    it('renders bottom registration CTA button with responsive text', () => {
+      render(<PricingContent />);
+      const claimButtons = screen.getAllByRole('link', { name: /start free/i });
+      expect(claimButtons.length).toBeGreaterThanOrEqual(1);
+      expect(claimButtons[0].getAttribute('href')).toBe('/register');
     });
   });
 });
