@@ -72,7 +72,7 @@ export function HowItWorksContent() {
 
   return (
     <PublicPageShell>
-      <div className="bg-[#050505] min-h-screen text-[#E5E5E5] py-20 px-6 sm:px-8 lg:px-12 font-sans selection:bg-amber-500/30">
+      <div className="bg-[#050505] min-h-screen text-[#E5E5E5] py-20 px-4 sm:px-8 lg:px-12 font-sans selection:bg-amber-500/30">
         <div className="max-w-5xl mx-auto space-y-32">
           
           {/* Hero Section */}
@@ -96,8 +96,8 @@ export function HowItWorksContent() {
           </section>
 
           {/* Pipeline Stepper */}
-          <section className="space-y-8 relative">
-            <div className="absolute left-6 md:left-[2.1rem] top-8 bottom-8 w-px bg-white/5" />
+          <section className="space-y-6 md:space-y-8 relative">
+            <div className="hidden md:block absolute left-[2.1rem] top-8 bottom-8 w-px bg-white/5" />
             
             {acts.map((act) => {
               const isExpanded = activeAct === act.id;
@@ -106,23 +106,23 @@ export function HowItWorksContent() {
               return (
                 <div 
                   key={act.id} 
-                  className={`relative pl-16 md:pl-20 transition-all duration-300 ${
+                  className={`relative pl-0 md:pl-20 transition-all duration-300 ${
                     isExpanded ? 'opacity-100' : 'opacity-70 hover:opacity-100'
                   }`}
                 >
-                  {/* Step Marker Button */}
+                  {/* Step Marker Button (Desktop Viewports >= 768px) */}
                   <button 
                     type="button"
                     aria-expanded={isExpanded}
                     aria-label={`Toggle ${act.title}`}
                     onClick={() => setActiveAct(prev => prev === act.id ? 0 : act.id)}
-                    className={`absolute left-0 top-0 w-12 h-12 md:w-[4.2rem] md:h-[4.2rem] rounded-2xl flex items-center justify-center border transition-all duration-300 z-10 cursor-pointer ${
+                    className={`hidden md:flex absolute left-0 top-0 w-[4.2rem] h-[4.2rem] rounded-2xl items-center justify-center border transition-all duration-300 z-10 cursor-pointer ${
                       isExpanded 
                         ? 'bg-amber-500/10 border-amber-500 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)]' 
                         : 'bg-neutral-900 border-white/10 text-neutral-400 hover:border-amber-500/40 hover:text-white'
                     }`}
                   >
-                    <Icon className="w-5 h-5 md:w-6 md:h-6" />
+                    <Icon className="w-6 h-6" />
                   </button>
 
                   {/* Step Content Card */}
@@ -136,26 +136,40 @@ export function HowItWorksContent() {
                         setActiveAct(prev => prev === act.id ? 0 : act.id);
                       }
                     }}
-                    className={`p-6 sm:p-8 rounded-3xl border cursor-pointer transition-all duration-300 select-none ${
+                    className={`p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border cursor-pointer transition-all duration-300 select-none ${
                       isExpanded 
                         ? 'bg-neutral-900/60 border-amber-500/30 backdrop-blur-md shadow-2xl ring-1 ring-amber-500/20' 
                         : 'bg-neutral-950/40 border-white/5 hover:border-white/15 hover:bg-neutral-900/30'
                     }`}
                   >
+                    {/* Mobile-Only Header Badge Row: Icon + Phase Tag */}
+                    <div className="flex md:hidden items-center justify-between gap-2 mb-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all duration-300 ${
+                        isExpanded 
+                          ? 'bg-amber-500/10 border-amber-500 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)]' 
+                          : 'bg-neutral-900 border-white/10 text-neutral-400'
+                      }`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-mono text-amber-400/90 uppercase tracking-widest font-semibold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                        Phase 0{act.id}
+                      </span>
+                    </div>
+
                     <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-serif text-white font-medium">
+                        {act.title}
+                      </h3>
                       <div className="flex items-center gap-3">
-                        <h3 className="text-xl sm:text-2xl font-serif text-white font-medium">
-                          {act.title}
-                        </h3>
+                        <span className="hidden md:inline-block text-xs font-mono text-neutral-500 uppercase tracking-widest">
+                          Phase 0{act.id}
+                        </span>
                         <ChevronDown 
-                          className={`w-4 h-4 text-neutral-400 transition-transform duration-300 ${
+                          className={`w-4 h-4 text-neutral-400 transition-transform duration-300 shrink-0 ${
                             isExpanded ? 'rotate-180 text-amber-400' : 'text-neutral-500'
                           }`} 
                         />
                       </div>
-                      <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest">
-                        Phase 0{act.id}
-                      </span>
                     </div>
                     
                     <p className="text-neutral-400 text-sm sm:text-base leading-relaxed mb-4 font-light">
