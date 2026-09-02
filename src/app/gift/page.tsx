@@ -517,29 +517,29 @@ export default function GiftPage() {
 
   return (
     <PublicPageShell>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 space-y-16 pb-36 lg:pb-16">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 space-y-10 sm:space-y-16 pb-36 lg:pb-16">
         
         {/* HERO SECTION */}
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
+        <div className="text-center space-y-3 sm:space-y-4 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono tracking-wider uppercase">
             <Gift className="w-3.5 h-3.5" />
             <span>Act V Heirloom Gifting Suite</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
             Give the Gift of <span className="text-amber-400">Living History</span>
           </h1>
-          <p className="text-base sm:text-lg text-gray-300 leading-relaxed">
+          <p className="text-sm sm:text-base lg:text-lg text-gray-300 leading-relaxed">
             Commission a memoir for parents, grandparents, or loved ones. Pair a 5&quot;×7&quot; gold wax-sealed keepsake voucher card with an interactive 2.39:1 widescreen unboxing ceremony.
           </p>
         </div>
 
         {/* 2-TIER SELECTION CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           
           {/* TIER 1: THE MILESTONE DIRECTOR'S EDITION */}
           <div
             onClick={() => setSelectedTier('director')}
-            className={`relative rounded-2xl p-6 sm:p-8 cursor-pointer transition-all duration-300 border ${
+            className={`relative rounded-2xl p-5 sm:p-8 cursor-pointer transition-all duration-300 border ${
               selectedTier === 'director'
                 ? 'bg-gray-900/90 border-amber-500 shadow-2xl shadow-amber-500/10 ring-1 ring-amber-500'
                 : 'bg-gray-950/60 border-gray-800 hover:border-gray-700 opacity-80 hover:opacity-100'
@@ -556,15 +556,15 @@ export default function GiftPage() {
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-white">{GIFT_TIER_DISPLAY.director.editorialName}</h3>
+            <h3 className="text-lg sm:text-xl font-bold text-white">{GIFT_TIER_DISPLAY.director.editorialName}</h3>
             <p className="text-xs text-gray-400 mt-1">{GIFT_TIER_DISPLAY.director.subtitle}</p>
 
-            <div className="mt-6 flex items-baseline gap-2">
-              <span className="text-3xl sm:text-4xl font-extrabold text-white">{GIFT_TIER_DISPLAY.director.priceGbp}</span>
+            <div className="mt-5 sm:mt-6 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-4xl font-extrabold text-white">{GIFT_TIER_DISPLAY.director.priceGbp}</span>
               <span className="text-xs text-gray-400">one-off gift payment</span>
             </div>
 
-            <ul className="mt-6 space-y-3 text-sm text-gray-300">
+            <ul className="mt-5 sm:mt-6 space-y-2.5 sm:space-y-3 text-xs sm:text-sm text-gray-300">
               {GIFT_TIER_DISPLAY.director.features.map((f, i) => (
                 <li key={i} className="flex items-center gap-2.5">
                   <Check className="w-4 h-4 text-amber-400 shrink-0" />
@@ -577,7 +577,7 @@ export default function GiftPage() {
           {/* TIER 2: THE GENERATIONAL HEIRLOOM (FEATURED) */}
           <div
             onClick={() => setSelectedTier('generational_vault')}
-            className={`relative rounded-2xl p-6 sm:p-8 cursor-pointer transition-all duration-300 border ${
+            className={`relative rounded-2xl p-5 sm:p-8 cursor-pointer transition-all duration-300 border ${
               selectedTier === 'generational_vault'
                 ? 'bg-gradient-to-b from-gray-900 via-gray-900/90 to-amber-950/20 border-amber-400 shadow-2xl shadow-amber-500/20 ring-2 ring-amber-400/80'
                 : 'bg-gray-950/60 border-gray-800 hover:border-gray-700 opacity-80 hover:opacity-100'
@@ -601,15 +601,15 @@ export default function GiftPage() {
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-white">{GIFT_TIER_DISPLAY.generational_vault.editorialName}</h3>
+            <h3 className="text-lg sm:text-xl font-bold text-white">{GIFT_TIER_DISPLAY.generational_vault.editorialName}</h3>
             <p className="text-xs text-gray-400 mt-1">{GIFT_TIER_DISPLAY.generational_vault.subtitle}</p>
 
-            <div className="mt-6 flex items-baseline gap-2">
-              <span className="text-3xl sm:text-4xl font-extrabold text-amber-300">{GIFT_TIER_DISPLAY.generational_vault.priceGbp}</span>
+            <div className="mt-5 sm:mt-6 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-4xl font-extrabold text-amber-300">{GIFT_TIER_DISPLAY.generational_vault.priceGbp}</span>
               <span className="text-xs text-gray-400">perpetual lifetime gift</span>
             </div>
 
-            <ul className="mt-6 space-y-3 text-sm text-gray-200">
+            <ul className="mt-5 sm:mt-6 space-y-2.5 sm:space-y-3 text-xs sm:text-sm text-gray-200">
               {GIFT_TIER_DISPLAY.generational_vault.features.map((f, i) => (
                 <li key={i} className="flex items-center gap-2.5">
                   <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
@@ -622,7 +622,7 @@ export default function GiftPage() {
         </div>
 
         {/* CUSTOMISATION & DEDICATION MUSE FORM */}
-        <div className="bg-gray-900/80 rounded-2xl p-6 sm:p-10 border border-gray-800 space-y-8">
+        <div className="bg-gray-900/80 rounded-2xl p-4 sm:p-8 lg:p-10 border border-gray-800 space-y-6 sm:space-y-8">
           
           <div className="border-b border-gray-800 pb-4">
             <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
@@ -851,7 +851,7 @@ export default function GiftPage() {
 
               {/* UNBOXING LANGUAGE SELECTOR */}
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
                   <label className="block text-xs font-mono uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
                     <Languages className="w-3.5 h-3.5 text-amber-400" />
                     <span>Unboxing Ceremony Language</span>
@@ -889,7 +889,7 @@ export default function GiftPage() {
                   HEIRLOOM DEDICATION MUSE & OCCASION SPARKS
               ───────────────────────────────────────────────────────────── */}
               <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <label className="block text-xs font-mono uppercase tracking-wider text-gray-300 flex items-center gap-1.5">
                     <PenTool className="w-3.5 h-3.5 text-amber-400" />
                     <span>Personal Gift Dedication Message</span>
@@ -903,13 +903,13 @@ export default function GiftPage() {
                     <Sparkles className="w-3 h-3 text-amber-400" />
                     <span>Occasion Sparks (1-Click Presets):</span>
                   </div>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none">
                     {DEDICATION_PRESETS.map((preset) => (
                       <button
                         key={preset.id}
                         type="button"
                         onClick={() => handleSelectPreset(preset)}
-                        className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800 hover:border-amber-500/40 text-xs text-gray-300 hover:text-amber-300 font-sans shrink-0 flex items-center gap-2 transition cursor-pointer active:scale-95 shadow-sm"
+                        className="px-3 py-2 min-h-[40px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800 hover:border-amber-500/40 text-xs text-gray-300 hover:text-amber-300 font-sans shrink-0 flex items-center gap-2 transition cursor-pointer active:scale-95 shadow-sm"
                       >
                         <span className="text-base leading-none">{preset.icon}</span>
                         <span className="font-medium">{preset.label}</span>
@@ -923,13 +923,13 @@ export default function GiftPage() {
                   <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1">
                     <span>Cultural Salutations:</span>
                   </div>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin text-xs font-mono text-gray-400">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-none text-xs font-mono text-gray-400">
                     {SALUTATION_PRESETS.map((sal) => (
                       <button
                         key={sal.id}
                         type="button"
                         onClick={() => handleApplySalutation(sal)}
-                        className="px-3.5 py-2 min-h-[40px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800/80 text-xs text-gray-300 hover:text-amber-300 shrink-0 transition cursor-pointer active:scale-95 flex items-center justify-center font-sans shadow-sm"
+                        className="px-3 py-2 min-h-[38px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800/80 text-xs text-gray-300 hover:text-amber-300 shrink-0 transition cursor-pointer active:scale-95 flex items-center justify-center font-sans shadow-sm"
                       >
                         {sal.label}
                       </button>
@@ -996,16 +996,16 @@ export default function GiftPage() {
                 </div>
 
                 {/* AI DEDICATION MUSE TOOLBAR */}
-                <div className="p-3 rounded-xl bg-gray-950 border border-gray-800/80 flex flex-wrap items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    
+                <div className="p-3 rounded-xl bg-gray-950 border border-gray-800/80 space-y-2.5">
+                  {/* Top Row: Tone & AI Polish */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     {/* TONE SELECTOR */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-mono text-gray-400 uppercase">Tone:</span>
+                    <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                      <span className="text-[10px] font-mono text-gray-400 uppercase shrink-0">Tone:</span>
                       <select
                         value={selectedTone}
                         onChange={(e) => setSelectedTone(e.target.value as DedicationTone)}
-                        className="h-10 px-2.5 py-1 rounded-lg bg-gray-900 border border-gray-800 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500"
+                        className="flex-1 sm:flex-initial h-9 px-2.5 py-1 rounded-lg bg-gray-900 border border-gray-800 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500"
                       >
                         <option value="heartfelt">💛 Heartfelt & Warm</option>
                         <option value="poetic">📜 Poetic & Heritage</option>
@@ -1019,7 +1019,7 @@ export default function GiftPage() {
                       type="button"
                       onClick={handleAIPolish}
                       disabled={isPolishing || !giftMessage.trim()}
-                      className="px-3.5 py-2 min-h-[40px] rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40 active:scale-95"
+                      className="w-full sm:w-auto px-3.5 py-2 min-h-[38px] rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-40 active:scale-95 shadow-sm"
                     >
                       {isPolishing ? (
                         <>
@@ -1033,13 +1033,16 @@ export default function GiftPage() {
                         </>
                       )}
                     </button>
+                  </div>
 
+                  {/* Actions Row: Tidy, Proofreader, Undo */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-gray-800/60 flex-wrap sm:flex-nowrap">
                     {/* TIDY & FORMAT BUTTON */}
                     <button
                       type="button"
                       onClick={handleTidyText}
                       disabled={!giftMessage.trim()}
-                      className="px-3 py-2 min-h-[40px] rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs font-mono flex items-center gap-1 transition cursor-pointer disabled:opacity-40 active:scale-95"
+                      className="flex-1 sm:flex-initial px-3 py-1.5 min-h-[36px] rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs font-mono flex items-center justify-center gap-1 transition cursor-pointer disabled:opacity-40 active:scale-95 border border-gray-800"
                       title="Fix capitalization, punctuation & typographic quotes"
                     >
                       <CheckCheck className="w-3.5 h-3.5 text-gray-400" />
@@ -1051,7 +1054,7 @@ export default function GiftPage() {
                       type="button"
                       onClick={handleCheckGrammar}
                       disabled={isCheckingGrammar || isPolishing || !giftMessage.trim()}
-                      className="px-3 py-2 min-h-[40px] rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-300 border border-slate-700/50 text-xs font-mono flex items-center gap-1.5 transition cursor-pointer disabled:opacity-40 active:scale-95"
+                      className="flex-[2] sm:flex-initial px-3 py-1.5 min-h-[36px] rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-300 border border-slate-700/50 text-xs font-mono flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-40 active:scale-95 shadow-sm"
                       title="Check dictionary spelling, grammar agreement & UK English"
                     >
                       {isCheckingGrammar ? (
@@ -1066,20 +1069,20 @@ export default function GiftPage() {
                         </>
                       )}
                     </button>
-                  </div>
 
-                  {/* UNDO / REVERT AFFORDANCE */}
-                  {historyStack.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleRevert}
-                      className="px-3 py-2 min-h-[40px] rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-400 text-xs font-mono flex items-center gap-1 transition cursor-pointer active:scale-95"
-                      title="Revert to previous draft"
-                    >
-                      <Undo2 className="w-3.5 h-3.5" />
-                      <span>Undo</span>
-                    </button>
-                  )}
+                    {/* UNDO / REVERT AFFORDANCE */}
+                    {historyStack.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleRevert}
+                        className="px-3 py-1.5 min-h-[36px] rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-400 text-xs font-mono flex items-center justify-center gap-1 transition cursor-pointer active:scale-95 border border-gray-800"
+                        title="Revert to previous draft"
+                      >
+                        <Undo2 className="w-3.5 h-3.5" />
+                        <span>Undo</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* POST-POLISH NOTIFICATION BANNER */}
@@ -1100,8 +1103,8 @@ export default function GiftPage() {
 
             </div>
 
-            {/* RIGHT: DUAL-VIEW REAL-TIME PREVIEW CANVAS (5"x7" CARD ⇄ 🎬 DIGITAL UNBOXING) */}
-            <div className="flex flex-col justify-between space-y-6">
+            {/* RIGHT: DUAL-VIEW REAL-TIME PREVIEW CANVAS (Desktop >= 1024px) */}
+            <div className="hidden lg:flex flex-col justify-between space-y-6">
               
               <div>
                 {/* DUAL-VIEW SEGMENTED TOGGLE BAR */}
