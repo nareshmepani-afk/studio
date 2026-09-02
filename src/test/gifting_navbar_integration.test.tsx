@@ -46,6 +46,7 @@ vi.mock('@/hooks/useAuth', () => ({
 }));
 
 import { PricingContent } from '@/app/pricing/PricingContent';
+import GiftPage from '@/app/gift/page';
 
 describe('MW-86: Global Navigation, Footer & Pricing Ribbon Integration (/gift)', () => {
   beforeEach(() => {
@@ -175,6 +176,28 @@ describe('MW-86: Global Navigation, Footer & Pricing Ribbon Integration (/gift)'
       const claimButtons = screen.getAllByRole('link', { name: /start free/i });
       expect(claimButtons.length).toBeGreaterThanOrEqual(1);
       expect(claimButtons[0].getAttribute('href')).toBe('/register');
+    });
+  });
+
+  describe('Gifting Studio Mobile Ergonomics (/gift)', () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({
+        user: null,
+        loading: false,
+        logout: vi.fn(),
+      });
+    });
+
+    it('renders floating keepsake preview trigger button on /gift', () => {
+      render(<GiftPage />);
+      const previewButton = screen.getByRole('button', { name: /preview keepsake & ceremony/i });
+      expect(previewButton).toBeDefined();
+    });
+
+    it('renders sticky mobile checkout bar with active tier price', () => {
+      render(<GiftPage />);
+      const stickyButtons = screen.getAllByRole('button', { name: /commission heirloom/i });
+      expect(stickyButtons.length).toBeGreaterThanOrEqual(1);
     });
   });
 });
