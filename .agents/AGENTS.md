@@ -944,3 +944,14 @@ To prevent context drift, instruction dilution, and hallucination during massive
 - **`.agents/AGENTS.md` (The Constitution)**: Houses immutable operating laws, statutory compliance standards, and architectural rules.
 - **`LESSONS_LEARNED.md` (The Architectural Memory)**: Records hard-earned solutions (font subset embedding, audio context policies, regex sanitization patterns) to instantly ground any agent session.
 
+## 37.3 The Central Mission Control (Chat 0: The Dispatch Brain)
+- **Role & Purpose**: Chat 0 acts as the executive triage gatekeeper and Chief of Staff between the Creative Director (user) and the 4 execution chats.
+- **Input Ingestion**: Ingests raw human thought, voice memos, loose feedback, bug reports, and high-level feature brainstorms without requiring the user to format instructions.
+- **The Prompt Firewall**: Deconstructs user intent and generates precision-engineered, scoped prompts tailored to each recipient agent:
+  - Spec & Ticket prompts for 🧠 **Chat 1 (Lead Architect)**.
+  - Line-bounded file mutation prompts for ⚡ **Chat 2 (Flash Executor)**.
+  - Regression assertion prompts for 🛡️ **Chat 3 (QA Gatekeeper)**.
+  - Tone & cultural salutation prompts for ✨ **Chat 4 (Dedication Muse)**.
+- **Rule Injection**: Chat 0 automatically injects relevant constitutional invariants (Rule 5 Staging testing, Rule 7 Non-degradation, Rule 20 UK English, Rule 34 Dual-tier testing, Rule 36 Native Playwright) so the user never has to remember or re-type them.
+
+
