@@ -483,6 +483,9 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   if (showMobileGuard) {
     return (
       <MobilePortalOverlay
+        userEmail={user?.email || undefined}
+        promptId={promptId}
+        memoryTitle={selectedProductionData?.title || undefined}
         onActivateRemoteLens={() => {
           router.push(`${pathname}?room=solo`);
         }}
