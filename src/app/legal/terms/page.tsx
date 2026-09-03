@@ -93,7 +93,26 @@ export default function TermsPage() {
         </li>
       </ul>
 
-      <h2>6. Acceptable Use and Community Standards</h2>
+      <h2>6. Technical, Hardware, and System Requirements</h2>
+      <p>
+        Under the Consumer Rights Act 2015 and applicable consumer protection regulations, users and gift purchasers must take note of the following technical prerequisites prior to purchasing studio access passes:
+      </p>
+      <ul>
+        <li>
+          <strong>Recording Soundstage Display Requirements:</strong> Operating the private recording studio, interactive teleprompter, and multi-track audio workstation requires a device with a minimum viewport width of 768 pixels (such as an Apple iPad, Android tablet, laptop, or desktop computer). Handheld portrait smartphone screens are not supported for the primary creator recording interface.
+        </li>
+        <li>
+          <strong>Peripherals &amp; Remote Lenses:</strong> Creation requires a functional camera and microphone (integrated or external). Compatible smartphones may optionally be paired via secure WebRTC session as auxiliary remote video lenses.
+        </li>
+        <li>
+          <strong>Browser &amp; Network Specifications:</strong> The platform requires a modern, secure browser supporting HTML5, WebRTC, and MediaRecorder APIs (e.g., modern versions of Safari, Chrome, Edge, or Firefox). A stable broadband connection (recommended minimum 5 Mbps upload) is required for real-time vault synchronisation and cloud rendering.
+        </li>
+        <li>
+          <strong>Universal Playback &amp; Screening:</strong> Published family cinema premieres, streaming reels, and generational vault archives are universally accessible across all modern mobile phones, tablets, personal computers, and Smart TV web browsers without minimum viewport constraints.
+        </li>
+      </ul>
+
+      <h2>7. Acceptable Use and Community Standards</h2>
       <p>You agree not to use the Service to:</p>
       <ul>
         <li>Upload or distribute content that infringes upon third-party intellectual property or privacy rights;</li>
@@ -103,7 +122,7 @@ export default function TermsPage() {
         <li>Impersonate any individual, entity, or historical living person without lawful authorisation.</li>
       </ul>
 
-      <h2>7. Service Availability and Storage Continuity</h2>
+      <h2>8. Service Availability and Storage Continuity</h2>
       <p>
         We operate the Service using enterprise-grade cloud hosting infrastructure featuring industry-standard 
         encryption in transit and at rest. While we aim for continuous uptime, the Service is provided on 
@@ -111,7 +130,7 @@ export default function TermsPage() {
         we will provide a minimum of 90 days&apos; written notice and automated export tools to retrieve your master archives.
       </p>
 
-      <h2>8. Limitation of Liability</h2>
+      <h2>9. Limitation of Liability</h2>
       <p>
         To the maximum extent permitted by applicable law, Memory Weaver Studio and its directors, 
         employees, and partners shall not be liable for any indirect, incidental, special, consequential, 
@@ -120,14 +139,14 @@ export default function TermsPage() {
         to us in the twelve (12) months preceding the incident.
       </p>
 
-      <h2>9. Governing Law and Jurisdiction</h2>
+      <h2>10. Governing Law and Jurisdiction</h2>
       <p>
         These Terms, and any dispute or claim arising out of or in connection with them, shall be governed 
         by and construed in accordance with the laws of England and Wales. You agree that the courts of 
         England and Wales shall have exclusive jurisdiction to settle any dispute.
       </p>
 
-      <h2>10. Modifications to These Terms</h2>
+      <h2>11. Modifications to These Terms</h2>
       <p>
         We may revise these Terms from time to time. Material updates will be communicated to your registered 
         email address at least 30 days prior to taking effect. Your continued use of the Service following 

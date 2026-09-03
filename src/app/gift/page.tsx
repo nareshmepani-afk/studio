@@ -33,7 +33,13 @@ import {
   Play,
   RefreshCw,
   Layers,
-  BookOpen
+  BookOpen,
+  Monitor,
+  Smartphone,
+  Tv,
+  ChevronDown,
+  ChevronUp,
+  Info
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -239,6 +245,7 @@ export default function GiftPage() {
 
   // Tier selection
   const [selectedTier, setSelectedTier] = useState<GiftTier>('generational_vault');
+  const [isCompatibilityExpanded, setIsCompatibilityExpanded] = useState(true);
 
   // Customization Form
   const [recipientName, setRecipientName] = useState('');
@@ -631,6 +638,78 @@ export default function GiftPage() {
             </ul>
           </div>
 
+        </div>
+
+        {/* ─────────────────────────────────────────────────────────────
+            STUDIO RECORDING SETUP & COMPATIBILITY TRUST CARD
+        ───────────────────────────────────────────────────────────── */}
+        <div className="rounded-2xl bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 border border-amber-500/30 p-4 sm:p-5 shadow-lg shadow-black/40">
+          <button
+            type="button"
+            onClick={() => setIsCompatibilityExpanded((prev) => !prev)}
+            className="w-full flex items-center justify-between text-left cursor-pointer group"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
+                <Film className="w-4 h-4" />
+              </span>
+              <div>
+                <span className="text-xs sm:text-sm font-bold text-amber-200 font-sans group-hover:text-amber-300 transition flex items-center gap-2">
+                  <span>🎬 Studio Recording Setup &amp; Compatibility</span>
+                </span>
+                <span className="block text-[11px] text-gray-400 font-mono mt-0.5">
+                  Designed for Tablets, Laptops &amp; Desktops (768px+) • Phone 4K Lens Supported
+                </span>
+              </div>
+            </div>
+            <div className="p-1.5 rounded-lg bg-gray-800/80 text-gray-300 group-hover:text-white transition shrink-0 ml-2">
+              {isCompatibilityExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {isCompatibilityExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="pt-4 mt-3 border-t border-gray-800/80 grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+                  <div className="p-3.5 rounded-xl bg-gray-950/60 border border-gray-800/80 space-y-1.5">
+                    <div className="flex items-center gap-2 text-amber-300 font-semibold font-sans">
+                      <Monitor className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Recording Console</span>
+                    </div>
+                    <p className="text-[11px] text-gray-300 leading-relaxed font-sans">
+                      For optimal prompter legibility and acoustic capture, the recording studio is designed for tablets (iPad), laptops, or desktop computers (screen width 768px+).
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-gray-950/60 border border-gray-800/80 space-y-1.5">
+                    <div className="flex items-center gap-2 text-amber-300 font-semibold font-sans">
+                      <Smartphone className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Smartphone 4K Lens Pairing</span>
+                    </div>
+                    <p className="text-[11px] text-gray-300 leading-relaxed font-sans">
+                      Any iPhone or Android phone can be wirelessly paired as a secondary high-definition cinema camera.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-gray-950/60 border border-gray-800/80 space-y-1.5">
+                    <div className="flex items-center gap-2 text-amber-300 font-semibold font-sans">
+                      <Tv className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Everywhere Screening</span>
+                    </div>
+                    <p className="text-[11px] text-gray-300 leading-relaxed font-sans">
+                      Completed memoir films and reels play universally across all smartphones, tablets, computers, and Smart TVs with zero app downloads.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* CUSTOMISATION & DEDICATION MUSE FORM */}
@@ -1229,6 +1308,13 @@ export default function GiftPage() {
                         <Film className="w-5 h-5 text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
                       </div>
                     </div>
+
+                    {/* HARDWARE COMPATIBILITY HINT */}
+                    <div className="pt-2 border-t border-amber-500/10 text-center">
+                      <p className="text-[9px] font-mono text-amber-300/80 tracking-tight">
+                        Open your unboxing link on an iPad, laptop, or computer to step onto the soundstage.
+                      </p>
+                    </div>
                   </motion.div>
                 )}
 
@@ -1344,8 +1430,16 @@ export default function GiftPage() {
                 )}
               </div>
 
+              {/* PRE-CHECKOUT HARDWARE MICRO-NOTICE */}
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-200/90 font-sans">
+                <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">
+                  The storyteller&apos;s recording soundstage requires a tablet, laptop, or desktop. Finished memoirs can be screened on any device.
+                </span>
+              </div>
+
               {/* CHECKOUT ACTION BUTTON */}
-              <div className="space-y-3 pt-4">
+              <div className="space-y-3 pt-2">
                 <Button
                   onClick={handleCheckout}
                   disabled={isLoading}
@@ -1536,24 +1630,30 @@ export default function GiftPage() {
             )}
           </div>
 
-          <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setMobilePreviewOpen(false)}
-              className="flex-1 h-11 border-white/20 text-white hover:bg-white/10 text-xs font-semibold rounded-xl"
-            >
-              Return to Form
-            </Button>
-            <Button
-              onClick={() => {
-                setMobilePreviewOpen(false);
-                handleCheckout();
-              }}
-              disabled={isLoading}
-              className="flex-1 h-11 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20"
-            >
-              {isLoading ? 'Connecting...' : `Buy ${activeTierConfig.priceGbp} ↗`}
-            </Button>
+          <div className="pt-3 border-t border-white/10 space-y-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-2 text-[11px] text-amber-200/90 font-sans">
+              <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Soundstage requires a tablet or computer. Finished memoirs play on any phone or TV.</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setMobilePreviewOpen(false)}
+                className="flex-1 h-11 border-white/20 text-white hover:bg-white/10 text-xs font-semibold rounded-xl"
+              >
+                Return to Form
+              </Button>
+              <Button
+                onClick={() => {
+                  setMobilePreviewOpen(false);
+                  handleCheckout();
+                }}
+                disabled={isLoading}
+                className="flex-1 h-11 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20"
+              >
+                {isLoading ? 'Connecting...' : `Buy ${activeTierConfig.priceGbp} ↗`}
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
@@ -1561,7 +1661,11 @@ export default function GiftPage() {
       {/* ─────────────────────────────────────────────────────────────
           STICKY MOBILE PURCHASE BAR (< 1024px / < lg)
       ───────────────────────────────────────────────────────────── */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0A0A0A]/95 backdrop-blur-md border-t border-amber-500/20 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl shadow-black">
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-[#0A0A0A]/95 backdrop-blur-md border-t border-amber-500/20 px-4 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl shadow-black space-y-2">
+        <div className="max-w-md mx-auto flex items-center gap-1.5 text-[10px] text-amber-300/90 font-sans leading-tight">
+          <Info className="w-3 h-3 text-amber-400 shrink-0" />
+          <span className="truncate">Storyteller soundstage requires a tablet or PC. Plays on any device.</span>
+        </div>
         <div className="max-w-md mx-auto flex items-center justify-between gap-3">
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
