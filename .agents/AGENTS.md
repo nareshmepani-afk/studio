@@ -137,17 +137,18 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Exhaust All Diagnostic Avenues First**: Before escalating, the agent MUST attempt every available diagnostic tool (MCP tools, API calls, log inspection, version string checks). Only if ALL programmatic avenues fail should the agent escalate to the user.
 - **Never Leave Work Hanging**: Every escalation MUST include: (1) what was attempted, (2) why it failed, (3) exactly what the user needs to check, and (4) what the next step is once the answer is known.
 # 26. Model Triage & Token Economy Architecture
-- **Dual Tier-1 Entry Point (Opus 4.6 / Sonnet 4.6)**:
+- **Multi-Model Tier-1 & Agile Entry Points**:
   - **Claude Opus 4.6 (Thinking)**: Primary Strategic Director, Deep Architecture & Systemic Planner, High-Reasoning Pair Programming Lead.
   - **Claude Sonnet 4.6 (Thinking)**: Agile Strategic Architect, Code Reviewer, Gatekeeper for Protected Components (Rule 22.2), and Fast-Paced Execution Lead.
-  - **Core Duty of Tier-1**: Understand user requirements, formulate airtight architecture/implementation plans, make strategic decisions, review final diffs, and orchestrate subagent workflows.
+  - **Gemini 3.8 Flash (High Thinking)**: High-Speed Strategic Co-Pilot, Rapid Architectural Reasoning, Lightning-Fast Diagnostics, Real-Time Mobile & Responsive Layout Execution Lead, and Token-Efficient Iterative Workhorse.
+  - **Core Duty of Tier-1 / Strategic Leads**: Understand user requirements, formulate airtight architecture/implementation plans, make strategic decisions, review final diffs, and orchestrate subagent workflows.
 - **Mandatory Subagent Dispatch Matrix**:
-  - **Research & Discovery (`Model: 'flash'`)**: Codebase search, file scanning, context gathering, and summarization. Never dump hundreds of lines of raw code into the Tier-1 context window; subagents must return concise $\le$ 200-token summaries.
+  - **Research & Discovery (`Model: 'flash'`)**: High-speed codebase search, file scanning, context gathering, and summarization via Gemini Flash. Never dump hundreds of lines of raw code into the primary context window; subagents must return concise $\le$ 200-token summaries.
   - **Heavy Code Generation (`Model: 'pro'`)**: Complex multi-file refactoring, deep algorithmic pipelines, and intricate TypeScript state machines.
-  - **Rapid UI & Component Coding (`Model: 'flash'`)**: Standard React components, Tailwind styling, boilerplate, unit tests, and regression shield fixtures.
+  - **Rapid UI & Component Coding (`Model: 'flash'`)**: Standard React components, Tailwind styling, responsive device layout fixes, boilerplate, unit tests, and regression shield fixtures.
   - **Utility & Verification (`Model: 'flash_lite'` or `'flash'`)**: Running `tsc`, `vitest`, git commits/pushes, Plane.so CLI automation, and background deployment polling.
-- **Strict Line-Bounded Inspection**: When Tier-1 models directly inspect files, they MUST use tightly bounded `StartLine` and `EndLine` slices ($\le 30$ lines) to prevent context inflation.
-- **Autonomous Subagent Error Loops**: Subagents dispatched for coding or verification must resolve their own lint/type errors internally before returning a clean "Build Verified: SUCCESS" status to Tier-1.
+- **Strict Line-Bounded Inspection**: When primary models directly inspect files, they MUST use tightly bounded `StartLine` and `EndLine` slices ($\le 30$ lines) to prevent context inflation.
+- **Autonomous Subagent Error Loops**: Subagents dispatched for coding or verification must resolve their own lint/type errors internally before returning a clean "Build Verified: SUCCESS" status to the primary agent.
 
 # 27. Dual-Sweep Cognitive Protocol (Adversarial Pre-Mortem Discipline)
 - **Mandatory 2-Pass Reasoning Before Execution**: The agent MUST perform a dual-sweep reasoning cycle before proposing architectural writes, edits, or multi-component fixes:
@@ -296,8 +297,8 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 # 21. Model Selection Advisory & Prompt Router Protocol
 - **Mandatory Pre-Gate Callout**: On EVERY single user message without exception, the agent's very first line of output MUST include the exact pre-gate model validation statement:
   `🎯 The model selected for your question should be: [emoji] [CURRENT_ACTIVE_MODEL_NAME] — [Reason]`.
-- **Automatic Metadata Model Detection**: The agent automatically inspects active session metadata and runtime context on every turn to detect the currently selected model (`Gemini 3.7 Flash (High)`, `Gemini 3.7 Flash (Low)`, `Gemini 3.7 Pro`) without requiring manual user notification.
-- **Automatic High-Tier Reasoning Escalation**: Whenever executing multi-file refactoring, network/edge diagnostics, structural layout changes, or test suite verifications, the agent MUST automatically route and execute the underlying technical work using **Gemini 3.7 Flash (High)** / **Gemini 3.7 Pro** tier reasoning to guarantee zero regressions.
+- **Automatic Metadata Model Detection**: The agent automatically inspects active session metadata and runtime context on every turn to detect the currently selected model (`Gemini 3.8 Flash (High)`, `Gemini 3.7 Flash (High)`, `Gemini 3.7 Flash (Low)`, `Gemini 3.7 Pro`, `Claude Sonnet (Thinking)`, `Claude Opus (Thinking)`) without requiring manual user notification.
+- **Automatic High-Tier Reasoning Escalation**: Whenever executing multi-file refactoring, network/edge diagnostics, structural layout changes, or test suite verifications, the agent MUST automatically route and execute the underlying technical work using **Gemini 3.8 Flash (High)** / **Gemini 3.7 Flash (High)** / **Claude Sonnet** tier reasoning to guarantee zero regressions.
 - **Hard Code-Edit Lockout**: If the task tier is higher than the current active model tier (e.g. Current is Low, Task is Medium/High/Premium), the agent is **STRICTLY FORBIDDEN** from invoking ANY code-modification tools (`replace_file_content`, `multi_replace_file_content`, `write_to_file`, `run_command` git commit) unless automatic subagent escalation is enabled.
 - **Execute or Route**: If the current model matches or exceeds the required task tier, execute directly.
 - **Ask if Ambiguous**: If the task is underspecified, ask the user for clarification BEFORE routing or executing.
@@ -306,7 +307,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 
 # 22. Model Gate & Delegation Protocol (Incident Prevention Rule)
 
-> **Origin**: Codified after MW-163 incident (2026-08-15) in which Gemini 3.7 Flash High violated Rule 7 by collapsing three separate export buttons (Print PDF, Download, Share & QR) into one, passing a Vitest suite that had insufficiently specific assertions.
+> **Origin**: Codified after MW-163 incident (2026-08-15) in which Gemini Flash High violated Rule 7 by collapsing three separate export buttons (Print PDF, Download, Share & QR) into one, passing a Vitest suite that had insufficiently specific assertions.
 
 ## Core Principle
 **Claude Opus (Thinking) is the default first gate.** Every user question lands on Opus first. Opus either executes directly (Architect/Ultra tasks) or writes a precise, ready-to-paste prompt for the optimal downstream model. This ensures the routing decision itself receives the deepest reasoning.
@@ -317,7 +318,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 |---|---|---|
 | 🏛️ **Triage & Architect** (Default) | Claude Opus (Thinking) | **First gate for ALL questions.** Analyses, classifies tier, either executes directly or writes a ready-to-paste prompt for the optimal downstream model. Handles systemic root-cause analysis, pre-execution brainstorming, architectural decisions, writing / amending rules in `.agents/`. |
 | 🔰 **Gatekeeper** | Claude Sonnet (Thinking) | Day-to-day production execution. Issues final `git commit` on Protected Components. Executes Premium-tier bug fixes, multi-file refactors, and post-delegation diff audits. |
-| ⚙️ **Executor** | Gemini Flash (High / Thinking) | Executes bounded, clearly scoped tasks with explicit success criteria from a Delegation Brief. May commit on non-Protected files only. |
+| ⚙️ **Executor & Agile Lead** | Gemini 3.8 Flash (High / Thinking) / Gemini 3.7 Flash (High) | Executes bounded, clearly scoped tasks, rapid responsive UI fixes, and test suites with explicit success criteria from a Delegation Brief. May commit on non-Protected files only. |
 | 🔍 **Reader** | Gemini Flash (Low) | Research, file reading, grep searches, status checks, `tsc` / `vitest` output reading. Zero code writes. |
 
 > 📌 **Version Policy**: Rules reference model *families*, not version numbers (e.g. `Claude Sonnet (Thinking)`, not `Claude Sonnet 4.6`). This keeps the ruleset evergreen as model versions update.
@@ -800,7 +801,7 @@ The agent MUST execute the following sequence upon staging rollout verification:
 In long conversations with multiple tool calls, file views, and checkpoints, the entire message trajectory (100,000–200,000+ tokens) is processed on **every single user prompt** (even 1-word commands like `Continue` or `PASS`). This causes rapid token consumption if expensive reasoning models are used for repetitive iterative loops.
 
 ## 28.2 Token-Saving Protocol & Model Allocation
-- **Iterative Execution & Verification Workhorse**: Default to **Gemini 3.7 Flash (High)** or **Gemini Flash (Medium)** for continuous debugging, test execution, UI tweaks, subagent execution (`flash_executor`), and active testing cycles to maximize speed and token efficiency.
+- **Iterative Execution & Verification Workhorse**: Default to **Gemini 3.8 Flash (High)** or **Gemini Flash (Medium)** for continuous debugging, test execution, UI tweaks, subagent execution (`flash_executor`), and active testing cycles to maximize speed and token efficiency.
 - **Architectural & Complex Reasoning Reserve**: Reserve **Claude Opus / Sonnet (Thinking)** for initial system design, major multi-module refactoring, or intractable state bugs where deep reasoning is strictly required.
 - **Mandatory Subagent Offload**: All mechanical code execution and broad file research MUST use Flash-tier subagents (`flash` / `flash_executor`).
 

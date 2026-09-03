@@ -87,7 +87,7 @@ If the task is ambiguous or underspecified, ask the user for clarification BEFOR
 |---|---|---|
 | 💚 Low | Gemini Flash (Low) | 🔍 Reader only — no code writes |
 | 💛 Medium | Gemini Flash (Low / Medium) | ⚙️ Executor — non-Protected files only. Must run Rule 26 Self-Healing Loop. |
-| 🟠 High | Gemini Flash (High / Thinking) | ⚙️ Executor — with Delegation Brief (Rule 22.5) + Rule 26 Self-Healing Loop |
+| 🟠 High | Gemini 3.8 Flash (High / Thinking) / Gemini 3.7 Flash (High) | ⚙️ Executor & Agile Lead — with Delegation Brief (Rule 22.5) + Rule 26 Self-Healing Loop |
 | 🔴 Premium | **Claude Sonnet (Thinking)** | 🔰 **Gatekeeper** — Protected Components, final commits, diff audits. Runs Rule 26.3 Gatekeeper Integration Step before push. |
 | 🟣 Ultra | **Claude Opus (Thinking)** ← DEFAULT | 🏛️ **Triage & Architect** — First gate for ALL questions. Executes directly or writes ready-to-paste prompts. |
 
@@ -100,7 +100,7 @@ If the task is ambiguous or underspecified, ask the user for clarification BEFOR
 ---
 
 ## Automatic Model Detection Capability
-- **Zero-Manual-Notification Mode**: The agent automatically inspects the active session metadata and runtime context on every turn to detect the currently selected model (`Gemini Flash (High)`, `Gemini Flash (Low)`, `Claude Sonnet (Thinking)`, `Claude Opus (Thinking)`) without requiring the user to manually announce model switches.
+- **Zero-Manual-Notification Mode**: The agent automatically inspects the active session metadata and runtime context on every turn to detect the currently selected model (`Gemini 3.8 Flash (High)`, `Gemini 3.7 Flash (High)`, `Gemini 3.7 Flash (Low)`, `Claude Sonnet (Thinking)`, `Claude Opus (Thinking)`) without requiring the user to manually announce model switches.
 - **Dynamic Pre-Gate Echo**: The pre-gate statement dynamically resolves to the exact active model detected from session metadata.
 
 ---
@@ -222,6 +222,6 @@ and is ideal before committing to any code changes.
 ## Token Economy & Context Window Inflation Shield (Rule 28)
 
 1. **Context Window Dynamics**: In extended conversations (multiple checkpoints, large files), every turn resends 150k–200k+ tokens. Using expensive reasoning tiers for repetitive `PASS` / `Continue` loops burns tokens rapidly.
-2. **Workhorse Tier**: Use **Gemini 3.7 Flash (High / Medium)** as the primary engine for high-iteration debugging, test runs, UI polish, and ticket closure.
+2. **Workhorse Tier**: Use **Gemini 3.8 Flash (High)** / **Gemini 3.7 Flash (High / Medium)** as the primary engine for high-iteration debugging, test runs, UI polish, and ticket closure.
 3. **Rollover Trigger**: Once a sprint reaches ~10 tickets or is truncated by checkpoints, cut a **Sprint Handoff Brief** and initiate a fresh conversation.
 
