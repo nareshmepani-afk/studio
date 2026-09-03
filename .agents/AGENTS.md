@@ -914,3 +914,33 @@ The final **Production-Ready Audit & Retrospective** (Rule 16) MUST explicitly c
 - **Dynamic Font Subset Embedding**: If Indic glyphs are detected, dynamically embed the corresponding Noto Sans font subset (`NotoSansGujarati-Regular.ttf`, `NotoSansDevanagari-Regular.ttf`, `NotoSansGurmukhi-Regular.ttf`) from `public/fonts/noto/`.
 - **Anti-Pattern (Tofu Rendering)**: Standard Latin-only TTF fonts (Playfair Display, Inter) do NOT contain Indic glyph ranges and will render as □□□ (tofu boxes) on printed cards.
 - **Graceful Fallback**: If a font subset file is missing or fails to load, log a warning and fall back to the system Unicode font rather than silently producing tofu.
+
+# 36. Native Playwright Staging Visual Regression Protocol & Automated Release Gate
+
+## 36.1 Zero-Cost Native Playwright Architecture
+- **Mandatory Native Playwright (`@playwright/test`)**: To eliminate repetitive manual human viewport checking across mobile (360px), tablet (820px), and desktop (1440px), visual regression testing MUST use native Playwright (`expect(page).toHaveScreenshot()`).
+- **No Paid Third-Party SaaS (Percy)**: The project MUST NEVER introduce paid third-party snapshot SaaS (like Percy/BrowserStack) when native Playwright provides identical pixel-diffing capabilities for free, with zero monthly quotas, zero external network egress requirements, and instant local execution.
+
+## 36.2 Staging-Targeted Headless Execution
+- **Exclusive Staging Base URL**: Playwright E2E suites MUST target `https://dev.memoryweaver.studio` to test the true Firebase Auth, Cloud Run, and App Hosting edge runtime rather than broken localhost environments.
+- **Three Standard Device Viewport Profiles**:
+  1. `Small Mobile`: Samsung Galaxy S8+ (`360×740px`) & iPhone SE (`375×667px`) — Validates zero horizontal overflow (`scrollWidth <= clientWidth`), no clipped buttons, and 2-column grid contracts.
+  2. `Tablet`: iPad Air (`820×1180px`) — Validates intermediate `[ 🧭 Explore ▾ ]` popover navigation and teleprompter console layout.
+  3. `Desktop`: Widescreen (`1440×900px`) — Validates full 5-Act production timeline, right-column keepsake canvas previews, and full navbar.
+
+## 36.3 Automated QA Checklist Artifact Integration
+- **Zero-Friction Screenshot Ingestion**: Playwright test runs MUST output captured screenshots into the artifact directory and automatically inject them into `qa_checklist_interactive.html`, rendering green verified visual cards and eliminating manual DevTools screenshot taking for human reviewers.
+
+# 37. Antigravity 4-Chat Multi-Agent Topology & Operating Blueprint
+
+## 37.1 The Four Specialized Chat Personas
+To prevent context drift, instruction dilution, and hallucination during massive sprints, engineering responsibilities are strictly divided across four specialized agent sessions:
+1. 🧠 **The Lead Architect**: Wide context (specs, diagrams, architecture trade-offs, Plane.so ticket planning, schema design, and `AGENTS.md` governance).
+2. ⚡ **The Flash Executor**: Tight, laser-focused context (file mutations, high-token velocity, and `npm run build` compilation verification).
+3. 🛡️ **The QA Gatekeeper**: Test-focused, defensive context (Vitest invariant suites, Playwright E2E probes, `/api/version` edge polling, and `qa_checklist_interactive.html` generation).
+4. ✨ **The Dedication Muse & Copy Critic**: Editorial context (cultural dialects in Gujarati, Punjabi, Hindi, British English orthography, and brand voice fidelity).
+
+## 37.2 The Two Shared Memory Anchors
+- **`.agents/AGENTS.md` (The Constitution)**: Houses immutable operating laws, statutory compliance standards, and architectural rules.
+- **`LESSONS_LEARNED.md` (The Architectural Memory)**: Records hard-earned solutions (font subset embedding, audio context policies, regex sanitization patterns) to instantly ground any agent session.
+
