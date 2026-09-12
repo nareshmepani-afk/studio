@@ -113,3 +113,10 @@ class UnboxingAudioEngine {
 }
 
 export const unboxingAudio = new UnboxingAudioEngine();
+
+/**
+ * Procedural wax crack audio trigger (528Hz + 792Hz harmonic resonance + noise snap)
+ */
+export function playWaxCrackAudio(): void {
+  unboxingAudio.playWaxSealBreak();
+}
