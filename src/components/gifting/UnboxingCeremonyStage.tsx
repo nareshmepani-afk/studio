@@ -448,6 +448,17 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
                     ) : null}
                     <span>Pass will be permanently linked to your account</span>
                   </p>
+
+                  <a
+                    href={`/api/gift/pdf?code=${voucher.code}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 mt-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/40 text-xs font-mono text-gray-300 hover:text-amber-300 transition-colors"
+                  >
+                    <Film className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Download Keepsake PDF (5&quot;×7&quot;)</span>
+                    <span className="text-[10px] text-gray-500">↗</span>
+                  </a>
                 </div>
               </motion.div>
             )}
