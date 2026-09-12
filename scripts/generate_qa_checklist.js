@@ -1043,3 +1043,5 @@ if (require.main === module) {
   fs.writeFileSync(targetOutput, html, 'utf8');
   console.log(`[generate_qa_checklist] Successfully generated QA Verification Suite at: ${targetOutput}`);
 }
+
+module.exports = { generateQAChecklistHtml };
