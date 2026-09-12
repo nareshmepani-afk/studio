@@ -19,15 +19,16 @@ import { AccessConsole } from '@/components/admin/AccessConsole';
 import { EmailOperationsConsole } from '@/components/admin/EmailOperationsConsole';
 import KnowledgeHub from '@/components/admin/KnowledgeHub';
 import { VoucherMintingConsole } from '@/components/admin/VoucherMintingConsole';
+import { MissionControlConsole } from '@/components/admin/MissionControlConsole';
 import { getBackendEnvironmentDetails } from './actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { Gift } from 'lucide-react';
+import { Gift, Rocket } from 'lucide-react';
 
 export default function AdminDashboardContent() {
   const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'email' | 'knowledge' | 'vouchers'>('devops');
+  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
 
   useEffect(() => {
@@ -51,7 +52,7 @@ export default function AdminDashboardContent() {
       // Rehydrate active suite from URL search params (?suite=email, ?suite=vouchers, or ?tab=access)
       const urlParams = new URLSearchParams(window.location.search);
       const suiteParam = urlParams.get('suite') || urlParams.get('tab');
-      if (suiteParam && ['devops', 'business', 'access', 'email', 'knowledge', 'vouchers'].includes(suiteParam)) {
+      if (suiteParam && ['devops', 'business', 'access', 'email', 'knowledge', 'vouchers', 'mission'].includes(suiteParam)) {
         setActiveSuite(suiteParam as any);
       }
     }
@@ -217,6 +218,18 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
+                onClick={() => setActiveSuite('mission')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
+                  activeSuite === 'mission' 
+                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
+                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                }`}
+              >
+                <Rocket className="h-4 w-4 text-amber-400" />
+                Mission Control
+              </button>
+
+              <button
                 onClick={() => setActiveSuite('knowledge')}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md border transition-all ${
                   activeSuite === 'knowledge'
@@ -281,6 +294,7 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'access' && 'Customer Support & Access'}
                   {activeSuite === 'email' && 'Email Operations & Live Dispatcher'}
                   {activeSuite === 'vouchers' && 'Heirloom Voucher Minting'}
+                  {activeSuite === 'mission' && 'Mission Control & Flight Recorder'}
                   {activeSuite === 'knowledge' && 'Living Knowledge Hub'}
                 </h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
@@ -289,6 +303,7 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'access' && 'Manage client authentication tokens, inspect permission passes, and execute administrative bypasses.'}
                   {activeSuite === 'email' && 'Dispatch 1-click test emails across all 4 production templates, inspect live Resend API delivery receipts with SPF/DKIM validation, and audit Obsidian-Gold HTML rendering.'}
                   {activeSuite === 'vouchers' && 'Mint complimentary founder passes, test vouchers, and custom vanity codes with 1-click unboxing test links.'}
+                  {activeSuite === 'mission' && 'Real-time multi-agent flight recorder tracking active platform coordinates, partner discipline checkpoints, target files, and sprint roadmap.'}
                   {activeSuite === 'knowledge' && 'Search, filter, and inspect compiled business rules, operational playbooks, subscription tier pricing, and lifecycle policies.'}
                 </p>
               </div>
@@ -301,6 +316,7 @@ export default function AdminDashboardContent() {
               {activeSuite === 'access' && <AccessConsole />}
               {activeSuite === 'email' && <EmailOperationsConsole />}
               {activeSuite === 'vouchers' && <VoucherMintingConsole />}
+              {activeSuite === 'mission' && <MissionControlConsole />}
               {activeSuite === 'knowledge' && <KnowledgeHub />}
             </div>
 
