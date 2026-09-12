@@ -12,13 +12,13 @@
 
 - **Active Sprint:** Sprint 3 — MW-86 Act V Heirloom Unboxing & Keepsake Engine
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `e6f5ede`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `288274e`)
 
 - **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 37.3 Codified)
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 366 / 366 Vitest Tests Passing (31 Test Files)
+- **Current Invariant Test Baseline:** 372 / 372 Vitest Tests Passing (32 Test Files)
 
 
 
@@ -126,10 +126,37 @@
 - **Active Ticket Queue (Plane.so):**
   - [x] **MW-229 (Ticket #229)**: The `/unboxing/[code]` Theatrical Stage *(Complete & Live on Staging)*
   - [x] **MW-233 (Ticket #233)**: Mission Control Flight Console UI (`/admin?suite=mission`) *(Complete & Live on Staging)*
-  - [ ] **MW-230 (Ticket #230)**: 5"×7" Keepsake Vector PDF Generator (`pdf-lib` + Noto Sans Indic)
+  - [x] **MW-230 (Ticket #230)**: 5"×7" Keepsake Vector PDF Generator (`pdf-lib` + Noto Sans Indic) *(Complete & Live on Staging)*
   - [ ] **MW-231 (Ticket #231)**: Web Audio Synthesis & Unboxing Invariant Vitest Suite
-- **Next Unblocked Directive:** Dispatch Ticket #230 (5"×7" Keepsake Vector PDF Generator) to Antigravity.
+- **Next Unblocked Directive:** Verify 5"×7" keepsake vector PDF generator on staging.
 
 ---
+
+### [2026-09-12 19:45 BST] • Checkpoint #005 — 5"×7" Luxury Keepsake Vector PDF Generator (Commit `288274e`)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved 10"×7" flat vector canvas folding into 5"×7" luxury card (Front Cover + Inside Spread) with obsidian matte background (`#0A0A0A`), metallic gold filigree borders (`#D4AF37`), and champagne amber accents (`#F59E0B`).
+  - 🧠 **Gemini Strategic Brain**: Codified multi-script Indic typography engine (`[\u0A80-\u0AFF]` Gujarati, `[\u0900-\u097F]` Devanagari, `[\u0A00-\u0A7F]` Gurmukhi), embedding hinted Noto Sans TTFs and runtime OpenType GPOS anchor table patching to prevent tofu boxes (□□□).
+  - ⚡ **Antigravity Execution**: Commit `288274e` implemented `generateVoucherPdf` in `src/lib/pdf/voucherCard.ts`, the authenticated streaming route `/api/gift/pdf`, and added the dedicated keepsake PDF download CTA in `src/components/gifting/UnboxingCeremonyStage.tsx`.
+  - 🛡️ **QA Gatekeeper**: Vitest suite expanded from 366 to 372 passed tests (+6 new test invariants in `src/test/pdf_voucher_generation.test.ts`). Live staging rollout confirmed at `https://dev.memoryweaver.studio/api/version` serving `288274e`. Synchronised Plane issue #241 to Done.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\lib\pdf\voucherCard.ts`
+  - `C:\Users\home\studio\src\lib\dedicationMuse.ts`
+  - `C:\Users\home\studio\src\app\api\gift\pdf\route.ts`
+  - `C:\Users\home\studio\src\app\gift\page.tsx`
+  - `C:\Users\home\studio\src\components\gifting\UnboxingCeremonyStage.tsx`
+  - `C:\Users\home\studio\src\test\pdf_voucher_generation.test.ts`
+  - `C:\Users\home\studio\src\test\setup.ts`
+  - `C:\Users\home\studio\src\types\fontkit.d.ts`
+  - `C:\Users\home\studio\public\fonts\`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+- **Active Ticket Queue (Plane.so):**
+  - [x] **MW-229 (Ticket #229)**: The `/unboxing/[code]` Theatrical Stage *(Complete & Live on Staging)*
+  - [x] **MW-233 (Ticket #233)**: Mission Control Flight Console UI (`/admin?suite=mission`) *(Complete & Live on Staging)*
+  - [x] **MW-230 (Ticket #230)**: 5"×7" Keepsake Vector PDF Generator (`pdf-lib` + Noto Sans Indic) *(Complete & Live on Staging)*
+  - [ ] **MW-231 (Ticket #231)**: Web Audio Synthesis & Unboxing Invariant Vitest Suite
+- **Next Unblocked Directive:** Dispatch Ticket #231 (Web Audio Synthesis & Unboxing Invariant Vitest Suite).
+
+---
+
 
 
