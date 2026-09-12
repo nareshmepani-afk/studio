@@ -92,7 +92,7 @@ export default async function RootLayout({
   const isAdmin = host.startsWith('admin.');
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <meta name="app-version" content={process.env.NEXT_PUBLIC_APP_VERSION} />
         <script
@@ -100,7 +100,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrgJsonLd) }}
         />
       </head>
-      <body className={`${inter.className} bg-background text-foreground`} suppressHydrationWarning>
+      <body className={`${inter.className} bg-[#0A0A0A] text-foreground`} suppressHydrationWarning>
         <Providers>
           <BuildIdLogger />
           {!isAdmin && <Navbar />}

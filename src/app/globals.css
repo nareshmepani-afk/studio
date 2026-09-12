@@ -140,8 +140,7 @@
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    /* CACHE BUSTER RED BORDER */
-    border: 10px solid #ef4444 !important;
+    background-color: #0A0A0A;
     box-sizing: border-box;
   }
 
