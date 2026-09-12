@@ -10,15 +10,15 @@
 
 \## 📌 Active Platform Coordinates
 
-\- \*\*Active Sprint:\*\* Sprint 3 — MW-86 Act V Heirloom Unboxing \& Keepsake Engine
+- **Active Sprint:** Sprint 3 — MW-86 Act V Heirloom Unboxing & Keepsake Engine
 
-\- \*\*Target Edge Environment:\*\* \`https://dev.memoryweaver.studio\` (Serving Commit: \`6059e0d1\`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `e6f5ede`)
 
-\- \*\*Active Governance Document:\*\* \`C:\\Users\\home\\studio\\.agents\\AGENTS.md\` (Rule 37.3 Codified)
+- **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 37.3 Codified)
 
-\- \*\*Executive Knowledge Vault:\*\* NotebookLM \`🏛️ Memory Weaver: Executive Board \& Architecture Vault\`
+- **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-\- \*\*Current Invariant Test Baseline:\*\* 357 / 357 Vitest Tests Passing (29 Test Files)
+- **Current Invariant Test Baseline:** 366 / 366 Vitest Tests Passing (31 Test Files)
 
 
 
@@ -87,4 +87,49 @@
 - **Next Unblocked Directive:** Verify live unboxing URLs on staging or dispatch Ticket #230 / #233 to Antigravity.
 
 ---
+
+### [2026-09-12 17:15 BST] • Checkpoint #003 — Mission Control Flight Console & Reader API (Commit `9776f31b`)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved the unified executive flight recorder architecture and streaming markdown UI specifications.
+  - 🧠 **Gemini Strategic Brain**: Codified the mission log parsing schema, checkpoint extraction regexes, and Plane.so ticket queue model.
+  - ⚡ **Antigravity Execution**: Commit `9776f31b` deployed the Mission Control flight console (`/admin?suite=mission`), server-side reader API (`/api/admin/mission-log`), and living timeline cards.
+  - 🛡️ **QA Gatekeeper**: Vitest suite expanded from 357 to 363 passed tests (+6 new invariants in `src/test/mission_control.test.tsx`). Verified edge rollout on staging.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\app\admin\AdminDashboardContent.tsx`
+  - `C:\Users\home\studio\src\app\api\admin\mission-log\route.ts`
+  - `C:\Users\home\studio\src\components\admin\MissionControlConsole.tsx`
+  - `C:\Users\home\studio\src\lib\missionLog.ts`
+  - `C:\Users\home\studio\src\test\mission_control.test.tsx`
+- **Active Ticket Queue (Plane.so):**
+  - [x] **MW-229 (Ticket #229)**: The `/unboxing/[code]` Theatrical Stage *(Complete & Live on Staging)*
+  - [x] **MW-233 (Ticket #233)**: Mission Control Flight Console UI (`/admin?suite=mission`) *(Complete & Live on Staging)*
+  - [ ] **MW-230 (Ticket #230)**: 5"×7" Keepsake Vector PDF Generator (`pdf-lib` + Noto Sans Indic)
+  - [ ] **MW-231 (Ticket #231)**: Web Audio Synthesis & Unboxing Invariant Vitest Suite
+- **Next Unblocked Directive:** Verify live `/admin?suite=mission` flight console on staging.
+
+---
+
+### [2026-09-12 18:30 BST] • Checkpoint #004 — Red Viewport Border Removal, Obsidian Root Lockdown & 100% Green QA Sign-Off (Commit `e6f5ede1`)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Validated viewport boundaries on mobile and flagged diagnostic debug border on `/gift` container.
+  - 🧠 **Gemini Strategic Brain**: Identified root-cause in `globals.css`, `layout.tsx`, and `PublicPageShell.tsx` wrapper styling, locking background to `#0A0A0A` obsidian.
+  - ⚡ **Antigravity Execution**: Commit `e6f5ede1` stripped the red diagnostic border, restored the `#0A0A0A` luxury obsidian background, and added responsive viewport assertions in `src/test/gifting_viewport.test.tsx`.
+  - 🛡️ **QA Gatekeeper**: All 366 Vitest tests passing across 31 test files. Verified live staging edge at `https://dev.memoryweaver.studio/api/version` serving `e6f5ede`. Regenerated `qa_checklist_interactive.html` with all 16/16 test cards in verified green PASS status (100% complete baseline).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\app\globals.css`
+  - `C:\Users\home\studio\src\app\layout.tsx`
+  - `C:\Users\home\studio\src\components\public\PublicPageShell.tsx`
+  - `C:\Users\home\studio\src\test\gifting_viewport.test.tsx`
+  - `C:\Users\home\studio\scratch\build_qa.js`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+- **Active Ticket Queue (Plane.so):**
+  - [x] **MW-229 (Ticket #229)**: The `/unboxing/[code]` Theatrical Stage *(Complete & Live on Staging)*
+  - [x] **MW-233 (Ticket #233)**: Mission Control Flight Console UI (`/admin?suite=mission`) *(Complete & Live on Staging)*
+  - [ ] **MW-230 (Ticket #230)**: 5"×7" Keepsake Vector PDF Generator (`pdf-lib` + Noto Sans Indic)
+  - [ ] **MW-231 (Ticket #231)**: Web Audio Synthesis & Unboxing Invariant Vitest Suite
+- **Next Unblocked Directive:** Dispatch Ticket #230 (5"×7" Keepsake Vector PDF Generator) to Antigravity.
+
+---
+
 
