@@ -134,12 +134,21 @@
     filter: brightness(1.2);
   }
 
-  /* Root Stability */
-  html, body {
+  /* Root Stability - Separated html and body to prevent Chromium double scrollbars */
+  html {
     min-height: 100%;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    background-color: #0A0A0A;
+    box-sizing: border-box;
+  }
+
+  body {
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: clip;
     background-color: #0A0A0A;
     box-sizing: border-box;
   }

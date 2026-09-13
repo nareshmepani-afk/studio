@@ -87,9 +87,10 @@ describe('MW-86: UnboxingCeremonyStage & Audio Engine Invariant Suite', () => {
 
       // Verify transition to revealed state (allows for 900ms crack phase + exit animation)
       await waitFor(() => {
-        expect(screen.getByText(/Dad, thank you for every sacrifice you made/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Dad, thank you for every sacrifice you made/i)[0]).toBeInTheDocument();
         expect(screen.getByText('Welcome, Kishor Patel')).toBeInTheDocument();
         expect(screen.getByText(/Step Onto Your Soundstage/i)).toBeInTheDocument();
+        expect(screen.getByText(/Archival Keepsake Pass & QR Portal/i)).toBeInTheDocument();
       }, { timeout: 3000 });
     });
   });

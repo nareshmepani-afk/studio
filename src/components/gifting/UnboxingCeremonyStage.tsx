@@ -3,9 +3,12 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Film, Sparkles, Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Film, Sparkles, Loader2, ShieldCheck, AlertCircle, QrCode, Copy, Check, Download, Eye } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { playWaxCrackAudio } from '@/lib/audio/unboxingAudio';
 import { useAuth } from '@/hooks/useAuth';
+import { sanitiseRecipientName } from '@/lib/dedicationMuse';
+import { GIFT_TIER_DISPLAY } from '@/types/gift';
 import type { GiftTier, VoucherStatus, UnboxingLanguage } from '@/types/gift';
 
 export interface SerializedGiftVoucher {
@@ -88,9 +91,22 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
   const [phase, setPhase] = useState<'entrance' | 'crack' | 'revealed'>('entrance');
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [activeCardTab, setActiveCardTab] = useState<'spread' | 'cover'>('spread');
 
   const language = voucher.unboxingLanguage || 'en';
   const cultural = CULTURAL_CONFIGS[language] || CULTURAL_CONFIGS.en;
+  const tierConfig = GIFT_TIER_DISPLAY[voucher.tier] || GIFT_TIER_DISPLAY.generational_vault;
+  const cleanRecipient = sanitiseRecipientName(voucher.recipientName) || 'Honoured Storyteller';
+  const cleanGiver = sanitiseRecipientName(voucher.giverName) || 'Family & Loved Ones';
+
+  const handleCopyCode = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(voucher.code || code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   // Pre-calculated 12-particle gold ember explosion geometry
   const particles = useMemo(() => {
@@ -177,7 +193,7 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white flex flex-col justify-between selection:bg-amber-500 selection:text-gray-950 font-sans relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#0A0A0A] text-white flex flex-col justify-between selection:bg-amber-500 selection:text-gray-950 font-sans relative overflow-x-clip">
       {/* Top Cinematic Matte Bar */}
       <header className="w-full bg-black/90 border-b border-white/5 px-4 sm:px-8 py-3.5 flex items-center justify-between z-30">
         <div className="flex items-center gap-2.5">
@@ -194,16 +210,14 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
       </header>
 
       {/* Main Theatrical Stage (2.39:1 Anamorphic Letterbox Framing) */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12 relative z-10">
+      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-14 md:py-16 relative z-10">
         {/* Soft Ambient Gold/Amber Specular Glow Orbs */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[34rem] h-[34rem] bg-amber-500/10 rounded-full blur-[110px] pointer-events-none" />
         <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 translate-y-1/2 w-[28rem] h-[28rem] bg-amber-700/10 rounded-full blur-[90px] pointer-events-none" />
 
-        {/* 2.39:1 Widescreen Letterbox Enclosure (Expands gracefully when dedication card is revealed) */}
+        {/* 2.39:1 Widescreen Letterbox Enclosure (Expands gracefully with generous top & bottom breathing room) */}
         <div
-          className={`w-full max-w-5xl ${
-            phase !== 'revealed' ? 'md:aspect-[2.39/1] min-h-[500px]' : 'min-h-[540px] h-auto py-8 sm:py-12'
-          } bg-[#0c0d10] border border-amber-500/30 rounded-2xl sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] p-4 sm:p-8 md:p-12 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all duration-500`}
+          className="w-full max-w-5xl min-h-[520px] h-auto py-10 sm:py-14 md:py-16 bg-[#0c0d10] border border-amber-500/30 rounded-2xl sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] p-6 sm:p-10 md:p-14 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all duration-500"
         >
           
           {/* Subtle Stage Border Glow */}
@@ -219,9 +233,9 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
                 transition={{ duration: 0.6 }}
                 className="w-full max-w-xl mx-auto flex flex-col items-center justify-center relative z-10"
               >
-                {/* Entrance Header: Playfair Display */}
-                <div className="space-y-3 mb-8">
-                  <p className="text-xs font-mono uppercase tracking-[0.25em] text-amber-400/90">
+                {/* Entrance Header: Playfair Display with generous top padding */}
+                <div className="space-y-3 mb-8 pt-4 sm:pt-6">
+                  <p className="text-xs font-mono uppercase tracking-[0.25em] text-amber-400/90 pt-2">
                     {cultural.dedicationLead}
                   </p>
                   <h1 className="text-2xl sm:text-4xl md:text-5xl font-serif font-bold text-white tracking-tight leading-tight">
@@ -453,17 +467,213 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
                     ) : null}
                     <span>Pass will be permanently linked to your account</span>
                   </p>
+                </div>
 
-                  <a
-                    href={`/api/gift/pdf?code=${voucher.code}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 mt-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/40 text-xs font-mono text-gray-300 hover:text-amber-300 transition-colors"
-                  >
-                    <Film className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Download Keepsake PDF (5&quot;×7&quot;)</span>
-                    <span className="text-[10px] text-gray-500">↗</span>
-                  </a>
+                {/* ── LUXURY KEEPSAKE PASS & QR PORTAL (Visible in Browser & Mobile-Friendly) ── */}
+                <div className="w-full mt-10 pt-8 border-t border-amber-500/20 flex flex-col items-center">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-[11px] uppercase tracking-widest mb-2">
+                    <QrCode className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Archival Keepsake Pass &amp; QR Portal</span>
+                  </div>
+
+                  <h3 className="text-xl sm:text-2xl font-serif font-bold text-white tracking-tight">
+                    5&quot;×7&quot; Keepsake Pass
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-md text-center">
+                    Foldable luxury card. Scan the Level H QR portal below with any mobile phone or Smart TV to enter this soundstage.
+                  </p>
+
+                  {/* Interactive Card Face Switcher Tabs */}
+                  <div className="flex items-center gap-2 mt-5 mb-6 p-1 rounded-xl bg-black/60 border border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCardTab('spread')}
+                      className={`px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                        activeCardTab === 'spread'
+                          ? 'bg-amber-500 text-gray-950 font-bold shadow-md'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Inside Spread &amp; QR Pass
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveCardTab('cover')}
+                      className={`px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                        activeCardTab === 'cover'
+                          ? 'bg-amber-500 text-gray-950 font-bold shadow-md'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Front Cover Art
+                    </button>
+                  </div>
+
+                  {/* Responsive Digital Card Enclosure */}
+                  <div className="w-full max-w-md mx-auto">
+                    <AnimatePresence mode="wait">
+                      {activeCardTab === 'spread' ? (
+                        <motion.div
+                          key="card-spread"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                          className="w-full rounded-2xl bg-[#FAF6EE] text-[#241C14] p-6 sm:p-8 shadow-2xl border-2 border-[#D4AF37]/60 relative text-center"
+                        >
+                          {/* Inner Border */}
+                          <div className="border border-[#B38F24]/30 rounded-xl p-5 bg-[#FDFBF7]/90 relative">
+                            {/* Inside Header */}
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-[#804200] font-bold">
+                              THE UNBOXING CEREMONY
+                            </p>
+                            <h4 className="text-base sm:text-lg font-serif font-bold text-[#1F1710] mt-0.5">
+                              A Living Memoir in Sound &amp; Light
+                            </h4>
+
+                            <div className="w-16 h-[1px] bg-[#D4AF37]/40 mx-auto my-2.5" />
+
+                            {/* Inside Greeting & Prose Snippet */}
+                            <p className="text-xs font-serif font-semibold text-[#804200]">
+                              Dear {cleanRecipient},
+                            </p>
+                            <p className="text-xs font-serif italic text-[#382C1E] mt-1 line-clamp-3 leading-relaxed">
+                              &ldquo;{voucher.giftMessage || 'A gift of living history to capture and preserve your life’s memories for our family.'}&rdquo;
+                            </p>
+                            <p className="text-[11px] font-serif text-[#804200] mt-1 text-right">
+                              — With love, {cleanGiver}
+                            </p>
+
+                            {/* 35mm Cinema Film Cell Emblem */}
+                            <div className="flex items-center justify-center gap-1.5 my-3">
+                              <div className="h-[1px] w-10 bg-amber-600/30" />
+                              <div className="px-2 py-0.5 rounded bg-black text-amber-300 border border-amber-500/40 font-mono text-[9px] uppercase tracking-wider flex items-center gap-1">
+                                <Film className="w-3 h-3 text-amber-400" />
+                                <span>35mm ARCHIVAL PORTAL</span>
+                              </div>
+                              <div className="h-[1px] w-10 bg-amber-600/30" />
+                            </div>
+
+                            {/* Visible High-Density 30% Error Correction (Level H) QR Code */}
+                            <div className="flex flex-col items-center justify-center p-2.5 bg-white rounded-xl border border-[#D4AF37]/50 shadow-inner my-1 inline-block">
+                              <QRCodeCanvas
+                                value={`https://dev.memoryweaver.studio/unboxing/${voucher.code || code}`}
+                                size={144}
+                                level="H"
+                                includeMargin={true}
+                                bgColor="#FAF6EE"
+                                fgColor="#121212"
+                                className="rounded"
+                              />
+                            </div>
+
+                            {/* Crockford Monospace Token & Copy Action */}
+                            <div className="mt-2.5 flex items-center justify-center gap-2">
+                              <span className="font-mono text-xs sm:text-sm font-bold tracking-widest text-[#804200] bg-amber-100 border border-[#D4AF37]/60 px-3 py-1 rounded-lg select-all">
+                                {voucher.code || code}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={handleCopyCode}
+                                className="p-1.5 rounded-lg bg-amber-700/10 hover:bg-amber-700/20 border border-[#D4AF37]/40 text-[#804200] transition-colors cursor-pointer"
+                                title="Copy voucher code"
+                                aria-label="Copy voucher code"
+                              >
+                                {copied ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5 text-[#804200]" />
+                                )}
+                              </button>
+                            </div>
+
+                            <p className="text-[10px] font-mono text-gray-500 mt-2">
+                              Level H QR Portal (30% error tolerance) • Scan with phone camera
+                            </p>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="card-cover"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.3 }}
+                          className="w-full rounded-2xl bg-[#0c0d10] text-white p-6 sm:p-8 shadow-2xl border-2 border-amber-500/50 relative text-center"
+                        >
+                          {/* Inner Border */}
+                          <div className="border border-amber-500/20 rounded-xl p-5 bg-black/50 relative space-y-4">
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold">
+                              ACT V HEIRLOOM KEEPSAKE
+                            </p>
+
+                            <div>
+                              <h4 className="text-xl sm:text-2xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-200 to-amber-400 tracking-wide">
+                                MEMORY WEAVER
+                              </h4>
+                              <p className="text-[11px] font-mono text-amber-200/70 tracking-wider mt-0.5">
+                                A Commissioned Spoken Memoir
+                              </p>
+                            </div>
+
+                            {/* Film Medallion Vector */}
+                            <div className="w-16 h-16 rounded-full border-2 border-amber-400 bg-gradient-to-br from-amber-950/80 to-black mx-auto flex items-center justify-center shadow-lg shadow-amber-500/20">
+                              <Film className="w-8 h-8 text-amber-300 drop-shadow-[0_0_10px_rgba(245,158,11,0.6)]" />
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-xs font-mono uppercase tracking-wider text-amber-300 font-bold">
+                                {tierConfig.editorialName.toUpperCase()}
+                              </p>
+                              <p className="text-[10px] font-mono text-gray-400">
+                                {voucher.vaultQuotaGb || 100} GB Generational Archive • 4K Master Cinema
+                              </p>
+                            </div>
+
+                            <div className="pt-2 border-t border-white/10 space-y-2">
+                              <div>
+                                <p className="text-[10px] font-mono text-gray-400 uppercase">Presented in honour of</p>
+                                <p className="text-sm font-serif font-bold text-white">{cleanRecipient}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-mono text-gray-400 uppercase">Commissioned with love by</p>
+                                <p className="text-xs font-serif text-amber-200">{cleanGiver}</p>
+                              </div>
+                            </div>
+
+                            <p className="text-[9px] font-mono text-gray-500 pt-1">
+                              LONDON • NEW YORK • MUMBAI • 100-YEAR PRESERVATION
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Mobile-Friendly PDF Download Actions */}
+                  <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md">
+                    <a
+                      href={`/api/gift/pdf?code=${voucher.code || code}&download=true`}
+                      download={`MemoryWeaver-Keepsake-${voucher.code || code}.pdf`}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-200 hover:text-white font-mono text-xs sm:text-sm font-bold shadow-lg transition duration-200 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 text-amber-400" />
+                      <span>Download Print-Ready 5&quot;×7&quot; PDF</span>
+                    </a>
+                    <a
+                      href={`/api/gift/pdf?code=${voucher.code || code}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white font-mono text-xs transition duration-200 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-gray-400" />
+                      <span>Open Raw PDF ↗</span>
+                    </a>
+                  </div>
+
+                  <p className="text-[11px] font-mono text-gray-500 mt-2 text-center">
+                    Flat 10&quot;×7&quot; vector PDF • Fold along dashed centre to create 5&quot;×7&quot; luxury card
+                  </p>
                 </div>
               </motion.div>
             )}

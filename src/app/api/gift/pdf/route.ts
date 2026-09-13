@@ -71,12 +71,14 @@ export async function GET(req: NextRequest) {
 
     // ── Generate 5"×7" Luxury Vector PDF ──────────────────────────────────
     const pdfBytes = await generateVoucherPdf(voucher);
+    const isDownload = searchParams.get('download') === 'true';
+    const disposition = isDownload ? 'attachment' : 'inline';
 
     return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="MemoryWeaver-Keepsake-${voucher.code}.pdf"`,
+        'Content-Disposition': `${disposition}; filename="MemoryWeaver-Keepsake-${voucher.code}.pdf"`,
         'Cache-Control': 'private, no-cache, no-store, must-revalidate',
       },
     });

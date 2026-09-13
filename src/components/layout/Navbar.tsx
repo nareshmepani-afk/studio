@@ -48,7 +48,8 @@ export function Navbar() {
     pathname?.startsWith('/studio/production') ||
     pathname?.startsWith('/studio/chapter') ||
     pathname?.startsWith('/cinema/tv') ||
-    pathname?.startsWith('/admin')
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/unboxing')
   ) {
     return null;
   }

@@ -119,8 +119,8 @@ export default async function UnboxingPage({ params }: PageProps) {
         </header>
 
         {/* 2.39:1 Anamorphic Framing Container */}
-        <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12 relative z-10">
-          <div className="w-full max-w-4xl md:aspect-[2.39/1] min-h-[460px] bg-[#0c0d10] border border-amber-500/30 rounded-2xl sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] p-6 sm:p-12 flex flex-col items-center justify-center text-center relative overflow-hidden">
+        <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-14 md:py-16 relative z-10">
+          <div className="w-full max-w-4xl min-h-[480px] h-auto py-10 sm:py-14 md:py-16 bg-[#0c0d10] border border-amber-500/30 rounded-2xl sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] p-6 sm:p-12 flex flex-col items-center justify-center text-center relative overflow-hidden">
             <div className="space-y-6 max-w-xl mx-auto">
               {/* Slate Pill Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-xs tracking-widest uppercase">
@@ -191,8 +191,8 @@ export default async function UnboxingPage({ params }: PageProps) {
       </header>
 
       {/* 2.39:1 Obsidian Slate Container */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12 relative z-10">
-        <div className="w-full max-w-4xl md:aspect-[2.39/1] min-h-[460px] bg-[#0c0d10] border border-red-900/30 rounded-2xl sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] p-6 sm:p-12 flex flex-col items-center justify-center text-center relative overflow-hidden">
+      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-14 md:py-16 relative z-10">
+        <div className="w-full max-w-4xl min-h-[480px] h-auto py-10 sm:py-14 md:py-16 bg-[#0c0d10] border border-red-900/30 rounded-2xl sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] p-6 sm:p-12 flex flex-col items-center justify-center text-center relative overflow-hidden">
           <div className="space-y-6 max-w-xl mx-auto">
             {/* Slate Pill Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-950/50 border border-red-500/30 text-red-300 font-mono text-xs tracking-widest uppercase">
