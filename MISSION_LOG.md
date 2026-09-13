@@ -12,13 +12,13 @@
 
 - **Active Sprint:** Sprint 3 — MW-86 Act V Heirloom Unboxing & Keepsake Engine
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `288274e`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `ca6c72b5`)
 
 - **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 37.3 Codified)
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 372 / 372 Vitest Tests Passing (32 Test Files)
+- **Current Invariant Test Baseline:** 376 / 376 Vitest Tests Passing (32 Test Files)
 
 
 
@@ -153,6 +153,28 @@
   - [x] **MW-229 (Ticket #229)**: The `/unboxing/[code]` Theatrical Stage *(Complete & Live on Staging)*
   - [x] **MW-233 (Ticket #233)**: Mission Control Flight Console UI (`/admin?suite=mission`) *(Complete & Live on Staging)*
   - [x] **MW-230 (Ticket #230)**: 5"×7" Keepsake Vector PDF Generator (`pdf-lib` + Noto Sans Indic) *(Complete & Live on Staging)*
+  - [x] **MW-243 (Ticket #243)**: Staging Passcode Pre-Fill & Zero-Tap Auto-Unlock (`MW-STAGE-2026`) *(Complete & Live on Staging)*
+  - [ ] **MW-231 (Ticket #231)**: Web Audio Synthesis & Unboxing Invariant Vitest Suite
+- **Next Unblocked Directive:** Dispatch Ticket #231 (Web Audio Synthesis & Unboxing Invariant Vitest Suite).
+
+---
+
+### [2026-09-13 13:00 BST] • Checkpoint #006 — Studio Passcode Pre-Fill & Zero-Tap Auto-Unlock (Commit `ca6c72b5`)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Validated 4/4 verification suite tests with 100% pass rate. Confirmed frictionless mobile QA access and verified zero-tap query parameter edge unlocking.
+  - 🧠 **Gemini Strategic Brain**: Engineered Edge Middleware query parameter auto-unlock (`?passcode=` / `?stage_key=`) providing instant 30-day cookie provisioning (`mw_staging_access_token`) and clean URL rewriting.
+  - ⚡ **Antigravity Execution**: Commit `ca6c72b5` updated `src/components/auth/StagingLockContent.tsx` with default pre-fill, uppercase monospace formatting, and a `⚡ Quick Fill: MW-STAGE-2026` action chip. Implemented edge parameter intercept in `src/middleware.ts`.
+  - 🛡️ **QA Gatekeeper**: Unit test suite expanded from 372 to 376 passed tests (+4 new test invariants in `src/test/staging_lock.test.ts`). Live staging rollout confirmed at `https://dev.memoryweaver.studio/api/version` serving `ca6c72b5`. Plane.so issue #243 marked as Completed.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\components\auth\StagingLockContent.tsx`
+  - `C:\Users\home\studio\src\middleware.ts`
+  - `C:\Users\home\studio\src\test\staging_lock.test.ts`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+- **Active Ticket Queue (Plane.so):**
+  - [x] **MW-229 (Ticket #229)**: The `/unboxing/[code]` Theatrical Stage *(Complete & Live on Staging)*
+  - [x] **MW-233 (Ticket #233)**: Mission Control Flight Console UI (`/admin?suite=mission`) *(Complete & Live on Staging)*
+  - [x] **MW-230 (Ticket #230)**: 5"×7" Keepsake Vector PDF Generator (`pdf-lib` + Noto Sans Indic) *(Complete & Live on Staging)*
+  - [x] **MW-243 (Ticket #243)**: Staging Passcode Pre-Fill & Zero-Tap Auto-Unlock *(Complete & Live on Staging)*
   - [ ] **MW-231 (Ticket #231)**: Web Audio Synthesis & Unboxing Invariant Vitest Suite
 - **Next Unblocked Directive:** Dispatch Ticket #231 (Web Audio Synthesis & Unboxing Invariant Vitest Suite).
 
