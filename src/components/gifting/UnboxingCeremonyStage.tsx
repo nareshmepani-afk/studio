@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Film, Sparkles, Loader2, ShieldCheck, AlertCircle, QrCode, Copy, Check, Download, Eye } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { playWaxCrackAudio } from '@/lib/audio/unboxingAudio';
+import { playWaxSealFractureSound, playSolfeggioHarmonicChime, unboxingAudio } from '@/lib/audio/unboxingAudio';
 import { useAuth } from '@/hooks/useAuth';
 import { sanitiseRecipientName } from '@/lib/dedicationMuse';
 import { GIFT_TIER_DISPLAY } from '@/types/gift';
@@ -129,24 +129,28 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
   const handleSealTap = () => {
     if (phase !== 'entrance') return;
 
-    // 1. Procedural acoustics: 528Hz + 792Hz harmonic resonance + noise burst snap
-    playWaxCrackAudio();
+    // 1. Unlock Web Audio API via primary user gesture
+    unboxingAudio.resumeAudioContext().catch(() => {});
 
-    // 2. Tactile haptics on mobile devices
+    // 2. Procedural acoustics: Organic physical snap + low-end parchment resonance thump
+    playWaxSealFractureSound();
+
+    // 3. Calibrated tactile haptics on mobile devices ([20, 50, 30])
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       try {
-        navigator.vibrate([25, 60, 35]);
+        navigator.vibrate([20, 50, 30]);
       } catch {
         // Haptic feedback ignored when unavailable
       }
     }
 
-    // 3. Phase 2: Seal fracture and ember explosion
+    // 4. Phase 2: Seal fracture and ember explosion
     setPhase('crack');
 
-    // 4. Smooth cinematic transition to Phase 3 & 4
+    // 5. Smooth cinematic transition to Phase 3 & 4 (parchment unfolds & dedication reveals)
     setTimeout(() => {
       setPhase('revealed');
+      playSolfeggioHarmonicChime();
     }, 900);
   };
 

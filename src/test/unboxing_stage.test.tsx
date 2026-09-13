@@ -26,8 +26,8 @@ describe('MW-86: UnboxingCeremonyStage & Audio Engine Invariant Suite', () => {
   });
 
   describe('1. Procedural Audio Engine (unboxingAudio.ts)', () => {
-    it('exports playWaxCrackAudio that proxies to unboxingAudio.playWaxSealBreak', () => {
-      const spy = vi.spyOn(unboxingAudio, 'playWaxSealBreak').mockImplementation(() => {});
+    it('exports playWaxCrackAudio that proxies to unboxingAudio.playWaxSealFractureSound', () => {
+      const spy = vi.spyOn(unboxingAudio, 'playWaxSealFractureSound').mockImplementation(() => {});
       playWaxCrackAudio();
       expect(spy).toHaveBeenCalledTimes(1);
     });
@@ -68,7 +68,8 @@ describe('MW-86: UnboxingCeremonyStage & Audio Engine Invariant Suite', () => {
     });
 
     it('triggers acoustics and haptics upon seal tap, then reveals dedication and redemption CTA', async () => {
-      const audioSpy = vi.spyOn(unboxingAudio, 'playWaxSealBreak').mockImplementation(() => {});
+      const audioSpy = vi.spyOn(unboxingAudio, 'playWaxSealFractureSound').mockImplementation(() => {});
+      const chimeSpy = vi.spyOn(unboxingAudio, 'playSolfeggioHarmonicChime').mockImplementation(() => {});
       const vibrateMock = vi.fn();
       Object.defineProperty(navigator, 'vibrate', {
         value: vibrateMock,
@@ -83,10 +84,11 @@ describe('MW-86: UnboxingCeremonyStage & Audio Engine Invariant Suite', () => {
 
       // Verify acoustics & haptics
       expect(audioSpy).toHaveBeenCalledTimes(1);
-      expect(vibrateMock).toHaveBeenCalledWith([25, 60, 35]);
+      expect(vibrateMock).toHaveBeenCalledWith([20, 50, 30]);
 
       // Verify transition to revealed state (allows for 900ms crack phase + exit animation)
       await waitFor(() => {
+        expect(chimeSpy).toHaveBeenCalledTimes(1);
         expect(screen.getAllByText(/Dad, thank you for every sacrifice you made/i)[0]).toBeInTheDocument();
         expect(screen.getByText('Welcome, Kishor Patel')).toBeInTheDocument();
         expect(screen.getByText(/Step Onto Your Soundstage/i)).toBeInTheDocument();
