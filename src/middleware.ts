@@ -345,11 +345,15 @@ export async function middleware(request: NextRequest) {
 
   let response: NextResponse;
 
-  if (pathname.startsWith('/prompts')) {
+  if (pathname === '/fireside') {
+    response = NextResponse.redirect(new URL('/studio/fireside', request.url));
+  }
+  else if (pathname.startsWith('/prompts')) {
     const newPath = pathname.replace('/prompts', '/studio');
     response = NextResponse.redirect(new URL(newPath, request.url));
   }
   else if (pathname.startsWith('/remote/') || 
+      pathname.startsWith('/studio/fireside') ||
       (pathname.startsWith('/director') && request.nextUrl.searchParams.has('sessionId')) ||
       (pathname.startsWith('/studio/remote-camera') && request.nextUrl.searchParams.has('sessionId')) ||
       (pathname.startsWith('/studio') && request.nextUrl.searchParams.has('sessionId') && request.nextUrl.searchParams.get('mode') === 'guest')) {
