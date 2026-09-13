@@ -199,8 +199,12 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[34rem] h-[34rem] bg-amber-500/10 rounded-full blur-[110px] pointer-events-none" />
         <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 translate-y-1/2 w-[28rem] h-[28rem] bg-amber-700/10 rounded-full blur-[90px] pointer-events-none" />
 
-        {/* 2.39:1 Widescreen Letterbox Enclosure */}
-        <div className="w-full max-w-5xl md:aspect-[2.39/1] min-h-[500px] bg-[#0c0d10] border border-amber-500/30 rounded-2xl sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] p-6 sm:p-12 flex flex-col items-center justify-center text-center relative overflow-hidden">
+        {/* 2.39:1 Widescreen Letterbox Enclosure (Expands gracefully when dedication card is revealed) */}
+        <div
+          className={`w-full max-w-5xl ${
+            phase !== 'revealed' ? 'md:aspect-[2.39/1] min-h-[500px]' : 'min-h-[540px] h-auto py-8 sm:py-12'
+          } bg-[#0c0d10] border border-amber-500/30 rounded-2xl sm:rounded-3xl shadow-[0_0_80px_rgba(0,0,0,0.9)] p-4 sm:p-8 md:p-12 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all duration-500`}
+        >
           
           {/* Subtle Stage Border Glow */}
           <div className="absolute inset-0 rounded-2xl sm:rounded-3xl pointer-events-none border border-amber-400/10" />
@@ -350,6 +354,7 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
                   initial={{ scaleY: 0.3, opacity: 0 }}
                   animate={{ scaleY: 1, opacity: 1 }}
                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ transformOrigin: 'top center' }}
                   className="w-full rounded-2xl bg-[#FAF6EE] text-[#241C14] p-6 sm:p-10 shadow-2xl border-2 border-[#D4AF37]/50 relative text-left overflow-hidden"
                 >
                   {/* Subtle Ornamental Inner Border */}

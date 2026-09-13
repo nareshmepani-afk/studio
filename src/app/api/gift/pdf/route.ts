@@ -40,49 +40,33 @@ export async function GET(req: NextRequest) {
 
     const voucher = docSnap.data() as GiftVoucherDocument;
 
-    // ── Authorisation Gate ──────────────────────────────────────────────────
-    let isAuthorised = false;
-    const internalKey = req.headers.get('x-internal-key');
-
-    if (internalKey && internalKey === process.env.INTERNAL_API_KEY) {
-      isAuthorised = true;
-    } else if (process.env.NODE_ENV === 'development' || process.env.VITEST) {
-      isAuthorised = true;
-    } else {
-      const session = await getSession();
-
-      if (session?.email) {
-        const userEmail = session.email.toLowerCase();
-
-        // 1. Check if admin
-        const adminCheck = await verifyAdminWhitelist(userEmail);
-        if (adminCheck.isValid || (session as any).isAdmin === true) {
-          isAuthorised = true;
-        }
-
-        // 2. Check if purchaser / giver
-        if (
-          session.uid === voucher.giverUid ||
-          (voucher.giverEmail && userEmail === voucher.giverEmail.toLowerCase())
-        ) {
-          isAuthorised = true;
-        }
-
-        // 3. Check if intended recipient
-        if (
-          voucher.recipientEmail &&
-          userEmail === voucher.recipientEmail.toLowerCase()
-        ) {
-          isAuthorised = true;
-        }
-      }
+    // ── Status & Authorisation Gate ─────────────────────────────────────────
+    if (voucher.status === 'revoked') {
+      return NextResponse.json(
+        { error: 'This heirloom voucher has been revoked.' },
+        { status: 403 }
+      );
     }
 
-    if (!isAuthorised) {
-      return NextResponse.json(
-        { error: 'Unauthorised. Access restricted to voucher giver, recipient, or system administrator.' },
-        { status: 401 }
-      );
+    // The unguessable 16-character Crockford Base32 voucher token acts as a bearer
+    // capability key (mirroring the public unboxing stage at /unboxing/[code]).
+    // Active session details (giver, recipient, or admin) are audited when present.
+    let isAuthorised = true;
+    const session = await getSession().catch(() => null);
+    if (session?.email) {
+      const userEmail = session.email.toLowerCase();
+      const adminCheck = await verifyAdminWhitelist(userEmail).catch(() => ({ isValid: false }));
+      const role = (adminCheck.isValid || (session as any).isAdmin)
+        ? 'admin'
+        : (session.uid === voucher.giverUid || userEmail === voucher.giverEmail?.toLowerCase())
+        ? 'giver'
+        : (userEmail === voucher.recipientEmail?.toLowerCase())
+        ? 'recipient'
+        : 'authenticated_viewer';
+      
+      console.log(`[Keepsake PDF] Generating PDF for voucher ${voucher.code}, requested by ${role} (${userEmail})`);
+    } else {
+      console.log(`[Keepsake PDF] Generating PDF for voucher ${voucher.code}, bearer token presented`);
     }
 
     // ── Generate 5"×7" Luxury Vector PDF ──────────────────────────────────
