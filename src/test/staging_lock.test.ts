@@ -78,4 +78,65 @@ describe('MW-87: Staging Passcode Gatekeeper & Token Security', () => {
     expect(body.error).toContain('Invalid access passcode');
     expect(res.cookies.get(STAGING_COOKIE_NAME)).toBeUndefined();
   });
+
+  describe('Middleware Staging Auto-Unlock & Query Parameter Handshake', () => {
+    // Import middleware dynamically to ensure environment setup
+    it('redirects unauthenticated staging traffic to /staging-lock', async () => {
+      const { middleware } = await import('@/middleware');
+      const req = new NextRequest('https://dev.memoryweaver.studio/studio', {
+        headers: { host: 'dev.memoryweaver.studio' },
+      });
+
+      const res = await middleware(req);
+      expect(res.status).toBe(307);
+      const location = res.headers.get('location');
+      expect(location).toContain('/staging-lock');
+      expect(location).toContain('from=%2Fstudio');
+    });
+
+    it('auto-unlocks with valid ?passcode=MW-STAGE-2026, sets cookie, and strips query parameter', async () => {
+      const { middleware } = await import('@/middleware');
+      const req = new NextRequest('https://dev.memoryweaver.studio/unboxing/MW-VAULT-7K8P-9Q2M?passcode=MW-STAGE-2026', {
+        headers: { host: 'dev.memoryweaver.studio' },
+      });
+
+      const res = await middleware(req);
+      expect(res.status).toBe(307);
+      const location = res.headers.get('location');
+      expect(location).toBe('https://dev.memoryweaver.studio/unboxing/MW-VAULT-7K8P-9Q2M');
+
+      const cookie = res.cookies.get(STAGING_COOKIE_NAME);
+      expect(cookie).toBeDefined();
+      expect(cookie?.value).toBe(await computeStagingToken('MW-STAGE-2026'));
+      expect(cookie?.maxAge).toBe(60 * 60 * 24 * 30);
+    });
+
+    it('auto-unlocks with valid ?stage_key= (case-insensitive)', async () => {
+      const { middleware } = await import('@/middleware');
+      const req = new NextRequest('https://dev.memoryweaver.studio/gift?stage_key=mw-stage-2026', {
+        headers: { host: 'dev.memoryweaver.studio' },
+      });
+
+      const res = await middleware(req);
+      expect(res.status).toBe(307);
+      const location = res.headers.get('location');
+      expect(location).toBe('https://dev.memoryweaver.studio/gift');
+
+      const cookie = res.cookies.get(STAGING_COOKIE_NAME);
+      expect(cookie).toBeDefined();
+    });
+
+    it('rejects incorrect ?passcode= and routes to /staging-lock', async () => {
+      const { middleware } = await import('@/middleware');
+      const req = new NextRequest('https://dev.memoryweaver.studio/studio?passcode=WRONG_CODE', {
+        headers: { host: 'dev.memoryweaver.studio' },
+      });
+
+      const res = await middleware(req);
+      expect(res.status).toBe(307);
+      const location = res.headers.get('location');
+      expect(location).toContain('/staging-lock');
+      expect(res.cookies.get(STAGING_COOKIE_NAME)).toBeUndefined();
+    });
+  });
 });

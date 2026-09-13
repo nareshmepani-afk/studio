@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import * as jose from 'jose';
 import { SESSION_COOKIE_NAME } from './lib/constants';
-import { STAGING_COOKIE_NAME, isValidStagingToken } from './lib/stagingAuth';
+import { STAGING_COOKIE_NAME, isValidStagingToken, computeStagingToken, getStagingPasscode } from './lib/stagingAuth';
 import { serverLog } from './utils/telemetry/serverLogger';
 
 const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
@@ -183,6 +183,26 @@ export async function middleware(request: NextRequest) {
       const isAuthorized = await isValidStagingToken(stagingToken);
 
       if (!isAuthorized) {
+        // MW-87: Check if query parameter carries valid staging passcode (?passcode=... or ?stage_key=...)
+        const queryPass = request.nextUrl.searchParams.get('passcode') || request.nextUrl.searchParams.get('stage_key');
+        const expectedPass = getStagingPasscode();
+        if (queryPass && queryPass.trim().toUpperCase() === expectedPass.toUpperCase()) {
+          const validToken = await computeStagingToken(expectedPass);
+          const cleanUrl = new URL(request.url);
+          cleanUrl.searchParams.delete('passcode');
+          cleanUrl.searchParams.delete('stage_key');
+          const autoResponse = NextResponse.redirect(cleanUrl);
+          autoResponse.cookies.set(STAGING_COOKIE_NAME, validToken, {
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            httpOnly: true,
+          });
+          autoResponse.headers.set('x-trace-id', traceId);
+          return autoResponse;
+        }
+
         const lockUrl = new URL('/staging-lock', targetDomain);
         const fromParam = pathname + (request.nextUrl.search || '');
         if (fromParam && fromParam !== '/' && fromParam !== '/staging-lock') {
