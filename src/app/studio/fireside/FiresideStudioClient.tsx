@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { TactileVoiceRecorder } from '@/components/fireside/TactileVoiceRecorder';
-import { FiresideLanguage, FiresidePromptSpark } from '@/types/fireside';
+import { AlbumPhotoCaptureTray, AlbumPhotoCaptureTrayRef } from '@/components/fireside/AlbumPhotoCaptureTray';
+import { FiresideLanguage, FiresidePromptSpark, HeirloomPhotoAttachment } from '@/types/fireside';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 import { Sparkles, ArrowLeft, HeartHandshake, CheckCircle2 } from 'lucide-react';
 
@@ -23,7 +24,10 @@ export default function FiresideStudioClient() {
 
   const [activeLanguage, setActiveLanguage] = useState<FiresideLanguage>(resolvedLang);
   const [selectedSpark, setSelectedSpark] = useState<FiresidePromptSpark | null>(null);
+  const [photos, setPhotos] = useState<HeirloomPhotoAttachment[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
+
+  const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
 
   // Sync state if URL searchParams change
   useEffect(() => {
@@ -48,7 +52,11 @@ export default function FiresideStudioClient() {
   };
 
   const handlePhotoPromptClick = (photoText: string) => {
-    setNotification(`Physical photo cue: "${photoText}". Archival camera tray activates in MW-247.`);
+    setNotification(`Physical photo cue: "${photoText}". Opening heirloom photo digitiser...`);
+    photoTrayRef.current?.scrollIntoView();
+    setTimeout(() => {
+      photoTrayRef.current?.triggerCamera();
+    }, 350);
     setTimeout(() => {
       setNotification(null);
     }, 4500);
@@ -114,6 +122,18 @@ export default function FiresideStudioClient() {
             onSelectPrompt={handleSelectPrompt}
             onLanguageChange={handleLanguageChange}
             onPhotoPromptClick={handlePhotoPromptClick}
+          />
+        </div>
+
+        {/* Physical Album Photo Capture Tray (MW-247) */}
+        <div className="w-full">
+          <AlbumPhotoCaptureTray
+            ref={photoTrayRef}
+            photos={photos}
+            onPhotosChange={setPhotos}
+            maxPhotos={6}
+            suggestedPhotoPrompt={selectedSpark ? selectedSpark.recommendedPhotoPrompt[activeLanguage] : null}
+            className="w-full"
           />
         </div>
 
