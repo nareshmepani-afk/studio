@@ -138,6 +138,7 @@ export default function FiresideStudioClient() {
               >
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
                 <span className="hidden sm:inline">Saving to vault...</span>
+                <span className="sm:hidden">Saving...</span>
                 <span>{progressPercent}%</span>
               </div>
             ) : isSynced ? (
@@ -147,7 +148,7 @@ export default function FiresideStudioClient() {
               >
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="hidden sm:inline">Saved safely in vault ✓</span>
-                <span className="sm:hidden">Saved ✓</span>
+                <span className="sm:hidden">Saved in vault ✓</span>
               </div>
             ) : isOffline ? (
               <div

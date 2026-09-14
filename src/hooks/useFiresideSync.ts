@@ -170,6 +170,7 @@ export function useFiresideSync({
     }
 
     // Step C: Background Cloud Network Uploads
+    const syncStartTime = Date.now();
     try {
       setSyncState('saving');
       setProgressPercent(10);
@@ -235,6 +236,14 @@ export function useFiresideSync({
         lastCachedAt: Date.now(),
         uploadAcknowledged: true,
       });
+
+      // Ensure minimum readable threshold (600ms) in browser runtimes so narrators can perceive the reassuring transition
+      if (process.env.NODE_ENV !== 'test') {
+        const elapsed = Date.now() - syncStartTime;
+        if (elapsed < 600) {
+          await new Promise((resolve) => setTimeout(resolve, 600 - elapsed));
+        }
+      }
 
       setProgressPercent(100);
       setSyncState('synced');
