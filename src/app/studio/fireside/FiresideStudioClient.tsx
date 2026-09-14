@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
-import { TactileVoiceRecorder } from '@/components/fireside/TactileVoiceRecorder';
+import { TactileVoiceRecorder, TactileVoiceRecorderRef } from '@/components/fireside/TactileVoiceRecorder';
 import { AlbumPhotoCaptureTray, AlbumPhotoCaptureTrayRef } from '@/components/fireside/AlbumPhotoCaptureTray';
 import { FiresideLanguage, FiresidePromptSpark, HeirloomPhotoAttachment } from '@/types/fireside';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
@@ -41,6 +41,7 @@ export default function FiresideStudioClient() {
   const [notification, setNotification] = useState<string | null>(null);
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
+  const recorderRef = useRef<TactileVoiceRecorderRef>(null);
 
   // Background Offline-First Synchronization Hook (MW-247)
   const {
@@ -66,16 +67,21 @@ export default function FiresideStudioClient() {
     }
   }, [initialLangParam]);
 
-  const handleSelectPrompt = (spark: FiresidePromptSpark, language: FiresideLanguage) => {
+  const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
     setSelectedSpark(spark);
-    const title = spark.title;
-    setNotification(`"${title}" selected. Tap the oversized amber Speak button below.`);
-    
-    // Auto-clear notification after 4 seconds
-    setTimeout(() => {
-      setNotification(null);
-    }, 4000);
+    // Smoothly autoscroll to the 88px voice recorder and action the SPEAK button directly
+    recorderRef.current?.scrollIntoView();
+    if (recorderRef.current && recorderRef.current.status !== 'recording') {
+      setRecordedAudioBlob(null);
+      setRecordedAudioDuration(0);
+      recorderRef.current.startRecording();
+    }
   };
+
+  const handleResetRecording = useCallback(() => {
+    setRecordedAudioBlob(null);
+    setRecordedAudioDuration(0);
+  }, []);
 
   const handleLanguageChange = (lang: FiresideLanguage) => {
     setActiveLanguage(lang);
@@ -224,9 +230,11 @@ export default function FiresideStudioClient() {
           </div>
 
           <TactileVoiceRecorder
+            ref={recorderRef}
             promptSpark={selectedSpark}
             activeLanguage={activeLanguage}
             onRecordingComplete={handleRecordingComplete}
+            onReset={handleResetRecording}
             className="w-full"
           />
         </div>

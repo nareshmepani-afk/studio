@@ -215,6 +215,13 @@ export function useFiresideAudioRecorder(
   const startRecording = useCallback(async (): Promise<boolean> => {
     cleanupAudioPipeline();
     setErrorMessage(null);
+    setAudioUrl((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev);
+      }
+      return null;
+    });
+    setAudioBlob(null);
 
     try {
       // 1. Request Microphone Stream

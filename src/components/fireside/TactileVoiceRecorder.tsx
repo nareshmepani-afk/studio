@@ -14,7 +14,7 @@
  * (Rule 7 Non-Degradation, Rule 20 British English, Rule 26 Elder Ergonomics, Rule 8 Mobile Viewport)
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
   Mic,
   Square,
@@ -34,11 +34,20 @@ import {
   FiresidePromptSpark,
   FiresideLanguage,
   FIRESIDE_TOUCH_TARGETS,
+  RecordingLifecycleStatus,
 } from '@/types/fireside';
 import {
   useFiresideAudioRecorder,
   formatDurationMMSS,
 } from '@/hooks/useFiresideAudioRecorder';
+
+export interface TactileVoiceRecorderRef {
+  startRecording: () => Promise<boolean>;
+  stopRecording: () => Promise<Blob | null>;
+  resetRecording: () => void;
+  scrollIntoView: () => void;
+  status: RecordingLifecycleStatus;
+}
 
 export interface TactileVoiceRecorderProps {
   promptSpark?: FiresidePromptSpark | null;
@@ -48,16 +57,20 @@ export interface TactileVoiceRecorderProps {
   className?: string;
 }
 
-export function TactileVoiceRecorder({
-  promptSpark,
-  activeLanguage = 'en',
-  onRecordingComplete,
-  onReset,
-  className = '',
-}: TactileVoiceRecorderProps) {
-  const {
-    status,
-    permissionState,
+export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileVoiceRecorderProps>(
+  (
+    {
+      promptSpark,
+      activeLanguage = 'en',
+      onRecordingComplete,
+      onReset,
+      className = '',
+    },
+    ref
+  ) => {
+    const {
+      status,
+      permissionState,
     durationSeconds,
     formattedDuration,
     audioBlob,
@@ -76,6 +89,27 @@ export function TactileVoiceRecorder({
     onRecordingComplete,
     onReset,
   });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Expose imperative handle for prompt-to-record autoscroll & execution handshake
+  useImperativeHandle(ref, () => ({
+    startRecording: async () => {
+      return await startRecording();
+    },
+    stopRecording: async () => {
+      return await stopRecording();
+    },
+    resetRecording: () => {
+      resetRecording();
+    },
+    scrollIntoView: () => {
+      if (typeof containerRef.current?.scrollIntoView === 'function') {
+        containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    },
+    status,
+  }), [startRecording, stopRecording, resetRecording, status]);
 
   // ---------------------------------------------------------------------------
   // Audio Playback Preview State (When status === 'saved')
@@ -123,6 +157,13 @@ export function TactileVoiceRecorder({
     setPreviewCurrentTime(0);
   };
 
+  const handleSeek = (newTimeSec: number) => {
+    if (audioPlayerRef.current && Number.isFinite(newTimeSec)) {
+      audioPlayerRef.current.currentTime = newTimeSec;
+      setPreviewCurrentTime(newTimeSec);
+    }
+  };
+
   const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
     const targetTime = parseFloat(e.target.value);
     if (audioPlayerRef.current && Number.isFinite(targetTime)) {
@@ -159,6 +200,8 @@ export function TactileVoiceRecorder({
 
   return (
     <div
+      ref={containerRef}
+      id="fireside-voice-recorder"
       className={`w-full max-w-xl mx-auto rounded-3xl bg-[#171717] border border-stone-800 shadow-2xl p-5 sm:p-7 flex flex-col items-center select-none ${className}`}
       style={{ minHeight: '340px' }}
     >
@@ -502,4 +545,6 @@ export function TactileVoiceRecorder({
       )}
     </div>
   );
-}
+});
+
+TactileVoiceRecorder.displayName = 'TactileVoiceRecorder';

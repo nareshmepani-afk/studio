@@ -6,7 +6,10 @@ import {
   formatDurationMMSS,
   getSupportedAudioMimeType,
 } from '@/hooks/useFiresideAudioRecorder';
-import { TactileVoiceRecorder } from '@/components/fireside/TactileVoiceRecorder';
+import {
+  TactileVoiceRecorder,
+  TactileVoiceRecorderRef,
+} from '@/components/fireside/TactileVoiceRecorder';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 import { FIRESIDE_HAPTIC_PATTERNS } from '@/types/fireside';
 
@@ -297,6 +300,51 @@ describe('MW-246: Tactile Web Audio Voice Recorder & VU Visualiser Invariants', 
 
       expect(screen.getByText(/Discard & Retake/i)).toBeDefined();
       expect(screen.getByText(/Keep This Memoir ✓/i)).toBeDefined();
+    });
+  });
+
+  describe('4. Imperative Handle & Prompt-to-Record Autoscroll Handshake', () => {
+    it('exposes imperative handle with startRecording, stopRecording, resetRecording, scrollIntoView and status', async () => {
+      const ref = React.createRef<TactileVoiceRecorderRef>();
+      render(<TactileVoiceRecorder ref={ref} />);
+
+      expect(ref.current).toBeDefined();
+      expect(typeof ref.current?.startRecording).toBe('function');
+      expect(typeof ref.current?.stopRecording).toBe('function');
+      expect(typeof ref.current?.resetRecording).toBe('function');
+      expect(typeof ref.current?.scrollIntoView).toBe('function');
+      expect(ref.current?.status).toBe('idle');
+    });
+
+    it('triggers scrollIntoView with smooth behavior and center block alignment', () => {
+      const ref = React.createRef<TactileVoiceRecorderRef>();
+      const { container } = render(<TactileVoiceRecorder ref={ref} />);
+      const recorderDiv = container.querySelector('#fireside-voice-recorder') as HTMLElement;
+      expect(recorderDiv).toBeDefined();
+
+      const scrollSpy = vi.fn();
+      recorderDiv.scrollIntoView = scrollSpy;
+
+      act(() => {
+        ref.current?.scrollIntoView();
+      });
+
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+    });
+
+    it('actions startRecording directly through imperative ref without requiring user to find button', async () => {
+      const ref = React.createRef<TactileVoiceRecorderRef>();
+      render(<TactileVoiceRecorder ref={ref} />);
+
+      expect(ref.current?.status).toBe('idle');
+
+      await act(async () => {
+        await ref.current?.startRecording();
+      });
+
+      expect(mockGetUserMedia).toHaveBeenCalled();
+      expect(ref.current?.status).toBe('recording');
+      expect(screen.getByLabelText(/stop and complete recording/i)).toBeDefined();
     });
   });
 });
