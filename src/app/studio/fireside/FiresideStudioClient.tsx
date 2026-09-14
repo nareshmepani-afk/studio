@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
+import { TactileVoiceRecorder } from '@/components/fireside/TactileVoiceRecorder';
 import { FiresideLanguage, FiresidePromptSpark } from '@/types/fireside';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 import { Sparkles, ArrowLeft, HeartHandshake, CheckCircle2 } from 'lucide-react';
@@ -34,7 +35,7 @@ export default function FiresideStudioClient() {
   const handleSelectPrompt = (spark: FiresidePromptSpark, language: FiresideLanguage) => {
     setSelectedSpark(spark);
     const title = spark.title;
-    setNotification(`"${title}" selected. Ready for Voice Recording (MW-246).`);
+    setNotification(`"${title}" selected. Tap the oversized amber Speak button below.`);
     
     // Auto-clear notification after 4 seconds
     setTimeout(() => {
@@ -51,6 +52,15 @@ export default function FiresideStudioClient() {
     setTimeout(() => {
       setNotification(null);
     }, 4500);
+  };
+
+  const handleRecordingComplete = (audioBlob: Blob, durationSeconds: number) => {
+    const mins = Math.floor(durationSeconds / 60);
+    const secs = durationSeconds % 60;
+    setNotification(`Memoir recorded (${mins}m ${secs}s). Tap Listen to preview.`);
+    setTimeout(() => {
+      setNotification(null);
+    }, 5000);
   };
 
   return (
@@ -81,9 +91,9 @@ export default function FiresideStudioClient() {
       </header>
 
       {/* Primary Armchair Storytelling Surface */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-2xl mx-auto">
+      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-2xl mx-auto space-y-8">
         {/* Intro Subhead */}
-        <div className="text-center mb-6 max-w-md">
+        <div className="text-center max-w-md">
           <p className="text-xs uppercase tracking-widest text-amber-400/80 font-medium mb-1">
             Armchair Storytelling Surface
           </p>
@@ -107,7 +117,26 @@ export default function FiresideStudioClient() {
           />
         </div>
 
-        {/* Selected Spark Confirmation Toast */}
+        {/* Tactile Web Audio Voice Recorder (MW-246) */}
+        <div className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+          <div className="text-center mb-4">
+            <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
+              Fireside Voice Recording
+            </p>
+            <h2 className="text-lg sm:text-xl font-serif text-stone-200">
+              {selectedSpark ? `Speak: ${selectedSpark.title}` : 'Speak Your Spoken Memoir'}
+            </h2>
+          </div>
+
+          <TactileVoiceRecorder
+            promptSpark={selectedSpark}
+            activeLanguage={activeLanguage}
+            onRecordingComplete={handleRecordingComplete}
+            className="w-full"
+          />
+        </div>
+
+        {/* Selected Spark / Recording Confirmation Toast */}
         {notification && (
           <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] bg-stone-900/95 border border-amber-500/40 text-amber-200 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />

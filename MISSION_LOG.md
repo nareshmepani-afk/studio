@@ -18,7 +18,7 @@
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 394 / 394 Vitest Tests Passing (34 Test Files)
+- **Current Invariant Test Baseline:** 403 / 403 Vitest Tests Passing (35 Test Files)
 
 
 
@@ -259,10 +259,32 @@
   - `C:\Users\home\studio\MISSION_LOG.md`
 - **Active Ticket Queue (Plane.so):**
   - [x] **MW-245 (Ticket #246)**: Single-Card Prompt Carousel & Multilingual Spark Engine *(100% Complete & Verified on Staging)*
-  - [ ] **MW-246 (Ticket #247)**: Tactile Web Audio Voice Recorder & VU Visualiser *(Ready for Dispatch)*
-  - [ ] **MW-247 (Ticket #248)**: Album Camera Capture & Canvas Compression Pipeline *(Pending)*
-  - [ ] **MW-248 (Ticket #249)**: Resilient IndexedDB / Firestore Sync Engine *(Pending)*
-  - [ ] **MW-249 (Ticket #250)**: Route Mounting (`/studio/fireside`) & Vitest Invariant Suite *(Pending)*
-- **Next Unblocked Directive:** Dispatch MW-246 (Ticket #247: Tactile Web Audio Voice Recorder & VU Visualiser) to Chat 2: The Flash Executor.
+  - [x] **MW-246 (Ticket #250)**: Tactile Web Audio Voice Recorder & VU Visualiser *(Complete & Build Verified)*
+  - [ ] **MW-247 (Ticket #247)**: Album Camera Capture & Canvas Compression Pipeline *(Next Unblocked)*
+  - [ ] **MW-248 (Ticket #248)**: Resilient IndexedDB / Firestore Sync Engine *(Pending)*
+  - [ ] **MW-249 (Ticket #249)**: Route Mounting (`/studio/fireside`) & Vitest Invariant Suite *(Pending)*
+- **Next Unblocked Directive:** Dispatch MW-247 (Ticket #247: Album Camera Capture & Canvas Compression Pipeline) to Chat 2: The Flash Executor.
+
+---
+
+### [2026-09-14 14:15 BST] • Checkpoint #011 — Tactile Web Audio Voice Recorder & VU Visualiser
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved and validated elder tactile ergonomics for armchair voice capture, featuring an oversized 88px central record boundary, warm amber flame pulse, and 56px secondary controls.
+  - 🧠 **Gemini Strategic Brain**: Grounded the Web Audio pipeline architecture with DynamicsCompressorNode speech levelling, AnalyserNode real-time VU meter, Screen Wake Lock API guard (`navigator.wakeLock`), and haptic feedback cadences (`navigator.vibrate`).
+  - ⚡ **Antigravity Execution**: Delivered `src/hooks/useFiresideAudioRecorder.ts` and `src/components/fireside/TactileVoiceRecorder.tsx`. Mounted recorder into `/studio/fireside` (`FiresideStudioClient.tsx`). Implemented permission denial recovery guidance with clear step-by-step instructions for iOS Safari and Android Chrome.
+  - 🛡️ **QA Gatekeeper**: Expanded Vitest invariant suite to 403 passed tests across 35 test files (+9 dedicated invariants in `src/test/fireside_voice_recorder.test.tsx`). Verified local production build `npm.cmd run build` compiled all 45 routes with exit code 0. Plane.so Ticket #250 marked In Progress.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\hooks\useFiresideAudioRecorder.ts`
+  - `C:\Users\home\studio\src\components\fireside\TactileVoiceRecorder.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\test\fireside_voice_recorder.test.tsx`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+- **Active Ticket Queue (Plane.so):**
+  - [x] **MW-245 (Ticket #246)**: Single-Card Prompt Carousel & Multilingual Spark Engine *(100% Complete & Verified on Staging)*
+  - [x] **MW-246 (Ticket #250)**: Tactile Web Audio Voice Recorder & VU Visualiser *(Complete & Build Verified)*
+  - [ ] **MW-247 (Ticket #247)**: Album Camera Capture & Canvas Compression Pipeline *(Next Unblocked)*
+  - [ ] **MW-248 (Ticket #248)**: Resilient IndexedDB / Firestore Sync Engine *(Pending)*
+  - [ ] **MW-249 (Ticket #249)**: Route Mounting (`/studio/fireside`) & Vitest Invariant Suite *(Pending)*
+- **Next Unblocked Directive:** Dispatch MW-247 (Ticket #247: Album Camera Capture & Canvas Compression Pipeline) to Chat 2: The Flash Executor.
 
 ---
