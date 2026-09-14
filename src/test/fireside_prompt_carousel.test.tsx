@@ -78,7 +78,7 @@ describe('MW-245: Fireside Multilingual Prompt Sparks & Single-Card Carousel', (
       // Button labels check (Rule 20 UK English)
       expect(screen.getByRole('button', { name: /Previous story spark/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Next story spark/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Record memory: The Kitchen of Your Childhood/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Speak this memory: The Kitchen of Your Childhood/i })).toBeInTheDocument();
     });
 
     it('allows 1-tap switching between languages (e.g. English -> Gujarati)', () => {
@@ -130,11 +130,22 @@ describe('MW-245: Fireside Multilingual Prompt Sparks & Single-Card Carousel', (
       const handleSelect = vi.fn();
       render(<SingleCardPromptCarousel onSelectPrompt={handleSelect} />);
 
-      const recordBtn = screen.getByRole('button', { name: /Record memory: The Kitchen of Your Childhood/i });
+      const recordBtn = screen.getByRole('button', { name: /Speak this memory: The Kitchen of Your Childhood/i });
       fireEvent.click(recordBtn);
 
       expect(handleSelect).toHaveBeenCalledTimes(1);
       expect(handleSelect).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0], 'en');
+    });
+
+    it('invokes onPhotoPromptClick when Digitise Photo button is clicked', () => {
+      const handlePhotoClick = vi.fn();
+      render(<SingleCardPromptCarousel onPhotoPromptClick={handlePhotoClick} />);
+
+      const photoBtn = screen.getByRole('button', { name: /Digitise physical album photo/i });
+      fireEvent.click(photoBtn);
+
+      expect(handlePhotoClick).toHaveBeenCalledTimes(1);
+      expect(handlePhotoClick).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0].recommendedPhotoPrompt.en);
     });
   });
 });

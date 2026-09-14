@@ -48,6 +48,7 @@ export interface SingleCardPromptCarouselProps {
   activeLanguage?: FiresideLanguage;
   onSelectPrompt?: (spark: FiresidePromptSpark, language: FiresideLanguage) => void;
   onLanguageChange?: (language: FiresideLanguage) => void;
+  onPhotoPromptClick?: (photoPrompt: string) => void;
   className?: string;
 }
 
@@ -73,6 +74,7 @@ export function SingleCardPromptCarousel({
   activeLanguage: controlledLanguage,
   onSelectPrompt,
   onLanguageChange,
+  onPhotoPromptClick,
   className = '',
 }: SingleCardPromptCarouselProps) {
   const sparkDeck = useMemo(() => {
@@ -160,27 +162,27 @@ export function SingleCardPromptCarousel({
       </div>
 
       {/* 2. The Single Interactive Story Spark Card */}
-      <div className="w-full relative min-h-[380px] sm:min-h-[420px] flex items-center justify-center">
-        <AnimatePresence initial={false} custom={direction}>
+      <div className="w-full relative min-h-[360px] sm:min-h-[400px]">
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={`${currentSpark.id}-${currentIndex}`}
             custom={direction}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.25}
+            dragElastic={0.2}
             onDragEnd={(_e, { offset, velocity }) => {
-              const swipeThreshold = 60;
-              if (offset.x < -swipeThreshold || velocity.x < -400) {
+              const swipeThreshold = 50;
+              if (offset.x < -swipeThreshold || velocity.x < -300) {
                 handleNext();
-              } else if (offset.x > swipeThreshold || velocity.x > 400) {
+              } else if (offset.x > swipeThreshold || velocity.x > 300) {
                 handlePrev();
               }
             }}
-            initial={{ opacity: 0, x: direction > 0 ? 80 : -80, scale: 0.97 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: direction > 0 ? -80 : 80, scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="w-full bg-[#171717]/95 border border-amber-500/25 hover:border-amber-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md flex flex-col justify-between transition-colors relative overflow-hidden"
+            initial={{ opacity: 0, x: direction > 0 ? 50 : -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
+            transition={{ duration: 0.22, ease: 'easeInOut' }}
+            className="w-full bg-[#171717]/95 border border-amber-500/25 hover:border-amber-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md flex flex-col justify-between transition-colors relative overflow-hidden shrink-0"
           >
             {/* Ambient Background Warmth */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -229,17 +231,18 @@ export function SingleCardPromptCarousel({
               <button
                 type="button"
                 onClick={() => setShowFollowUps((prev) => !prev)}
-                className="w-full flex items-center justify-between text-xs sm:text-sm font-medium text-amber-300/80 hover:text-amber-200 transition-colors py-1 cursor-pointer"
+                className="w-full flex items-center justify-between text-xs sm:text-sm font-semibold text-amber-300 hover:text-amber-200 transition-colors py-2 px-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 cursor-pointer"
                 aria-expanded={showFollowUps}
+                aria-label="Deepen this memory (Follow-up questions)"
               >
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Deepen this memory (Gentle questions)</span>
+                <span className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Follow-Up Questions (Deepen This Memory)</span>
                 </span>
                 {showFollowUps ? (
-                  <ChevronUp className="w-4 h-4 text-amber-400" />
+                  <ChevronUp className="w-4 h-4 text-amber-400 shrink-0" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-amber-400" />
+                  <ChevronDown className="w-4 h-4 text-amber-400 shrink-0" />
                 )}
               </button>
 
@@ -252,7 +255,7 @@ export function SingleCardPromptCarousel({
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <ul className="mt-3 space-y-2 pl-2 text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans">
+                    <ul className="mt-3 space-y-2.5 pl-2 text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans">
                       {followUps.map((question, qIdx) => (
                         <li key={qIdx} className="flex items-start gap-2">
                           <span className="text-amber-400 font-bold">•</span>
@@ -266,16 +269,33 @@ export function SingleCardPromptCarousel({
 
               {/* 4. Recommended Physical Album Photo Digitisation Cue */}
               {photoPrompt && (
-                <div className="mt-4 p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-3">
-                  <div className="p-1.5 bg-amber-500/10 rounded-lg text-amber-400 shrink-0 mt-0.5">
-                    <Camera className="w-4 h-4" />
+                <div className="mt-4 p-3.5 sm:p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-amber-500/15 rounded-xl text-amber-400 shrink-0 mt-0.5">
+                      <Camera className="w-4 h-4" />
+                    </div>
+                    <div className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
+                      <span className="font-semibold text-amber-300 block mb-0.5">
+                        Archival Photo Idea:
+                      </span>
+                      <span className="text-neutral-300/90">{photoPrompt}</span>
+                    </div>
                   </div>
-                  <div className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
-                    <span className="font-semibold text-amber-300 block mb-0.5">
-                      Physical Album Keepsake Idea:
-                    </span>
-                    <span className="text-neutral-300/90">{photoPrompt}</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onPhotoPromptClick) {
+                        onPhotoPromptClick(photoPrompt);
+                      } else {
+                        alert(`Archival photo digitisation selected: "${photoPrompt}"`);
+                      }
+                    }}
+                    className="self-start sm:self-center shrink-0 px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 active:scale-98 text-amber-200 text-xs font-semibold border border-amber-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    aria-label="Digitise physical album photo"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Digitise Photo</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -310,16 +330,16 @@ export function SingleCardPromptCarousel({
           </button>
         </div>
 
-        {/* Primary Story Confirmation Button: 'Record This Memory 🎙️' */}
+        {/* Primary Story Confirmation Button: 'Speak This Memory ➔' */}
         <button
           type="button"
           onClick={handleSelectCurrent}
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
           className="w-full px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold text-base sm:text-lg shadow-lg shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-          aria-label={`Record memory: ${currentSpark.title}`}
+          aria-label={`Speak this memory: ${currentSpark.title}`}
         >
           <Mic className="w-5 h-5 text-black" />
-          <span>Record This Memory 🎙️</span>
+          <span>Speak This Memory ➔</span>
         </button>
       </div>
     </div>

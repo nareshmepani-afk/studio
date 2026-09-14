@@ -46,6 +46,13 @@ export default function FiresideStudioClient() {
     setActiveLanguage(lang);
   };
 
+  const handlePhotoPromptClick = (photoText: string) => {
+    setNotification(`Physical photo cue: "${photoText}". Archival camera tray activates in MW-247.`);
+    setTimeout(() => {
+      setNotification(null);
+    }, 4500);
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-stone-100 flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-200">
       {/* Top Ambient Navigation Header */}
@@ -96,6 +103,7 @@ export default function FiresideStudioClient() {
             activeLanguage={activeLanguage}
             onSelectPrompt={handleSelectPrompt}
             onLanguageChange={handleLanguageChange}
+            onPhotoPromptClick={handlePhotoPromptClick}
           />
         </div>
 
