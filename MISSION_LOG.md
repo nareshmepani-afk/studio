@@ -12,13 +12,13 @@
 
 - **Active Sprint:** Sprint 4 — MW-87 Fireside Voice Studio Suite
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `16000991`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `294f4c8e`)
 
 - **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 37.3 Codified)
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 393 / 393 Vitest Tests Passing (34 Test Files)
+- **Current Invariant Test Baseline:** 394 / 394 Vitest Tests Passing (34 Test Files)
 
 
 
@@ -243,20 +243,23 @@
 
 ---
 
-### [2026-09-13 21:05 BST] • Checkpoint #010 — Single-Card Prompt Carousel & Multilingual Spark Engine (Commit `2d7812ab`)
+### [2026-09-14 13:55 BST] • Checkpoint #010 — Single-Card Prompt Carousel & Fireside Route Staging Sign-Off (Commit `294f4c8e`)
 - **Partner Disciplines:**
-  - 👤 **Creative Director**: Approved and verified the armchair-first elder UX implementation, single-card focus paradigm, and authentic multilingual prompts.
-  - 🧠 **Gemini Strategic Brain**: Codified the 8-category spark dataset (`childhood`, `roots`, `love`, `wisdom`, `traditions`, `lessons`, `humour`, `legacy`) across British English, Gujarati (`ગુજરાતી`), Punjabi (`ਪੰਜਾਬੀ`), and Hindi (`हिन्दी`) scripts with authentic cultural translations.
-  - ⚡ **Antigravity Execution**: Commit `2d7812ab` authored `src/lib/firesidePrompts.ts` with comprehensive prompt sparks and query helpers, and `src/components/fireside/SingleCardPromptCarousel.tsx` with Framer Motion swipe gestures, $\ge 56$px touch envelopes, 1-tap bilingual pill selector, expandable inquiry drawer, and archival photo digitisation callouts.
-  - 🛡️ **QA Gatekeeper**: Vitest suite expanded from 385 to 393 passed tests (+8 dedicated invariants in `src/test/fireside_prompt_carousel.test.tsx`). Verified clean `npm.cmd run build` exit code 0 and confirmed live edge rollout on staging at `https://dev.memoryweaver.studio/api/version` serving `2d7812a`. Plane.so Ticket #246 marked Done.
+  - 👤 **Creative Director**: Ratified 100% verification sign-off (4/4 PASS) across mobile and desktop. Validated rock-solid 100% width card transitions with zero narrowing, 1-tap multilingual diaspora scripts (Gujarati, Punjabi, Hindi), the expandable follow-up questions drawer, the dedicated `[ 📷 Digitise Photo ]` action button, and the `[ 🎙️ Speak This Memory ➔ ]` CTA.
+  - 🧠 **Gemini Strategic Brain**: Grounded the single-card armchair ergonomics and multilingual spark dataset (`childhood`, `roots`, `love`, `wisdom`, `traditions`, `lessons`, `humour`, `legacy`). Designed `mode="wait"` layout decoupling to eliminate horizontal flex compression during card transitions.
+  - ⚡ **Antigravity Execution**: Delivered `src/lib/firesidePrompts.ts`, `src/components/fireside/SingleCardPromptCarousel.tsx`, `src/app/studio/fireside/page.tsx`, and `FiresideStudioClient.tsx`. Updated `src/middleware.ts` to allow direct storyteller access via `?passcode=MW-STAGE-2026`. Fixed transition narrowing and added dedicated archival photo digitisation trigger.
+  - 🛡️ **QA Gatekeeper**: Expanded Vitest invariant suite to 394 passed tests across 34 test files (+9 dedicated Fireside Prompt Carousel invariants). Verified local production build `npm.cmd run build` compiled all 45 routes cleanly (exit code 0). Verified live edge rollout on staging at `https://dev.memoryweaver.studio/api/version` serving `294f4c8`. Plane.so Ticket #246 marked Done.
 - **Target Files Impacted:**
   - `C:\Users\home\studio\src\lib\firesidePrompts.ts`
   - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\page.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\middleware.ts`
   - `C:\Users\home\studio\src\test\fireside_prompt_carousel.test.tsx`
   - `C:\Users\home\studio\MISSION_LOG.md`
 - **Active Ticket Queue (Plane.so):**
-  - [x] **MW-245 (Ticket #246)**: Single-Card Prompt Carousel & Multilingual Spark Engine *(Complete & Live on Staging)*
-  - [ ] **MW-246 (Ticket #247)**: Tactile Web Audio Voice Recorder & VU Visualiser *(Pending Dispatch)*
+  - [x] **MW-245 (Ticket #246)**: Single-Card Prompt Carousel & Multilingual Spark Engine *(100% Complete & Verified on Staging)*
+  - [ ] **MW-246 (Ticket #247)**: Tactile Web Audio Voice Recorder & VU Visualiser *(Ready for Dispatch)*
   - [ ] **MW-247 (Ticket #248)**: Album Camera Capture & Canvas Compression Pipeline *(Pending)*
   - [ ] **MW-248 (Ticket #249)**: Resilient IndexedDB / Firestore Sync Engine *(Pending)*
   - [ ] **MW-249 (Ticket #250)**: Route Mounting (`/studio/fireside`) & Vitest Invariant Suite *(Pending)*
