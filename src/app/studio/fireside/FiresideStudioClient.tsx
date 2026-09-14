@@ -163,12 +163,12 @@ export default function FiresideStudioClient() {
               <button
                 type="button"
                 onClick={() => triggerManualSync()}
-                className="flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-950/60 border border-amber-500/60 px-2.5 py-1 rounded-full hover:bg-amber-900/80 transition-colors"
-                title="Tap to retry cloud synchronisation"
+                className="flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-950/60 border border-amber-500/60 px-2.5 py-1 rounded-full hover:bg-amber-900/80 transition-colors cursor-pointer"
+                title="Your memoir is safely preserved on this device in the offline vault. Tap to sync to cloud vault."
               >
                 <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Saved to phone • Retry sync ↺</span>
-                <span className="sm:hidden">Retry ↺</span>
+                <span className="hidden sm:inline">Saved on phone • Sync cloud ↺</span>
+                <span className="sm:hidden">Sync cloud ↺</span>
               </button>
             ) : (
               <div className="flex items-center gap-1.5 text-xs text-stone-400 font-mono">
