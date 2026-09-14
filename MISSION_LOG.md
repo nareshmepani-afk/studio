@@ -282,9 +282,10 @@
 - **Active Ticket Queue (Plane.so):**
   - [x] **MW-245 (Ticket #246)**: Single-Card Prompt Carousel & Multilingual Spark Engine *(100% Complete & Verified on Staging)*
   - [x] **MW-246 (Ticket #250)**: Tactile Web Audio Voice Recorder & VU Visualiser *(Complete & Build Verified)*
-  - [ ] **MW-247 (Ticket #247)**: Album Camera Capture & Canvas Compression Pipeline *(Next Unblocked)*
+  - [ ] **MW-247 (Ticket #247)**: Album Camera Capture & Canvas Compression Pipeline *(Plan Ready / Next Unblocked)*
   - [ ] **MW-248 (Ticket #248)**: Resilient IndexedDB / Firestore Sync Engine *(Pending)*
-  - [ ] **MW-249 (Ticket #249)**: Route Mounting (`/studio/fireside`) & Vitest Invariant Suite *(Pending)*
-- **Next Unblocked Directive:** Dispatch MW-247 (Ticket #247: Album Camera Capture & Canvas Compression Pipeline) to Chat 2: The Flash Executor.
+  - [ ] **MW-249 (Ticket #252)**: Fireside Front-Facing Video Memo Engine (FaceTime/WhatsApp Ergonomics) *(Queued after #248)*
+  - [ ] **MW-250**: Final Production Hardening & Full Responsive Invariant Suite *(Pending)*
+- **Next Unblocked Directive:** Execute Ticket #247 (MW-246: Album Camera Capture & Canvas Compression Pipeline) upon Director plan sign-off.
 
 ---

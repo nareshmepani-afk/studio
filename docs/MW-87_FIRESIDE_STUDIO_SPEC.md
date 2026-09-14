@@ -155,6 +155,33 @@ The Fireside Studio is mounted completely independently of the desktop soundstag
   3. Recorded WebM audio blobs and JPEG attachments are uploaded chunk-by-chunk to Firebase Storage (`/users/{uid}/fireside/{draftId}/audio.webm`).
   4. Network disconnects trigger an amber "Saved to Device" badge. The engine automatically resumes synchronisation upon reconnection.
 
+### 3.5 MW-249: Fireside Front-Facing Video Memo Engine (FaceTime/WhatsApp Ergonomics)
+- **Component Paths:**
+  * Mode Switcher: `C:\Users\home\studio\src\components\fireside\FiresideModeSwitch.tsx`
+  * Video Recorder: `C:\Users\home\studio\src\components\fireside\FiresideVideoRecorder.tsx`
+  * Recorder Hook: `C:\Users\home\studio\src\hooks\useFiresideVideoRecorder.ts`
+  * Client Mount: `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  * Invariant Tests: `C:\Users\home\studio\src\test\fireside_video_recorder.test.tsx`
+- **Executive Thesis & Ergonomics:**
+  * Storytellers accustomed to FaceTime and WhatsApp video calls can record personal video takes directly from their smartphone or tablet without teleprompter anxiety.
+  * The video feed mirrors their face with a warm amber rim, pins the active prompt spark subtly near the top lens to maintain natural eye contact, and bounds the stream to 720p/1080p (24fps, 2.0 Mbps bitrate ceiling) to prevent mobile Safari OOM crashes.
+- **Key Architectural Contracts:**
+  1. **Ergonomic Mode Selector (`FiresideModeSwitch.tsx`):**
+     * High-contrast toggle: `[ 🎙️ Voice & Photos ]` (Default armchair audio + lap photo scanner) vs `[ 🎥 Video Memo ]` (FaceTime-style selfie video recording).
+     * Remembers preference in `localStorage` for returning sessions.
+  2. **Mobile-Optimised Front Camera Stream (`FiresideVideoRecorder.tsx`):**
+     * Media constraints: `{ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { max: 24 } }, audio: true }`.
+     * Bitrate clamping: Enforce `videoBitsPerSecond: 2000000` (2 Mbps) in `MediaRecorder` to keep 3-minute clips under ~45MB.
+     * Pinned Prompt Overlay: Floating semi-translucent prompt card placed at the top of the video container, drawing the narrator's gaze toward the physical camera aperture.
+     * Tactile Controls: Preserves the oversized 88px circular record button with haptic vibration feedback.
+  3. **Storage & Resiliency Pipeline Integration:**
+     * Feeds video `Blob` directly into the IndexedDB offline vault created in Ticket #248 (`firesideIndexedDb.ts`).
+     * Streams chunked upload via `chunkedAudioUpload.ts` to `/users/{uid}/fireside/{draftId}/video.mp4` (or `.webm`).
+     * Syncs video metadata to Firestore draft at `/users/{uid}/firesideDrafts/{draftId}`.
+  4. **Rule 7 & Rule 20 Compliance:**
+     * Zero changes to desktop soundstage (`SoloStage.tsx` and `ProductionDeckContainer.tsx` remain untouched).
+     * Strict UK English orthography (`digitisation`, `normalise`, `colour`, `optimisation`).
+
 ---
 
 ## 4. Mobile-First Ergonomic & Hardware Guards
@@ -237,10 +264,11 @@ Headless Playwright assertions targeting `dev.memoryweaver.studio/studio/firesid
 │ SPRINT 4: MILESTONE MW-87 FIRESIDE VOICE STUDIO              │
 ├──────────────────────────────────────────────────────────────┤
 │ ✅ MW-244: Architecture Specification & TypeScript Contracts │
-│ ⏳ MW-245: Single-Card Prompt Carousel Component Deck       │
-│ ⏳ MW-246: Tactile Web Audio Voice Recorder & VU Visualiser  │
+│ ✅ MW-245: Single-Card Prompt Carousel Component Deck        │
+│ ✅ MW-246: Tactile Web Audio Voice Recorder & VU Visualiser  │
 │ ⏳ MW-247: Album Camera Capture & Canvas Compression Pipe    │
 │ ⏳ MW-248: Resilient IndexedDB / Firestore Sync Engine       │
-│ ⏳ MW-249: Route Mounting (/studio/fireside) & Vitest Suite   │
+│ ⏳ MW-249: Fireside Front-Facing Video Memo Engine (FaceTime)│
+│ ⏳ MW-250: Route Mounting (/studio/fireside) & Vitest Suite  │
 └──────────────────────────────────────────────────────────────┘
 ```
