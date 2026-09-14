@@ -17,6 +17,11 @@ service cloud.firestore {
       allow write, create: if request.auth.uid == userId;
     }
 
+    // Fireside Voice Studio Drafts (Milestone MW-87 / Ticket #248)
+    match /users/{userId}/firesideDrafts/{draftId=**} {
+      allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Anyone can list and read memories (public Cinema).
     match /users/{userId}/memories {
       allow read, list: if true;
