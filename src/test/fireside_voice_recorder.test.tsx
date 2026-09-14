@@ -26,6 +26,7 @@ describe('MW-246: Tactile Web Audio Voice Recorder & VU Visualiser Invariants', 
       sampleRate: 48000,
       currentTime: 0,
       resume: vi.fn().mockResolvedValue(undefined),
+      suspend: vi.fn().mockResolvedValue(undefined),
       close: vi.fn().mockResolvedValue(undefined),
       createDynamicsCompressor: vi.fn(() => ({
         threshold: { setValueAtTime: vi.fn() },
@@ -149,6 +150,8 @@ describe('MW-246: Tactile Web Audio Voice Recorder & VU Visualiser Invariants', 
       expect(formatDurationMMSS(125)).toBe('02:05');
       expect(formatDurationMMSS(3600)).toBe('60:00');
       expect(formatDurationMMSS(-10)).toBe('00:00');
+      expect(formatDurationMMSS(Infinity)).toBe('00:00');
+      expect(formatDurationMMSS(NaN)).toBe('00:00');
     });
 
     it('selects the first supported audio MIME type from priority list', () => {
@@ -266,15 +269,34 @@ describe('MW-246: Tactile Web Audio Voice Recorder & VU Visualiser Invariants', 
         fireEvent.click(screen.getByLabelText(/start recording spoken memory/i));
       });
 
-      // Pause button
+      // Pause button and visible label
       const pauseBtn = screen.getByLabelText(/pause voice recording/i);
       expect(pauseBtn.className).toContain('min-w-[56px]');
       expect(pauseBtn.className).toContain('min-h-[56px]');
+      expect(screen.getByText(/PAUSE/i)).toBeDefined();
 
-      // Discard / Reset button
+      // Discard button and visible label
       const discardBtn = screen.getByLabelText(/discard recording and start over/i);
       expect(discardBtn.className).toContain('min-w-[56px]');
       expect(discardBtn.className).toContain('min-h-[56px]');
+      expect(screen.getByText(/DISCARD/i)).toBeDefined();
+
+      // Pause recording -> verify RESUME label appears
+      await act(async () => {
+        fireEvent.click(pauseBtn);
+      });
+      const resumeBtn = screen.getByLabelText(/resume voice recording/i);
+      expect(resumeBtn.className).toContain('min-w-[56px]');
+      expect(resumeBtn.className).toContain('min-h-[56px]');
+      expect(screen.getByText('Resume', { selector: 'span' })).toBeDefined();
+
+      // Finish recording -> verify saved state action bar
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText(/stop and complete recording/i));
+      });
+
+      expect(screen.getByText(/Discard & Retake/i)).toBeDefined();
+      expect(screen.getByText(/Keep This Memoir ✓/i)).toBeDefined();
     });
   });
 });

@@ -100,13 +100,21 @@ export function TactileVoiceRecorder({
 
   const handleTimeUpdate = () => {
     if (audioPlayerRef.current) {
-      setPreviewCurrentTime(audioPlayerRef.current.currentTime);
+      const cur = audioPlayerRef.current.currentTime;
+      if (typeof cur === 'number' && Number.isFinite(cur)) {
+        setPreviewCurrentTime(cur);
+      }
     }
   };
 
   const handleLoadedMetadata = () => {
     if (audioPlayerRef.current) {
-      setPreviewDuration(audioPlayerRef.current.duration || durationSeconds);
+      const dur = audioPlayerRef.current.duration;
+      if (typeof dur === 'number' && Number.isFinite(dur) && dur > 0) {
+        setPreviewDuration(dur);
+      } else {
+        setPreviewDuration(durationSeconds);
+      }
     }
   };
 
@@ -117,11 +125,28 @@ export function TactileVoiceRecorder({
 
   const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
     const targetTime = parseFloat(e.target.value);
-    if (audioPlayerRef.current) {
+    if (audioPlayerRef.current && Number.isFinite(targetTime)) {
       audioPlayerRef.current.currentTime = targetTime;
       setPreviewCurrentTime(targetTime);
     }
   };
+
+  // Sync duration on saved transition to guarantee accurate finite duration
+  useEffect(() => {
+    if (status === 'saved') {
+      setIsPlayingPreview(false);
+      setPreviewCurrentTime(0);
+      if (durationSeconds > 0) {
+        setPreviewDuration(durationSeconds);
+      }
+    }
+  }, [status, durationSeconds]);
+
+  // Safe effective total duration that can never be Infinity or NaN
+  const effectiveTotalDuration =
+    typeof previewDuration === 'number' && Number.isFinite(previewDuration) && previewDuration > 0
+      ? previewDuration
+      : (durationSeconds > 0 ? durationSeconds : 0);
 
   // Resolve Prompt Text in Selected Language
   const sparkText = promptSpark
@@ -235,7 +260,9 @@ export function TactileVoiceRecorder({
               className="text-2xl sm:text-3xl font-mono font-bold tracking-wider text-amber-300"
               aria-label={`Recording duration: ${formattedDuration}`}
             >
-              {status === 'saved' ? formatDurationMMSS(previewCurrentTime || durationSeconds) : formattedDuration}
+              {status === 'saved'
+                ? formatDurationMMSS(previewCurrentTime > 0 ? previewCurrentTime : effectiveTotalDuration)
+                : formattedDuration}
             </div>
           </div>
 
@@ -261,12 +288,12 @@ export function TactileVoiceRecorder({
               <div className="w-full flex flex-col justify-center px-2 gap-1.5">
                 <div className="flex justify-between text-xs text-stone-400 font-mono">
                   <span>Preview: {formatDurationMMSS(previewCurrentTime)}</span>
-                  <span>Total: {formatDurationMMSS(previewDuration || durationSeconds)}</span>
+                  <span>Total: {formatDurationMMSS(effectiveTotalDuration)}</span>
                 </div>
                 <input
                   type="range"
                   min="0"
-                  max={previewDuration || durationSeconds || 1}
+                  max={effectiveTotalDuration > 0 ? effectiveTotalDuration : 1}
                   step="0.1"
                   value={previewCurrentTime}
                   onChange={handleScrub}
@@ -301,24 +328,29 @@ export function TactileVoiceRecorder({
           )}
 
           {/* 4. Elder Tactile Controls Area (Rule 26: 88px Record / 56px Secondary) */}
-          <div className="w-full mt-4 flex items-center justify-around gap-4">
-            {/* Left Secondary Action: Retake / Reset */}
-            <div className="w-14 flex items-center justify-center">
+          <div className="w-full mt-4 flex items-center justify-around gap-2">
+            {/* Left Secondary Action: Discard / Reset */}
+            <div className="w-20 flex flex-col items-center justify-center">
               {(status === 'recording' || status === 'paused' || status === 'saved') && (
-                <button
-                  type="button"
-                  onClick={resetRecording}
-                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 hover:text-red-400 flex items-center justify-center transition-all active:scale-95"
-                  title="Discard and start over"
-                  aria-label="Discard recording and start over"
-                >
-                  <RotateCcw className="w-6 h-6" />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={resetRecording}
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 hover:text-red-400 flex items-center justify-center transition-all active:scale-95 shadow-md"
+                    title="Discard recording and start over"
+                    aria-label="Discard recording and start over"
+                  >
+                    <RotateCcw className="w-6 h-6" />
+                  </button>
+                  <span className="text-[11px] font-semibold text-stone-400 mt-1.5 uppercase tracking-wider">
+                    Discard
+                  </span>
+                </>
               )}
             </div>
 
             {/* Central Master Button: Oversized 88px Touch Envelope (Rule 26) */}
-            <div className="relative flex items-center justify-center">
+            <div className="relative flex flex-col items-center justify-center">
               {/* Dynamic Amber VU Halo / Pulse Ring */}
               {status === 'recording' && (
                 <div
@@ -385,36 +417,79 @@ export function TactileVoiceRecorder({
             </div>
 
             {/* Right Secondary Action: Pause / Resume */}
-            <div className="w-14 flex items-center justify-center">
+            <div className="w-20 flex flex-col items-center justify-center">
               {status === 'recording' && (
-                <button
-                  type="button"
-                  onClick={pauseRecording}
-                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-200 flex items-center justify-center transition-all active:scale-95"
-                  title="Pause voice recording"
-                  aria-label="Pause voice recording"
-                >
-                  <Pause className="w-6 h-6" />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={pauseRecording}
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-200 flex items-center justify-center transition-all active:scale-95 shadow-md"
+                    title="Pause voice recording"
+                    aria-label="Pause voice recording"
+                  >
+                    <Pause className="w-6 h-6" />
+                  </button>
+                  <span className="text-[11px] font-semibold text-stone-400 mt-1.5 uppercase tracking-wider">
+                    Pause
+                  </span>
+                </>
               )}
               {status === 'paused' && (
-                <button
-                  type="button"
-                  onClick={resumeRecording}
-                  className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 flex items-center justify-center transition-all active:scale-95 shadow-md"
-                  title="Resume voice recording"
-                  aria-label="Resume voice recording"
-                >
-                  <Play className="w-6 h-6 ml-0.5 fill-stone-950" />
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={resumeRecording}
+                    className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-amber-500/40 ring-2 ring-amber-400"
+                    title="Resume voice recording"
+                    aria-label="Resume voice recording"
+                  >
+                    <Play className="w-6 h-6 ml-0.5 fill-stone-950" />
+                  </button>
+                  <span className="text-[11px] font-bold text-amber-400 mt-1.5 uppercase tracking-wider">
+                    Resume
+                  </span>
+                </>
               )}
               {status === 'saved' && (
-                <div className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 flex items-center justify-center">
-                  <ShieldCheck className="w-7 h-7" />
-                </div>
+                <>
+                  <div className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 flex items-center justify-center">
+                    <ShieldCheck className="w-7 h-7" />
+                  </div>
+                  <span className="text-[11px] font-semibold text-emerald-400 mt-1.5 uppercase tracking-wider">
+                    Saved
+                  </span>
+                </>
               )}
             </div>
           </div>
+
+          {/* Saved State Elder Action Bar (Explicit Discard & Retake / Keep Memoir) */}
+          {status === 'saved' && (
+            <div className="w-full mt-6 pt-5 border-t border-stone-800/80 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={resetRecording}
+                className="w-full sm:w-auto flex-1 max-w-xs min-h-[56px] px-5 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-200 hover:text-red-400 font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-98 shadow-md"
+                aria-label="Discard recording and start over"
+              >
+                <RotateCcw className="w-5 h-5 text-stone-400" />
+                <span>Discard & Retake</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (audioBlob && onRecordingComplete) {
+                    onRecordingComplete(audioBlob, effectiveTotalDuration);
+                  }
+                }}
+                className="w-full sm:w-auto flex-1 max-w-xs min-h-[56px] px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-950/40 transition-all active:scale-98"
+                aria-label="Keep this recording and proceed"
+              >
+                <Check className="w-5 h-5 text-white" />
+                <span>Keep This Memoir ✓</span>
+              </button>
+            </div>
+          )}
 
           {/* Helper Subtext */}
           <p className="text-xs text-stone-400 text-center mt-4">

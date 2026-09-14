@@ -36,7 +36,10 @@ export interface UseFiresideAudioRecorderReturn {
  * Formats a duration in seconds into a high-contrast MM:SS string
  */
 export function formatDurationMMSS(seconds: number): string {
-  const safeSeconds = Math.max(0, Math.floor(seconds));
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || Number.isNaN(seconds) || seconds < 0) {
+    return '00:00';
+  }
+  const safeSeconds = Math.floor(seconds);
   const mins = Math.floor(safeSeconds / 60);
   const secs = safeSeconds % 60;
   return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
@@ -365,19 +368,30 @@ export function useFiresideAudioRecorder(
   // Pause Voice Recording
   // ---------------------------------------------------------------------------
   const pauseRecording = useCallback(() => {
-    if (mediaRecorderRef.current && status === 'recording') {
-      try {
-        if (mediaRecorderRef.current.state === 'recording') {
-          mediaRecorderRef.current.pause();
+    if (status === 'recording') {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      triggerHaptic(FIRESIDE_HAPTIC_PATTERNS.PAUSE);
+      setStatus('paused');
+
+      if (
+        audioContextRef.current &&
+        typeof audioContextRef.current.suspend === 'function' &&
+        audioContextRef.current.state === 'running'
+      ) {
+        audioContextRef.current.suspend().catch(() => {});
+      }
+
+      if (mediaRecorderRef.current) {
+        try {
+          if (mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.pause();
+          }
+        } catch (err) {
+          console.warn('Error pausing MediaRecorder (continuing in paused UI state):', err);
         }
-        if (timerIntervalRef.current) {
-          clearInterval(timerIntervalRef.current);
-          timerIntervalRef.current = null;
-        }
-        triggerHaptic(FIRESIDE_HAPTIC_PATTERNS.PAUSE);
-        setStatus('paused');
-      } catch (err) {
-        console.warn('Error pausing MediaRecorder:', err);
       }
     }
   }, [status, triggerHaptic]);
@@ -386,27 +400,39 @@ export function useFiresideAudioRecorder(
   // Resume Voice Recording
   // ---------------------------------------------------------------------------
   const resumeRecording = useCallback(() => {
-    if (mediaRecorderRef.current && status === 'paused') {
-      try {
-        if (mediaRecorderRef.current.state === 'paused') {
-          mediaRecorderRef.current.resume();
+    if (status === 'paused') {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+      timerIntervalRef.current = setInterval(() => {
+        setDurationSeconds((prev) => {
+          const next = prev + 1;
+          if (next >= maxDurationSeconds) {
+            stopRecordingRef.current();
+          }
+          return next;
+        });
+      }, 1000);
+
+      triggerHaptic(FIRESIDE_HAPTIC_PATTERNS.START);
+      setStatus('recording');
+
+      if (
+        audioContextRef.current &&
+        typeof audioContextRef.current.resume === 'function' &&
+        audioContextRef.current.state === 'suspended'
+      ) {
+        audioContextRef.current.resume().catch(() => {});
+      }
+
+      if (mediaRecorderRef.current) {
+        try {
+          if (mediaRecorderRef.current.state === 'paused') {
+            mediaRecorderRef.current.resume();
+          }
+        } catch (err) {
+          console.warn('Error resuming MediaRecorder (continuing in recording UI state):', err);
         }
-
-        // Resume timer
-        timerIntervalRef.current = setInterval(() => {
-          setDurationSeconds((prev) => {
-            const next = prev + 1;
-            if (next >= maxDurationSeconds) {
-              stopRecordingRef.current();
-            }
-            return next;
-          });
-        }, 1000);
-
-        triggerHaptic(FIRESIDE_HAPTIC_PATTERNS.START);
-        setStatus('recording');
-      } catch (err) {
-        console.warn('Error resuming MediaRecorder:', err);
       }
     }
   }, [status, triggerHaptic, maxDurationSeconds]);
