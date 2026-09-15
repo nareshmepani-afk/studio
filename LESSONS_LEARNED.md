@@ -129,3 +129,25 @@ This document codifies the critical lessons learned from our development Sprints
 1. **Name Interpolation Safety**: ALL template interpolation points (occasion sparks, salutations, AI polish payloads) MUST pass recipient names through a `sanitiseRecipientName()` function that trims, collapses internal whitespace, and title-cases each word before injection.
 2. **AI Token Budget Enforcement**: All low-latency AI generation endpoints (e.g. `/api/gift/polish-dedication`) MUST specify `maxOutputTokens: 150` (or appropriate ceiling) alongside `temperature: 0.35` to guarantee sub-500ms round-trip times on Gemini Flash.
 3. **Multi-Script PDF Font Fallback (Sprint 3)**: When generating physical 5"×7" keepsake PDFs via `pdf-lib`, the generator MUST detect non-Latin Unicode ranges (Gujarati U+0A80–U+0AFF, Devanagari U+0900–U+097F, Gurmukhi U+0A00–U+0A7F) in the dedication prose and dynamically embed the corresponding Noto Sans font subset to prevent tofu rendering on printed cards. Bundle `NotoSansGujarati-Regular.ttf`, `NotoSansDevanagari-Regular.ttf`, and `NotoSansGurmukhi-Regular.ttf` in `public/fonts/noto/`.
+
+---
+
+### Lesson 12: On Dual-Surface Ingress, Device-Aware Pointer Guardrails, and Armchair Touch Preservation (`/studio/fireside`)
+
+**Verdict:** Proactive Responsive Architecture Gate
+**User Feedback:** "the user is accessing the site via desktop. Should there be a more Glaring visual "recommending Desktop Stage"? AND if on mobile/smaller screen ie ipad or samsung fold,,, leave as is." & "Update the internal process to always keep iPad/tablet pointer guardrail in mind especially when desktop user is accessing the /studio/fireside."
+**Root Cause:**
+- When desktop users access `/studio/fireside`, they need an explicit, prominent recommendation to utilise the full Theatrical Soundstage (`/studio` Acts I–IV).
+- However, naive responsive checks (e.g. `innerWidth >= 1024` or CSS `@media (min-width: 1024px)`) erroneously classify wide touchscreens—such as iPads in landscape mode (1024px–1366px), Android tablets, or Samsung Galaxy Z Fold unfolded in landscape—as "desktop computers", cluttering touchscreens with unwanted desktop nag banners.
+- Additionally, a generic `Stage` pill next to `Fireside Studio` caused confusion regarding whether it indicated cloud deployment environment (`Dev Staging`) or production workflow phase (`Act II`).
+
+**The Protocol (Rule 38):**
+1. **Desktop Prominence with Handheld Touch Preservation**: Desktop PC/laptop browsers (&ge;1024px with mouse/trackpad pointer) must display an unmissable glowing amber banner recommending the Desktop Soundstage with a 1-click CTA (`/studio`). Handheld touch devices (smartphones, Samsung Fold in all folds, and iPads/tablets in portrait and landscape) MUST be left 100% as-is for a clean armchair storytelling experience.
+2. **Mandatory Hardware Pointer Check**: Always combine Tailwind's `hidden lg:block` with runtime pointer detection:
+   ```ts
+   const isCoarseTouchOnly = window.matchMedia?.('(pointer: coarse) and (hover: none)')?.matches ?? false;
+   const isDesktopScreen = window.innerWidth >= 1024 && !isCoarseTouchOnly;
+   ```
+3. **Session Persistence**: Desktop users who intentionally dismiss the banner (`[ ✕ ]`) must have `mw_dismiss_desktop_stage_banner` stored in `sessionStorage` to prevent nag fatigue.
+4. **Stage Badge Disambiguation**: Clearly separate deployment environment (`Dev Staging`) from production workflow stage (`[ 🎙️ Act II: Story Capture ]`).
+

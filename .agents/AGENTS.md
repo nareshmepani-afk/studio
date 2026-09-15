@@ -954,4 +954,31 @@ To prevent context drift, instruction dilution, and hallucination during massive
   - Tone & cultural salutation prompts for ✨ **Chat 4 (Dedication Muse)**.
 - **Rule Injection**: Chat 0 automatically injects relevant constitutional invariants (Rule 5 Staging testing, Rule 7 Non-degradation, Rule 20 UK English, Rule 34 Dual-tier testing, Rule 36 Native Playwright) so the user never has to remember or re-type them.
 
+# 38. Dual-Surface Ingress & Device-Aware Pointer Guardrail Protocol (`/studio` vs `/studio/fireside`)
+
+## 38.1 The Two Dedicated Capture Surfaces (Two Lenses, One Living Story)
+The application deliberately provides two distinct, harmonious storytelling capture surfaces:
+1. **The Desktop Theatrical Soundstage (`/studio` Acts I–IV)**: Optimised for large monitors, mechanical keyboards, multi-track timeline scrubbers, and teleprompter modal popouts.
+2. **The Armchair Fireside Studio (`/studio/fireside`)**: Specially crafted for elders, handheld smartphones, foldables, and tablets for intimate, conversational voice recording, physical heirloom photo digitisation, and WhatsApp/FaceTime-style video memos.
+
+## 38.2 The iPad/Tablet & Foldable Device Pointer Guardrail
+- **The Anti-Pattern (Naive Width-Only Detection)**: Naive viewport checks (`window.innerWidth >= 1024` or CSS `@media (min-width: 1024px)`) erroneously classify wide touchscreens—such as iPads in landscape mode (1024px–1366px), Android tablets, or Samsung Galaxy Z Fold unfolded in landscape—as "desktop computers" and clutter them with intrusive "Switch to Desktop Stage" recommendation banners.
+- **Mandatory Dual Hardware Pointer & Capability Check**:
+  Whenever rendering desktop recommendations, modal bridges, or viewport-specific guidance:
+  1. **JavaScript Hardware Pointer Detection**:
+     ```ts
+     const isCoarseTouchOnly = window.matchMedia?.('(pointer: coarse) and (hover: none)')?.matches ?? false;
+     const isDesktopScreen = window.innerWidth >= 1024 && !isCoarseTouchOnly;
+     ```
+  2. **CSS Defensive Layer**: Combine Tailwind's `hidden lg:block` (to eliminate all phones, Samsung Fold in all orientations, and iPad portrait) with the runtime pointer check.
+  3. **Handheld Devices Left 100% As-Is**: Mobile phones, Samsung Fold (folded or unfolded), and iPads/tablets (portrait or landscape) MUST ALWAYS be left completely clean, serene, and unburdened by desktop recommendations.
+  4. **Dynamic Resize Resilience**: Always bind a `window.addEventListener('resize', checkDesktop)` listener to cleanly adapt when desktop browser windows are resized or inspected in DevTools.
+  5. **Session Dismissal Persistence**: When a desktop user clicks `[ ✕ ]` on a desktop recommendation banner, immediately persist `sessionStorage.setItem('mw_dismiss_desktop_stage_banner', 'true')` so they can browse Fireside Studio peacefully without repeated nag banners during the session.
+
+## 38.3 Disambiguation of Environment vs Production Workflow Badges
+- **Strict Distinction Standard**: The application MUST NEVER render an isolated, ambiguous `Stage` badge on edge.
+- **Environment Badge**: Deployment status must be explicitly labelled `Dev Staging` (or `Production`).
+- **Production Stage Context Badge**: The storytelling workflow phase must be explicitly labelled with its theatrical equivalent (e.g. `[ 🎙️ Act II: Story Capture ]` or active curriculum part `[ Part 1: Roots ]`) so narrators and directors always know their exact location in the creative pipeline.
+
+
 
