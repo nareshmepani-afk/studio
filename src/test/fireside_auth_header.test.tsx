@@ -29,9 +29,23 @@ describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => 
   it('renders unambiguous "Dev Staging" environment badge to avoid confusion with production stages', () => {
     render(<FiresideAuthHeader />);
 
-    const devStagingBadge = screen.getByTitle('Deployment Environment: Dev Staging');
+    const devStagingBadge = screen.getByTitle(/Deployment Environment: Dev Staging/i);
     expect(devStagingBadge).toBeInTheDocument();
-    expect(devStagingBadge).toHaveTextContent('Dev Staging');
+    expect(devStagingBadge).toHaveTextContent(/Dev Staging/i);
+  });
+
+  it('renders commit SHA in Dev Staging badge when NEXT_PUBLIC_COMMIT_SHA is present', () => {
+    const originalSha = process.env.NEXT_PUBLIC_COMMIT_SHA;
+    process.env.NEXT_PUBLIC_COMMIT_SHA = 'acc26b20';
+
+    try {
+      render(<FiresideAuthHeader />);
+      const devStagingBadge = screen.getByTitle(/Deployment Environment: Dev Staging \(acc26b2\)/i);
+      expect(devStagingBadge).toBeInTheDocument();
+      expect(devStagingBadge).toHaveTextContent(/Dev Staging • acc26b2/i);
+    } finally {
+      process.env.NEXT_PUBLIC_COMMIT_SHA = originalSha;
+    }
   });
 
   it('renders "Act II: Story Capture" production stage context pill', () => {

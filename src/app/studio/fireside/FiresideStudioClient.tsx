@@ -275,11 +275,11 @@ export default function FiresideStudioClient() {
 
       {/* 3. Primary Armchair Storytelling Surface */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-2xl mx-auto space-y-8">
-        {/* Prominent Desktop Soundstage Recommendation Banner (visible on large screens >= 768px: Unfolded Fold, iPad, Desktop) */}
+        {/* Prominent Desktop Soundstage Recommendation Banner (visible on large screens >= 600px: Unfolded Fold, iPad, Desktop) */}
         {showDesktopBanner && (
           <div
             data-testid="desktop-soundstage-banner"
-            className="hidden md:block w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
+            className="hidden min-[600px]:block sm:block w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3.5">

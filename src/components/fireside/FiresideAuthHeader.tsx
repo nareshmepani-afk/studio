@@ -41,13 +41,15 @@ export function FiresideAuthHeader({
   const isAuthenticated = !!(user && !user.isAnonymous);
   const userEmail = user?.email || (isAuthenticated ? 'Authenticated Storyteller' : null);
 
+  const commitSha = process.env.NEXT_PUBLIC_COMMIT_SHA || '';
+
   return (
     <header
       className={`w-full border-b border-stone-800/80 bg-stone-950/90 backdrop-blur-md px-3 sm:px-6 py-2.5 sm:py-3 transition-colors ${className}`}
     >
-      <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2.5 sm:gap-4">
+      <div className="max-w-5xl mx-auto flex flex-col min-[600px]:flex-row sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
         {/* Left Section: Back to Desktop Stage & Studio Title */}
-        <div className="w-full md:w-auto flex items-center justify-between md:justify-start gap-2.5 sm:gap-3">
+        <div className="w-full min-[600px]:w-auto sm:w-auto flex items-center justify-between min-[600px]:justify-start sm:justify-start gap-2.5 sm:gap-3">
           <Link
             href="/studio"
             className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
@@ -65,17 +67,17 @@ export function FiresideAuthHeader({
               Fireside Studio
             </span>
 
-            {/* Explicit Environment Badge to Disambiguate from Production Stages */}
+            {/* Explicit Environment Badge with Commit SHA to Disambiguate and Confirm Latest Version */}
             <span
               className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold shrink-0"
-              title="Deployment Environment: Dev Staging"
+              title={`Deployment Environment: Dev Staging${commitSha ? ` (${commitSha.slice(0, 7)})` : ''}`}
             >
-              Dev Staging
+              Dev Staging{commitSha ? ` • ${commitSha.slice(0, 7)}` : ''}
             </span>
 
-            {/* Explicit Production Stage Context: Act II Equivalent */}
+            {/* Explicit Production Stage Context: Act II Equivalent (visible on unfolded foldables, tablets & desktops) */}
             <span
-              className="hidden md:inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-stone-300 shrink-0"
+              className="hidden min-[600px]:inline-flex sm:inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-stone-300 shrink-0"
               title="Production Context: Act II Equivalent Armchair Story Capture"
             >
               <Mic className="w-2.5 h-2.5 text-amber-400" />
@@ -95,7 +97,7 @@ export function FiresideAuthHeader({
         </div>
 
         {/* Right Section: Discreet Elder Auth Badge */}
-        <div className="w-full md:w-auto flex items-center justify-center md:justify-end shrink-0">
+        <div className="w-full min-[600px]:w-auto sm:w-auto flex items-center justify-center min-[600px]:justify-end sm:justify-end shrink-0">
           {isAuthenticated ? (
             <div
               className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-full shadow-sm max-w-full truncate"
@@ -108,8 +110,8 @@ export function FiresideAuthHeader({
               <span className="text-emerald-500/70">•</span>
               <span className="flex items-center gap-1 text-emerald-300 shrink-0">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden md:inline">Generational Vault</span>
-                <span className="md:hidden">Vault</span>
+                <span className="hidden sm:inline">Generational Vault</span>
+                <span className="sm:hidden">Vault</span>
                 <span>✓</span>
               </span>
             </div>
