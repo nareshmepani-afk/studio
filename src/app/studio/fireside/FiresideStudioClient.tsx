@@ -74,9 +74,18 @@ export default function FiresideStudioClient() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    let previousWidth = window.innerWidth;
     const checkLargeScreen = () => {
       try {
-        const isLargeScreen = window.innerWidth >= 768;
+        const currentWidth = window.innerWidth;
+        const isLargeScreen = currentWidth >= 600;
+
+        // When unfolding (transitioning from < 600px to >= 600px), reset dismissal so banner dynamically surfaces
+        if (previousWidth < 600 && currentWidth >= 600) {
+          sessionStorage.removeItem('mw_dismiss_desktop_stage_banner');
+        }
+        previousWidth = currentWidth;
+
         const isDismissed = sessionStorage.getItem('mw_dismiss_desktop_stage_banner') === 'true';
         setShowDesktopBanner(isLargeScreen && !isDismissed);
       } catch {}
@@ -279,7 +288,7 @@ export default function FiresideStudioClient() {
         {showDesktopBanner && (
           <div
             data-testid="desktop-soundstage-banner"
-            className="hidden min-[600px]:block sm:block w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
+            className="w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3.5">
