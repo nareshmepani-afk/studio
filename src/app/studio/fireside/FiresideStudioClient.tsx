@@ -68,17 +68,23 @@ export default function FiresideStudioClient() {
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
   const videoRecorderRef = useRef<FiresideVideoRecorderRef>(null);
 
-  // Detect desktop display (>= 1024px) to recommend the flagship Desktop Soundstage
+  // Detect desktop display (>= 1024px and non-touch pointer) to recommend the flagship Desktop Soundstage.
+  // Touch tablets (iPad, iPad Pro), foldable phones (Samsung Fold), and mobile phones remain cleanly as-is.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return;
+
+    const checkDesktop = () => {
       try {
-        const isDesktopScreen = window.innerWidth >= 1024;
+        const isCoarseTouchOnly = window.matchMedia?.('(pointer: coarse) and (hover: none)')?.matches ?? false;
+        const isDesktopScreen = window.innerWidth >= 1024 && !isCoarseTouchOnly;
         const isDismissed = sessionStorage.getItem('mw_dismiss_desktop_stage_banner') === 'true';
-        if (isDesktopScreen && !isDismissed) {
-          setShowDesktopBanner(true);
-        }
+        setShowDesktopBanner(isDesktopScreen && !isDismissed);
       } catch {}
-    }
+    };
+
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 
   const handleDismissDesktopBanner = () => {
@@ -270,7 +276,7 @@ export default function FiresideStudioClient() {
         {showDesktopBanner && (
           <div
             data-testid="desktop-soundstage-banner"
-            className="w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
+            className="hidden lg:block w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3.5">
