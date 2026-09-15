@@ -68,23 +68,23 @@ export default function FiresideStudioClient() {
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
   const videoRecorderRef = useRef<FiresideVideoRecorderRef>(null);
 
-  // Detect desktop display (>= 1024px and non-touch pointer) to recommend the flagship Desktop Soundstage.
-  // Touch tablets (iPad, iPad Pro), foldable phones (Samsung Fold), and mobile phones remain cleanly as-is.
+  // Detect large screens (>= 768px: Unfolded Foldables, iPads, Tablets, and Desktops)
+  // to recommend the flagship Desktop Theatrical Soundstage (/studio Acts I–IV).
+  // Handheld phones (< 768px: Folded Samsung Fold, iPhone, Android) remain cleanly as-is.
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const checkDesktop = () => {
+    const checkLargeScreen = () => {
       try {
-        const isCoarseTouchOnly = window.matchMedia?.('(pointer: coarse) and (hover: none)')?.matches ?? false;
-        const isDesktopScreen = window.innerWidth >= 1024 && !isCoarseTouchOnly;
+        const isLargeScreen = window.innerWidth >= 768;
         const isDismissed = sessionStorage.getItem('mw_dismiss_desktop_stage_banner') === 'true';
-        setShowDesktopBanner(isDesktopScreen && !isDismissed);
+        setShowDesktopBanner(isLargeScreen && !isDismissed);
       } catch {}
     };
 
-    checkDesktop();
-    window.addEventListener('resize', checkDesktop);
-    return () => window.removeEventListener('resize', checkDesktop);
+    checkLargeScreen();
+    window.addEventListener('resize', checkLargeScreen);
+    return () => window.removeEventListener('resize', checkLargeScreen);
   }, []);
 
   const handleDismissDesktopBanner = () => {
@@ -209,74 +209,77 @@ export default function FiresideStudioClient() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-stone-100 flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-200">
-      {/* 1. Discreet Elder Auth Header with Desktop Stage Ingress */}
-      <FiresideAuthHeader activePartTitle={activePartTitle} />
+      {/* 1. Top Sticky Navigation & Synchronisation Deck */}
+      <div className="sticky top-0 z-30 w-full">
+        {/* Discreet Elder Auth Header with Desktop Stage Ingress */}
+        <FiresideAuthHeader activePartTitle={activePartTitle} />
 
-      {/* 2. Reassuring Vault Synchronisation HUD Strip */}
-      <div className="w-full bg-stone-950/70 border-b border-stone-800/60 py-2 px-4 sticky top-[49px] sm:top-[53px] z-20 backdrop-blur-md">
-        <div className="max-w-2xl mx-auto flex items-center justify-between text-xs">
-          <span className="text-stone-400 font-serif text-xs flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span className="font-medium text-stone-300">Fireside Studio</span>
-          </span>
+        {/* 2. Reassuring Vault Synchronisation HUD Strip */}
+        <div className="w-full bg-stone-950/85 border-b border-stone-800/60 py-2 px-3 sm:px-6 backdrop-blur-md">
+          <div className="max-w-5xl mx-auto flex items-center justify-between text-xs">
+            <span className="text-stone-400 font-serif text-xs flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="font-medium text-stone-300">Fireside Studio</span>
+            </span>
 
-          <div className="flex items-center shrink-0">
-            {isSaving ? (
-              <div
-                className="flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-950/50 border border-amber-500/40 px-2.5 py-1 rounded-full animate-pulse"
-                title="Saving spoken tale, video memo, and photographs to cloud vault"
-              >
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
-                <span className="hidden sm:inline">Saving to vault...</span>
-                <span className="sm:hidden">Saving...</span>
-                <span>{progressPercent}%</span>
-              </div>
-            ) : isSynced ? (
-              <div
-                className="flex items-center gap-1.5 text-xs text-emerald-300 font-mono bg-emerald-950/50 border border-emerald-500/40 px-2.5 py-1 rounded-full shadow-sm"
-                title="Your memoir and photographs are safely synchronised"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden sm:inline">Saved safely in vault ✓</span>
-                <span className="sm:hidden">Saved in vault ✓</span>
-              </div>
-            ) : isOffline ? (
-              <div
-                className="flex items-center gap-1.5 text-xs text-stone-300 font-mono bg-stone-900 border border-stone-700/80 px-2.5 py-1 rounded-full"
-                title="Your story is safely stored on this phone and will synchronise when reconnected"
-              >
-                <CloudOff className="w-3.5 h-3.5 text-stone-400" />
-                <span className="hidden sm:inline">Saved to phone (offline)</span>
-                <span className="sm:hidden">Offline Vault</span>
-              </div>
-            ) : syncState === 'error' ? (
-              <button
-                type="button"
-                onClick={() => triggerManualSync()}
-                className="flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-950/60 border border-amber-500/60 px-2.5 py-1 rounded-full hover:bg-amber-900/80 transition-colors cursor-pointer"
-                title="Your memoir is safely preserved on this device. Tap to synchronise to cloud vault."
-              >
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Saved on phone • Sync cloud ↺</span>
-                <span className="sm:hidden">Sync cloud ↺</span>
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5 text-xs text-stone-400 font-mono">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-stone-400">Vault Connected</span>
-              </div>
-            )}
+            <div className="flex items-center shrink-0">
+              {isSaving ? (
+                <div
+                  className="flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-950/50 border border-amber-500/40 px-2.5 py-1 rounded-full animate-pulse"
+                  title="Saving spoken tale, video memo, and photographs to cloud vault"
+                >
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                  <span className="hidden sm:inline">Saving to vault...</span>
+                  <span className="sm:hidden">Saving...</span>
+                  <span>{progressPercent}%</span>
+                </div>
+              ) : isSynced ? (
+                <div
+                  className="flex items-center gap-1.5 text-xs text-emerald-300 font-mono bg-emerald-950/50 border border-emerald-500/40 px-2.5 py-1 rounded-full shadow-sm"
+                  title="Your memoir and photographs are safely synchronised"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">Saved safely in vault ✓</span>
+                  <span className="sm:hidden">Saved in vault ✓</span>
+                </div>
+              ) : isOffline ? (
+                <div
+                  className="flex items-center gap-1.5 text-xs text-stone-300 font-mono bg-stone-900 border border-stone-700/80 px-2.5 py-1 rounded-full"
+                  title="Your story is safely stored on this phone and will synchronise when reconnected"
+                >
+                  <CloudOff className="w-3.5 h-3.5 text-stone-400" />
+                  <span className="hidden sm:inline">Saved to phone (offline)</span>
+                  <span className="sm:hidden">Offline Vault</span>
+                </div>
+              ) : syncState === 'error' ? (
+                <button
+                  type="button"
+                  onClick={() => triggerManualSync()}
+                  className="flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-950/60 border border-amber-500/60 px-2.5 py-1 rounded-full hover:bg-amber-900/80 transition-colors cursor-pointer"
+                  title="Your memoir is safely preserved on this device. Tap to synchronise to cloud vault."
+                >
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Saved on phone • Sync cloud ↺</span>
+                  <span className="sm:hidden">Sync cloud ↺</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs text-stone-400 font-mono">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-stone-400">Vault Connected</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* 3. Primary Armchair Storytelling Surface */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-2xl mx-auto space-y-8">
-        {/* Prominent Desktop Soundstage Recommendation Banner (visible on desktop viewports >= 1024px) */}
+        {/* Prominent Desktop Soundstage Recommendation Banner (visible on large screens >= 768px: Unfolded Fold, iPad, Desktop) */}
         {showDesktopBanner && (
           <div
             data-testid="desktop-soundstage-banner"
-            className="hidden lg:block w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
+            className="hidden md:block w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3.5">
@@ -286,15 +289,15 @@ export default function FiresideStudioClient() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono uppercase tracking-wider font-semibold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                      Desktop Display Detected
+                      Large Display / Tablet Detected
                     </span>
-                    <span className="text-xs text-stone-400">• Large Screen Experience</span>
+                    <span className="text-xs text-stone-400">• Theatrical Experience Available</span>
                   </div>
                   <h2 className="text-sm sm:text-base font-serif font-medium text-white mt-1">
                     Recommend Flagship Desktop Theatrical Soundstage
                   </h2>
                   <p className="text-xs text-stone-300 mt-1 max-w-lg leading-relaxed">
-                    You are accessing Fireside from a desktop browser. For the full multi-act theatrical experience with teleprompter controls, live audio visualisation, and multi-track master reel editing, try the Desktop Stage (Acts I–IV).
+                    You are viewing Fireside on a tablet, unfolded foldable, or desktop screen. For the full multi-act theatrical experience with teleprompter controls, live audio visualisation, and multi-track master reel editing, try the Desktop Stage (Acts I–IV).
                   </p>
                 </div>
               </div>

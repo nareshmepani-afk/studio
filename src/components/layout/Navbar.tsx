@@ -45,6 +45,7 @@ export function Navbar() {
   if (
     pathname === '/studio/teleprompter-popout' || 
     pathname === '/studio/remote-camera' ||
+    pathname?.startsWith('/studio/fireside') ||
     pathname?.startsWith('/studio/production') ||
     pathname?.startsWith('/studio/chapter') ||
     pathname?.startsWith('/cinema/tv') ||
