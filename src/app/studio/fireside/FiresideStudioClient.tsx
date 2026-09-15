@@ -17,6 +17,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
+import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
 import { FiresideModeSwitch, FIRESIDE_MODE_STORAGE_KEY } from '@/components/fireside/FiresideModeSwitch';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
@@ -68,33 +69,26 @@ export default function FiresideStudioClient() {
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
   const videoRecorderRef = useRef<FiresideVideoRecorderRef>(null);
 
-  // Detect large screens (>= 768px: Unfolded Foldables, iPads, Tablets, and Desktops)
-  // to recommend the flagship Desktop Theatrical Soundstage (/studio Acts I–IV).
-  // Handheld phones (< 768px: Folded Samsung Fold, iPhone, Android) remain cleanly as-is.
+  // Smart Viewport & Foldable Device Detection (Canonical standard aligned with ProductionDeckContainer.tsx)
+  const { isLargeScreen, isFoldableOrTabletCanvas, width } = useFoldableCanvas();
+  const prevIsLargeRef = useRef(isLargeScreen);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    let previousWidth = window.innerWidth;
-    const checkLargeScreen = () => {
+    // When unfolding (transitioning into foldable canvas or large screen), reset dismissal so banner dynamically surfaces
+    if (!prevIsLargeRef.current && isLargeScreen) {
       try {
-        const currentWidth = window.innerWidth;
-        const isLargeScreen = currentWidth >= 600;
-
-        // When unfolding (transitioning from < 600px to >= 600px), reset dismissal so banner dynamically surfaces
-        if (previousWidth < 600 && currentWidth >= 600) {
-          sessionStorage.removeItem('mw_dismiss_desktop_stage_banner');
-        }
-        previousWidth = currentWidth;
-
-        const isDismissed = sessionStorage.getItem('mw_dismiss_desktop_stage_banner') === 'true';
-        setShowDesktopBanner(isLargeScreen && !isDismissed);
+        sessionStorage.removeItem('mw_dismiss_desktop_stage_banner');
       } catch {}
-    };
+    }
+    prevIsLargeRef.current = isLargeScreen;
 
-    checkLargeScreen();
-    window.addEventListener('resize', checkLargeScreen);
-    return () => window.removeEventListener('resize', checkLargeScreen);
-  }, []);
+    try {
+      const isDismissed = sessionStorage.getItem('mw_dismiss_desktop_stage_banner') === 'true';
+      setShowDesktopBanner(isLargeScreen && !isDismissed);
+    } catch {}
+  }, [isLargeScreen]);
 
   const handleDismissDesktopBanner = () => {
     setShowDesktopBanner(false);

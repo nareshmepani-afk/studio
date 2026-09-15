@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { resolveTemplateFixture, resolveTemplateFixtureAsync } from '@/utils/templateResolver';
 import { MobilePortalOverlay } from './overlays/MobilePortalOverlay';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
 
 interface ProductionDeckContainerProps {
   promptId: string;
@@ -32,23 +33,9 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   // we must return null to ensure the "layering" doesn't block the dashboard.
   const isProductionRoute = pathname?.includes('/production/');
 
-  const [windowWidth, setWindowWidth] = useState<number | null>(null);
-  
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    setWindowWidth(window.innerWidth);
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+  const { width: windowWidth, isFoldableOrTabletCanvas } = useFoldableCanvas();
   const isRemoteLens = searchParams.get('room') === 'solo' || searchParams.get('mode') === 'remote-lens';
-  
-  // Smart Viewport & Foldable Device Detection:
-  // Standard portrait phones have narrow aspect ratios (< 0.85) and width < 768px.
-  // Unfolded foldables (e.g., Z Fold) have width >= 600px and near-square/landscape aspect ratios (>= 0.85).
-  const isFoldableOrTabletCanvas = windowWidth !== null && windowWidth >= 600 && typeof window !== 'undefined' && (window.innerWidth / (window.innerHeight || 1)) >= 0.85;
-  const showMobileGuard = windowWidth !== null && windowWidth < 768 && !isFoldableOrTabletCanvas && !isRemoteLens;
+  const showMobileGuard = windowWidth > 0 && windowWidth < 768 && !isFoldableOrTabletCanvas && !isRemoteLens;
   
   const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
   const [resolvedAsyncTemplate, setResolvedAsyncTemplate] = useState<any>(null);
