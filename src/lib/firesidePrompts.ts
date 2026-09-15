@@ -14,6 +14,8 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     id: 'spark_childhood_home',
     category: 'childhood',
     title: 'The Kitchen of Your Childhood',
+    linkedSceneId: 'part-1-scene-2',
+    suggestedMediaMode: 'audio',
     sparks: {
       en: 'Think back to the home where you grew up. What aromas drifted from the morning kitchen, and what sounds signalled the start of a new day?',
       gu: 'તમે જ્યાં મોટા થયા તે બાળપણના ઘરની યાદ કરો. સવારના રસોડામાંથી કઈ સુગંધ આવતી હતી, અને આંગણામાંથી કેવા અવાજો સંભળાતા હતા?',
@@ -45,7 +47,7 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     recommendedPhotoPrompt: {
       en: 'Look for an old photograph of your childhood family home, front doorstep, or kitchen courtyard.',
       gu: 'તમારા બાળપણના ઘરની, ફળિયાની અથવા કુટુંબની કોઈ જૂની તસવીર શોધો.',
-      pa: 'ਆਪਣੇ ਬਚਪਨ ਦੇ ਘਰ, ਵਿਹੜੇ ਜਾਂ ਪਰਿਵਾਰ ਦੀ ਕੋਈ ਪੁਰਾਣੀ ਤਸਵੀਰ ਲੱਭੋ।',
+      pa: 'ਆਪਣੇ ਬਚਪਨ ਦੇ ਘਰ, ਵਿਹੜੇ ਜਾਂ ਪਰਿਵਾਰ ਦੀ ਕੋਈ ਪੁਰਾਣੀ ਤਸਵੀਰ ਲੱਭੋ።',
       hi: 'अपने बचपन के घर, आंगन या पूरे परिवार की कोई पुरानी तस्वीर तलाशिए।',
     },
   },
@@ -53,6 +55,8 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     id: 'spark_roots_journey',
     category: 'roots',
     title: 'The Journey of Your Ancestors',
+    linkedSceneId: 'part-1-scene-1',
+    suggestedMediaMode: 'video',
     sparks: {
       en: 'What stories did your grandparents share about where your family originally came from, and what courageous journey brought them here?',
       gu: 'તમારા વડીલો કે દાદા-દાદીએ પોતાના મૂળ વતન અને મુશ્કેલ સ્થળાંતર વિશે તમને કઈ વાતો કહી હતી?',
@@ -92,6 +96,8 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     id: 'spark_love_partner',
     category: 'love',
     title: 'The Day You Met Your Life Partner',
+    linkedSceneId: 'part-4-scene-1',
+    suggestedMediaMode: 'video',
     sparks: {
       en: 'Tell the story of how you and your partner first crossed paths. Was it arranged by family or a serendipitous meeting, and what first caught your eye?',
       gu: 'તમારા જીવનસાથી સાથે તમારી પ્રથમ મુલાકાત કેવી રીતે થઈ? શું તે વડીલો દ્વારા નક્કી થયેલો સંબંધ હતો કે અચાનક થયેલી મુલાકાત, અને કઈ વાત ગમી ગઈ હતી?',
@@ -131,6 +137,8 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     id: 'spark_wisdom_hardship',
     category: 'wisdom',
     title: 'A Hardship That Taught You Courage',
+    linkedSceneId: 'part-2-scene-2',
+    suggestedMediaMode: 'audio',
     sparks: {
       en: 'Reflect on a difficult season in your life that tested your strength. How did you endure it, and what quiet wisdom did it leave you with?',
       gu: 'તમારા જીવનના કોઈ એવા મુશ્કેલ સમયને યાદ કરો જેણે તમારી ધીરજની કસોટી લીધી. તમે તેમાંથી કેવી રીતે બહાર આવ્યા અને તેનાથી શું મૂલ્યવાન શીખવા મળ્યું?',
@@ -170,6 +178,8 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     id: 'spark_traditions_festivals',
     category: 'traditions',
     title: 'The Festive Gatherings of Your Youth',
+    linkedSceneId: 'part-1-scene-3',
+    suggestedMediaMode: 'audio',
     sparks: {
       en: 'Describe how your family celebrated the great festivals when you were young. What traditional delicacies were simmered, and how did the house come alive?',
       gu: 'તમારા બાળપણમાં મોટા તહેવારો કેવી રીતે ઉજવાતા? ઘરમાં કઈ પરંપરાગત વાનગીઓ બનતી અને આખો પરિવાર કેવી રીતે ઉત્સાહથી ભેગો થતો?',
@@ -209,6 +219,8 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     id: 'spark_lessons_vocation',
     category: 'lessons',
     title: 'Your First Honest Job & Early Work',
+    linkedSceneId: 'part-3-scene-1',
+    suggestedMediaMode: 'video',
     sparks: {
       en: 'Walk us through your very first job or craft. What did it feel like to earn your first wages, and what discipline did that work instil in you?',
       gu: 'તમારી પ્રથમ નોકરી કે ધંધા વિશે વાત કરો. જ્યારે પહેલી કમાણી હાથમાં આવી ત્યારે કેવો ગર્વ થયો હતો, અને તે કામથી તમને શું મૂલ્યવાન બોધ મળ્યો?',
@@ -248,6 +260,8 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     id: 'spark_humour_mishap',
     category: 'humour',
     title: 'The Mishap That Still Makes You Laugh',
+    linkedSceneId: 'part-2-scene-1',
+    suggestedMediaMode: 'audio',
     sparks: {
       en: 'What is the funniest mishap, family misunderstanding, or mischievous adventure that still brings tears of laughter to everyone around the dinner table?',
       gu: 'એવો કયો હાસ્યાસ્પદ બનાવ, રમૂજી ગેરસમજ કે બાળપણનું તોફાન છે જેની વાત નીકળે ત્યારે આજે પણ આખું કુટુંબ ખડખડાટ હસી પડે છે?',
@@ -287,6 +301,8 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     id: 'spark_legacy_blessing',
     category: 'legacy',
     title: 'A Blessing for Future Generations',
+    linkedSceneId: 'part-6-scene-1',
+    suggestedMediaMode: 'video',
     sparks: {
       en: 'If your great-grandchildren listen to your voice one hundred years from now, what blessing, promise, or core truth do you want them to hold close to their hearts?',
       gu: 'આજથી સો વર્ષ પછી જો તમારા પ્રપૌત્રો કે ભવિષ્યની પેઢી તમારો આ અવાજ સાંભળે, તો તમે તેમને કયો આશીર્વાદ અને કયું જીવનસૂત્ર આપવા માંગો છો?',

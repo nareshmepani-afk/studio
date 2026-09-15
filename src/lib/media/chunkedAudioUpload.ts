@@ -212,3 +212,78 @@ export async function uploadPhotosSequential(
 
   return updatedPhotos;
 }
+
+/**
+ * Resumable upload of a WebM or MP4 video memo recording to Firebase Storage with exponential backoff.
+ */
+export async function uploadVideoWithResiliency(
+  userId: string,
+  draftId: string,
+  videoBlob: Blob,
+  onProgress?: (progressPercent: number) => void
+): Promise<UploadResult> {
+  if (!storage) {
+    throw new Error('Firebase Storage service is uninitialised');
+  }
+
+  const extension = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+  const storagePath = `users/${userId}/fireside/${draftId}/video.${extension}`;
+  const storageRef = ref(storage, storagePath);
+  const metadata = {
+    contentType: videoBlob.type || 'video/webm',
+    customMetadata: {
+      draftId,
+      userId,
+      uploadedAt: new Date().toISOString(),
+    },
+  };
+
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const uploadTask = uploadBytesResumable(storageRef, videoBlob, metadata);
+
+      await new Promise<void>((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            if (snapshot.totalBytes > 0 && onProgress) {
+              const percent = Math.round(
+                (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+              );
+              onProgress(Math.min(100, Math.max(0, percent)));
+            }
+          },
+          (error) => {
+            reject(error);
+          },
+          () => {
+            resolve();
+          }
+        );
+      });
+
+      const storageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+
+      return {
+        storagePath,
+        storageUrl,
+        fileSizeBytes: videoBlob.size,
+      };
+    } catch (err) {
+      lastError = err;
+      console.warn(
+        `[ChunkedAudioUpload] Video upload attempt ${attempt}/${MAX_RETRIES} failed for ${storagePath}:`,
+        err
+      );
+      if (attempt < MAX_RETRIES) {
+        const backoffDelay = INITIAL_BACKOFF_MS * Math.pow(2, attempt - 1);
+        await waitMs(backoffDelay);
+      }
+    }
+  }
+
+  throw lastError || new Error('Video upload failed after 3 retry attempts');
+}
+

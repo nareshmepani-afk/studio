@@ -25,6 +25,7 @@ import {
   Camera,
   Shuffle,
   Mic,
+  Video,
   BookOpen,
   Heart,
   Globe,
@@ -37,15 +38,18 @@ import {
 import type {
   FiresidePromptSpark,
   FiresideLanguage,
-  PromptCategory
+  PromptCategory,
+  FiresideMediaMode,
 } from '@/types/fireside';
 import { FIRESIDE_LANGUAGE_LABELS, FIRESIDE_TOUCH_TARGETS } from '@/types/fireside';
 import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
+import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
   initialPromptId?: string;
   activeLanguage?: FiresideLanguage;
+  mediaMode?: FiresideMediaMode;
   onSelectPrompt?: (spark: FiresidePromptSpark, language: FiresideLanguage) => void;
   onLanguageChange?: (language: FiresideLanguage) => void;
   onPhotoPromptClick?: (photoPrompt: string) => void;
@@ -72,6 +76,7 @@ export function SingleCardPromptCarousel({
   prompts = FIRESIDE_PROMPT_SPARKS,
   initialPromptId,
   activeLanguage: controlledLanguage,
+  mediaMode,
   onSelectPrompt,
   onLanguageChange,
   onPhotoPromptClick,
@@ -96,6 +101,9 @@ export function SingleCardPromptCarousel({
   const currentSpark = sparkDeck[currentIndex] || sparkDeck[0];
   const categoryMeta = CATEGORY_META[currentSpark.category] || CATEGORY_META.childhood;
   const CategoryIcon = categoryMeta.icon;
+
+  const effectiveMediaMode: FiresideMediaMode = mediaMode || currentSpark.suggestedMediaMode || 'audio';
+  const linkedScene = currentSpark.linkedSceneId ? getSceneById(currentSpark.linkedSceneId) : undefined;
 
   const handleLanguageSelect = (lang: FiresideLanguage) => {
     setInternalLanguage(lang);
@@ -189,15 +197,39 @@ export function SingleCardPromptCarousel({
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div>
-              {/* Top Meta Bar: Category Pill + Card Index Counter */}
-              <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
-                <div
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${categoryMeta.colour}`}
-                >
-                  <CategoryIcon className="w-3.5 h-3.5" />
-                  <span className="uppercase tracking-wider text-[11px] font-semibold">
-                    {categoryMeta.label}
-                  </span>
+              {/* Top Meta Bar: Category Pill + Curriculum Badge + Card Index Counter */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
+                <div className="flex items-center flex-wrap gap-1.5">
+                  <div
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${categoryMeta.colour}`}
+                  >
+                    <CategoryIcon className="w-3.5 h-3.5" />
+                    <span className="uppercase tracking-wider text-[11px] font-semibold">
+                      {categoryMeta.label}
+                    </span>
+                  </div>
+
+                  {linkedScene && (
+                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold">
+                      {linkedScene.partTitle.split(':')[0]} • Scene {linkedScene.sceneNumber}
+                    </span>
+                  )}
+
+                  {currentSpark.suggestedMediaMode && (
+                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-stone-300 flex items-center gap-1">
+                      {currentSpark.suggestedMediaMode === 'video' ? (
+                        <>
+                          <Video className="w-3 h-3 text-amber-400" />
+                          <span>Video Memo</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="w-3 h-3 text-amber-400" />
+                          <span>Voice & Photos</span>
+                        </>
+                      )}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -215,6 +247,7 @@ export function SingleCardPromptCarousel({
                   </button>
                 </div>
               </div>
+
 
               {/* Memory Prompt Heading & Spark Prose */}
               <h3 className="text-sm sm:text-base font-semibold text-amber-400/90 tracking-wide mb-3 flex items-center gap-2">
@@ -330,17 +363,31 @@ export function SingleCardPromptCarousel({
           </button>
         </div>
 
-        {/* Primary Story Confirmation Button: 'Speak This Memory ➔' */}
+        {/* Primary Story Confirmation Button: Speak or Record Video */}
         <button
           type="button"
           onClick={handleSelectCurrent}
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
           className="w-full px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold text-base sm:text-lg shadow-lg shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-          aria-label={`Speak this memory: ${currentSpark.title}`}
+          aria-label={
+            effectiveMediaMode === 'video'
+              ? `Record video memo: ${currentSpark.title}`
+              : `Speak this memory: ${currentSpark.title}`
+          }
         >
-          <Mic className="w-5 h-5 text-black" />
-          <span>Speak This Memory ➔</span>
+          {effectiveMediaMode === 'video' ? (
+            <>
+              <Video className="w-5 h-5 text-black" />
+              <span>Record Video Memo ➔</span>
+            </>
+          ) : (
+            <>
+              <Mic className="w-5 h-5 text-black" />
+              <span>Speak This Memory ➔</span>
+            </>
+          )}
         </button>
+
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ import {
   FiresideMemoryDraft,
   FiresideLocalVaultRecord,
   DraftSyncState,
+  FiresideMediaMode,
 } from '@/types/fireside';
 import {
   saveDraftToVault,
@@ -30,6 +31,7 @@ import {
 } from '@/lib/storage/firesideIndexedDb';
 import {
   uploadAudioWithResiliency,
+  uploadVideoWithResiliency,
   uploadPhotosSequential,
 } from '@/lib/media/chunkedAudioUpload';
 
@@ -42,6 +44,10 @@ export interface UseFiresideSyncOptions {
   activeLanguage: FiresideLanguage;
   audioBlob?: Blob | null;
   audioDurationSeconds?: number;
+  videoBlob?: Blob | null;
+  videoDurationSeconds?: number;
+  mediaMode?: FiresideMediaMode;
+  sceneId?: string;
   photos?: HeirloomPhotoAttachment[];
   onSyncSuccess?: (draftId: string) => void;
   onSyncError?: (error: Error) => void;
@@ -66,6 +72,10 @@ export function useFiresideSync({
   activeLanguage,
   audioBlob = null,
   audioDurationSeconds = 0,
+  videoBlob = null,
+  videoDurationSeconds = 0,
+  mediaMode = 'audio',
+  sceneId,
   photos = [],
   onSyncSuccess,
   onSyncError,
@@ -108,6 +118,8 @@ export function useFiresideSync({
   // Cached storage references
   const audioStorageUrlRef = useRef<string | null>(null);
   const audioStoragePathRef = useRef<string | null>(null);
+  const videoStorageUrlRef = useRef<string | null>(null);
+  const videoStoragePathRef = useRef<string | null>(null);
   const syncedPhotosRef = useRef<HeirloomPhotoAttachment[]>([]);
   const isSyncingRef = useRef<boolean>(false);
 
@@ -126,6 +138,8 @@ export function useFiresideSync({
       userId: effectiveUserId.current,
       title: promptSpark ? promptSpark.title : 'Fireside Spoken Memoir',
       promptId: promptSpark ? promptSpark.id : null,
+      sceneId: sceneId || promptSpark?.linkedSceneId || undefined,
+      mediaMode: mediaMode,
       promptText: promptSpark ? promptSpark.sparks[activeLanguage] : '',
       promptLanguage: activeLanguage,
       audioMetrics: {
@@ -136,8 +150,20 @@ export function useFiresideSync({
         peakDecibels: -1.5,
         codec: audioBlob?.type || 'audio/webm',
       },
+      videoMetrics: videoBlob
+        ? {
+            width: 1280,
+            height: 720,
+            frameRate: 24,
+            bitrateBps: 2000000,
+            codec: videoBlob.type || 'video/webm',
+            mirrored: true,
+          }
+        : undefined,
       audioStoragePath: audioStoragePathRef.current,
       audioStorageUrl: audioStorageUrlRef.current,
+      videoStoragePath: videoStoragePathRef.current,
+      videoStorageUrl: videoStorageUrlRef.current,
       photos,
       transcriptionText: null,
       prose: '',
@@ -152,7 +178,9 @@ export function useFiresideSync({
       const vaultRecord: FiresideLocalVaultRecord = {
         draftId,
         userId: effectiveUserId.current,
+        mediaMode,
         audioBlob,
+        videoBlob,
         draft: currentDraft,
         lastCachedAt: Date.now(),
         uploadAcknowledged: false,
@@ -192,9 +220,26 @@ export function useFiresideSync({
         currentDraft.audioStoragePath = audioUploadResult.storagePath;
       }
 
+      // 2. Stream Video Memo if present and not yet uploaded
+      if (videoBlob && !videoStorageUrlRef.current) {
+        const videoUploadResult = await uploadVideoWithResiliency(
+          effectiveUserId.current,
+          draftId,
+          videoBlob,
+          (percent) => {
+            // Map video progress to 10% - 60%
+            setProgressPercent(10 + Math.round(percent * 0.5));
+          }
+        );
+        videoStorageUrlRef.current = videoUploadResult.storageUrl;
+        videoStoragePathRef.current = videoUploadResult.storagePath;
+        currentDraft.videoStorageUrl = videoUploadResult.storageUrl;
+        currentDraft.videoStoragePath = videoUploadResult.storagePath;
+      }
+
       setProgressPercent(65);
 
-      // 2. Stream Photos sequentially if present
+      // 3. Stream Photos sequentially if present
       if (photos.length > 0) {
         const uploadedPhotos = await uploadPhotosSequential(
           effectiveUserId.current,
@@ -213,7 +258,7 @@ export function useFiresideSync({
 
       setProgressPercent(92);
 
-      // 3. Persist Draft Metadata in Firestore if authenticated
+      // 4. Persist Draft Metadata in Firestore if authenticated
       if (db && !effectiveUserId.current.startsWith('guest_')) {
         const draftDocRef = doc(db, 'users', effectiveUserId.current, 'firesideDrafts', draftId);
         await setDoc(
@@ -227,11 +272,13 @@ export function useFiresideSync({
         );
       }
 
-      // 4. Update Vault Record with Upload Acknowledgment
+      // 5. Update Vault Record with Upload Acknowledgment
       await saveDraftToVault({
         draftId,
         userId: effectiveUserId.current,
+        mediaMode,
         audioBlob,
+        videoBlob,
         draft: { ...currentDraft, syncState: 'synced' },
         lastCachedAt: Date.now(),
         uploadAcknowledged: true,
@@ -265,6 +312,9 @@ export function useFiresideSync({
     activeLanguage,
     audioBlob,
     audioDurationSeconds,
+    videoBlob,
+    mediaMode,
+    sceneId,
     photos,
     onSyncSuccess,
     onSyncError,
@@ -274,11 +324,11 @@ export function useFiresideSync({
   // 2. Reactive Auto-Sync on Media Capture
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    // Trigger sync when audio recording finishes or photo attachments change
-    if (audioBlob || photos.length > 0) {
+    // Trigger sync when audio or video recording finishes or photo attachments change
+    if (audioBlob || videoBlob || photos.length > 0) {
       executeSync();
     }
-  }, [audioBlob, photos.length, executeSync]);
+  }, [audioBlob, videoBlob, photos.length, executeSync]);
 
   // ---------------------------------------------------------------------------
   // 3. Network Reconnection Auto-Resume

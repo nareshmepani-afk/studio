@@ -36,10 +36,90 @@ The Fireside Voice Studio is engineered around the natural domestic posture of r
 
 ---
 
-## 2. System Architecture & Route Hierarchy
+## 2. System Architecture: "Two Lenses, One Living Story"
 
-### 2.1 Route & URL Parameter Schema
-The Fireside Voice Studio mounts at the dedicated route:
+### 2.1 The "Two Lenses, One Living Story" Ergonomic Bifurcation Model
+The Memory Weaver platform unifies two distinct physical operating environments around a single, immutable narrative truth:
+
+1. **Route A (`/studio/fireside`) — The Handheld Mobile Sanctuary:**
+   - **Target Persona:** The Storyteller (elderly parents and grandparents aged 65–85+).
+   - **Physical Posture:** Sitting comfortably in an armchair, resting on a sofa, or gathered beside the fire holding a smartphone or small tablet.
+   - **Ergonomics:** Single-card focus (zero clutter), high-contrast bilingual typography (≥18pt Playfair / Noto Sans Indic), oversized 88px tactile recording button, physical lap album photo digitisation, and upcoming WhatsApp/FaceTime-style selfie video memo mode (Ticket #249).
+   - **Cognitive Load:** Near zero. No teleprompter speed anxieties, no multi-track scrubbing controls, no complex mastering dials.
+
+2. **Route B (`/studio`) — The Desktop Flight Deck:**
+   - **Target Persona:** The Family Producer / Director (adult children, grandchildren, or tech-confident narrators).
+   - **Physical Posture:** Workstation desk, PC, Mac, or widescreen tablet (iPad Pro) with keyboard/mouse.
+   - **Ergonomics:** Multi-column 6-Part curriculum matrix, teleprompter controls, 4K WebRTC multi-camera soundstage, audio waveform scrubbers, sensory catalyst drawers, and mastering deck.
+   - **Cognitive Load:** Full directorial control. Precision timing, screenplay cue reviews, and multi-track export.
+
+3. **Interchangeable Identity & State Parity:**
+   - **Identical Identity:** The narrator or family member logs in with the exact same credentials across mobile and desktop.
+   - **Identical Entitlements:** Director Pass (£12.99/mo) and Generational Vault (£195 lifetime) privileges apply seamlessly across both lenses.
+   - **Identical Cloud State:** Recording Scene 2 on mobile immediately illuminates Scene 2 as "Captured" on the desktop flight deck.
+
+```text
+               ┌─────────────────────────────────────────────────────────┐
+               │              ONE LIVING FAMILY MEMOIR                   │
+               │   Firestore: /users/{uid}/memoirs/{id}/scenes/{sceneId} │
+               │   Storage:   /users/{uid}/fireside/{draftId}            │
+               └────────────────────────────┬────────────────────────────┘
+                                            │
+                    ┌───────────────────────┴───────────────────────┐
+                    ▼                                               ▼
+     ┌─────────────────────────────┐                 ┌─────────────────────────────┐
+     │   LENS A: MOBILE FIRESIDE   │                 │   LENS B: DESKTOP STUDIO    │
+     │      /studio/fireside       │                 │           /studio           │
+     │ • Armchair & sofa posture   │                 │ • Workstation desk posture  │
+     │ • Single-card prompt deck   │                 │ • 6-Part curriculum matrix  │
+     │ • 88px tactile record pulse │                 │ • Teleprompter soundstage   │
+     │ • Rear camera album scanner │                 │ • Audio waveform scrubber   │
+     │ • Front-facing video memo   │                 │ • Family producer flight deck│
+     └─────────────────────────────┘                 └─────────────────────────────┘
+```
+
+### 2.2 Device Intercept Logic (`MobilePortalOverlay.tsx`)
+When a smartphone user accidentally navigates directly to the desktop soundstage (`/studio`), the platform intercepts viewports `<768px` via `C:\Users\home\studio\src\components\studio\overlays\MobilePortalOverlay.tsx`:
+
+- **Detection Threshold:** Window width `<768px` (mobile portrait / compact screens).
+- **The 3-Way Choice Fork:**
+  1. **Option 1 (Email Magic Transition Link):** Dispatches a secure tokenised email link via `sendStudioTransitionAction` so the narrator can easily open the full desktop soundstage on their Mac or PC later.
+  2. **Option 2 (Direct Link Copy):** Copies the exact soundstage route URL to the device clipboard.
+  3. **Option 3 (Enter Mobile Fireside Studio):** Routes the user directly to the handheld sanctuary at `/studio/fireside`, passing the active `promptId` or `memoryId` in query parameters (`/studio/fireside?prompt=...`).
+
+### 2.3 The Shared Cloud Spine & Bi-Directional State Bridge
+Both lenses synchronize around the canonical curriculum engine defined in:
+`C:\Users\home\studio\src\lib\curriculum\masterStoryStructure.ts`
+
+- **Narrative Progression:**
+  * **Part I: Roots and Foundations** (Birthplace, Family Roots, The House I Grew Up In, School Days)
+  * **Part II: Formative Years & Early Echoes** (Mentors, Kinship, First Hardships)
+  * **Part III: Crossroads, Choices & Becoming** (Crossroads, Lessons Learned the Hard Way)
+  * **Part IV: Journeys, Love & Milestones** (Independence, Love & Marriage, Arrival of Children)
+  * **Part V: Wisdom, Hard-Won Truths & Values** (Core Principles, Enduring Beliefs)
+  * **Part VI: The Continuing Story & Heirloom Legacy** (Blessings for Future Generations)
+  * **Addendum: Family Storytelling** (Heirloom Kitchen Recipes, Unspoken Sacrifices)
+
+- **Firestore Scene State Synchronization:**
+  ```text
+  /users/{uid}/memoirs/{memoirId}/scenes/{sceneId}
+  ├── status: "locked" | "ready_for_action" | "captured" | "mastered"
+  ├── mediaMode: "audio" | "video"
+  ├── mediaUrl: string
+  ├── durationSeconds: number
+  └── lastUpdated: timestamp
+  ```
+
+- **Bi-Directional Handshake Sequence:**
+  1. Storyteller opens `/studio/fireside?id=mem_01` on mobile. The carousel mounts at Scene 2 (`part-1-scene-2`: *"The House I Grew Up In"*).
+  2. Storyteller presses the `88px` amber record button, speaks for 2 minutes, and presses stop.
+  3. The audio blob commits optimistically to `IndexedDB`, and `useFiresideSync` uploads the WebM stream to `/users/{uid}/fireside/mem_01/audio.webm`.
+  4. Firestore updates `/users/{uid}/memoirs/mem_01/scenes/part-1-scene-2`: `status` flips from `ready_for_action` to `captured`.
+  5. The mobile carousel automatically advances to Scene 3 (`part-1-scene-3`), unlocking the next prompt.
+  6. Simultaneously, the family producer observing the desktop stage at `/studio` sees Scene 2 instantly illuminate with a green `Captured` indicator via Firestore real-time snapshot listeners.
+
+### 2.4 Route & URL Parameter Schema
+The Fireside Voice Studio mounts at:
 ```text
 /studio/fireside
 ```
@@ -48,10 +128,11 @@ Supported URL query parameters:
 | :--- | :---: | :--- | :--- |
 | `id` | `string` | Deep-link or resume an existing memory draft | `?id=mem_draft_882` |
 | `prompt` | `string` | Pre-select a specific story spark card | `?prompt=childhood_scents` |
+| `scene` | `string` | Link to a specific master curriculum scene | `?scene=part-1-scene-2` |
 | `lang` | `en\|gu\|pa\|hi` | Set the active prompt language | `?lang=gu` |
 
-### 2.2 Provider Hierarchy & Pure Non-Degradation (Rule 7)
-The Fireside Studio is mounted completely independently of the desktop soundstage. The desktop files (`C:\Users\home\studio\src\components\studio\SoloStage.tsx` and `ProductionDeckContainer.tsx`) remain 100% untouched.
+### 2.5 Provider Hierarchy & Pure Non-Degradation (Rule 7)
+The Fireside Studio is mounted completely independently of the desktop soundstage. The protected desktop components (`C:\Users\home\studio\src\components\studio\SoloStage.tsx` and `C:\Users\home\studio\src\components\studio\ProductionDeckContainer.tsx`) remain 100% untouched.
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -61,16 +142,18 @@ The Fireside Studio is mounted completely independently of the desktop soundstag
 │ │ ┌─────────────────────────────────────────────────────┐ │ │
 │ │ │ FiresideStudioContainer (100dvh Vertical Frame)     │ │ │
 │ │ │ ├── FiresideHeader (Language Toggle, Draft Status)  │ │ │
+│ │ │ ├── FiresideModeSwitch (Voice & Photos vs Video)    │ │ │
 │ │ │ ├── SingleCardPromptCarousel (MW-245)               │ │ │
 │ │ │ ├── AlbumPhotoCaptureTray (MW-247)                  │ │ │
 │ │ │ ├── TactileVoiceRecorder & Visualiser (MW-246)      │ │ │
+│ │ │ ├── FiresideVideoRecorder (MW-249 FaceTime Mode)    │ │ │
 │ │ │ └── PermissionDenialRecoveryOverlay                 │ │ │
 │ │ └─────────────────────────────────────────────────────┘ │ │
 │ └─────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 2.3 Mobile Viewport Integrity (Rule 8)
+### 2.6 Mobile Viewport Integrity (Rule 8)
 - Container height is strictly bounded to `100dvh` (`min-height: 100dvh; max-height: 100dvh; overflow: hidden;`).
 - Zero horizontal overflow: `scrollWidth <= clientWidth` across all target viewports:
   * `360×740px` (Samsung Galaxy S8+)
@@ -79,6 +162,7 @@ The Fireside Studio is mounted completely independently of the desktop soundstag
   * `820×1180px` (iPad Air / Tablet in armchair lap)
 
 ---
+
 
 ## 3. Detailed Sub-Module Specifications
 
