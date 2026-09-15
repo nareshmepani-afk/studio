@@ -14,6 +14,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
@@ -35,7 +36,9 @@ import {
   Loader2,
   CloudOff,
   AlertCircle,
+  Monitor,
 } from 'lucide-react';
+import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 
 export default function FiresideStudioClient() {
   const searchParams = useSearchParams();
@@ -59,10 +62,31 @@ export default function FiresideStudioClient() {
   const [recordedVideoBlob, setRecordedVideoBlob] = useState<Blob | null>(null);
   const [recordedVideoDuration, setRecordedVideoDuration] = useState<number>(0);
   const [notification, setNotification] = useState<string | null>(null);
+  const [showDesktopBanner, setShowDesktopBanner] = useState<boolean>(false);
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
   const videoRecorderRef = useRef<FiresideVideoRecorderRef>(null);
+
+  // Detect desktop display (>= 1024px) to recommend the flagship Desktop Soundstage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const isDesktopScreen = window.innerWidth >= 1024;
+        const isDismissed = sessionStorage.getItem('mw_dismiss_desktop_stage_banner') === 'true';
+        if (isDesktopScreen && !isDismissed) {
+          setShowDesktopBanner(true);
+        }
+      } catch {}
+    }
+  }, []);
+
+  const handleDismissDesktopBanner = () => {
+    setShowDesktopBanner(false);
+    try {
+      sessionStorage.setItem('mw_dismiss_desktop_stage_banner', 'true');
+    } catch {}
+  };
 
   // Restore persisted media mode on mount
   useEffect(() => {
@@ -172,10 +196,15 @@ export default function FiresideStudioClient() {
     }, 5000);
   };
 
+  // Active Curriculum Part Context (MW-249)
+  const activePartTitle = selectedSpark?.linkedSceneId
+    ? getSceneById(selectedSpark.linkedSceneId)?.partTitle
+    : undefined;
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-stone-100 flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-200">
       {/* 1. Discreet Elder Auth Header with Desktop Stage Ingress */}
-      <FiresideAuthHeader />
+      <FiresideAuthHeader activePartTitle={activePartTitle} />
 
       {/* 2. Reassuring Vault Synchronisation HUD Strip */}
       <div className="w-full bg-stone-950/70 border-b border-stone-800/60 py-2 px-4 sticky top-[49px] sm:top-[53px] z-20 backdrop-blur-md">
@@ -237,6 +266,55 @@ export default function FiresideStudioClient() {
 
       {/* 3. Primary Armchair Storytelling Surface */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-2xl mx-auto space-y-8">
+        {/* Prominent Desktop Soundstage Recommendation Banner (visible on desktop viewports >= 1024px) */}
+        {showDesktopBanner && (
+          <div
+            data-testid="desktop-soundstage-banner"
+            className="w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 text-amber-300">
+                  <Monitor className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono uppercase tracking-wider font-semibold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                      Desktop Display Detected
+                    </span>
+                    <span className="text-xs text-stone-400">• Large Screen Experience</span>
+                  </div>
+                  <h2 className="text-sm sm:text-base font-serif font-medium text-white mt-1">
+                    Recommend Flagship Desktop Theatrical Soundstage
+                  </h2>
+                  <p className="text-xs text-stone-300 mt-1 max-w-lg leading-relaxed">
+                    You are accessing Fireside from a desktop browser. For the full multi-act theatrical experience with teleprompter controls, live audio visualisation, and multi-track master reel editing, try the Desktop Stage (Acts I–IV).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
+                <Link
+                  href="/studio"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-stone-950 font-sans shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <span>Launch Soundstage</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleDismissDesktopBanner}
+                  className="p-2 text-stone-400 hover:text-stone-200 hover:bg-white/5 rounded-lg text-xs transition-colors cursor-pointer"
+                  title="Dismiss and remain in mobile Fireside Studio"
+                  aria-label="Dismiss recommendation"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Intro Subhead */}
         <div className="text-center max-w-md">
           <p className="text-xs uppercase tracking-widest text-amber-400/80 font-medium mb-1">

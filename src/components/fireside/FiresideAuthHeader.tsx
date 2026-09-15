@@ -10,8 +10,8 @@
  * Displays a discreet, high-contrast account badge:
  * - If authenticated: [ 👤 User Email • Generational Vault / Director Pass ✓ ]
  * - If guest: [ 👤 Guest Session (Saved to Phone) • Tap to Sign In ]
- * Also provides an accessible link back to the Desktop Soundstage (/studio)
- * and an ambient staging/dev indicator.
+ * Provides a high-visibility link to the Desktop Soundstage (/studio),
+ * an explicit environment badge (Dev Staging), and production stage context (Act II: Story Capture).
  */
 
 import React from 'react';
@@ -24,13 +24,19 @@ import {
   ShieldCheck,
   Smartphone,
   ExternalLink,
+  Mic,
 } from 'lucide-react';
 
 export interface FiresideAuthHeaderProps {
   className?: string;
+  activePartTitle?: string;
+  activeSceneTitle?: string;
 }
 
-export function FiresideAuthHeader({ className = '' }: FiresideAuthHeaderProps) {
+export function FiresideAuthHeader({
+  className = '',
+  activePartTitle,
+}: FiresideAuthHeaderProps) {
   const { user } = useAuth();
   const isAuthenticated = !!(user && !user.isAnonymous);
   const userEmail = user?.email || (isAuthenticated ? 'Authenticated Storyteller' : null);
@@ -41,16 +47,16 @@ export function FiresideAuthHeader({ className = '' }: FiresideAuthHeaderProps) 
     >
       <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4">
         {/* Left Section: Back to Desktop Stage & Studio Title */}
-        <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2.5">
+        <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3">
           <Link
             href="/studio"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-stone-300 hover:text-amber-300 transition-colors py-1.5 px-2.5 rounded-xl hover:bg-stone-900 border border-stone-800/60 shrink-0 cursor-pointer"
-            title="Return to the Desktop Soundstage"
-            aria-label="Return to the Desktop Soundstage"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
+            title="Switch to Desktop Theatrical Soundstage (Acts I–IV)"
+            aria-label="Switch to Desktop Theatrical Soundstage"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline sm:inline">Desktop Stage</span>
-            <span className="xs:hidden sm:hidden">Studio</span>
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-amber-400" />
+            <span className="hidden xs:inline sm:inline">Desktop Soundstage (Acts I–IV)</span>
+            <span className="xs:hidden sm:hidden">Desktop Stage</span>
           </Link>
 
           <div className="flex items-center gap-2 text-amber-400">
@@ -58,9 +64,33 @@ export function FiresideAuthHeader({ className = '' }: FiresideAuthHeaderProps) 
             <span className="text-xs sm:text-sm font-serif font-semibold tracking-wide text-amber-300 truncate">
               Fireside Studio
             </span>
-            <span className="text-[10px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300">
-              Stage
+
+            {/* Explicit Environment Badge to Disambiguate from Production Stages */}
+            <span
+              className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold shrink-0"
+              title="Deployment Environment: Dev Staging"
+            >
+              Dev Staging
             </span>
+
+            {/* Explicit Production Stage Context: Act II Equivalent */}
+            <span
+              className="hidden md:inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-stone-300 shrink-0"
+              title="Production Context: Act II Equivalent Armchair Story Capture"
+            >
+              <Mic className="w-2.5 h-2.5 text-amber-400" />
+              <span>Act II: Story Capture</span>
+            </span>
+
+            {/* Active Curriculum Part Badge if provided */}
+            {activePartTitle && (
+              <span
+                className="hidden lg:inline-block text-[10px] font-mono text-stone-400 border border-stone-800 bg-stone-900/60 rounded px-1.5 py-0.5 shrink-0"
+                title={`Curriculum Alignment: ${activePartTitle}`}
+              >
+                {activePartTitle.split(':')[0]}
+              </span>
+            )}
           </div>
         </div>
 
