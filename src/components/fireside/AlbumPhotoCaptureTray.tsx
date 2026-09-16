@@ -264,6 +264,7 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
                     type="button"
                     onClick={() => handleRetakePhoto(idx)}
                     disabled={isProcessing}
+                    data-hotspot-id="HS_FIRESIDE_PHOTO_RETAKE_BTN"
                     className="flex-1 min-h-[40px] px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors active:scale-98 disabled:opacity-50"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
@@ -273,6 +274,7 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
                     type="button"
                     onClick={() => handleRemovePhoto(idx)}
                     disabled={isProcessing}
+                    data-hotspot-id="HS_FIRESIDE_PHOTO_REMOVE_BTN"
                     className="min-h-[40px] px-3 rounded-xl bg-stone-800/60 hover:bg-red-950/40 hover:text-red-400 text-stone-400 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors active:scale-98 disabled:opacity-50"
                     aria-label="Remove this photograph"
                   >
@@ -296,6 +298,7 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
                 cameraInputRef.current?.click();
               }}
               disabled={isProcessing}
+              data-hotspot-id="HS_FIRESIDE_PHOTO_CAMERA_BTN"
               className="flex-1 min-h-[56px] px-5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-lg shadow-amber-950/40 transition-all active:scale-98 disabled:opacity-60"
             >
               {isProcessing ? (
@@ -319,6 +322,7 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
                 galleryInputRef.current?.click();
               }}
               disabled={isProcessing}
+              data-hotspot-id="HS_FIRESIDE_PHOTO_GALLERY_BTN"
               className="sm:w-auto min-h-[48px] px-4 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-stone-700/80 text-stone-200 font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-98 disabled:opacity-60"
             >
               <ImageIcon className="w-4 h-4 text-stone-400" />

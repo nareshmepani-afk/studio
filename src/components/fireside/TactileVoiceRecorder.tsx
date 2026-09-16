@@ -257,6 +257,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
           <button
             type="button"
             onClick={retryPermission}
+            data-hotspot-id="HS_FIRESIDE_VOICE_RETRY_BTN"
             className="w-full max-w-xs mt-2 min-h-[56px] px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg hover:scale-102 active:scale-98"
             aria-label="Retry microphone permissions"
           >
@@ -379,6 +380,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                   <button
                     type="button"
                     onClick={resetRecording}
+                    data-hotspot-id="HS_FIRESIDE_VOICE_DISCARD_BTN"
                     className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 hover:text-red-400 flex items-center justify-center transition-all active:scale-95 shadow-md"
                     title="Discard recording and start over"
                     aria-label="Discard recording and start over"
@@ -408,6 +410,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                 <button
                   type="button"
                   onClick={startRecording}
+                  data-hotspot-id="HS_FIRESIDE_VOICE_RECORD_BTN"
                   className="w-[88px] h-[88px] min-w-[88px] min-h-[88px] rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 hover:from-amber-500 hover:to-amber-300 text-stone-950 font-bold flex flex-col items-center justify-center gap-1 shadow-[0_0_35px_rgba(245,158,11,0.4)] transition-all hover:scale-105 active:scale-95"
                   aria-label="Start recording spoken memory"
                 >
@@ -420,6 +423,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                 <button
                   type="button"
                   onClick={() => stopRecording()}
+                  data-hotspot-id="HS_FIRESIDE_VOICE_RECORD_BTN"
                   className="w-[88px] h-[88px] min-w-[88px] min-h-[88px] rounded-full bg-red-600 hover:bg-red-500 text-white font-bold flex flex-col items-center justify-center gap-1 shadow-[0_0_40px_rgba(239,68,68,0.5)] animate-pulse transition-all hover:scale-105 active:scale-95"
                   aria-label="Stop and complete recording"
                 >
@@ -432,6 +436,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                 <button
                   type="button"
                   onClick={() => stopRecording()}
+                  data-hotspot-id="HS_FIRESIDE_VOICE_RECORD_BTN"
                   className="w-[88px] h-[88px] min-w-[88px] min-h-[88px] rounded-full bg-red-600 hover:bg-red-500 text-white font-bold flex flex-col items-center justify-center gap-1 shadow-[0_0_35px_rgba(239,68,68,0.4)] transition-all hover:scale-105 active:scale-95"
                   aria-label="Stop and complete recording"
                 >
@@ -444,6 +449,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                 <button
                   type="button"
                   onClick={togglePlayPreview}
+                  data-hotspot-id="HS_FIRESIDE_VOICE_PREVIEW_PLAY_BTN"
                   className="w-[88px] h-[88px] min-w-[88px] min-h-[88px] rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 hover:from-emerald-500 hover:to-teal-300 text-stone-950 font-bold flex flex-col items-center justify-center gap-1 shadow-[0_0_35px_rgba(16,185,129,0.4)] transition-all hover:scale-105 active:scale-95"
                   aria-label={isPlayingPreview ? 'Pause audio preview' : 'Play audio preview'}
                 >
@@ -466,6 +472,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                   <button
                     type="button"
                     onClick={pauseRecording}
+                    data-hotspot-id="HS_FIRESIDE_VOICE_PAUSE_BTN"
                     className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-200 flex items-center justify-center transition-all active:scale-95 shadow-md"
                     title="Pause voice recording"
                     aria-label="Pause voice recording"
@@ -482,6 +489,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                   <button
                     type="button"
                     onClick={resumeRecording}
+                    data-hotspot-id="HS_FIRESIDE_VOICE_PAUSE_BTN"
                     className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-amber-500/40 ring-2 ring-amber-400"
                     title="Resume voice recording"
                     aria-label="Resume voice recording"
@@ -512,6 +520,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
               <button
                 type="button"
                 onClick={resetRecording}
+                data-hotspot-id="HS_FIRESIDE_VOICE_DISCARD_RETAKE_BTN"
                 className="w-full sm:w-auto flex-1 max-w-xs min-h-[56px] px-5 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-200 hover:text-red-400 font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-98 shadow-md"
                 aria-label="Discard recording and start over"
               >
@@ -525,6 +534,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                     onRecordingComplete(audioBlob, effectiveTotalDuration);
                   }
                 }}
+                data-hotspot-id="HS_FIRESIDE_VOICE_KEEP_BTN"
                 className="w-full sm:w-auto flex-1 max-w-xs min-h-[56px] px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-950/40 transition-all active:scale-98"
                 aria-label="Keep this recording and proceed"
               >

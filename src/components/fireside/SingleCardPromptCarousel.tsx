@@ -168,6 +168,7 @@ export function SingleCardPromptCarousel({
             <button
               key={lang}
               type="button"
+              data-hotspot-id={`HS_FIRESIDE_LANG_${lang.toUpperCase()}`}
               onClick={() => handleLanguageSelect(lang)}
               className={`min-h-[44px] sm:min-h-[48px] px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
                 isActive
@@ -253,6 +254,7 @@ export function SingleCardPromptCarousel({
                   </span>
                   <button
                     type="button"
+                    data-hotspot-id="HS_FIRESIDE_RANDOM_SPARK_BTN"
                     onClick={handleRandom}
                     title="Surprise me with a random memory prompt"
                     className="p-1.5 text-neutral-400 hover:text-amber-300 transition-colors bg-white/5 hover:bg-white/10 rounded-full border border-white/10 cursor-pointer"
@@ -278,6 +280,7 @@ export function SingleCardPromptCarousel({
             <div className="mt-6 pt-4 border-t border-white/10">
               <button
                 type="button"
+                data-hotspot-id="HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN"
                 onClick={() => setShowFollowUps((prev) => !prev)}
                 className="w-full flex items-center justify-between text-xs sm:text-sm font-semibold text-amber-300 hover:text-amber-200 transition-colors py-2 px-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 cursor-pointer"
                 aria-expanded={showFollowUps}
@@ -331,6 +334,7 @@ export function SingleCardPromptCarousel({
                   </div>
                   <button
                     type="button"
+                    data-hotspot-id="HS_FIRESIDE_PHOTO_DIGITISE_BTN"
                     onClick={() => {
                       if (onPhotoPromptClick) {
                         onPhotoPromptClick(photoPrompt);
@@ -357,6 +361,7 @@ export function SingleCardPromptCarousel({
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
+            data-hotspot-id="HS_FIRESIDE_PREV_STORY_BTN"
             onClick={handlePrev}
             style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
             className="w-full px-5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-98 border border-white/10 text-white font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -368,6 +373,7 @@ export function SingleCardPromptCarousel({
 
           <button
             type="button"
+            data-hotspot-id="HS_FIRESIDE_NEXT_STORY_BTN"
             onClick={handleNext}
             style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
             className="w-full px-5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-98 border border-white/10 text-white font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -381,6 +387,7 @@ export function SingleCardPromptCarousel({
         {/* Primary Story Confirmation Button: Speak or Record Video */}
         <button
           type="button"
+          data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"
           onClick={handleSelectCurrent}
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
           className="w-full px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold text-base sm:text-lg shadow-lg shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center gap-2.5 cursor-pointer"

@@ -157,6 +157,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
               </div>
               <button
                 type="button"
+                data-hotspot-id="HS_FIRESIDE_CAMERA_RETRY_BTN"
                 onClick={retryPermission}
                 style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
                 className="w-full max-w-xs px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
@@ -188,6 +189,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                   <button
                     type="button"
+                    data-hotspot-id="HS_FIRESIDE_VIDEO_DISCARD_RETAKE_BTN"
                     onClick={resetRecording}
                     style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
                     className="w-full px-4 rounded-2xl bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-stone-100 font-medium text-sm sm:text-base border border-stone-700/80 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
@@ -199,6 +201,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
 
                   <button
                     type="button"
+                    data-hotspot-id="HS_FIRESIDE_VIDEO_KEEP_BTN"
                     onClick={() => {
                       if (videoBlob) {
                         onRecordingComplete?.(videoBlob, durationSeconds);
@@ -296,6 +299,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                   {(isRecording || isPaused) && (
                     <button
                       type="button"
+                      data-hotspot-id="HS_FIRESIDE_VIDEO_PAUSE_BTN"
                       onClick={isRecording ? pauseRecording : resumeRecording}
                       style={{
                         width: `${FIRESIDE_TOUCH_TARGETS.SECONDARY_BUTTON_SIZE_PX}px`,
@@ -322,6 +326,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
 
                     <button
                       type="button"
+                      data-hotspot-id="HS_FIRESIDE_VIDEO_RECORD_BTN"
                       onClick={isRecording || isPaused ? () => stopRecording() : startRecording}
                       disabled={isProcessing}
                       style={{
@@ -348,6 +353,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                   {(isRecording || isPaused) && (
                     <button
                       type="button"
+                      data-hotspot-id="HS_FIRESIDE_VIDEO_CANCEL_BTN"
                       onClick={resetRecording}
                       style={{
                         width: `${FIRESIDE_TOUCH_TARGETS.SECONDARY_BUTTON_SIZE_PX}px`,

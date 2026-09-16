@@ -53,6 +53,7 @@ export function FiresideAuthHeader({
         <div className="w-full flex items-center justify-between gap-2.5 sm:gap-3">
           <Link
             href="/studio"
+            data-hotspot-id="HS_FIRESIDE_NAV_DESKTOP_BTN"
             className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
             title="Switch to Desktop Theatrical Soundstage (Acts I–IV)"
             aria-label="Switch to Desktop Theatrical Soundstage"
@@ -120,6 +121,7 @@ export function FiresideAuthHeader({
 
               <button
                 type="button"
+                data-hotspot-id="HS_FIRESIDE_SIGNOUT_BTN"
                 onClick={async () => {
                   try {
                     await logout(false);
@@ -138,6 +140,7 @@ export function FiresideAuthHeader({
           ) : (
             <Link
               href="/login?redirect=/studio/fireside"
+              data-hotspot-id="HS_FIRESIDE_SIGNIN_BTN"
               className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-stone-300 hover:text-amber-200 bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 px-3 py-1 rounded-full transition-all shadow-sm group cursor-pointer"
               title="Currently running in local guest session. Tap to sign in and back up to the Generational Vault."
             >

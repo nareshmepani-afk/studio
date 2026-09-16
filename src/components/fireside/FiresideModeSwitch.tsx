@@ -68,6 +68,7 @@ export function FiresideModeSwitch({
         <button
           type="button"
           role="tab"
+          data-hotspot-id="HS_FIRESIDE_MODE_VOICE"
           aria-selected={mode === 'audio'}
           onClick={() => handleSelectMode('audio')}
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
@@ -97,6 +98,7 @@ export function FiresideModeSwitch({
         <button
           type="button"
           role="tab"
+          data-hotspot-id="HS_FIRESIDE_MODE_VIDEO"
           aria-selected={mode === 'video'}
           onClick={() => handleSelectMode('video')}
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}

@@ -16,6 +16,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
@@ -44,6 +45,19 @@ import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 export default function FiresideStudioClient() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const { logEvent, traceInteraction } = useJourneyLogger(user?.uid || null);
+
+  // Global Capturing Click Listener for Hotspot Telemetry (Rule 8: Zero-Footprint Telemetry)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleGlobalClick = (e: MouseEvent) => {
+      traceInteraction(e as any);
+    };
+    window.addEventListener('click', handleGlobalClick, { capture: true });
+    return () => {
+      window.removeEventListener('click', handleGlobalClick, { capture: true });
+    };
+  }, [traceInteraction]);
 
   // Resolve URL parameters
   const initialLangParam = searchParams.get('lang') as FiresideLanguage | null;
@@ -131,6 +145,16 @@ export default function FiresideStudioClient() {
     photos,
   });
 
+  // Pageview lifecycle telemetry
+  useEffect(() => {
+    logEvent('FIRESIDE_STAGE_VIEWED', {
+      path: '/studio/fireside',
+      mediaMode,
+      activeLanguage,
+      hasUser: !!user,
+    });
+  }, [logEvent]);
+
   // Sync state if URL searchParams change
   useEffect(() => {
     if (initialLangParam && validLangs.includes(initialLangParam)) {
@@ -140,6 +164,11 @@ export default function FiresideStudioClient() {
 
   const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
     setSelectedSpark(spark);
+    logEvent('FIRESIDE_PROMPT_SELECTED', {
+      promptId: spark.id,
+      sceneId: spark.linkedSceneId,
+      mediaMode,
+    });
 
     if (mediaMode === 'video') {
       videoRecorderRef.current?.scrollIntoView();
@@ -159,6 +188,11 @@ export default function FiresideStudioClient() {
     }
   };
 
+  const handleModeChange = (newMode: FiresideMediaMode) => {
+    setMediaMode(newMode);
+    logEvent('FIRESIDE_MODE_SWITCHED', { mode: newMode });
+  };
+
   const handleResetAudioRecording = useCallback(() => {
     setRecordedAudioBlob(null);
     setRecordedAudioDuration(0);
@@ -171,6 +205,7 @@ export default function FiresideStudioClient() {
 
   const handleLanguageChange = (lang: FiresideLanguage) => {
     setActiveLanguage(lang);
+    logEvent('FIRESIDE_LANGUAGE_CHANGED', { language: lang });
   };
 
   const handlePhotoPromptClick = (photoText: string) => {
@@ -187,6 +222,10 @@ export default function FiresideStudioClient() {
   const handleAudioRecordingComplete = (audioBlob: Blob, durationSeconds: number) => {
     setRecordedAudioBlob(audioBlob);
     setRecordedAudioDuration(durationSeconds);
+    logEvent('FIRESIDE_AUDIO_RECORDING_COMPLETED', {
+      durationSeconds,
+      sceneId: selectedSpark?.linkedSceneId,
+    });
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
     setNotification(`Memoir voice recording complete (${mins}m ${secs}s). Synchronising to vault.`);
@@ -198,6 +237,10 @@ export default function FiresideStudioClient() {
   const handleVideoRecordingComplete = (videoBlob: Blob, durationSeconds: number) => {
     setRecordedVideoBlob(videoBlob);
     setRecordedVideoDuration(durationSeconds);
+    logEvent('FIRESIDE_VIDEO_RECORDING_COMPLETED', {
+      durationSeconds,
+      sceneId: selectedSpark?.linkedSceneId,
+    });
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
     setNotification(`Video memo recorded (${mins}m ${secs}s). Synchronising to vault.`);
@@ -259,6 +302,7 @@ export default function FiresideStudioClient() {
                 <button
                   type="button"
                   onClick={() => triggerManualSync()}
+                  data-hotspot-id="HS_FIRESIDE_SYNC_RETRY_BTN"
                   className="flex items-center gap-1.5 text-xs text-amber-300 font-mono bg-amber-950/60 border border-amber-500/60 px-2.5 py-1 rounded-full hover:bg-amber-900/80 transition-colors cursor-pointer"
                   title="Your memoir is safely preserved on this device. Tap to synchronise to cloud vault."
                 >
@@ -309,6 +353,7 @@ export default function FiresideStudioClient() {
               <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
                 <Link
                   href="/studio"
+                  data-hotspot-id="HS_FIRESIDE_BANNER_LAUNCH_STAGE_BTN"
                   className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-stone-950 font-sans shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                 >
                   <span>Launch Soundstage</span>
@@ -317,6 +362,7 @@ export default function FiresideStudioClient() {
                 <button
                   type="button"
                   onClick={handleDismissDesktopBanner}
+                  data-hotspot-id="HS_FIRESIDE_BANNER_DISMISS_BTN"
                   className="p-2 text-stone-400 hover:text-stone-200 hover:bg-white/5 rounded-lg text-xs transition-colors cursor-pointer"
                   title="Dismiss and remain in mobile Fireside Studio"
                   aria-label="Dismiss recommendation"
@@ -345,7 +391,7 @@ export default function FiresideStudioClient() {
         <div className="w-full">
           <FiresideModeSwitch
             mode={mediaMode}
-            onModeChange={setMediaMode}
+            onModeChange={handleModeChange}
             suggestedMode={activePromptSpark?.suggestedMediaMode}
           />
         </div>
