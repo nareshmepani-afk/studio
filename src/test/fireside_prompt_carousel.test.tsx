@@ -66,19 +66,19 @@ describe('MW-245: Fireside Multilingual Prompt Sparks & Single-Card Carousel', (
 
   describe('2. SingleCardPromptCarousel UI Component Ergonomics', () => {
     it('renders the initial card with British English prose, counter, and category pill', () => {
-      render(<SingleCardPromptCarousel />);
+      render(<SingleCardPromptCarousel mediaMode="audio" />);
 
       // Counter check
       expect(screen.getByText(`1 of ${FIRESIDE_PROMPT_SPARKS.length}`)).toBeInTheDocument();
 
-      // Title and prose check
-      expect(screen.getByText('The Kitchen of Your Childhood')).toBeInTheDocument();
-      expect(screen.getByText(/Think back to the home where you grew up/i)).toBeInTheDocument();
+      // Title and prose check (Part I - Scene 1 is index 0)
+      expect(screen.getByText('The Journey of Your Ancestors')).toBeInTheDocument();
+      expect(screen.getByText(/What stories did your grandparents share about where your family originally came from/i)).toBeInTheDocument();
 
       // Button labels check (Rule 20 UK English)
       expect(screen.getByRole('button', { name: /Previous story spark/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Next story spark/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Speak this memory: The Kitchen of Your Childhood/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Speak this memory: The Journey of Your Ancestors/i })).toBeInTheDocument();
     });
 
     it('allows 1-tap switching between languages (e.g. English -> Gujarati)', () => {
@@ -90,8 +90,8 @@ describe('MW-245: Fireside Multilingual Prompt Sparks & Single-Card Carousel', (
       fireEvent.click(guPill);
 
       expect(handleLanguageChange).toHaveBeenCalledWith('gu');
-      // Expect Gujarati text to render
-      expect(screen.getByText(/તમે જ્યાં મોટા થયા તે બાળપણના ઘરની યાદ કરો/i)).toBeInTheDocument();
+      // Expect Gujarati text to render for prompt 0
+      expect(screen.getByText(/તમારા વડીલો કે દાદા-દાદીએ પોતાના મૂળ વતન અને મુશ્કેલ સ્થળાંતર વિશે તમને કઈ વાતો કહી હતી/i)).toBeInTheDocument();
     });
 
     it('navigates sequentially to the next and previous memory cards', async () => {
@@ -100,10 +100,10 @@ describe('MW-245: Fireside Multilingual Prompt Sparks & Single-Card Carousel', (
       const nextBtn = screen.getByRole('button', { name: /Next story spark/i });
       fireEvent.click(nextBtn);
 
-      // Card 2 check
+      // Card 2 check (Part I - Scene 2: The Kitchen of Your Childhood)
       await waitFor(() => {
         expect(screen.getByText(`2 of ${FIRESIDE_PROMPT_SPARKS.length}`)).toBeInTheDocument();
-        expect(screen.getByText('The Journey of Your Ancestors')).toBeInTheDocument();
+        expect(screen.getByText('The Kitchen of Your Childhood')).toBeInTheDocument();
       });
 
       const prevBtn = screen.getByRole('button', { name: /Previous story spark/i });
@@ -112,6 +112,7 @@ describe('MW-245: Fireside Multilingual Prompt Sparks & Single-Card Carousel', (
       // Back to Card 1
       await waitFor(() => {
         expect(screen.getByText(`1 of ${FIRESIDE_PROMPT_SPARKS.length}`)).toBeInTheDocument();
+        expect(screen.getByText('The Journey of Your Ancestors')).toBeInTheDocument();
       });
     });
 
@@ -123,14 +124,14 @@ describe('MW-245: Fireside Multilingual Prompt Sparks & Single-Card Carousel', (
 
       fireEvent.click(expandToggle);
       expect(expandToggle).toHaveAttribute('aria-expanded', 'true');
-      expect(screen.getByText(/Who usually prepared the morning meals in your household/i)).toBeInTheDocument();
+      expect(screen.getByText(/What precious heirlooms or small possessions did they carry on the crossing/i)).toBeInTheDocument();
     });
 
     it('dispatches onSelectPrompt with the current spark and active language when primary CTA is clicked', () => {
       const handleSelect = vi.fn();
-      render(<SingleCardPromptCarousel onSelectPrompt={handleSelect} />);
+      render(<SingleCardPromptCarousel mediaMode="audio" onSelectPrompt={handleSelect} />);
 
-      const recordBtn = screen.getByRole('button', { name: /Speak this memory: The Kitchen of Your Childhood/i });
+      const recordBtn = screen.getByRole('button', { name: /Speak this memory: The Journey of Your Ancestors/i });
       fireEvent.click(recordBtn);
 
       expect(handleSelect).toHaveBeenCalledTimes(1);

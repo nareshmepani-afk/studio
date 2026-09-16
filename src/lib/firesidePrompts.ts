@@ -11,47 +11,6 @@ import type { FiresidePromptSpark, FiresideLanguage, PromptCategory } from '@/ty
 
 export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
-    id: 'spark_childhood_home',
-    category: 'childhood',
-    title: 'The Kitchen of Your Childhood',
-    linkedSceneId: 'part-1-scene-2',
-    suggestedMediaMode: 'audio',
-    sparks: {
-      en: 'Think back to the home where you grew up. What aromas drifted from the morning kitchen, and what sounds signalled the start of a new day?',
-      gu: 'તમે જ્યાં મોટા થયા તે બાળપણના ઘરની યાદ કરો. સવારના રસોડામાંથી કઈ સુગંધ આવતી હતી, અને આંગણામાંથી કેવા અવાજો સંભળાતા હતા?',
-      pa: 'ਆਪਣੇ ਬਚਪਨ ਦੇ ਘਰ ਨੂੰ ਯਾਦ ਕਰੋ। ਸਵੇਰੇ ਰਸੋਈ ਵਿੱਚੋਂ ਕਿਹੜੀਆਂ ਖ਼ੁਸ਼ਬੂਆਂ ਆਉਂਦੀਆਂ ਸਨ, ਅਤੇ ਗਲੀ-ਮੁਹੱਲੇ ਵਿੱਚੋਂ ਕਿਹੜੀਆਂ ਆਵਾਜ਼ਾਂ ਸੁਣਾਈ ਦਿੰਦੀਆਂ ਸਨ?',
-      hi: 'उस घर को याद कीजिए जहां आपका बचपन बीता। सुबह की रसोई से कैसी महक आती थी, और घर के आंगन में कैसी चहल-पहल होती थी?',
-    },
-    followUpQuestions: {
-      en: [
-        'Who usually prepared the morning meals in your household?',
-        'Was there a favourite dish simmered only on special festive days?',
-        'What games did you play on the doorstep with neighbourhood friends?',
-      ],
-      gu: [
-        'ઘરમાં સવારનું ભોજન સામાન્ય રીતે કોણ બનાવતું હતું?',
-        'કોઈ એવી પ્રિય વાનગી જે માત્ર ખાસ તહેવારના દિવસે જ બનતી?',
-        'ઘરના આંગણે કે શેરીમાં તમે મિત્રો સાથે કઈ રમતો રમતા?',
-      ],
-      pa: [
-        'ਘਰ ਵਿੱਚ ਸਵੇਰ ਦਾ ਖਾਣਾ ਆਮ ਤੌਰ \'ਤੇ ਕੌਣ ਬਣਾਉਂਦਾ ਸੀ?',
-        'ਕੀ ਕੋਈ ਅਜਿਹਾ ਮਨਪਸੰਦ ਪਕਵਾਨ ਸੀ ਜੋ ਸਿਰਫ਼ ਖ਼ਾਸ ਤਿਉਹਾਰਾਂ \'ਤੇ ਹੀ ਬਣਦਾ ਸੀ?',
-        'ਤੁਸੀਂ ਗਲੀ ਵਿੱਚ ਦੋਸਤਾਂ ਨਾਲ ਕਿਹੜੀਆਂ ਖੇਡਾਂ ਖੇਡਦੇ ਸੀ?',
-      ],
-      hi: [
-        'घर में सुबह का खाना ज्यादातर कौन बनाता था?',
-        'क्या कोई ऐसा पसंदीदा पकवान था जो केवल खास मौकों या त्योहारों पर ही बनता था?',
-        'घर के बाहर दोस्तों के साथ आप कौन से खेल खेलते थे?',
-      ],
-    },
-    recommendedPhotoPrompt: {
-      en: 'Look for an old photograph of your childhood family home, front doorstep, or kitchen courtyard.',
-      gu: 'તમારા બાળપણના ઘરની, ફળિયાની અથવા કુટુંબની કોઈ જૂની તસવીર શોધો.',
-      pa: 'ਆਪਣੇ ਬਚਪਨ ਦੇ ਘਰ, ਵਿਹੜੇ ਜਾਂ ਪਰਿਵਾਰ ਦੀ ਕੋਈ ਪੁਰਾਣੀ ਤਸਵੀਰ ਲੱਭੋ።',
-      hi: 'अपने बचपन के घर, आंगन या पूरे परिवार की कोई पुरानी तस्वीर तलाशिए।',
-    },
-  },
-  {
     id: 'spark_roots_journey',
     category: 'roots',
     title: 'The Journey of Your Ancestors',
@@ -88,8 +47,49 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     recommendedPhotoPrompt: {
       en: 'Find an early passport portrait or family group photograph of your parents or grandparents in their younger years.',
       gu: 'તમારા માતા-પિતા અથવા દાદા-દાદીની યુવાનીના સમયની અથવા જૂના પાસપોર્ટની તસવીર શોધો.',
-      pa: 'ਆਪਣੇ ਮਾਤਾ-ਪਿਤਾ ਜਾਂ ਦਾਦਾ-ਦਾਦੀ ਦੀ ਜਵਾਨੀ ਵੇਲੇ ਦੀ ਜਾਂ ਪੁਰਾਣੇ ਪਾਸਪੋਰਟ ਦੀ ਤਸਵੀਰ ਲੱਭੋ।',
+      pa: 'ਆਪਣੇ ਮਾਤਾ-ਪਿਤਾ ਜਾਂ ਦਾਦਾ-ਦਾਦੀ ਦੀ ਜਵਾਨੀ ਵੇਲੇ ਦੀ ਜਾਂ ਪੁਰਾਣੇ ਪਾਸਪੋਰਟ ਦੀ ਤਸવીਰ ਲੱਭੋ።',
       hi: 'अपने माता-पिता या दादा-दादी के शुरुआती दिनों या पुराने पासपोर्ट की कोई तस्वीर ढूंढिए।',
+    },
+  },
+  {
+    id: 'spark_childhood_home',
+    category: 'childhood',
+    title: 'The Kitchen of Your Childhood',
+    linkedSceneId: 'part-1-scene-2',
+    suggestedMediaMode: 'audio',
+    sparks: {
+      en: 'Think back to the home where you grew up. What aromas drifted from the morning kitchen, and what sounds signalled the start of a new day?',
+      gu: 'તમે જ્યાં મોટા થયા તે બાળપણના ઘરની યાદ કરો. સવારના રસોડામાંથી કઈ સુગંધ આવતી હતી, અને આંગણામાંથી કેવા અવાજો સંભળાતા હતા?',
+      pa: 'ਆਪਣੇ ਬਚਪਨ ਦੇ ਘਰ ਨੂੰ ਯਾਦ ਕਰੋ। ਸਵੇਰੇ ਰਸੋਈ ਵਿੱਚੋਂ ਕਿਹੜੀਆਂ ਖ਼ੁਸ਼ਬੂਆਂ ਆਉਂਦੀਆਂ ਸਨ, ਅਤੇ ਗਲੀ-ਮੁਹੱਲੇ ਵਿੱਚੋਂ ਕਿਹੜੀਆਂ ਆਵਾਜ਼ਾਂ ਸੁਣਾਈ ਦਿੰਦੀਆਂ ਸਨ?',
+      hi: 'उस घर को याद कीजिए जहां आपका बचपन बीता। सुबह की रसोई से कैसी महक आती थी, और घर के आंगन में कैसी चहल-पहल होती थी?',
+    },
+    followUpQuestions: {
+      en: [
+        'Who usually prepared the morning meals in your household?',
+        'Was there a favourite dish simmered only on special festive days?',
+        'What games did you play on the doorstep with neighbourhood friends?',
+      ],
+      gu: [
+        'ઘરમાં સવારનું ભોજન સામાન્ય રીતે કોણ બનાવતું હતું?',
+        'કોઈ એવી પ્રિય વાનગી જે માત્ર ખાસ તહેવારના દિવસે જ બનતી?',
+        'ઘરના આંગણે કે શેરીમાં તમે મિત્રો સાથે કઈ રમતો રમતા?',
+      ],
+      pa: [
+        'ਘਰ ਵਿੱਚ ਸਵੇਰ ਦਾ ਖਾਣਾ ਆਮ ਤੌਰ \'ਤੇ ਕੌਣ ਬਣਾਉਂਦਾ ਸੀ?',
+        'ਕੀ ਕੋਈ ਅਜਿਹਾ ਮਨਪਸੰਦ ਪਕਵਾਨ ਸੀ ਜੋ ਸਿਰਫ਼ ਖ਼ਾਸ ਤਿਉਹਾਰਾਂ \'ਤੇ ਹੀ ਬਣਦਾ ਸੀ?',
+        'ਤੁਸੀਂ ਗਲੀ ਵਿੱਚ ਦੋਸਤਾਂ ਨਾਲ ਕਿਹੜੀਆਂ ਖੇਡਾਂ ਖੇਡਦੇ ਸੀ?',
+      ],
+      hi: [
+        'घर में सुबह का खाना ज्यादातर कौन बनाता था?',
+        'क्या कोई ऐसा पसंदीदा पकवान था जो केवल खास मौकों या त्योहारों पर ही बनता था?',
+        'घर के बाहर दोस्तों के साथ आप कौन से खेल खेलते थे?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Look for an old photograph of your childhood family home, front doorstep, or kitchen courtyard.',
+      gu: 'તમારા બાળપણના ઘરની, ફળિયાની અથવા કુટુંબની કોઈ જૂની તસવીર શોધો.',
+      pa: 'ਆਪਣੇ ਬਚਪਨ ਦੇ ਘਰ, ਵਿਹੜੇ ਜਾਂ ਪਰਿਵਾਰ ਦੀ ਕੋਈ ਪੁਰਾਣੀ ਤਸવીਰ ਲੱਭੋ።',
+      hi: 'अपने बचपन के घर, आंगन या पूरे परिवार की कोई पुरानी तस्वीर तलाशिए।',
     },
   },
   {

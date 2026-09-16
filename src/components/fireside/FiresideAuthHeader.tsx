@@ -25,6 +25,7 @@ import {
   Smartphone,
   ExternalLink,
   Mic,
+  LogOut,
 } from 'lucide-react';
 
 export interface FiresideAuthHeaderProps {
@@ -37,7 +38,7 @@ export function FiresideAuthHeader({
   className = '',
   activePartTitle,
 }: FiresideAuthHeaderProps) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const isAuthenticated = !!(user && !user.isAnonymous);
   const userEmail = user?.email || (isAuthenticated ? 'Authenticated Storyteller' : null);
 
@@ -97,24 +98,43 @@ export function FiresideAuthHeader({
         </div>
 
         {/* Row 2: Discreet Elder Auth Badge (On its own dedicated row - zero horizontal collision) */}
-        <div className="w-full flex items-center justify-center sm:justify-end shrink-0 pt-0.5">
+        <div className="w-full flex items-center justify-center sm:justify-end gap-2 shrink-0 pt-0.5">
           {isAuthenticated ? (
-            <div
-              className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-full shadow-sm max-w-full truncate"
-              title={`Signed in as ${userEmail}. Your memories are secured in the Generational Vault.`}
-            >
-              <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="truncate max-w-[180px] sm:max-w-[280px] md:max-w-[360px] font-medium text-emerald-200">
-                {userEmail}
-              </span>
-              <span className="text-emerald-500/70">•</span>
-              <span className="flex items-center gap-1 text-emerald-300 shrink-0">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden sm:inline">Generational Vault</span>
-                <span className="sm:hidden">Vault</span>
-                <span>✓</span>
-              </span>
-            </div>
+            <>
+              <div
+                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-full shadow-sm max-w-full truncate"
+                title={`Signed in as ${userEmail}. Your memories are secured in the Generational Vault.`}
+              >
+                <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="truncate max-w-[180px] sm:max-w-[280px] md:max-w-[360px] font-medium text-emerald-200">
+                  {userEmail}
+                </span>
+                <span className="text-emerald-500/70">•</span>
+                <span className="flex items-center gap-1 text-emerald-300 shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">Generational Vault</span>
+                  <span className="sm:hidden">Vault</span>
+                  <span>✓</span>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await logout();
+                  } catch (err) {
+                    console.error('Logout error:', err);
+                  }
+                }}
+                className="inline-flex items-center gap-1 text-[10px] font-mono text-stone-400 hover:text-rose-300 bg-stone-900/80 hover:bg-rose-950/40 border border-stone-800 hover:border-rose-500/40 px-2.5 py-1 rounded-full transition-all cursor-pointer shadow-sm shrink-0"
+                title="Sign out of this session"
+                aria-label="Sign out"
+              >
+                <LogOut className="w-2.5 h-2.5 text-stone-400 group-hover:text-rose-300" />
+                <span>Sign Out</span>
+              </button>
+            </>
           ) : (
             <Link
               href="/login?redirect=/studio/fireside"

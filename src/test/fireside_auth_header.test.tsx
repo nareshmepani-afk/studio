@@ -1,20 +1,23 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
 
 let mockUser: { uid: string; email: string | null; isAnonymous: boolean } | null = null;
+const mockLogout = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     user: mockUser,
     loading: false,
+    logout: mockLogout,
   }),
 }));
 
 describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => {
   beforeEach(() => {
     mockUser = null;
+    mockLogout.mockClear();
   });
 
   it('renders high-visibility Desktop Soundstage (Acts I–IV) ingress link', () => {
@@ -72,7 +75,7 @@ describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => 
     expect(screen.getByText('Sign In')).toBeInTheDocument();
   });
 
-  it('displays authenticated user email and Generational Vault status when signed in', () => {
+  it('displays authenticated user email, Generational Vault status, and discreet Sign Out button when signed in', () => {
     mockUser = {
       uid: 'user_12345',
       email: 'storyteller@family.org',
@@ -82,5 +85,11 @@ describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => 
 
     expect(screen.getByText('storyteller@family.org')).toBeInTheDocument();
     expect(screen.getByText(/Generational Vault/i)).toBeInTheDocument();
+
+    const signOutBtn = screen.getByRole('button', { name: /sign out/i });
+    expect(signOutBtn).toBeInTheDocument();
+
+    fireEvent.click(signOutBtn);
+    expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 });
