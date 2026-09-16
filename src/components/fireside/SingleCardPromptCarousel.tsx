@@ -119,14 +119,22 @@ export function SingleCardPromptCarousel({
   const handleNext = useCallback(() => {
     setDirection(1);
     setShowFollowUps(false);
-    setCurrentIndex((prev) => (prev + 1) % sparkDeck.length);
-  }, [sparkDeck.length]);
+    setCurrentIndex((prev) => {
+      const nextIdx = (prev + 1) % sparkDeck.length;
+      onActivePromptChange?.(sparkDeck[nextIdx]);
+      return nextIdx;
+    });
+  }, [sparkDeck, onActivePromptChange]);
 
   const handlePrev = useCallback(() => {
     setDirection(-1);
     setShowFollowUps(false);
-    setCurrentIndex((prev) => (prev - 1 + sparkDeck.length) % sparkDeck.length);
-  }, [sparkDeck.length]);
+    setCurrentIndex((prev) => {
+      const prevIdx = (prev - 1 + sparkDeck.length) % sparkDeck.length;
+      onActivePromptChange?.(sparkDeck[prevIdx]);
+      return prevIdx;
+    });
+  }, [sparkDeck, onActivePromptChange]);
 
   const handleRandom = useCallback(() => {
     const randomSpark = getRandomPrompt(currentSpark.id);
@@ -135,8 +143,9 @@ export function SingleCardPromptCarousel({
       setDirection(1);
       setShowFollowUps(false);
       setCurrentIndex(newIdx);
+      onActivePromptChange?.(sparkDeck[newIdx]);
     }
-  }, [currentSpark.id, sparkDeck]);
+  }, [currentSpark.id, sparkDeck, onActivePromptChange]);
 
   const handleSelectCurrent = () => {
     onSelectPrompt?.(currentSpark, currentLanguage);
@@ -222,16 +231,16 @@ export function SingleCardPromptCarousel({
                   )}
 
                   {currentSpark.suggestedMediaMode && (
-                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-stone-300 flex items-center gap-1">
+                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-1 font-semibold">
                       {currentSpark.suggestedMediaMode === 'video' ? (
                         <>
                           <Video className="w-3 h-3 text-amber-400" />
-                          <span>Video Memo</span>
+                          <span>Video Memo • Recommended</span>
                         </>
                       ) : (
                         <>
                           <Mic className="w-3 h-3 text-amber-400" />
-                          <span>Voice & Photos</span>
+                          <span>Voice & Photos • Curriculum</span>
                         </>
                       )}
                     </span>

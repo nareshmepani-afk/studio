@@ -13,6 +13,7 @@ import {
   FiresideModeSwitch,
   FIRESIDE_MODE_STORAGE_KEY,
 } from '@/components/fireside/FiresideModeSwitch';
+import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 import {
@@ -321,6 +322,64 @@ describe('MW-249: Fireside Video Memo & Master Curriculum Invariants', () => {
       expect(setItemSpy).toHaveBeenCalledWith(FIRESIDE_MODE_STORAGE_KEY, 'video');
       expect(window.localStorage.getItem(FIRESIDE_MODE_STORAGE_KEY)).toBe('video');
       expect(onModeChange).toHaveBeenCalledWith('video');
+    });
+
+    it('renders glowing Recommended badge on Video Memo when suggestedMode is video', () => {
+      const onModeChange = vi.fn();
+      render(
+        <FiresideModeSwitch
+          mode="audio"
+          onModeChange={onModeChange}
+          suggestedMode="video"
+        />
+      );
+
+      const recommendedBadge = screen.getByText('Recommended');
+      expect(recommendedBadge).toBeInTheDocument();
+    });
+
+    it('renders glowing Curriculum badge on Voice & Photos when suggestedMode is audio', () => {
+      const onModeChange = vi.fn();
+      render(
+        <FiresideModeSwitch
+          mode="audio"
+          onModeChange={onModeChange}
+          suggestedMode="audio"
+        />
+      );
+
+      const curriculumBadge = screen.getByText('Curriculum');
+      expect(curriculumBadge).toBeInTheDocument();
+    });
+
+    it('synchronously invokes onActivePromptChange upon navigation in SingleCardPromptCarousel', () => {
+      const onActivePromptChange = vi.fn();
+      render(
+        <SingleCardPromptCarousel
+          prompts={FIRESIDE_PROMPT_SPARKS}
+          onActivePromptChange={onActivePromptChange}
+        />
+      );
+
+      // Card 1 is spark_roots_journey with suggestedMediaMode: 'video'
+      expect(onActivePromptChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'spark_roots_journey',
+          suggestedMediaMode: 'video',
+        })
+      );
+
+      // Click Next Story
+      const nextBtn = screen.getByRole('button', { name: /next story spark/i });
+      fireEvent.click(nextBtn);
+
+      // Card 2 is spark_childhood_home with suggestedMediaMode: 'audio'
+      expect(onActivePromptChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          id: 'spark_childhood_home',
+          suggestedMediaMode: 'audio',
+        })
+      );
     });
   });
 

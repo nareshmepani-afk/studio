@@ -81,9 +81,9 @@ export function FiresideModeSwitch({
           <span>Voice & Photos</span>
           {suggestedMode === 'audio' && (
             <span
-              className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full ml-1 flex items-center gap-1 transition-all ${
+              className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full ml-1 flex items-center gap-1 shrink-0 transition-all ${
                 mode === 'audio'
-                  ? 'bg-stone-950/25 text-stone-950 border border-stone-950/30 font-bold'
+                  ? 'bg-stone-950 text-amber-300 border border-amber-400/50 shadow-md shadow-amber-950/50 font-bold'
                   : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold shadow-sm'
               }`}
             >
@@ -110,9 +110,9 @@ export function FiresideModeSwitch({
           <span>Video Memo</span>
           {suggestedMode === 'video' && (
             <span
-              className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full ml-1 flex items-center gap-1 transition-all ${
+              className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full ml-1 flex items-center gap-1 shrink-0 transition-all ${
                 mode === 'video'
-                  ? 'bg-stone-950/25 text-stone-950 border border-stone-950/30 font-bold'
+                  ? 'bg-stone-950 text-amber-300 border border-amber-400/50 shadow-md shadow-amber-950/50 font-bold'
                   : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold shadow-sm'
               }`}
             >
