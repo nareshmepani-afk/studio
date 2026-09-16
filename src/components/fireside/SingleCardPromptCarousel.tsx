@@ -14,7 +14,7 @@
  * (Rule 7 Non-Degradation, Rule 20 British English, Rule 26 Elder Ergonomics, Rule 8 Mobile Viewport)
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft,
@@ -51,6 +51,7 @@ export interface SingleCardPromptCarouselProps {
   activeLanguage?: FiresideLanguage;
   mediaMode?: FiresideMediaMode;
   onSelectPrompt?: (spark: FiresidePromptSpark, language: FiresideLanguage) => void;
+  onActivePromptChange?: (spark: FiresidePromptSpark) => void;
   onLanguageChange?: (language: FiresideLanguage) => void;
   onPhotoPromptClick?: (photoPrompt: string) => void;
   className?: string;
@@ -78,6 +79,7 @@ export function SingleCardPromptCarousel({
   activeLanguage: controlledLanguage,
   mediaMode,
   onSelectPrompt,
+  onActivePromptChange,
   onLanguageChange,
   onPhotoPromptClick,
   className = '',
@@ -99,6 +101,10 @@ export function SingleCardPromptCarousel({
 
   const currentLanguage = controlledLanguage || internalLanguage;
   const currentSpark = sparkDeck[currentIndex] || sparkDeck[0];
+
+  useEffect(() => {
+    onActivePromptChange?.(currentSpark);
+  }, [currentSpark, onActivePromptChange]);
   const categoryMeta = CATEGORY_META[currentSpark.category] || CATEGORY_META.childhood;
   const CategoryIcon = categoryMeta.icon;
 

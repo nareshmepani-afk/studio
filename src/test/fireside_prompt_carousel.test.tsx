@@ -148,5 +148,19 @@ describe('MW-245: Fireside Multilingual Prompt Sparks & Single-Card Carousel', (
       expect(handlePhotoClick).toHaveBeenCalledTimes(1);
       expect(handlePhotoClick).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0].recommendedPhotoPrompt.en);
     });
+
+    it('notifies onActivePromptChange as cards are browsed to drive dynamic media mode suggestions', async () => {
+      const handleActivePromptChange = vi.fn();
+      render(<SingleCardPromptCarousel onActivePromptChange={handleActivePromptChange} />);
+
+      expect(handleActivePromptChange).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0]);
+
+      const nextBtn = screen.getByRole('button', { name: /Next story spark/i });
+      fireEvent.click(nextBtn);
+
+      await waitFor(() => {
+        expect(handleActivePromptChange).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[1]);
+      });
+    });
   });
 });

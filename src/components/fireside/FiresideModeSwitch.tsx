@@ -81,11 +81,14 @@ export function FiresideModeSwitch({
           <span>Voice & Photos</span>
           {suggestedMode === 'audio' && (
             <span
-              className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-full ml-1 ${
-                mode === 'audio' ? 'bg-stone-950/20 text-stone-950' : 'bg-amber-500/10 text-amber-300'
+              className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full ml-1 flex items-center gap-1 transition-all ${
+                mode === 'audio'
+                  ? 'bg-stone-950/25 text-stone-950 border border-stone-950/30 font-bold'
+                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold shadow-sm'
               }`}
             >
-              Curriculum
+              <Sparkles className="w-2.5 h-2.5" />
+              <span>Curriculum</span>
             </span>
           )}
         </button>
@@ -107,8 +110,10 @@ export function FiresideModeSwitch({
           <span>Video Memo</span>
           {suggestedMode === 'video' && (
             <span
-              className={`text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-full ml-1 flex items-center gap-1 ${
-                mode === 'video' ? 'bg-stone-950/20 text-stone-950' : 'bg-amber-500/10 text-amber-300'
+              className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded-full ml-1 flex items-center gap-1 transition-all ${
+                mode === 'video'
+                  ? 'bg-stone-950/25 text-stone-950 border border-stone-950/30 font-bold'
+                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold shadow-sm'
               }`}
             >
               <Sparkles className="w-2.5 h-2.5" />

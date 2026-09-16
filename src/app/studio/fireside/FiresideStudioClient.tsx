@@ -56,6 +56,7 @@ export default function FiresideStudioClient() {
 
   const [activeLanguage, setActiveLanguage] = useState<FiresideLanguage>(resolvedLang);
   const [mediaMode, setMediaMode] = useState<FiresideMediaMode>('audio');
+  const [activePromptSpark, setActivePromptSpark] = useState<FiresidePromptSpark>(FIRESIDE_PROMPT_SPARKS[0]);
   const [selectedSpark, setSelectedSpark] = useState<FiresidePromptSpark | null>(null);
   const [photos, setPhotos] = useState<HeirloomPhotoAttachment[]>([]);
   const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
@@ -345,7 +346,7 @@ export default function FiresideStudioClient() {
           <FiresideModeSwitch
             mode={mediaMode}
             onModeChange={setMediaMode}
-            suggestedMode={selectedSpark?.suggestedMediaMode}
+            suggestedMode={activePromptSpark?.suggestedMediaMode}
           />
         </div>
 
@@ -357,6 +358,7 @@ export default function FiresideStudioClient() {
             activeLanguage={activeLanguage}
             mediaMode={mediaMode}
             onSelectPrompt={handleSelectPrompt}
+            onActivePromptChange={setActivePromptSpark}
             onLanguageChange={handleLanguageChange}
             onPhotoPromptClick={handlePhotoPromptClick}
           />

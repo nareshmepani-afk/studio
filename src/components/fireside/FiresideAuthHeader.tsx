@@ -122,7 +122,7 @@ export function FiresideAuthHeader({
                 type="button"
                 onClick={async () => {
                   try {
-                    await logout();
+                    await logout(false);
                   } catch (err) {
                     console.error('Logout error:', err);
                   }

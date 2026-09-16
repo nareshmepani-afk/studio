@@ -19,7 +19,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, redirectTo?: string) => Promise<void>;
   register: (name: string, email: string, password: string, redirectTo?: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (redirectPath?: string | false) => Promise<void>;
   updateUserProfileInFirestore: (data: Partial<User>) => Promise<void>;
   isAuthenticated: boolean;
   getIdToken: () => Promise<string | null>;
@@ -189,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [router]);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (redirectPath?: string | false) => {
     try {
       if (typeof window !== 'undefined') {
         sessionStorage.clear();
@@ -203,7 +203,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await deleteSessionAction();
     setUser(null);
     router.refresh();
-    router.push('/');
+    if (redirectPath !== false) {
+      router.push(redirectPath || '/');
+    }
     toast.info('Logged Out', { description: 'You have been successfully logged out.' });
   }, [router]);
 

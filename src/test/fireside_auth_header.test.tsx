@@ -91,5 +91,6 @@ describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => 
 
     fireEvent.click(signOutBtn);
     expect(mockLogout).toHaveBeenCalledTimes(1);
+    expect(mockLogout).toHaveBeenCalledWith(false);
   });
 });
