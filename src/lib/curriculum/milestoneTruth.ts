@@ -50,10 +50,12 @@ export function resolveMemoryMilestones(
   const hasScript = proseLength >= 30 || descriptionLength >= 30 || contentLength >= 30;
 
   // Act II: Narrative Weave exists if fused videoStory, originalHook, selectedHook, or AI takes exist
+  const productionTakes = Array.isArray(memory.productionTakes) ? memory.productionTakes : [];
   const hasWeave = Boolean(
     (typeof memory.videoStory === 'string' && memory.videoStory.trim().length > 0) ||
     (typeof (memory as any).selectedHook === 'string' && (memory as any).selectedHook.trim().length > 0) ||
     (typeof memory.originalHook === 'string' && memory.originalHook.trim().length > 0) ||
+    (productionTakes.length > 0) ||
     (memory.aiTakes && (
       Boolean(memory.aiTakes.master) ||
       Boolean(memory.aiTakes.poetic) ||
@@ -67,10 +69,8 @@ export function resolveMemoryMilestones(
   const hasVideoUrl = typeof memory.videoUrl === 'string' && memory.videoUrl.trim().length > 0;
   const hasAudioUrl = typeof (memory as any).audioUrl === 'string' && (memory as any).audioUrl.trim().length > 0;
   const takes = Array.isArray((memory as any).takes) ? (memory as any).takes : [];
-  const productionTakes = Array.isArray(memory.productionTakes) ? memory.productionTakes : [];
   const recordedSegments = Array.isArray((memory as any).recordedSegments) ? (memory as any).recordedSegments : [];
-  const mediaAttachments = Array.isArray(memory.mediaAttachments) ? memory.mediaAttachments : [];
-  const hasTakes = takes.length > 0 || productionTakes.length > 0 || recordedSegments.length > 0 || mediaAttachments.length > 0;
+  const hasTakes = takes.length > 0 || recordedSegments.length > 0;
 
   const hasRecordedMedia = Boolean(hasVideoUrl || hasAudioUrl || hasTakes);
 

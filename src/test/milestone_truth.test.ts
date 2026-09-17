@@ -135,6 +135,21 @@ describe('Milestone Truth Resolver (Unit & Boundary Shield)', () => {
       expect(result.hasRecordedMedia).toBe(false);
       expect(isActMilestoneCompleted(2, result)).toBe(false);
     });
+
+    it('isolates AI script treatments (productionTakes) and photos (mediaAttachments) from recorded media', () => {
+      const result = resolveMemoryMilestones({
+        prose: 'A substantial family story about ancestors traveling across oceans.',
+        productionTakes: [{ id: 'take-1', cleanScript: 'Treatment...' } as any],
+        mediaAttachments: [{ id: 'photo-1', url: 'https://example.com/photo.jpg' } as any],
+        videoUrl: '',
+        audioUrl: '',
+        takes: [],
+      });
+      expect(result.hasScript).toBe(true);
+      expect(result.hasWeave).toBe(true);
+      expect(result.hasRecordedMedia).toBe(false);
+      expect(isActMilestoneCompleted(2, result)).toBe(false);
+    });
   });
 
   describe('Act IV & Act V: Cut Review & Premiere Publication', () => {
