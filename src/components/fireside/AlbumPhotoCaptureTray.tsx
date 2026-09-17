@@ -1,9 +1,8 @@
 'use client';
-
 import React, { useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { Camera, Image as ImageIcon, RotateCcw, Trash2, Sparkles, Loader2 } from 'lucide-react';
 import { HeirloomPhotoAttachment, FIRESIDE_HAPTIC_PATTERNS } from '@/types/fireside';
-import { compressHeirloomPhoto, formatFileSize } from '@/lib/media/photoCompression';
+import { compressHeirloomPhoto, formatFileSize } from '@/lib/media/clientImageCompressor';
 
 export interface AlbumPhotoCaptureTrayRef {
   triggerCamera: () => void;
@@ -96,7 +95,7 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
       }
 
       setIsProcessing(true);
-      setStatusMessage('Optimising vintage photograph grain and colour tone...');
+      setStatusMessage('Digitising & compressing heirloom photo...');
 
       try {
         const compressed = await compressHeirloomPhoto(file, {
@@ -304,7 +303,7 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
               {isProcessing ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin text-stone-950" />
-                  <span>Digitising Photograph...</span>
+                  <span>Digitising & compressing heirloom photo...</span>
                 </>
               ) : (
                 <>
@@ -326,7 +325,7 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
               className="sm:w-auto min-h-[48px] px-4 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-stone-700/80 text-stone-200 font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-98 disabled:opacity-60"
             >
               <ImageIcon className="w-4 h-4 text-stone-400" />
-              <span>Choose from Gallery</span>
+              <span>Choose from Device Gallery</span>
             </button>
           </div>
         ) : (

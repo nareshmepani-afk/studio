@@ -287,6 +287,9 @@ export default function FiresideStudioClient() {
   };
 
   const handlePhotoPromptClick = (photoText: string) => {
+    if (mediaMode === 'video') {
+      handleModeChange('audio');
+    }
     setNotification(`Physical photo cue: "${photoText}". Opening heirloom photo digitiser...`);
     photoTrayRef.current?.scrollIntoView();
     setTimeout(() => {
@@ -321,7 +324,11 @@ export default function FiresideStudioClient() {
     setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
-    setNotification(`Memoir voice recording complete (${mins}m ${secs}s). Synchronising to vault.`);
+    const photoCount = photos.length;
+    const photoSuffix = photoCount > 0
+      ? ` with ${photoCount} attached heirloom photo${photoCount === 1 ? '' : 's'}`
+      : '';
+    setNotification(`Memoir voice recording complete (${mins}m ${secs}s)${photoSuffix}. Synchronising to vault.`);
     setTimeout(() => {
       setNotification(null);
     }, 5000);
@@ -351,7 +358,11 @@ export default function FiresideStudioClient() {
     setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
-    setNotification(`Video memo recorded (${mins}m ${secs}s). Synchronising to vault.`);
+    const photoCount = photos.length;
+    const photoSuffix = photoCount > 0
+      ? ` with ${photoCount} attached heirloom photo${photoCount === 1 ? '' : 's'}`
+      : '';
+    setNotification(`Video memo recorded (${mins}m ${secs}s)${photoSuffix}. Synchronising to vault.`);
     setTimeout(() => {
       setNotification(null);
     }, 5000);

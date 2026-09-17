@@ -12,13 +12,13 @@
 
 - **Active Sprint:** Sprint 4 — MW-87 Fireside Voice Studio Suite
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `294f4c8e`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `4aed2f6`, Head: `307d11c5`)
 
-- **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 37.3 Codified)
+- **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 30 Codified)
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 403 / 403 Vitest Tests Passing (35 Test Files)
+- **Current Invariant Test Baseline:** 490 / 490 Vitest Tests Passing (43 Test Files)
 
 
 
@@ -287,5 +287,46 @@
   - [ ] **MW-249 (Ticket #252)**: Fireside Front-Facing Video Memo Engine (FaceTime/WhatsApp Ergonomics) *(Queued after #248)*
   - [ ] **MW-250**: Final Production Hardening & Full Responsive Invariant Suite *(Pending)*
 - **Next Unblocked Directive:** Execute Ticket #247 (MW-246: Album Camera Capture & Canvas Compression Pipeline) upon Director plan sign-off.
+
+---
+
+### [2026-09-17 19:15 BST] • Checkpoint #012 — Act II Compact Slate Resiliency & Rule 30 Architecture Codification (Commit `4aed2f6` / Head `307d11c5`)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Executed 4/4 PASS verification on staging (`https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp`). Confirmed zero-crash Act I ➔ Act II transition, flawless date formatting (`14 MAR 1884` / `UNDATED`), StudioSelect month dual-matching, full multi-act bidirectional traversal, and verified IndexedDB draft vault persistence (`draft_fireside_1789406718811_yrvmf`).
+  - 🧠 **Gemini Strategic Brain**: Codified the canonical 8-zone test card anatomy and top HUD header architecture into Rule 30 (`.agents/AGENTS.md`). Designed defensive `formatMonthShort` token normaliser handling numeric strings, English month names, 0-indexed edge cases, and nullish boundaries.
+  - ⚡ **Antigravity Execution**: Delivered `src/utils/dateFormatter.ts`, updated `MemoryForm.tsx` to eliminate unsafe `substring` access, upgraded `StudioSelect` month matching, and generated the master-standard interactive QA suite artifact (`qa_checklist_interactive.html`). Commit `4aed2f61` pushed and verified live on staging edge; commit `307d11c5` consolidated dual-surface bridge state and codified Rule 30 standards.
+  - 🛡️ **QA Gatekeeper**: Expanded Vitest invariant suite to 490 passed tests across 43 test files (+11 dedicated invariants in `src/test/act2_slate_resiliency.test.tsx`). Verified local production build `npm.cmd run build` compiled all 45 routes with exit code 0. Plane.so Issue #264 marked Completed.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\utils\dateFormatter.ts`
+  - `C:\Users\home\studio\src\components\studio\MemoryForm.tsx`
+  - `C:\Users\home\studio\src\test\act2_slate_resiliency.test.tsx`
+  - `C:\Users\home\studio\.agents\AGENTS.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+  - `C:\Users\home\.gemini\antigravity\brain\9aa95ece-2f70-4938-af98-a1aa3330ec06\qa_checklist_interactive.html`
+- **Active Ticket Queue (Plane.so):**
+  - [x] **MW-264 (Ticket #264)**: Act II Compact Slate Resiliency & Transition Shield *(100% Verified & Live on Staging)*
+  - [x] **MW-245 (Ticket #246)**: Single-Card Prompt Carousel & Multilingual Spark Engine *(100% Complete & Verified on Staging)*
+  - [x] **MW-246 (Ticket #250)**: Tactile Web Audio Voice Recorder & VU Visualiser *(Complete & Build Verified)*
+  - [x] **MW-247 (Ticket #247)**: Album Camera Capture & Canvas Compression Pipeline *(100% Executed & Build Verified)*
+  - [ ] **MW-248 (Ticket #248)**: Resilient IndexedDB / Firestore Sync Engine *(Pending)*
+  - [ ] **MW-249 (Ticket #252)**: Fireside Front-Facing Video Memo Engine (FaceTime/WhatsApp Ergonomics) *(Queued after #248)*
+  - [ ] **MW-250**: Final Production Hardening & Full Responsive Invariant Suite *(Pending)*
+- **Next Unblocked Directive:** Verify live staging deployment for Ticket #247 (MW-246: Physical Album Photo Capture & Canvas Compression).
+
+---
+
+### [2026-09-17 19:28 BST] • Checkpoint #013 — Physical Album Photo Capture & Client-Side Compression Engine (MW-246 / Ticket #247)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved architecture for physical heirloom album capture with polaroid-style card previews, inline captioning, and oversized touch targets (Rule 26).
+  - 🧠 **Gemini Strategic Brain**: Enforced Mobile Safari memory protection (`try/finally URL.revokeObjectURL()`) and synchronous WebKit 1×1 canvas buffer collapse to prevent mobile browser memory pressure crashes.
+  - ⚡ **Antigravity Execution**: Implemented `clientImageCompressor.ts` (1600px max edge, no upscaling, 0.82 JPEG quality, `formatFileSize`), updated `AlbumPhotoCaptureTray.tsx` (dual inputs, rear camera `capture="environment"`, 6-photo limit, retake/remove, British English), and wired photo prompt auto-scroll and completion toasts into `FiresideStudioClient.tsx`.
+  - 🛡️ **QA Gatekeeper**: Built `src/test/client_image_compressor.test.ts` with 14/14 passing invariants (now 504/504 passing across 44 test files). Verified local production build `npm.cmd run build` compiled all 45 routes cleanly with exit code 0.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\lib\media\clientImageCompressor.ts`
+  - `C:\Users\home\studio\src\lib\media\photoCompression.ts`
+  - `C:\Users\home\studio\src\components\fireside\AlbumPhotoCaptureTray.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\test\client_image_compressor.test.ts`
+  - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
