@@ -28,6 +28,8 @@ import { LayoutGroup } from 'framer-motion';
 
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
+import { StoryMoodDropdown } from '@/components/studio/StoryMoodDropdown';
+import { StoryMoodTag } from '@/types/curriculum';
 import { History, Lock, Unlock, BookOpen, RotateCcw, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -93,6 +95,7 @@ interface ScriptoriumProps {
   onLockProduction?: () => void;
   onNext?: () => void;
   onRestorePreviousTake?: () => void;
+  onMoodChange?: (mood: StoryMoodTag) => void;
 }
 
 export const Scriptorium = forwardRef<any, ScriptoriumProps>(({ 
@@ -106,7 +109,8 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
   onUnlockProduction,
   onLockProduction,
   onNext,
-  onRestorePreviousTake
+  onRestorePreviousTake,
+  onMoodChange,
 }, ref) => {
   const { actions, detectedAnchors, activeDrawer } = useStudioState();
 
@@ -419,6 +423,16 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
         </motion.div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Story Resonance Mood Dropdown (Ticket #263) */}
+          {onMoodChange && (
+            <StoryMoodDropdown
+              value={data?.moodTag}
+              onChange={onMoodChange}
+              disabled={isProductionLocked}
+              size="sm"
+            />
+          )}
+
           {(data?.originalHook || data?.previousDraftState || (data?.productionTakes && data.productionTakes.length > 0) || onRestorePreviousTake) && (
             <motion.button
               data-hotspot-id="HS_ACT1_VIEW_ORIGINAL_SPARK_BTN"

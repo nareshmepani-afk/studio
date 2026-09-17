@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
+import { useCurriculumVault, StoryMoodTag } from '@/hooks/useCurriculumVault';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
 import { FiresideModeSwitch, FIRESIDE_MODE_STORAGE_KEY } from '@/components/fireside/FiresideModeSwitch';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
@@ -144,6 +145,31 @@ export default function FiresideStudioClient() {
     sceneId: selectedSpark?.linkedSceneId,
     photos,
   });
+
+  const effectiveSceneId = selectedSpark?.linkedSceneId || activePromptSpark?.linkedSceneId || 'part-1-scene-1';
+
+  // Unified Curriculum Vault Hook (MW-88-T1 & MW-88-T2: Bi-Directional Bridge)
+  const { getSceneMemory, setStoryMoodTag } = useCurriculumVault({
+    userId: user?.uid,
+    initialSceneId: effectiveSceneId,
+  });
+
+  const activeSceneMemory = getSceneMemory(effectiveSceneId);
+  const activeMood = activeSceneMemory?.moodTag;
+
+  const handleMoodChange = useCallback(
+    (mood: StoryMoodTag) => {
+      setStoryMoodTag(effectiveSceneId, mood);
+      logEvent('FIRESIDE_MOOD_TAGGED', {
+        sceneId: effectiveSceneId,
+        mood,
+      });
+      const moodLabel = mood.charAt(0).toUpperCase() + mood.slice(1);
+      setNotification(`Resonance mood tagged: ${moodLabel}`);
+      setTimeout(() => setNotification(null), 3000);
+    },
+    [effectiveSceneId, setStoryMoodTag, logEvent]
+  );
 
   // Pageview lifecycle telemetry
   useEffect(() => {
@@ -427,6 +453,8 @@ export default function FiresideStudioClient() {
               ref={videoRecorderRef}
               promptSpark={selectedSpark}
               activeLanguage={activeLanguage}
+              activeMood={activeMood}
+              onMoodChange={handleMoodChange}
               onRecordingComplete={handleVideoRecordingComplete}
               onReset={handleResetVideoRecording}
               className="w-full"
@@ -462,6 +490,8 @@ export default function FiresideStudioClient() {
                 ref={recorderRef}
                 promptSpark={selectedSpark}
                 activeLanguage={activeLanguage}
+                activeMood={activeMood}
+                onMoodChange={handleMoodChange}
                 onRecordingComplete={handleAudioRecordingComplete}
                 onReset={handleResetAudioRecording}
                 className="w-full"

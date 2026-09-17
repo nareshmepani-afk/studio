@@ -36,6 +36,8 @@ import {
   FIRESIDE_TOUCH_TARGETS,
   RecordingLifecycleStatus,
 } from '@/types/fireside';
+import { StoryMoodTag } from '@/types/curriculum';
+import { FiresideMoodChips } from '@/components/fireside/FiresideMoodChips';
 import {
   useFiresideAudioRecorder,
   formatDurationMMSS,
@@ -52,6 +54,8 @@ export interface TactileVoiceRecorderRef {
 export interface TactileVoiceRecorderProps {
   promptSpark?: FiresidePromptSpark | null;
   activeLanguage?: FiresideLanguage;
+  activeMood?: StoryMoodTag;
+  onMoodChange?: (mood: StoryMoodTag) => void;
   onRecordingComplete?: (audioBlob: Blob, durationSeconds: number) => void;
   onReset?: () => void;
   className?: string;
@@ -62,6 +66,8 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
     {
       promptSpark,
       activeLanguage = 'en',
+      activeMood,
+      onMoodChange,
       onRecordingComplete,
       onReset,
       className = '',
@@ -369,6 +375,20 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
             <p className="text-xs text-red-400 text-center my-1">
               {errorMessage}
             </p>
+          )}
+
+          {/* Story Resonance Mood Selector (Ticket #263 / Rule 26 & 39) */}
+          {onMoodChange && (
+            <div className="w-full my-3 flex flex-col items-center">
+              <span className="text-[11px] font-semibold tracking-wider text-amber-500/90 uppercase mb-2">
+                Story Resonance Mood
+              </span>
+              <FiresideMoodChips
+                activeMood={activeMood}
+                onMoodChange={onMoodChange}
+                disabled={status === 'recording'}
+              />
+            </div>
           )}
 
           {/* 4. Elder Tactile Controls Area (Rule 26: 88px Record / 56px Secondary) */}

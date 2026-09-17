@@ -26,7 +26,10 @@ import {
   BonusMemoryNote,
   createEmptyCurriculumMemory,
   ActIdentifier,
+  StoryMoodTag,
 } from '@/types/curriculum';
+
+export type { StoryMoodTag } from '@/types/curriculum';
 
 export interface UseCurriculumVaultOptions {
   userId?: string | null;
@@ -66,6 +69,8 @@ export interface UseCurriculumVaultReturn {
     sceneId: string,
     note: Omit<BonusMemoryNote, 'id' | 'createdAt'>
   ) => Promise<void>;
+  /** Sets emotional mood resonance tag ('joyful' | 'reflective' | 'nostalgic') */
+  setStoryMoodTag: (sceneId: string, mood: StoryMoodTag) => Promise<void>;
 }
 
 /**
@@ -343,6 +348,39 @@ export function useCurriculumVault({
     [getSceneMemory, userId, effectiveMemoirId]
   );
 
+  const setStoryMoodTag = useCallback(
+    async (sceneId: string, mood: StoryMoodTag): Promise<void> => {
+      let updatedMemoryToPersist: UnifiedCurriculumMemory | null = null;
+
+      setScenes((prev) => {
+        const current = prev[sceneId] || getSceneMemory(sceneId);
+        const updatedMemory: UnifiedCurriculumMemory = {
+          ...current,
+          moodTag: mood,
+          lastModified: new Date().toISOString(),
+        };
+
+        updatedMemoryToPersist = updatedMemory;
+        return { ...prev, [sceneId]: updatedMemory };
+      });
+
+      // 2. Cloud persistence if authenticated
+      if (db && userId && effectiveMemoirId && !userId.startsWith('guest') && updatedMemoryToPersist) {
+        try {
+          const sceneDocRef = doc(db, 'users', userId, 'memoirs', effectiveMemoirId, 'scenes', sceneId);
+          await setDoc(
+            sceneDocRef,
+            { moodTag: mood, lastModified: new Date().toISOString() },
+            { merge: true }
+          );
+        } catch (cloudErr) {
+          console.error('[useCurriculumVault] Failed to persist story mood tag to Firestore:', cloudErr);
+        }
+      }
+    },
+    [getSceneMemory, userId, effectiveMemoirId]
+  );
+
   const activeSceneMemory = useMemo(() => {
     return getSceneMemory(activeSceneId);
   }, [getSceneMemory, activeSceneId]);
@@ -371,6 +409,7 @@ export function useCurriculumVault({
     saveSceneTake,
     promotePreferredTake,
     addBonusMemoryNote,
+    setStoryMoodTag,
   };
 }
 

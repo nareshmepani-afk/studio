@@ -2489,6 +2489,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         onNext={onNext}
                         isProductionLocked={isProductionLocked}
                         onOpenArchive={() => setIsArchiveOpen(true)}
+                        onMoodChange={(mood) => {
+                          update({ moodTag: mood });
+                          toast.success("Story Mood Updated", {
+                            description: `Emotional resonance set to ${mood.charAt(0).toUpperCase() + mood.slice(1)}.`
+                          });
+                        }}
                         onRestorePreviousTake={async () => {
                           const textToRestore = previousDraftState || (data as any)?.previousDraftState || 
                             ((data as any)?.productionTakes && (data as any).productionTakes.length > 0

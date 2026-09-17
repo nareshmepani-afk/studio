@@ -38,6 +38,8 @@ import {
   FIRESIDE_TOUCH_TARGETS,
   RecordingLifecycleStatus,
 } from '@/types/fireside';
+import { StoryMoodTag } from '@/types/curriculum';
+import { FiresideMoodChips } from '@/components/fireside/FiresideMoodChips';
 import { useFiresideVideoRecorder } from '@/hooks/useFiresideVideoRecorder';
 
 export interface FiresideVideoRecorderRef {
@@ -51,6 +53,8 @@ export interface FiresideVideoRecorderRef {
 export interface FiresideVideoRecorderProps {
   promptSpark?: FiresidePromptSpark | null;
   activeLanguage?: FiresideLanguage;
+  activeMood?: StoryMoodTag;
+  onMoodChange?: (mood: StoryMoodTag) => void;
   onRecordingComplete?: (videoBlob: Blob, durationSeconds: number) => void;
   onReset?: () => void;
   className?: string;
@@ -61,6 +65,8 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
     {
       promptSpark,
       activeLanguage = 'en',
+      activeMood,
+      onMoodChange,
       onRecordingComplete,
       onReset,
       className = '',
@@ -293,6 +299,20 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
 
               {/* RECORDING CONTROLS CONTAINER */}
               <div className="w-full flex flex-col items-center space-y-4 pt-1">
+                {/* Story Resonance Mood Selector (Ticket #263 / Rule 26 & 39) */}
+                {onMoodChange && (
+                  <div className="w-full mb-1 flex flex-col items-center">
+                    <span className="text-[11px] font-semibold tracking-wider text-amber-500/90 uppercase mb-2">
+                      Story Resonance Mood
+                    </span>
+                    <FiresideMoodChips
+                      activeMood={activeMood}
+                      onMoodChange={onMoodChange}
+                      disabled={isRecording}
+                    />
+                  </div>
+                )}
+
                 {/* Control Action Buttons Row */}
                 <div className="flex items-center justify-center gap-6 sm:gap-8">
                   {/* Secondary Action: Pause / Resume (Visible only while recording or paused) */}

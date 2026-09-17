@@ -356,4 +356,58 @@ describe('MW-88-T1: useCurriculumVault & Bi-Directional Bridge Suite', () => {
     // With mobile take present, smart landing targets act3 (Director Review)
     expect(result.current.smartLandingTarget).toBe('act3');
   });
+
+  it('10. Dual-surface mood tagging invariant: setStoryMoodTag on mobile is reflected in desktop vault query', async () => {
+    // 1. Mobile surface hook instance
+    const { result: mobileVault } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    // 2. Select emotional mood tag 'nostalgic' on mobile
+    await act(async () => {
+      await mobileVault.current.setStoryMoodTag('part-1-scene-1', 'nostalgic');
+    });
+
+    // 3. Invariant: Mobile scene memory updated immediately (optimistic UI)
+    const mobileMemory = mobileVault.current.getSceneMemory('part-1-scene-1');
+    expect(mobileMemory.moodTag).toBe('nostalgic');
+
+    // 4. Invariant: Firestore setDoc was called with moodTag and merge: true
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ moodTag: 'nostalgic' }),
+      { merge: true }
+    );
+
+    // 5. Desktop surface hook instance querying the same scene
+    const { result: desktopVault } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    // Simulate Firestore syncing snapshot to desktop surface with persisted moodTag
+    act(() => {
+      mockSnapshotCallback?.({
+        docs: [
+          {
+            id: 'doc_scene_1',
+            data: () => ({
+              id: 'doc_scene_1',
+              sceneId: 'part-1-scene-1',
+              partNumber: 1,
+              sceneNumber: 1,
+              sceneTitle: 'Child of Two Worlds',
+              originSurface: 'fireside_mobile',
+              moodTag: 'nostalgic',
+              currentStatus: 'captured',
+              actsCompleted: ['act1'],
+              takes: [],
+            }),
+          },
+        ],
+      });
+    });
+
+    const desktopMemory = desktopVault.current.getSceneMemory('part-1-scene-1');
+    expect(desktopMemory.moodTag).toBe('nostalgic');
+  });
 });

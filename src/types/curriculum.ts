@@ -20,6 +20,11 @@ export type MemoirTakeSource = 'fireside_mobile' | 'soundstage_desktop';
 
 export type ActIdentifier = 'act1' | 'act2' | 'act3' | 'act4';
 
+/**
+ * Emotional resonance taxonomy for storytelling scenes
+ */
+export type StoryMoodTag = 'joyful' | 'reflective' | 'nostalgic';
+
 // ---------------------------------------------------------------------------
 // 2. Directorial Polish & Cinema Presentation Metadata
 // ---------------------------------------------------------------------------
@@ -122,6 +127,8 @@ export interface UnifiedCurriculumMemory {
   smartLandingTarget: ActIdentifier;
   /** User or AI-polished prose text from Act I Scriptorium */
   prose: string;
+  /** Emotional resonance mood tag ('joyful' | 'reflective' | 'nostalgic') */
+  moodTag?: StoryMoodTag;
   /** Original user spoken prompt or hook */
   originalHook?: string;
   /** Sensory catalysts extracted during speech synthesis */
@@ -168,6 +175,7 @@ export function createEmptyCurriculumMemory(params: {
   sceneNumber: number;
   sceneTitle: string;
   originSurface: OriginSurface;
+  moodTag?: StoryMoodTag;
 }): UnifiedCurriculumMemory {
   const now = new Date().toISOString();
   return {
@@ -182,6 +190,7 @@ export function createEmptyCurriculumMemory(params: {
     actsCompleted: [],
     smartLandingTarget: 'act1',
     prose: '',
+    moodTag: params.moodTag,
     takes: [],
     activeTakeId: '',
     photos: [],

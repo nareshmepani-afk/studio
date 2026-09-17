@@ -9,6 +9,8 @@ import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { generateDirectorsNotepad } from '@/actions/aiWeaver';
+import { StoryMoodDropdown } from '@/components/studio/StoryMoodDropdown';
+import { StoryMoodTag } from '@/types/curriculum';
 
 interface DirectorsNotepadProps {
   userId?: string;
@@ -292,6 +294,16 @@ export default function DirectorsNotepad({
     },
   ];
 
+  const handleMoodChange = (newMood: StoryMoodTag) => {
+    mainUpdate?.({ moodTag: newMood });
+    toast.success("Story Mood Updated", {
+      description: `Act III resonance updated to ${newMood.charAt(0).toUpperCase() + newMood.slice(1)}.`
+    });
+    if (onSave) {
+      onSave();
+    }
+  };
+
   const activeTabObj = tabs.find(t => t.id === activeTab);
 
   return (
@@ -311,14 +323,23 @@ export default function DirectorsNotepad({
       >
         {/* Header */}
         <div className="p-6 border-b border-white/5 bg-zinc-900/50">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
-              <History className="w-5 h-5 text-emerald-400" />
+          <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
+                <History className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                 <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Act 3: Director's Notepad</h3>
+                 <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Script Supervisor Log // V3.1</p>
+              </div>
             </div>
-            <div>
-               <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Act 3: Director's Notepad</h3>
-               <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Script Supervisor Log // V3.1</p>
-            </div>
+
+            {/* Story Resonance Mood Selector (Ticket #263) */}
+            <StoryMoodDropdown
+              value={mainData?.moodTag}
+              onChange={handleMoodChange}
+              size="sm"
+            />
           </div>
 
           {/* Tab Navigation */}

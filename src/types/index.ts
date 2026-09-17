@@ -4,6 +4,8 @@
  */
 
 export * from './roles';
+import type { StoryMoodTag } from './curriculum';
+export type { StoryMoodTag };
 
 export interface MediaAttachment {
   url: string;
@@ -104,6 +106,10 @@ export interface Memory {
   span?: string;
   timeframe?: string;
   mood?: string;
+  /** Emotional resonance mood tag ('joyful' | 'reflective' | 'nostalgic') */
+  moodTag?: StoryMoodTag;
+  /** Associated curriculum scene identifier if bound to master story curriculum */
+  sceneId?: string;
   acts?: any;
   narratorLocationAtEvent?: string;
   durationQuantity?: number;
