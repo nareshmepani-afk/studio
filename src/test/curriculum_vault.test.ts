@@ -302,4 +302,58 @@ describe('MW-88-T1: useCurriculumVault & Bi-Directional Bridge Suite', () => {
     expect(hookSource).toMatch(/synchronisation/i);
     expect(hookSource).toMatch(/initialises/i);
   });
+
+  it('8. Supports initialSceneId option and dynamic activeSceneId switching', () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({
+        userId: 'usr_test',
+        memoirId: 'memoir_123',
+        initialSceneId: 'part-1-scene-2',
+      })
+    );
+
+    expect(result.current.activeSceneId).toBe('part-1-scene-2');
+    expect(result.current.activeSceneMemory.sceneId).toBe('part-1-scene-2');
+    expect(result.current.activeSceneMemory.sceneTitle).toBe('The House I Grew Up In');
+
+    // Switch scene
+    act(() => {
+      result.current.setActiveSceneId('part-2-scene-1');
+    });
+
+    expect(result.current.activeSceneId).toBe('part-2-scene-1');
+    expect(result.current.activeSceneMemory.sceneId).toBe('part-2-scene-1');
+  });
+
+  it('9. Resolves smartLandingTarget to act3 when mobile takes exist, otherwise act1', async () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({
+        userId: 'usr_test',
+        memoirId: 'memoir_123',
+        initialSceneId: 'part-1-scene-1',
+      })
+    );
+
+    // Empty scene defaults to act1
+    expect(result.current.smartLandingTarget).toBe('act1');
+
+    // Add a mobile take to the active scene
+    await act(async () => {
+      await result.current.saveSceneTake('part-1-scene-1', {
+        id: 'take_mobile_1',
+        takeNumber: 1,
+        source: 'fireside_mobile',
+        mediaMode: 'video',
+        mediaUrl: 'https://storage.googleapis.com/take.webm',
+        storagePath: 'takes/take.webm',
+        durationSeconds: 120,
+        createdAt: new Date().toISOString(),
+        label: 'Take 1 (Mobile)',
+        isPreferred: true,
+      });
+    });
+
+    // With mobile take present, smart landing targets act3 (Director Review)
+    expect(result.current.smartLandingTarget).toBe('act3');
+  });
 });

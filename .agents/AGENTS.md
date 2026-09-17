@@ -794,6 +794,7 @@ The agent MUST execute the following sequence upon staging rollout verification:
 - ❌ Never output only a markdown table in chat without synchronously generating and linking the interactive `qa_checklist_interactive.html` artifact
 - ❌ Never output relative paths (e.g. `/cinema/tv`) or truncated URLs (`...`) in checklist tables
 - ❌ Never wait for the Creative Director to ask "what's next?" — proactively state it
+- ❌ Never provide generic thoughts like "the codebase looks good" — every observation must be specific and actionable
 
 # 28. Context Window Inflation Shield & Token Economy Protocol
 
@@ -809,8 +810,6 @@ In long conversations with multiple tool calls, file views, and checkpoints, the
 When a session reaches **10+ completed items** OR **encounters Checkpoint truncation**:
 - The agent MUST proactively present the **Sprint Handoff Brief** and explicitly advise the Creative Director to start a fresh conversation.
 - The agent will provide a ready-to-paste starter prompt for the new conversation to instantly re-hydrate the new session with zero context loss.
-
-- ❌ Never provide generic thoughts like "the codebase looks good" — every observation must be specific and actionable
 
 # 29. Living Knowledge Hub Continuous Governance & Manifest Synchronization Rule
 
@@ -980,5 +979,34 @@ The application deliberately provides two distinct, harmonious storytelling capt
 - **Environment Badge**: Deployment status must be explicitly labelled `Dev Staging` (or `Production`).
 - **Production Stage Context Badge**: The storytelling workflow phase must be explicitly labelled with its theatrical equivalent (e.g. `[ 🎙️ Act II: Story Capture ]` or active curriculum part `[ Part 1: Roots ]`) so narrators and directors always know their exact location in the creative pipeline.
 
+# 39. The Fireside Armchair Maximum-Functionality & Feature Parity Mandate ("The Armchair Powerhouse Rule")
 
+## 39.1 The Core Principle: Ergonomic Simplicity ≠ Functional Deprivation
+The Fireside armchair storytelling interface (`/studio/fireside`) was crafted to provide an elder-first, handheld, intimate capture environment for grandparents and storytellers reclining in an armchair, holding a smartphone, tablet, or foldable device. However:
+- **Ergonomic simplicity must NEVER be equated with functional deprivation or architectural compromise.**
+- Fireside is an **armchair powerhouse**, NOT a stripped-down, second-class "lite" version of the Desktop Soundstage.
+- Wherever technically feasible, **maximum system capability, intelligence, diagnostic visibility, and multimedia richness MUST be instilled directly into `/studio/fireside`**.
+- The interface adheres to the **"Swan Principle"**: serene, calm, unhurried, and devoid of clutter above the waterline (Rule 26 elder ergonomics, 88px tactile envelopes, warm amber palettes), while operating with maximum industrial power, telemetry, and intelligence below the waterline.
 
+## 39.2 The Five Non-Negotiable Pillars of Fireside Functional Parity
+1. **Full Diagnostic & Telemetry Parity (Zero Second-Class Citizens)**:
+   - Every single interactive button, pill, tab, and card on `/studio/fireside` MUST possess a canonical `data-hotspot-id` registered with `<HotspotOverlay />` (`Ctrl+H`).
+   - Granular, zero-footprint journey telemetry (`useJourneyLogger`) with micro-version Git SHA tracing (Rule 6, Rule 8) MUST track all stage views, mode switches, language toggles, photo captures, and recording events identically to the Desktop Stage.
+2. **Bi-Directional Curriculum Vault Parity (MW-88-T1 / Ticket #258)**:
+   - Fireside MUST maintain complete bi-directional state synchronisation with the Desktop Soundstage (`/studio` Acts I–IV) via `useCurriculumVault`.
+   - Non-destructive multi-take stacks (`takes[]`), take preference promotion (`isPreferred`), bonus memory notes, and chronological scene progression (Parts I–VI, Scenes 1–13) MUST be fully functional in Fireside. An elder recording a scene on a phone in an armchair updates the director's desktop timeline in real time.
+3. **Studio-Grade Multimedia Capture & Processing**:
+   - **Voice**: Full Web Audio DSP, dynamic ambient noise floor monitoring, real-time VU audio visualisation ripples, and background silence detection.
+   - **Video**: WhatsApp/FaceTime-style high-intimacy video memos with 720p/24fps cinematic pacing, 2.0 Mbps bitrate clamping, natural selfie mirror orientation (`scaleX(-1)`), Screen Wake Lock persistence, and top-pinned prompt cards for direct lens eye contact.
+   - **Photos**: Heirloom photo digitisation suite with client-side grain preservation, archival compression (`compressHeirloomPhoto`), multi-photo attachment trays, and metadata captioning.
+4. **Living Multi-Lingual AI Interviewer Engine (Tickets #256 & #257)**:
+   - Rather than forcing elderly storytellers to read text from a small mobile display, Fireside MUST provide spoken voice prompting in the narrator's chosen diaspora tongue (English, Gujarati, Punjabi, Hindi).
+   - Conversational AI follow-up questions and sensory exploration prompts must be dynamically accessible without cluttering the primary narrative screen.
+5. **Offline-First Industrial Persistence & Resilience**:
+   - Immediate 50ms local IndexedDB stashing (`memory_weaver_fireside`) for all audio/video blobs and photo attachments, resilient against spotty Wi-Fi or accidental browser closure.
+   - Background cloud synchronisation with progressive HUD status indicators and automatic offline retry queues.
+
+## 39.3 Explicit Justification Gate for Any Functional Divergence
+- Any proposal to omit, delay, or simplify a feature on `/studio/fireside` based on the rationale that "it is just a mobile screen" is **STRICTLY PROHIBITED**.
+- If a technical or physical constraint (e.g. single-track mobile hardware audio routing or screen width limitations) prevents literal 1:1 UI replication, the agent MUST engineer an equivalent or superior armchair-optimised capability rather than dropping the feature.
+- Any architectural divergence between Desktop and Fireside capabilities MUST be explicitly presented to the user and team with full technical trade-off documentation before proceeding.

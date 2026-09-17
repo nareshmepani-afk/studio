@@ -31,11 +31,20 @@ import {
 export interface UseCurriculumVaultOptions {
   userId?: string | null;
   memoirId?: string | null;
+  initialSceneId?: string;
 }
 
 export interface UseCurriculumVaultReturn {
   /** Complete map of recorded curriculum memories indexed by canonical sceneId */
   scenes: Record<string, UnifiedCurriculumMemory>;
+  /** Currently selected or active scene identifier */
+  activeSceneId: string;
+  /** Setter for updating active scene selection */
+  setActiveSceneId: (sceneId: string) => void;
+  /** Active scene memory object, pre-hydrated or initialised with empty skeleton */
+  activeSceneMemory: UnifiedCurriculumMemory;
+  /** Smart landing target for soundstage (act3 if takes exist, otherwise act1) */
+  smartLandingTarget: ActIdentifier;
   /** Subscription loading state */
   isLoading: boolean;
   /** Total number of canonical scenes across the 6-part narrative structure */
@@ -103,9 +112,19 @@ export function isSceneCompleted(memory: UnifiedCurriculumMemory | undefined): b
 export function useCurriculumVault({
   userId,
   memoirId,
+  initialSceneId,
 }: UseCurriculumVaultOptions = {}): UseCurriculumVaultReturn {
   const [scenes, setScenes] = useState<Record<string, UnifiedCurriculumMemory>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeSceneId, setActiveSceneId] = useState<string>(
+    initialSceneId || ALL_CURRICULUM_SCENES[0].id
+  );
+
+  useEffect(() => {
+    if (initialSceneId) {
+      setActiveSceneId(initialSceneId);
+    }
+  }, [initialSceneId]);
 
   const effectiveUserId = userId || 'guest';
   const effectiveMemoirId = memoirId || 'default_memoir';
@@ -324,8 +343,25 @@ export function useCurriculumVault({
     [getSceneMemory, userId, effectiveMemoirId]
   );
 
+  const activeSceneMemory = useMemo(() => {
+    return getSceneMemory(activeSceneId);
+  }, [getSceneMemory, activeSceneId]);
+
+  const smartLandingTarget = useMemo((): ActIdentifier => {
+    const mem = scenes[activeSceneId];
+    if (!mem) return 'act1';
+    if (mem.originSurface === 'fireside_mobile' || (mem.takes && mem.takes.length > 0)) {
+      return 'act3';
+    }
+    return mem.smartLandingTarget || 'act1';
+  }, [scenes, activeSceneId]);
+
   return {
     scenes,
+    activeSceneId,
+    setActiveSceneId,
+    activeSceneMemory,
+    smartLandingTarget,
     isLoading,
     totalScenes,
     completedScenes,
