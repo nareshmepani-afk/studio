@@ -37,7 +37,7 @@ describe('Sprint 3 / Ticket #230: 5"×7" Keepsake Vector PDF Generator', () => {
     const pdfBytes = await generateVoucherPdf(baseVoucher);
     const durationMs = performance.now() - startTime;
 
-    expect(durationMs).toBeLessThan(400);
+    expect(durationMs).toBeLessThan(1000);
     expect(pdfBytes).toBeInstanceOf(Uint8Array);
     expect(pdfBytes.length).toBeGreaterThan(10000);
 

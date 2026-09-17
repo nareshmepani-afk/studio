@@ -16,6 +16,7 @@ import { resolveTemplateFixture, resolveTemplateFixtureAsync } from '@/utils/tem
 import { MobilePortalOverlay } from './overlays/MobilePortalOverlay';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
+import { resolvePromptIdFromSceneId } from '@/lib/curriculum/masterStoryStructure';
 
 interface ProductionDeckContainerProps {
   promptId: string;
@@ -142,16 +143,22 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           return;
         }
 
-        // 3. Direct promptId query in user's memories (e.g. promptId is "p1", "p2", etc.)
+        // 3. Direct promptId/sceneId query in user's memories (e.g. promptId is "p1", "part-1-scene-1", etc.)
         // DEMO SANDBOX ISOLATION: Never match historical demo templates (e.g. p_einstein) to user memories
         if (active && user?.uid && promptId !== 'p_einstein') {
-          const userMemQuery = query(collection(db, 'users', user.uid, 'memories'), where('promptId', '==', promptId));
-          const userMemSnap = await getDocs(userMemQuery);
+          const targetPromptId = resolvePromptIdFromSceneId(promptId) || promptId;
+          let userMemQuery = query(collection(db, 'users', user.uid, 'memories'), where('promptId', '==', targetPromptId));
+          let userMemSnap = await getDocs(userMemQuery);
+
+          if (active && userMemSnap.empty && promptId !== targetPromptId) {
+            userMemQuery = query(collection(db, 'users', user.uid, 'memories'), where('sceneId', '==', promptId));
+            userMemSnap = await getDocs(userMemQuery);
+          }
           
           if (active && !userMemSnap.empty) {
             const foundDoc = userMemSnap.docs[0];
             const fetchedMemory = { id: foundDoc.id, ...foundDoc.data() };
-            console.log(`[ProductionDeckContainer] Direct promptId query succeeded for "${promptId}". Found document ID: "${foundDoc.id}", Title: "${(fetchedMemory as any).title}", Stage: ${(fetchedMemory as any).productionStage}`);
+            console.log(`[ProductionDeckContainer] Direct promptId/sceneId query succeeded for "${promptId}". Found document ID: "${foundDoc.id}", Title: "${(fetchedMemory as any).title}", Stage: ${(fetchedMemory as any).productionStage}`);
             setSelectedProductionData(fetchedMemory);
             setIsReady(true);
             setIsNotFound(false);
@@ -203,26 +210,35 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     if (authLoading || (user && studioLoading) || !chapters.length) return;
 
     const chapterPrompts = chapters.flatMap(c => c.prompts);
-    const isTemplateId = chapterPrompts.some(p => p.id === promptId);
+    const targetPromptId = resolvePromptIdFromSceneId(promptId) || promptId;
+    const isTemplateId = chapterPrompts.some(p => p.id === promptId || p.id === targetPromptId);
 
     // Resolve cp from template ID or dynamically matched memory ID
-    let cp = chapterPrompts.find(p => p.id === promptId);
+    let cp = chapterPrompts.find(p => p.id === promptId || p.id === targetPromptId);
     if (cp) {
       cp = { ...cp };
     } else if (memories) {
-      const matchedMemory = memories.find(m => m.id === promptId);
+      const matchedMemory = memories.find(
+        m => m.id === promptId || m.promptId === promptId || m.promptId === targetPromptId || (m as any).sceneId === promptId
+      );
       if (matchedMemory) {
         // Trace backward: Follow the chain of memory promptIds recursively until we find a match in static templates
         let currentPromptId = matchedMemory.promptId;
-        let template = chapterPrompts.find(p => p.id === currentPromptId);
+        let template = chapterPrompts.find(
+          p => p.id === currentPromptId || (currentPromptId ? p.id === resolvePromptIdFromSceneId(currentPromptId) : false)
+        );
         const visitedIds = new Set<string>([matchedMemory.id]);
         
         while (!template && currentPromptId && !visitedIds.has(currentPromptId)) {
           visitedIds.add(currentPromptId);
-          const parentMemory = memories.find(m => m.id === currentPromptId);
+          const parentMemory = memories.find(
+            m => m.id === currentPromptId || m.promptId === currentPromptId || (m as any).sceneId === currentPromptId
+          );
           if (parentMemory) {
             currentPromptId = parentMemory.promptId;
-            template = chapterPrompts.find(p => p.id === currentPromptId);
+            template = chapterPrompts.find(
+              p => p.id === currentPromptId || (currentPromptId ? p.id === resolvePromptIdFromSceneId(currentPromptId) : false)
+            );
           } else {
             break;
           }

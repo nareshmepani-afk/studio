@@ -510,4 +510,94 @@ describe('MW-88-T1: useCurriculumVault & Bi-Directional Bridge Suite', () => {
     expect(afterNote.takes[0].durationSeconds).toBe(masterDurationBefore);
     expect(afterNote.takes.length).toBe(1);
   });
+
+  it('13. saveSceneTake updates existing take in-place when matching ID is supplied (upgrading blob URL to cloud URL)', async () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    const initialTake: MemoirTake = {
+      id: 'take_local_123',
+      takeNumber: 1,
+      source: 'fireside_mobile',
+      mediaMode: 'audio',
+      mediaUrl: 'blob:https://dev.memoryweaver.studio/abc-123',
+      durationSeconds: 45,
+      createdAt: new Date().toISOString(),
+      label: 'Take 1 (Fireside Voice)',
+      isPreferred: true,
+    };
+
+    await act(async () => {
+      await result.current.saveSceneTake('part-1-scene-1', initialTake);
+    });
+
+    const sceneAfterFirstSave = result.current.getSceneMemory('part-1-scene-1');
+    expect(sceneAfterFirstSave.takes.length).toBe(1);
+    expect(sceneAfterFirstSave.takes[0].mediaUrl).toBe('blob:https://dev.memoryweaver.studio/abc-123');
+
+    // Simulate cloud upload completing and updating the same take ID with permanent cloud URL
+    await act(async () => {
+      await result.current.saveSceneTake('part-1-scene-1', {
+        ...initialTake,
+        mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/app/audio_123.mp3',
+      });
+    });
+
+    const sceneAfterCloudUpdate = result.current.getSceneMemory('part-1-scene-1');
+    // Takes array length must NOT double
+    expect(sceneAfterCloudUpdate.takes.length).toBe(1);
+    expect(sceneAfterCloudUpdate.takes[0].id).toBe('take_local_123');
+    expect(sceneAfterCloudUpdate.takes[0].mediaUrl).toBe(
+      'https://firebasestorage.googleapis.com/v0/b/app/audio_123.mp3'
+    );
+  });
+
+  it('14. Firestore snapshot listener synthesises fallback take from legacy videoUrl/audioUrl when takes array is empty', () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    act(() => {
+      mockSnapshotCallback?.({
+        docs: [
+          {
+            id: 'ey96djU6qR1BrDGnvZwp',
+            data: () => ({
+              promptId: 'p1',
+              sceneId: 'part-1-scene-1',
+              chapterId: 'part-i',
+              partNumber: 1,
+              title: 'Child of Two Worlds',
+              productionStage: 2,
+              actsCompleted: ['act1', 'act2'],
+              videoUrl: 'https://firebasestorage.googleapis.com/v0/b/app/desktop_master.mp4',
+              takes: [],
+            }),
+          },
+        ],
+      });
+    });
+
+    const scene = result.current.getSceneMemory('part-1-scene-1');
+    expect(scene).toBeDefined();
+    expect(scene.takes.length).toBe(1);
+    expect(scene.takes[0].mediaUrl).toBe(
+      'https://firebasestorage.googleapis.com/v0/b/app/desktop_master.mp4'
+    );
+    expect(scene.takes[0].source).toBe('soundstage_desktop');
+    expect(isSceneCompleted(scene)).toBe(true);
+  });
+
+  it('15. Verifies FiresideStudioClient invokes saveSceneTake upon audio and video capture completion', () => {
+    const clientSource = fs.readFileSync(
+      'src/app/studio/fireside/FiresideStudioClient.tsx',
+      'utf8'
+    );
+
+    expect(clientSource).toContain('saveSceneTake(effectiveSceneId');
+    expect(clientSource).toContain('handleAudioRecordingComplete');
+    expect(clientSource).toContain('handleVideoRecordingComplete');
+    expect(clientSource).toContain('activeTakeIdRef');
+  });
 });

@@ -7,6 +7,7 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { Memory, PromptGroup, StoryRequest } from '@/types';
 import { mockPromptGroups } from '@/lib/mockData';
 import { useLanguage } from '@/hooks/useLanguage';
+import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
 export interface UnifiedChapter {
   id: string;
@@ -109,8 +110,11 @@ export function useStudioData(userId: string | undefined) {
   const chapters = useMemo(() => {
     return mockPromptGroups.map((group): UnifiedChapter => {
       const correlatedPrompts = group.prompts.map((p): CorrelatedPrompt => {
+        const sceneDef = resolveSceneFromPromptId(p.id);
         // Trace forward: Follow the chain of memory pointer documents to find the latest leaf memory
-        let memory: Memory | undefined = memories.find(m => m.promptId === p.id);
+        let memory: Memory | undefined = memories.find(
+          m => m.promptId === p.id || (sceneDef && (m as any).sceneId === sceneDef.id)
+        );
         if (memory) {
           const visited = new Set<string>();
           while (memory) {

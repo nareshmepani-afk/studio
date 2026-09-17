@@ -158,17 +158,44 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
     2. **Global Lifecycle Gate**: Does this component or effect touch global DOM/body state (e.g. `document.body.style.overflow`), leave hanging listeners, or break flex/grid layouts?
     3. **E2E Handshake Gate**: Does the state flow survive hard browser refreshes (`Ctrl+Shift+R`), auth redirects (e.g. `?redirect=`), and cross-session deep links?
     4. **Universal Non-Degradation Gate (Rule 7)**: Does this modification alter, remove, or degrade ANY existing user capability, visual feedback loop, or performance guarantee?
+
 # 30. Mandatory Interactive QA Verification Artifact Standard (`qa_checklist_interactive.html`)
 - **Strict Prohibition of Raw Text / Chat Step Lists**: The agent is **STRICTLY FORBIDDEN** from presenting testing checklists, QA step lists, or verification questionnaires as plain chat text or raw markdown bullet lists in chat mode.
-- **Exclusive Interactive Artifact Handoff**: ALL staging verification handoffs MUST be delivered exclusively via the standalone interactive HTML artifact: `qa_checklist_interactive.html` generated in the active artifact directory (`<appDataDir>\brain\<conversation-id>/qa_checklist_interactive.html`) and adhering strictly to the Master Framework in `qa_interactive_framework.md`.
-- **Mandatory Master Framework Inclusions**:
-  1. **Zero Placeholders**: Every single test item MUST provide the complete, fully-qualified public staging URL (e.g. `https://dev.memoryweaver.studio/cinema/tv?id=ey96djU6qR1BrDGnvZwp` or `https://dev.memoryweaver.studio/how-it-works`). Never output truncated relative paths (`/cinema?id=...`).
-  2. **Dedicated Per-Test Route Buttons**: Clickable `[ 🔗 Open Test Route ↗ ]` rendered on every test card.
-  3. **Per-Test Telemetry Vector Ingestion Box**: Dedicated paste input box on EVERY test card auto-parsing `traceId`, `userId`, `userEmail`, `path`, `version` into live glowing visual chips (`🏷️ Trace`, `👤 User`, `🆔 UID`, `📍 Path`, `🔖 Ver`) with 0ms targeted DOM updating without losing textarea focus.
-  4. **Per-Test Screenshot Attachment Engine**: `[ 📷 Add Screenshot ]` dropzone on every card with Base64 in-browser storage, persistent thumbnail strip, delete controls (`×`), and full-screen image Lightbox modal.
-  5. **Header HUD with Telemetry & Latency**: Dynamic circular SVG progress ring (0–100%), numerical completion fraction, live `[ ⚡ Ping Edge ]` latency meter against `/api/version`, and Global Session Telemetry paste box.
-  6. **1-Click Markdown Report Generator**: `[ 📋 Copy Markdown Report ]` button formatting structured markdown with pass/fail counts, notes, attachment tallies, and per-test telemetry lines ready to paste directly into chat.
-  7. **State Portability & LocalStorage**: Automatic namespaced `localStorage` persistence, `[ 💾 Export State ]` and `[ 📂 Import State ]` JSON session transfer, and `[ Reset ]` confirmation.
+- **Exclusive Interactive Artifact Handoff**: ALL staging verification handoffs MUST be delivered exclusively via the standalone interactive HTML artifact: `qa_checklist_interactive.html` generated in the active artifact directory (`<appDataDir>\brain\<conversation-id>/qa_checklist_interactive.html`).
+- **Canonical Gold-Standard Archetype**: Every generated `qa_checklist_interactive.html` MUST strictly adhere to the layout, styling, and functionality established in archetype `404e609c-deb4-4f50-ad10-9ecb37719a78/qa_checklist_interactive.html`.
+- **Mandatory 8-Zone Test Card Architecture (`#card-N`)**:
+  Every test card MUST render all 8 visual zones in this exact order:
+  1. **Zone 1: Header & Direct Route Trigger**:
+     - Card container: `class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-N" tabindex="0" onpaste="handleCardPaste(event, N)"`
+     - Test badge (`TEST N`) + functional subcategory tag + bold descriptive title.
+     - Step-by-step numbered test instructions `1)`, `2)`, `3)` with concrete actions and expected outcomes.
+     - Clickable `[ 🔗 Open Test Route ↗ ]` button linking to the fully-qualified staging URL. Zero relative paths or placeholders permitted.
+  2. **Zone 2: 📜 Governing Rules & Architectural Standards Strip**:
+     - Visual tag pills linking relevant system rules (e.g. `Rule 5: Staging Verification`, `Rule 7: Universal Non-Degradation`, `Rule 12: Zero-Latency UI`, `Rule 20: Mandatory British English Orthography`, `Rule 27: Dual-Sweep Cognitive Protocol`).
+  3. **Zone 3: 📊 Test Data & Input Parameters Grid**:
+     - 3-column card grid containing key test parameters (e.g. Memory ID, Target URL, Commit SHA, Route Path, Input Strings).
+     - Every single parameter card MUST render an inline `[ 📋 Copy ]` button calling `copyToClipboard(...)` providing 0ms clipboard copy and visual `✅ Copied!` confirmation.
+  4. **Zone 4: 🛡️ Status Attribution & Rationale Banner**:
+     - Dedicated banner showing **Status Attribution** (e.g. `Naresh Mepani / Antigravity Lead`) and **Status Rationale** explaining technical justification and test evidence.
+  5. **Zone 5: Tri-State Evaluation Button Triplet**:
+     - `[ ✅ PASS ]`, `[ ❌ FAIL ]`, and `[ ⚠️ BACKLOG ]` buttons calling `setStatus(N, 'PASS')` with active glow states and live HUD updating.
+  6. **Zone 6: Observations & Telemetry Vector Ingestion (2-Column Grid)**:
+     - Left: `Feedback & Observations` textarea (`#notes-N`) with `oninput="saveNotes(N)"`.
+     - Right: `Per-Test Telemetry Vector Ingestion` textarea (`#telemetry-N`) with `oninput="parseTelemetry(N)"` auto-generating live visual chips (`🏷️ Trace`, `👤 Email`, `🆔 UID`, `📍 Path`, `🔖 Ver`) with 0ms targeted DOM updating without losing textarea focus.
+  7. **Zone 7: 📷 Screenshot & Evidence Engine**:
+     - Dropzone (`#dropzone-N`) supporting drag-and-drop, file browser trigger, and card-level clipboard paste (`Ctrl+V` on card).
+     - Responsive thumbnail gallery with lightbox zoom, image download link, and individual delete `×` button.
+  8. **Zone 8: Global Lightbox Modal**:
+     - Fixed image overlay with zoom preview, download button, and `Esc` / click-to-close handler.
+- **Mandatory Top HUD Header Architecture**:
+  - Glow blur accent backdrop.
+  - Rollout verification status badge, target commit SHA, and staging environment URL.
+  - Circular SVG progress ring (radius 28, circumference 175.929) with animated `stroke-dashoffset` tracking completion percentage.
+  - Completion tally strip (`X Pass • Y Fail • Z Backlog • W Pend`).
+  - `[ ⚡ Ping Edge ]` live latency probe fetching `/api/version` and reporting round-trip latency and live edge `commitSha`.
+  - `[ 🎯 Next Test ]` smooth-scroll navigation button jumping to the first pending test card.
+  - `[ Reset ]` confirmation reset button.
+  - Quick Actions Bar: `[ 📋 Copy Markdown Report ]` (formats complete evaluation markdown ready to paste into chat), `[ 💾 Export JSON ]`, `[ 📂 Import JSON ]`, and Staging Passcode badge (`MW-STAGE-2026`).
 - **Prerequisite Deployment Gate (Rule 5)**: The artifact MUST NOT be generated, linked, or handed off until a programmatic live probe against `https://dev.memoryweaver.studio/api/version` confirms that the active `commitSha` matches the newly committed Git SHA.
 
 # 30.1. QA Status State Preservation, Cross-Commit State Migration & Status Lineage Protocol

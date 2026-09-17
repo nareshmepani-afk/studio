@@ -75,7 +75,7 @@ export interface MemoirTake {
   source: MemoirTakeSource;
   mediaMode: 'audio' | 'video';
   mediaUrl: string;
-  storagePath: string;
+  storagePath?: string;
   durationSeconds: number;
   createdAt: string; // ISO 8601 string
   waveformRms?: number[];

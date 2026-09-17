@@ -131,6 +131,29 @@ export default function FiresideStudioClient() {
     }
   }, []);
 
+  const activeTakeIdRef = useRef<string | null>(null);
+
+  const effectiveSceneId = selectedSpark?.linkedSceneId || activePromptSpark?.linkedSceneId || 'part-1-scene-1';
+
+  // Unified Curriculum Vault Hook (MW-88-T1 & MW-88-T2: Bi-Directional Bridge)
+  const {
+    getSceneMemory,
+    saveSceneTake,
+    setStoryMoodTag,
+    addBonusMemoryNote,
+    completedScenes,
+    totalScenes,
+    vaultProgressPercent,
+    nextPendingSceneId,
+  } = useCurriculumVault({
+    userId: user?.uid,
+    initialSceneId: effectiveSceneId,
+  });
+
+  const activeSceneMemory = getSceneMemory(effectiveSceneId);
+  const activeMood = activeSceneMemory?.moodTag;
+  const isCompleted = isSceneCompleted(activeSceneMemory) && !forceRecordMode;
+
   // Background Offline-First Synchronisation Hook (MW-247 & MW-248)
   const {
     syncState,
@@ -150,27 +173,27 @@ export default function FiresideStudioClient() {
     mediaMode,
     sceneId: selectedSpark?.linkedSceneId,
     photos,
+    onSyncSuccess: async (_syncedDraftId, cloudUrls) => {
+      const cloudMediaUrl =
+        (mediaMode === 'video' ? cloudUrls?.videoUrl : cloudUrls?.audioUrl) ||
+        cloudUrls?.videoUrl ||
+        cloudUrls?.audioUrl;
+      if (cloudMediaUrl) {
+        const takeId = activeTakeIdRef.current || `take_${Date.now()}`;
+        await saveSceneTake(effectiveSceneId, {
+          id: takeId,
+          takeNumber: activeSceneMemory?.takes?.length || 1,
+          source: 'fireside_mobile',
+          mediaMode,
+          mediaUrl: cloudMediaUrl,
+          durationSeconds: mediaMode === 'video' ? recordedVideoDuration : recordedAudioDuration,
+          createdAt: new Date().toISOString(),
+          label: `Take ${activeSceneMemory?.takes?.length || 1} (${mediaMode === 'video' ? 'Fireside Video' : 'Fireside Voice'})`,
+          isPreferred: true,
+        });
+      }
+    },
   });
-
-  const effectiveSceneId = selectedSpark?.linkedSceneId || activePromptSpark?.linkedSceneId || 'part-1-scene-1';
-
-  // Unified Curriculum Vault Hook (MW-88-T1 & MW-88-T2: Bi-Directional Bridge)
-  const {
-    getSceneMemory,
-    setStoryMoodTag,
-    addBonusMemoryNote,
-    completedScenes,
-    totalScenes,
-    vaultProgressPercent,
-    nextPendingSceneId,
-  } = useCurriculumVault({
-    userId: user?.uid,
-    initialSceneId: effectiveSceneId,
-  });
-
-  const activeSceneMemory = getSceneMemory(effectiveSceneId);
-  const activeMood = activeSceneMemory?.moodTag;
-  const isCompleted = isSceneCompleted(activeSceneMemory) && !forceRecordMode;
 
   const preferredTake = useMemo(() => {
     if (!activeSceneMemory?.takes || activeSceneMemory.takes.length === 0) return null;
@@ -274,13 +297,28 @@ export default function FiresideStudioClient() {
     }, 4500);
   };
 
-  const handleAudioRecordingComplete = (audioBlob: Blob, durationSeconds: number) => {
+  const handleAudioRecordingComplete = async (audioBlob: Blob, durationSeconds: number) => {
     setRecordedAudioBlob(audioBlob);
     setRecordedAudioDuration(durationSeconds);
     logEvent('FIRESIDE_AUDIO_RECORDING_COMPLETED', {
       durationSeconds,
-      sceneId: selectedSpark?.linkedSceneId,
+      sceneId: effectiveSceneId,
     });
+    const blobUrl = typeof window !== 'undefined' ? URL.createObjectURL(audioBlob) : '';
+    const takeId = `take_${Date.now()}`;
+    activeTakeIdRef.current = takeId;
+    await saveSceneTake(effectiveSceneId, {
+      id: takeId,
+      takeNumber: (activeSceneMemory?.takes?.length || 0) + 1,
+      source: 'fireside_mobile',
+      mediaMode: 'audio',
+      mediaUrl: blobUrl,
+      durationSeconds,
+      createdAt: new Date().toISOString(),
+      label: `Take ${(activeSceneMemory?.takes?.length || 0) + 1} (Fireside Voice)`,
+      isPreferred: true,
+    });
+    setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
     setNotification(`Memoir voice recording complete (${mins}m ${secs}s). Synchronising to vault.`);
@@ -289,13 +327,28 @@ export default function FiresideStudioClient() {
     }, 5000);
   };
 
-  const handleVideoRecordingComplete = (videoBlob: Blob, durationSeconds: number) => {
+  const handleVideoRecordingComplete = async (videoBlob: Blob, durationSeconds: number) => {
     setRecordedVideoBlob(videoBlob);
     setRecordedVideoDuration(durationSeconds);
     logEvent('FIRESIDE_VIDEO_RECORDING_COMPLETED', {
       durationSeconds,
-      sceneId: selectedSpark?.linkedSceneId,
+      sceneId: effectiveSceneId,
     });
+    const blobUrl = typeof window !== 'undefined' ? URL.createObjectURL(videoBlob) : '';
+    const takeId = `take_${Date.now()}`;
+    activeTakeIdRef.current = takeId;
+    await saveSceneTake(effectiveSceneId, {
+      id: takeId,
+      takeNumber: (activeSceneMemory?.takes?.length || 0) + 1,
+      source: 'fireside_mobile',
+      mediaMode: 'video',
+      mediaUrl: blobUrl,
+      durationSeconds,
+      createdAt: new Date().toISOString(),
+      label: `Take ${(activeSceneMemory?.takes?.length || 0) + 1} (Fireside Video)`,
+      isPreferred: true,
+    });
+    setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
     setNotification(`Video memo recorded (${mins}m ${secs}s). Synchronising to vault.`);

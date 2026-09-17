@@ -49,7 +49,7 @@ export interface UseFiresideSyncOptions {
   mediaMode?: FiresideMediaMode;
   sceneId?: string;
   photos?: HeirloomPhotoAttachment[];
-  onSyncSuccess?: (draftId: string) => void;
+  onSyncSuccess?: (draftId: string, cloudUrls?: { audioUrl?: string; videoUrl?: string }) => void;
   onSyncError?: (error: Error) => void;
 }
 
@@ -296,7 +296,10 @@ export function useFiresideSync({
       setSyncState('synced');
       setLastSyncedAt(new Date());
       setErrorMessage(null);
-      onSyncSuccess?.(draftId);
+      onSyncSuccess?.(draftId, {
+        audioUrl: audioStorageUrlRef.current || undefined,
+        videoUrl: videoStorageUrlRef.current || undefined,
+      });
     } catch (err) {
       console.error('[useFiresideSync] Background synchronisation error:', err);
       // Data remains safe in IndexedDB

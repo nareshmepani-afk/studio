@@ -325,6 +325,50 @@ export function getSceneById(sceneId: string): MasterStoryScene | undefined {
 }
 
 /**
+ * Resolves a canonical MasterStoryScene from a Desktop promptId (e.g. "p1") or sceneId
+ */
+export function resolveSceneFromPromptId(promptId: string): MasterStoryScene | undefined {
+  if (!promptId) return undefined;
+  for (const part of MASTER_STORY_STRUCTURE) {
+    const matched = part.scenes.find((s) => s.promptId === promptId || s.id === promptId);
+    if (matched) return matched;
+  }
+  return undefined;
+}
+
+/**
+ * Resolves the Desktop promptId (e.g. "p1") from a Fireside sceneId (e.g. "part-1-scene-1")
+ */
+export function resolvePromptIdFromSceneId(sceneId: string): string | undefined {
+  if (!sceneId) return undefined;
+  const scene = getSceneById(sceneId);
+  return scene?.promptId;
+}
+
+/**
+ * Maps Desktop productionStage (0..3) to Fireside actsCompleted array
+ */
+export function mapProductionStageToActsCompleted(stage: number): string[] {
+  if (stage >= 3) return ['act1', 'act2', 'act3', 'act4'];
+  if (stage === 2) return ['act1', 'act2', 'act3'];
+  if (stage === 1) return ['act1', 'act2'];
+  if (stage === 0) return ['act1'];
+  return [];
+}
+
+/**
+ * Maps Fireside actsCompleted array to Desktop productionStage (0..3)
+ */
+export function mapActsCompletedToProductionStage(acts: string[]): number {
+  if (!Array.isArray(acts) || acts.length === 0) return 0;
+  if (acts.includes('act4')) return 3;
+  if (acts.includes('act3')) return 2;
+  if (acts.includes('act2')) return 2;
+  if (acts.includes('act1')) return 1;
+  return 0;
+}
+
+/**
  * Computes next sequential scene ID for auto-advancing mobile carousel
  */
 export function getNextSceneId(currentSceneId: string): string | null {
@@ -335,3 +379,4 @@ export function getNextSceneId(currentSceneId: string): string | null {
   }
   return null;
 }
+
