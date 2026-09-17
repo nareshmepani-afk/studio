@@ -24,6 +24,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ACT_TITLES } from './MemoryForm';
+import { resolveMemoryMilestones, isActMilestoneCompleted, MemoryMilestones } from '@/lib/curriculum/milestoneTruth';
+import type { Memory } from '@/types';
 
 export interface Act {
   id: number;
@@ -52,6 +54,8 @@ interface ProductionRailProps {
   mentorActive?: boolean;
   onToggleMentor?: (manual?: boolean) => void;
   isSaving?: boolean;
+  memory?: Partial<Memory> | Record<string, any> | null;
+  milestones?: MemoryMilestones;
 }
 
 export const ProductionRail: React.FC<ProductionRailProps> = ({
@@ -64,8 +68,14 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
   wordCount,
   mentorActive = false,
   onToggleMentor,
-  isSaving = false
+  isSaving = false,
+  memory,
+  milestones
 }) => {
+  const resolvedMilestones = React.useMemo(() => {
+    if (milestones) return milestones;
+    return resolveMemoryMilestones(memory);
+  }, [milestones, memory]);
   const [isFirstTimeAct2, setIsFirstTimeAct2] = React.useState(false);
 
   React.useEffect(() => {
@@ -98,8 +108,11 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
   
   // Logic: Functional Unlock - Is the act fully functional (not a tech scout)?
   const isActFullyUnlocked = (id: number) => {
-    if (id <= currentStage) return true;
-    if (id === 1 && wordCount >= 150) return true; // Act II requires 150 words
+    if (id === 0) return true;
+    if (id === 1) return resolvedMilestones.hasScript || wordCount >= 150;
+    if (id === 2) return resolvedMilestones.hasWeave || resolvedMilestones.hasScript;
+    if (id === 3) return resolvedMilestones.hasRecordedMedia;
+    if (id === 4) return resolvedMilestones.hasRecordedMedia;
     return false;
   };
 
@@ -150,7 +163,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
             {PRODUCTION_ACTS.map((act, index) => {
               const active = currentStage === act.id;
               const available = isActAvailable(act.id) && !isSaving;
-              const completed = act.id < currentStage;
+              const completed = isActMilestoneCompleted(act.id, resolvedMilestones);
               
               return (
                 <div key={act.id} className="relative">

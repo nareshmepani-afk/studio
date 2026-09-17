@@ -20,6 +20,7 @@ import { StudioLobby } from './StudioLobby';
 const CollaborativeStage = dynamic(() => import('./CollaborativeStage'), { ssr: false });
 import { InstrumentSelection } from './InstrumentSelection';
 import { ProductionRail, PRODUCTION_ACTS } from './ProductionRail';
+import { resolveMemoryMilestones } from '@/lib/curriculum/milestoneTruth';
 import { cn } from '@/lib/utils';
 import { ResizableDivider } from './ResizableDivider';
 import { ProductionControlBar } from './ProductionControlBar';
@@ -937,9 +938,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 const candidatePoster = (memoryData as any)?.selfieUrl || (memoryData as any)?.narratorPhotoUrl || memoryData?.imageUrl || (memoryData as any)?.heroImageUrl;
                 if (candidatePoster) {
                     console.log("[ProductionDeck] Auto-anchoring poster before advancing to Act V Premiere:", candidatePoster);
-                    // MW-186: Include status transition when entering Act V via poster auto-anchor
+                    // MW-186: Include status transition when entering Act V via poster auto-anchor (ONLY if media recorded)
                     const updatePayload: any = { posterImageUrl: candidatePoster, productionStage: next };
-                    if (next === 4 && memoryData?.status === 'draft') {
+                    if (next === 4 && memoryData?.status === 'draft' && resolveMemoryMilestones(memoryData).hasRecordedMedia) {
                         updatePayload.status = 'pre-release';
                     }
                     handleUpdate(updatePayload);
@@ -954,8 +955,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if ((memoryData?.productionStage || 0) < next) {
                 handleUpdate({ productionStage: next });
             }
-            // MW-186: Auto-transition draft → pre-release when entering Act V
-            if (next === 4 && memoryData?.status === 'draft') {
+            // MW-186: Auto-transition draft → pre-release when entering Act V (ONLY if media recorded)
+            if (next === 4 && memoryData?.status === 'draft' && resolveMemoryMilestones(memoryData).hasRecordedMedia) {
                 handleUpdate({ status: 'pre-release' });
             }
         }
@@ -1276,6 +1277,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             wordCount={wordCount}
                             mentorActive={mentorModeActive}
                             onToggleMentor={toggleMentor}
+                            memory={memoryData}
                         />
 
                         {/* DIRECTOR'S DRAG: THE RESIZABLE DIVIDER */}

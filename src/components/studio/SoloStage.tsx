@@ -18,7 +18,7 @@ import {
   Languages, Layout, Zap, Settings2, RefreshCw, Rocket, Mic, Tag, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail, FileText,
-  Tv, Airplay, Cast
+  Tv, Airplay, Cast, Clock
 } from 'lucide-react';
 import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -38,6 +38,7 @@ import { generateDirectorsNotepad } from '@/actions/aiWeaver';
 import { ProductionControlBar } from './ProductionControlBar';
 import CinemaStageSwitch from './CinemaStageSwitch';
 import { Memory, FusionManifest, PremiereMode } from '@/types';
+import { resolveMemoryMilestones } from '@/lib/curriculum/milestoneTruth';
 import CinemaPoster from '../memory/CinemaPoster';
 import { CinemaMonitor } from './CinemaMonitor';
 import { useStudioState } from '@/hooks/studio/useStudioState';
@@ -236,6 +237,7 @@ export default function SoloStage({
   // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
   // We use currentStage prop as the source of truth from ProductionDeck.
   const productionStage = currentStage ?? (data?.productionStage || 0);
+  const milestones = useMemo(() => resolveMemoryMilestones(data), [data]);
 
   // MOD-12: AI Interviewer State
   const [isInterviewMode, setIsInterviewMode] = useState(false);
@@ -5382,14 +5384,21 @@ export default function SoloStage({
          transition={{ duration: 1 }}
          className="text-center space-y-6"
        >
-<div className="flex items-center justify-center gap-4 text-emerald-400 font-black text-[10px] uppercase tracking-[0.8em] mb-4">
-            <div className="w-12 h-px bg-emerald-500/30" />
-            Premiere: Act V
-            <div className="w-12 h-px bg-emerald-500/30" />
+          <div className={cn(
+            "flex items-center justify-center gap-4 font-black text-[10px] uppercase tracking-[0.8em] mb-4",
+            milestones.hasRecordedMedia ? "text-emerald-400" : "text-amber-400"
+          )}>
+            <div className={cn("w-12 h-px", milestones.hasRecordedMedia ? "bg-emerald-500/30" : "bg-amber-500/30")} />
+            {milestones.hasRecordedMedia ? "Premiere: Act V" : "Premiere Pre-Flight: Act V"}
+            <div className={cn("w-12 h-px", milestones.hasRecordedMedia ? "bg-emerald-500/30" : "bg-amber-500/30")} />
           </div>
-          <h2 className="text-7xl font-serif text-white/90 italic leading-tight tracking-tighter">Your Memory, Immortalized.</h2>
+          <h2 className="text-7xl font-serif text-white/90 italic leading-tight tracking-tighter">
+            {milestones.hasRecordedMedia ? "Your Memory, Immortalized." : "Spoken Recording Required."}
+          </h2>
           <p className="text-white/40 text-xl font-serif italic max-w-2xl mx-auto leading-relaxed">
-            The weave is complete. Your story has been transformed from a fleeting thought into a cinematic treasure.
+            {milestones.hasRecordedMedia
+              ? "The weave is complete. Your story has been transformed from a fleeting thought into a cinematic treasure."
+              : "Your narrative prose and Key Art are prepared. Step into the studio (Act III) to record your spoken performance and master your 4K cinema reel."}
           </p>
 
           {/* DUAL-REEL MODE SEGMENTED CONTROL BAR */}
@@ -5514,7 +5523,7 @@ export default function SoloStage({
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                   🎬 LIVE IN CINEMA
                                 </span>
-                              ) : data?.status === 'pre-release' ? (
+                              ) : (data?.status === 'pre-release' && milestones.hasRecordedMedia) ? (
                                 <span className="flex items-center gap-1.5 text-[9px] font-mono text-violet-400 bg-violet-950/50 border border-violet-500/30 px-2 py-0.5 rounded-full">
                                   <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
                                   🌟 PRE-RELEASE
@@ -5533,7 +5542,7 @@ export default function SoloStage({
                                 <p className="font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Official Cinema Release</p>
                                 <p className="text-[10px] text-white/70">This memory is published and available in your public Cinema screening room.</p>
                               </div>
-                            ) : data?.status === 'pre-release' ? (
+                            ) : (data?.status === 'pre-release' && milestones.hasRecordedMedia) ? (
                               <div>
                                 <p className="font-mono text-[9px] font-bold text-violet-400 uppercase tracking-widest mb-1">Private Screener Active</p>
                                 <p className="text-[10px] text-white/70">Share this screener link with family and collaborators to gather private feedback before releasing officially to the Cinema.</p>
@@ -5541,59 +5550,103 @@ export default function SoloStage({
                             ) : (
                               <div>
                                 <p className="font-mono text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1">Production in Progress</p>
-                                <p className="text-[10px] text-white/70">Complete Act V to master your video reel and enter Pre-Release.</p>
+                                <p className="text-[10px] text-white/70">Complete Act III capture and Act IV review to master your video reel and enter Pre-Release.</p>
                               </div>
                             )}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
 
-                      <TooltipProvider delayDuration={150}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full cursor-help">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              4K MASTERED
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-3 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
-                            <div>
-                              <p className="font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Hollywood-Grade Master</p>
-                              <p className="text-[10px] text-white/70">Master reel is fully stitched in 4K resolution with synchronized ambient audio score and theatrical video delivery.</p>
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      {/* 4K MASTERED (Media Present) or AWAITING RECORDING (No Media) */}
+                      {milestones.hasRecordedMedia ? (
+                        <TooltipProvider delayDuration={150}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full cursor-help">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                4K MASTERED
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-3 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Hollywood-Grade Master</p>
+                                <p className="text-[10px] text-white/70">Master reel is fully stitched in 4K resolution with synchronised ambient audio score and theatrical video delivery.</p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <TooltipProvider delayDuration={150}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1.5 text-[9px] font-mono text-amber-400 bg-amber-950/50 border border-amber-500/30 px-2 py-0.5 rounded-full cursor-help">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                AWAITING RECORDING
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-3 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1">Capture Required</p>
+                                <p className="text-[10px] text-white/70">Record your spoken performance in Act III (Capture) to master your 4K cinema reel and unlock the Fullscreen Premiere.</p>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                    </div>
                  </div>
                  
-                 {/* TIER 1: HERO ACTION - LAUNCH FULLSCREEN PREMIERE */}
-                 <button 
-                   data-hotspot-id="HS_ACT5_VIEW_PREMIERE_BTN"
-                   onClick={() => window.location.href = `/cinema?id=${data.id}`} 
-                   className="w-full py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-xs tracking-wider uppercase rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
-                 >
-                   <Play className="w-4 h-4 fill-current text-slate-950" />
-                   Launch Fullscreen Premiere
-                 </button>
-                 
-                 {/* TIER 2: SECONDARY ACTION - START LIVING ROOM TV PREMIERE */}
-                 <div className="relative w-full">
-                   <MentorshipHotspot 
-                     number={1} 
-                     label="Stream to Living Room TV" 
-                     hotspotId="HS_ACT5_MENTOR_STEP1"
-                     className="-top-3 -left-3" 
-                   />
-                   <button 
-                     data-hotspot-id="HS_ACT5_LIVING_ROOM_PREMIERE_BTN"
-                     onClick={() => setShowLivingRoomCastModal(true)}
-                     className="w-full py-3.5 bg-slate-900/90 border border-amber-500/30 text-amber-300 font-semibold text-xs rounded-xl hover:bg-amber-500/10 hover:border-amber-400/60 transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:scale-[1.01]"
-                   >
-                     <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
-                     Start Living Room TV Premiere
-                   </button>
-                 </div>
+                 {/* TIER 1 & TIER 2 ACTIONS */}
+                 {milestones.hasRecordedMedia ? (
+                   <>
+                     {/* TIER 1: HERO ACTION - LAUNCH FULLSCREEN PREMIERE */}
+                     <button 
+                       data-hotspot-id="HS_ACT5_VIEW_PREMIERE_BTN"
+                       onClick={() => window.location.href = `/cinema?id=${data.id}`} 
+                       className="w-full py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-xs tracking-wider uppercase rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                     >
+                       <Play className="w-4 h-4 fill-current text-slate-950" />
+                       Launch Fullscreen Premiere
+                     </button>
+                     
+                     {/* TIER 2: SECONDARY ACTION - START LIVING ROOM TV PREMIERE */}
+                     <div className="relative w-full">
+                       <MentorshipHotspot 
+                         number={1} 
+                         label="Stream to Living Room TV" 
+                         hotspotId="HS_ACT5_MENTOR_STEP1"
+                         className="-top-3 -left-3" 
+                       />
+                       <button 
+                         data-hotspot-id="HS_ACT5_LIVING_ROOM_PREMIERE_BTN"
+                         onClick={() => setShowLivingRoomCastModal(true)}
+                         className="w-full py-3.5 bg-slate-900/90 border border-amber-500/30 text-amber-300 font-semibold text-xs rounded-xl hover:bg-amber-500/10 hover:border-amber-400/60 transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:scale-[1.01]"
+                       >
+                         <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
+                         Start Living Room TV Premiere
+                       </button>
+                     </div>
+                   </>
+                 ) : (
+                   <>
+                     {/* TIER 1: HERO ACTION - STEP INTO ACT III: RECORD PERFORMANCE */}
+                     <button 
+                       data-hotspot-id="HS_ACT5_RECORD_PERFORMANCE_BTN"
+                       onClick={() => setProductionStage(2)} 
+                       className="w-full py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-xs tracking-wider uppercase rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                     >
+                       <Mic2 className="w-4 h-4 text-slate-950" />
+                       Step into Act III: Record Performance
+                     </button>
+                     
+                     {/* TIER 2: SECONDARY NOTE - LIVING ROOM TV STREAMING LOCKED UNTIL CAPTURE */}
+                     <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl text-center">
+                       <p className="text-[11px] text-amber-300/80 font-mono">
+                         Living Room TV &amp; Cinema streaming unlock once your spoken take is recorded in Act III.
+                       </p>
+                     </div>
+                   </>
+                 )}
 
                  {/* TIER 3: EXPORT ACTIONS — Print + Share & QR (2-column) */}
                  <div className="grid grid-cols-2 gap-2 pt-1">
@@ -5640,10 +5693,18 @@ export default function SoloStage({
               {/* COMPACT PRODUCTION VERIFICATION GRID */}
               <div className="grid grid-cols-2 gap-3 pt-1">
                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    {milestones.hasRecordedMedia ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <Clock className="w-5 h-5 text-amber-400 shrink-0" />
+                    )}
                     <div>
-                       <h4 className="font-bold text-white text-[11px] uppercase tracking-wider">Negative Mastered</h4>
-                       <p className="text-[10px] text-white/40 leading-snug">Visual & audio weave processed.</p>
+                       <h4 className="font-bold text-white text-[11px] uppercase tracking-wider">
+                         {milestones.hasRecordedMedia ? 'Negative Mastered' : 'Recording Pending'}
+                       </h4>
+                       <p className="text-[10px] text-white/40 leading-snug">
+                         {milestones.hasRecordedMedia ? 'Visual & audio weave processed.' : 'Awaiting spoken recording (Act III).'}
+                       </p>
                     </div>
                  </div>
 
@@ -5656,18 +5717,22 @@ export default function SoloStage({
                  </div>
 
                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
-                    <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+                    <Sparkles className={cn("w-5 h-5 shrink-0", milestones.hasRecordedMedia ? "text-amber-400" : "text-white/30")} />
                     <div>
                        <h4 className="font-bold text-white text-[11px] uppercase tracking-wider">Fusion Protocol</h4>
-                       <p className="text-[10px] text-white/40 leading-snug">Intent & performance fused.</p>
+                       <p className="text-[10px] text-white/40 leading-snug">
+                         {milestones.hasRecordedMedia ? 'Intent & performance fused.' : 'Pending vocal & prose alignment.'}
+                       </p>
                     </div>
                  </div>
 
                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
-                    <Rocket className="w-5 h-5 text-rose-400 shrink-0" />
+                    <Rocket className={cn("w-5 h-5 shrink-0", milestones.hasRecordedMedia ? "text-rose-400" : "text-white/30")} />
                     <div>
                        <h4 className="font-bold text-white text-[11px] uppercase tracking-wider">Archive Entry</h4>
-                       <p className="text-[10px] text-white/40 leading-snug">Permanent chapter secured.</p>
+                       <p className="text-[10px] text-white/40 leading-snug">
+                         {milestones.hasRecordedMedia ? 'Permanent chapter secured.' : 'Draft manuscript anchored.'}
+                       </p>
                     </div>
                  </div>
               </div>
