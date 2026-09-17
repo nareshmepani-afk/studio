@@ -410,4 +410,104 @@ describe('MW-88-T1: useCurriculumVault & Bi-Directional Bridge Suite', () => {
     const desktopMemory = desktopVault.current.getSceneMemory('part-1-scene-1');
     expect(desktopMemory.moodTag).toBe('nostalgic');
   });
+
+  it('11. MW-88-T2 Invariant: Completed scene status signals celebratory reel card state and protects master take', async () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    // Initial empty scene: not completed
+    const initialScene = result.current.getSceneMemory('part-1-scene-1');
+    expect(isSceneCompleted(initialScene)).toBe(false);
+
+    // Save initial master performance take
+    await act(async () => {
+      await result.current.saveSceneTake('part-1-scene-1', {
+        id: 'take_theatrical_01',
+        takeNumber: 1,
+        source: 'fireside_mobile',
+        mediaMode: 'video',
+        mediaUrl: 'https://storage.googleapis.com/take_theatrical_01.mp4',
+        storagePath: 'takes/take_theatrical_01.mp4',
+        durationSeconds: 165,
+        createdAt: new Date().toISOString(),
+        label: 'Take 1 (Theatrical Reel)',
+        isPreferred: true,
+      });
+    });
+
+    const completedScene = result.current.getSceneMemory('part-1-scene-1');
+    // Invariant: Marked completed, which signals FiresideCompletedReelCard rendering
+    expect(isSceneCompleted(completedScene)).toBe(true);
+    expect(completedScene.takes.length).toBe(1);
+    expect(completedScene.takes[0].isPreferred).toBe(true);
+    expect(completedScene.takes[0].durationSeconds).toBe(165);
+
+    // Recording an additional take appends non-destructively without overwriting Take 1
+    await act(async () => {
+      await result.current.saveSceneTake('part-1-scene-1', {
+        id: 'take_retake_02',
+        takeNumber: 2,
+        source: 'fireside_mobile',
+        mediaMode: 'video',
+        mediaUrl: 'https://storage.googleapis.com/take_retake_02.mp4',
+        storagePath: 'takes/take_retake_02.mp4',
+        durationSeconds: 190,
+        createdAt: new Date().toISOString(),
+        label: 'Take 2 (Retake)',
+        isPreferred: false,
+      });
+    });
+
+    const multiTakeScene = result.current.getSceneMemory('part-1-scene-1');
+    expect(multiTakeScene.takes.length).toBe(2);
+    expect(multiTakeScene.takes[0].id).toBe('take_theatrical_01');
+    expect(multiTakeScene.takes[1].id).toBe('take_retake_02');
+  });
+
+  it('12. MW-88-T2 Invariant: addBonusMemoryNote appends non-destructive additive recollection without mutating master reel URL or duration', async () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    // Mount master theatrical performance
+    await act(async () => {
+      await result.current.saveSceneTake('part-1-scene-2', {
+        id: 'master_reel_take',
+        takeNumber: 1,
+        source: 'fireside_mobile',
+        mediaMode: 'video',
+        mediaUrl: 'https://storage.googleapis.com/kitchen_master.mp4',
+        storagePath: 'takes/kitchen_master.mp4',
+        durationSeconds: 215,
+        createdAt: new Date().toISOString(),
+        label: 'Master Theatrical Reel',
+        isPreferred: true,
+      });
+    });
+
+    const beforeNote = result.current.getSceneMemory('part-1-scene-2');
+    const masterMediaUrlBefore = beforeNote.takes[0].mediaUrl;
+    const masterDurationBefore = beforeNote.takes[0].durationSeconds;
+
+    // Add additive bonus memory note via BonusMemoryDrawer
+    await act(async () => {
+      await result.current.addBonusMemoryNote('part-1-scene-2', {
+        authorName: 'Aunt Meena',
+        authorRole: 'family_member',
+        text: 'The copper kettle on the left was brought across the ocean in 1964.',
+      });
+    });
+
+    const afterNote = result.current.getSceneMemory('part-1-scene-2');
+    // Invariant: Note appended cleanly
+    expect(afterNote.bonusNotes.length).toBe(1);
+    expect(afterNote.bonusNotes[0].text).toContain('copper kettle');
+    expect(afterNote.bonusNotes[0].authorName).toBe('Aunt Meena');
+
+    // Invariant: Master reel URL, duration, and takes stack remain completely intact!
+    expect(afterNote.takes[0].mediaUrl).toBe(masterMediaUrlBefore);
+    expect(afterNote.takes[0].durationSeconds).toBe(masterDurationBefore);
+    expect(afterNote.takes.length).toBe(1);
+  });
 });

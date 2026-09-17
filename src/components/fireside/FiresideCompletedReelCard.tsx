@@ -1,0 +1,260 @@
+'use client';
+
+/**
+ * 🎬 Fireside Completed Reel Card — Celebratory Master Reel Display
+ *
+ * Designed for elderly storytellers and family archivists resting in armchairs.
+ * Renders the golden laurel wreath celebratory state when a scene is completed
+ * or mastered. Shields the master performance reel from accidental overwriting,
+ * while providing immediate theatrical preview and additive bonus note triggers.
+ *
+ * Milestone: MW-88-T2 (Ticket #259)
+ * Route: /studio/fireside
+ * Constitutional Governance: C:\Users\home\studio\.agents\AGENTS.md
+ * (Rule 7 Non-Degradation, Rule 20 British English, Rule 26 Elder Ergonomics, Rule 39 Armchair Powerhouse)
+ */
+
+import React, { useState, useCallback, useMemo } from 'react';
+import {
+  Film,
+  Play,
+  PlusCircle,
+  RotateCcw,
+  Sparkles,
+  Camera,
+  Music,
+  Clock,
+  CheckCircle2,
+  FileText,
+  AlertTriangle,
+  Award,
+} from 'lucide-react';
+import { UnifiedCurriculumMemory, StoryMoodTag } from '@/types/curriculum';
+import { FiresideLanguage } from '@/types/fireside';
+
+export interface FiresideCompletedReelCardProps {
+  sceneId: string;
+  sceneTitle: string;
+  sceneMemory?: UnifiedCurriculumMemory;
+  activeLanguage?: FiresideLanguage;
+  onWatchTheatricalReel: () => void;
+  onAddBonusNote: () => void;
+  onReRecordRequest?: () => void;
+  className?: string;
+}
+
+function formatDurationSeconds(totalSeconds: number): string {
+  if (!totalSeconds || totalSeconds <= 0) return '0m 00s';
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = Math.floor(totalSeconds % 60);
+  return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+}
+
+export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps> = ({
+  sceneId,
+  sceneTitle,
+  sceneMemory,
+  activeLanguage = 'en',
+  onWatchTheatricalReel,
+  onAddBonusNote,
+  onReRecordRequest,
+  className = '',
+}) => {
+  const [showRetakeConfirm, setShowRetakeConfirm] = useState(false);
+
+  // Determine preferred take and metrics
+  const preferredTake = useMemo(() => {
+    if (!sceneMemory || !sceneMemory.takes || sceneMemory.takes.length === 0) return null;
+    return sceneMemory.takes.find((t) => t.isPreferred) || sceneMemory.takes[0];
+  }, [sceneMemory]);
+
+  const durationText = useMemo(() => {
+    if (preferredTake?.durationSeconds) {
+      return formatDurationSeconds(preferredTake.durationSeconds);
+    }
+    return '2m 45s';
+  }, [preferredTake]);
+
+  const photosCount = sceneMemory?.photos?.length || 0;
+  const bonusNotesCount = sceneMemory?.bonusNotes?.length || 0;
+  const isMastered = sceneMemory?.currentStatus === 'mastered';
+
+  const moodTagDisplay = useMemo(() => {
+    const tag = sceneMemory?.moodTag;
+    if (tag === 'joyful') return '✨ Joyful';
+    if (tag === 'reflective') return '🕊️ Reflective';
+    if (tag === 'nostalgic') return '⏳ Nostalgic';
+    return null;
+  }, [sceneMemory?.moodTag]);
+
+  const triggerHaptic = useCallback(() => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(25);
+      } catch {}
+    }
+  }, []);
+
+  const handleWatchClick = useCallback(() => {
+    triggerHaptic();
+    onWatchTheatricalReel();
+  }, [triggerHaptic, onWatchTheatricalReel]);
+
+  const handleBonusClick = useCallback(() => {
+    triggerHaptic();
+    onAddBonusNote();
+  }, [triggerHaptic, onAddBonusNote]);
+
+  const handleConfirmRetake = useCallback(() => {
+    triggerHaptic();
+    setShowRetakeConfirm(false);
+    onReRecordRequest?.();
+  }, [triggerHaptic, onReRecordRequest]);
+
+  return (
+    <section
+      aria-label={`Completed memory scene: ${sceneTitle}`}
+      className={`w-full max-w-xl mx-auto rounded-3xl border border-amber-500/40 bg-stone-950/90 shadow-[0_0_50px_rgba(245,158,11,0.15)] backdrop-blur-xl p-6 sm:p-8 flex flex-col items-center text-center relative overflow-hidden transition-all ${className}`}
+    >
+      {/* Golden Ambient Backdrop Glow */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-600/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+
+      {/* Golden Laurel Wreath Emblem Header */}
+      <div className="relative z-10 flex flex-col items-center">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-amber-400/20 to-amber-600/10 border-2 border-amber-400/60 shadow-[0_0_25px_rgba(245,158,11,0.3)] flex items-center justify-center mb-4">
+          <Award className="w-8 h-8 sm:w-10 sm:h-10 text-amber-300" aria-hidden="true" />
+        </div>
+
+        {/* Celebratory Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 text-xs sm:text-sm font-semibold tracking-wide shadow-sm mb-3">
+          <CheckCircle2 className="w-4 h-4 text-amber-300" />
+          <span>
+            {isMastered
+              ? 'Theatrical Master Reel Completed in Soundstage ✓'
+              : 'Spoken Memory Secured in Generational Vault ✓'}
+          </span>
+        </div>
+
+        <h3 className="text-xl sm:text-2xl font-serif font-normal text-white mb-2 leading-tight">
+          {sceneTitle}
+        </h3>
+        <p className="text-xs text-stone-400 max-w-md mb-6 leading-relaxed">
+          Your storytelling performance has been captured, preserved, and woven into your master family archive.
+        </p>
+      </div>
+
+      {/* Directorial Metrics HUD Box */}
+      <div className="w-full relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-stone-900/80 border border-stone-800 text-left mb-6">
+        <div className="p-2.5 rounded-xl bg-stone-950/60 border border-stone-800/80 flex flex-col justify-center">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase font-mono tracking-wider text-amber-400/90 mb-1">
+            <Clock className="w-3 h-3" />
+            <span>Duration</span>
+          </div>
+          <span className="text-xs sm:text-sm font-semibold text-stone-200 font-mono">
+            {durationText}
+          </span>
+        </div>
+
+        <div className="p-2.5 rounded-xl bg-stone-950/60 border border-stone-800/80 flex flex-col justify-center">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase font-mono tracking-wider text-amber-400/90 mb-1">
+            <Camera className="w-3 h-3" />
+            <span>Photos</span>
+          </div>
+          <span className="text-xs sm:text-sm font-semibold text-stone-200 font-mono">
+            {photosCount} Scanned
+          </span>
+        </div>
+
+        <div className="p-2.5 rounded-xl bg-stone-950/60 border border-stone-800/80 flex flex-col justify-center">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase font-mono tracking-wider text-amber-400/90 mb-1">
+            <Music className="w-3 h-3" />
+            <span>Resonance</span>
+          </div>
+          <span className="text-xs sm:text-sm font-semibold text-stone-200 truncate">
+            {moodTagDisplay || 'Warm Amber'}
+          </span>
+        </div>
+
+        <div className="p-2.5 rounded-xl bg-stone-950/60 border border-stone-800/80 flex flex-col justify-center">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase font-mono tracking-wider text-amber-400/90 mb-1">
+            <FileText className="w-3 h-3" />
+            <span>Bonus Notes</span>
+          </div>
+          <span className="text-xs sm:text-sm font-semibold text-stone-200 font-mono">
+            {bonusNotesCount} Added
+          </span>
+        </div>
+      </div>
+
+      {/* Celebratory Action CTAs (Rule 26: 56px Minimum Touch Envelopes) */}
+      <div className="w-full relative z-10 flex flex-col gap-3">
+        {/* Primary CTA: Watch Theatrical Reel */}
+        <button
+          type="button"
+          onClick={handleWatchClick}
+          data-hotspot-id="HS_FIRESIDE_COMPLETED_WATCH_BTN"
+          className="w-full min-h-[56px] px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-[0_0_30px_rgba(245,158,11,0.35)] hover:shadow-[0_0_40px_rgba(245,158,11,0.5)] hover:scale-[1.01] active:scale-98 transition-all cursor-pointer select-none"
+        >
+          <Play className="w-5 h-5 fill-stone-950 text-stone-950" />
+          <span>Watch Theatrical Reel</span>
+        </button>
+
+        {/* Secondary CTA: Add Bonus Memory Note / Photo */}
+        <button
+          type="button"
+          onClick={handleBonusClick}
+          data-hotspot-id="HS_FIRESIDE_COMPLETED_BONUS_BTN"
+          className="w-full min-h-[56px] px-6 py-3.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800/90 border border-stone-700 hover:border-amber-500/40 text-stone-200 hover:text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98 select-none"
+        >
+          <PlusCircle className="w-5 h-5 text-amber-400" />
+          <span>Add Bonus Memory Note / Photo</span>
+        </button>
+      </div>
+
+      {/* Safety Guarded Retake Link (Rule 7 & 26: Prevent Accidental Overwrite) */}
+      <div className="mt-5 relative z-10 text-center">
+        {!showRetakeConfirm ? (
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic();
+              setShowRetakeConfirm(true);
+            }}
+            data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"
+            className="text-xs text-stone-500 hover:text-amber-400 underline underline-offset-4 transition-colors cursor-pointer py-1.5 px-3 rounded-lg"
+          >
+            Record an additional take for this scene
+          </button>
+        ) : (
+          <div className="p-4 rounded-2xl bg-stone-900/95 border border-amber-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-2.5 mb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-stone-300 leading-relaxed">
+                Your existing master performance is safely preserved. Recording again will save an additional take to your multi-take stack.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRetakeConfirm(false)}
+                className="px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRetake}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-stone-950 text-xs font-bold hover:bg-amber-400 transition"
+              >
+                Proceed to Record
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
+export default FiresideCompletedReelCard;

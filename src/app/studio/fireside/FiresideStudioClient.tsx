@@ -12,20 +12,23 @@
  * (Rule 7 Non-Degradation, Rule 20 British English, Rule 26 Elder Ergonomics, Rule 8 Mobile Viewport)
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
-import { useCurriculumVault, StoryMoodTag } from '@/hooks/useCurriculumVault';
+import { useCurriculumVault, StoryMoodTag, isSceneCompleted } from '@/hooks/useCurriculumVault';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
 import { FiresideModeSwitch, FIRESIDE_MODE_STORAGE_KEY } from '@/components/fireside/FiresideModeSwitch';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { TactileVoiceRecorder, TactileVoiceRecorderRef } from '@/components/fireside/TactileVoiceRecorder';
 import { FiresideVideoRecorder, FiresideVideoRecorderRef } from '@/components/fireside/FiresideVideoRecorder';
 import { AlbumPhotoCaptureTray, AlbumPhotoCaptureTrayRef } from '@/components/fireside/AlbumPhotoCaptureTray';
+import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
+import { FiresideCinemaLightbox } from '@/components/fireside/FiresideCinemaLightbox';
+import { BonusMemoryDrawer } from '@/components/fireside/BonusMemoryDrawer';
 import {
   FiresideLanguage,
   FiresidePromptSpark,
@@ -80,6 +83,9 @@ export default function FiresideStudioClient() {
   const [recordedVideoDuration, setRecordedVideoDuration] = useState<number>(0);
   const [notification, setNotification] = useState<string | null>(null);
   const [showDesktopBanner, setShowDesktopBanner] = useState<boolean>(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [isBonusDrawerOpen, setIsBonusDrawerOpen] = useState<boolean>(false);
+  const [forceRecordMode, setForceRecordMode] = useState<boolean>(false);
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
@@ -149,13 +155,36 @@ export default function FiresideStudioClient() {
   const effectiveSceneId = selectedSpark?.linkedSceneId || activePromptSpark?.linkedSceneId || 'part-1-scene-1';
 
   // Unified Curriculum Vault Hook (MW-88-T1 & MW-88-T2: Bi-Directional Bridge)
-  const { getSceneMemory, setStoryMoodTag } = useCurriculumVault({
+  const {
+    getSceneMemory,
+    setStoryMoodTag,
+    addBonusMemoryNote,
+    completedScenes,
+    totalScenes,
+    vaultProgressPercent,
+    nextPendingSceneId,
+  } = useCurriculumVault({
     userId: user?.uid,
     initialSceneId: effectiveSceneId,
   });
 
   const activeSceneMemory = getSceneMemory(effectiveSceneId);
   const activeMood = activeSceneMemory?.moodTag;
+  const isCompleted = isSceneCompleted(activeSceneMemory) && !forceRecordMode;
+
+  const preferredTake = useMemo(() => {
+    if (!activeSceneMemory?.takes || activeSceneMemory.takes.length === 0) return null;
+    return activeSceneMemory.takes.find((t) => t.isPreferred) || activeSceneMemory.takes[0];
+  }, [activeSceneMemory]);
+
+  const autoSparkId = useMemo(() => {
+    if (initialPromptParam) return initialPromptParam;
+    if (nextPendingSceneId) {
+      const matched = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === nextPendingSceneId);
+      if (matched) return matched.id;
+    }
+    return undefined;
+  }, [initialPromptParam, nextPendingSceneId]);
 
   const handleMoodChange = useCallback(
     (mood: StoryMoodTag) => {
@@ -400,8 +429,13 @@ export default function FiresideStudioClient() {
           </div>
         )}
 
-        {/* Intro Subhead */}
+        {/* Intro Subhead & Real-Time Vault Progress Indicator */}
         <div className="text-center max-w-md">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold mb-3 shadow-sm">
+            <span>🌟 Vault Progress: {completedScenes} of {totalScenes} Stories Woven</span>
+            <span className="text-stone-500">•</span>
+            <span>{vaultProgressPercent}%</span>
+          </div>
           <p className="text-xs uppercase tracking-widest text-amber-400/80 font-medium mb-1">
             Armchair Storytelling Surface
           </p>
@@ -426,18 +460,36 @@ export default function FiresideStudioClient() {
         <div className="w-full">
           <SingleCardPromptCarousel
             prompts={FIRESIDE_PROMPT_SPARKS}
-            initialPromptId={initialPromptParam}
+            initialPromptId={autoSparkId}
             activeLanguage={activeLanguage}
             mediaMode={mediaMode}
-            onSelectPrompt={handleSelectPrompt}
-            onActivePromptChange={setActivePromptSpark}
+            onSelectPrompt={(spark, lang) => {
+              setForceRecordMode(false);
+              handleSelectPrompt(spark, lang);
+            }}
+            onActivePromptChange={(spark) => {
+              setForceRecordMode(false);
+              setActivePromptSpark(spark);
+            }}
             onLanguageChange={handleLanguageChange}
             onPhotoPromptClick={handlePhotoPromptClick}
           />
         </div>
 
-        {/* Conditional Media Surface */}
-        {mediaMode === 'video' ? (
+        {/* Conditional Media Surface: Completed Reel Card vs Active Recorders */}
+        {isCompleted ? (
+          <div className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+            <FiresideCompletedReelCard
+              sceneId={effectiveSceneId}
+              sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
+              sceneMemory={activeSceneMemory}
+              activeLanguage={activeLanguage}
+              onWatchTheatricalReel={() => setIsLightboxOpen(true)}
+              onAddBonusNote={() => setIsBonusDrawerOpen(true)}
+              onReRecordRequest={() => setForceRecordMode(true)}
+            />
+          </div>
+        ) : mediaMode === 'video' ? (
           /* Video Memo Recording Surface */
           <div className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
             <div className="text-center mb-4">
@@ -510,6 +562,42 @@ export default function FiresideStudioClient() {
           </div>
         )}
       </main>
+
+      {/* 2.39:1 Cinema Master Reel Lightbox Player (Ticket #259) */}
+      <FiresideCinemaLightbox
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
+        mediaUrl={
+          preferredTake?.mediaUrl ||
+          (mediaMode === 'video' && recordedVideoBlob
+            ? URL.createObjectURL(recordedVideoBlob)
+            : recordedAudioBlob
+            ? URL.createObjectURL(recordedAudioBlob)
+            : null)
+        }
+        mediaMode={preferredTake?.mediaMode || mediaMode}
+        photos={
+          activeSceneMemory?.photos && activeSceneMemory.photos.length > 0
+            ? activeSceneMemory.photos
+            : photos
+        }
+        durationSeconds={preferredTake?.durationSeconds || recordedVideoDuration || recordedAudioDuration}
+        moodTag={activeMood}
+      />
+
+      {/* Additive Bonus Memory Recollection Drawer (Ticket #259) */}
+      <BonusMemoryDrawer
+        isOpen={isBonusDrawerOpen}
+        onClose={() => setIsBonusDrawerOpen(false)}
+        sceneId={effectiveSceneId}
+        sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
+        onSaveBonusNote={async (note) => {
+          await addBonusMemoryNote(effectiveSceneId, note);
+          setNotification('Bonus recollection secured in vault!');
+          setTimeout(() => setNotification(null), 3000);
+        }}
+      />
 
       {/* Subtle Footer */}
       <footer className="w-full py-4 border-t border-stone-900 text-center text-[11px] text-stone-500 flex items-center justify-center gap-1.5">
