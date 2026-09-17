@@ -1010,3 +1010,51 @@ The Fireside armchair storytelling interface (`/studio/fireside`) was crafted to
 - Any proposal to omit, delay, or simplify a feature on `/studio/fireside` based on the rationale that "it is just a mobile screen" is **STRICTLY PROHIBITED**.
 - If a technical or physical constraint (e.g. single-track mobile hardware audio routing or screen width limitations) prevents literal 1:1 UI replication, the agent MUST engineer an equivalent or superior armchair-optimised capability rather than dropping the feature.
 - Any architectural divergence between Desktop and Fireside capabilities MUST be explicitly presented to the user and team with full technical trade-off documentation before proceeding.
+
+# 40. Standard Operating Protocol for Future Change Requests (The 4-Stage Dual-Surface Lifecycle)
+
+When requesting or executing any future change, enhancement, or new feature in Memory Weaver, the team and agents MUST strictly adhere to this unbroken 4-stage operational lifecycle:
+
+## Stage 1: INGESTION (Chat 0 / Mission Control)
+- **User Intent & Problem Formulation**: Clearly articulate the user-facing capability, creative motivation, and narrator benefit (e.g. *"I want narrators to be able to tag the emotional mood of a story — Joyful, Reflective, Nostalgic"*).
+- **Constitutional Guardrail Review**: Verify that the requested capability complies with:
+  - **Rule 7 (Universal Non-Degradation)**: Zero silent removal or degradation of existing capabilities.
+  - **Rule 20 (Mandatory British English)**: All user-facing labels must strictly follow British orthography (*synchronisation*, *theatrical*, *colour*, *programme*, *centre*).
+  - **Rule 38 (Dual-Surface Ingress)**: Respect device pointer profiles (handheld touch vs mechanical desktop).
+  - **Rule 39 (The Armchair Powerhouse Rule)**: Full functional parity between surfaces; mobile is never a stripped-down afterthought.
+
+## Stage 2: DUAL-SURFACE ARCHITECTURE (Chat 1 [Use Planning])
+- **Shared Schema & Type Architecture**:
+  - Define the unified TypeScript data contract in `src/types/` (e.g. `src/types/curriculum.ts`, `src/types/fireside.ts`).
+  - Define Firestore document persistence mappings (e.g. `/users/{uid}/memoirs/{memoirId}/scenes/{sceneId}`).
+- **Definitions for the Dual Ergonomic Expression**:
+  The architect must explicitly formulate and contrast the tailored UI/UX ergonomics for each surface:
+  1. **On Desktop (`/studio` Acts I–IV)**:
+     - Formulated for large landscape monitors, multi-window workflows, and mouse/keyboard precision.
+     - *Example Expression*: An obsidian dropdown selector in the Act I Scriptorium bottom action toolbar and Act III Director's Notepad header, with subtle hover states, tooltips, and keyboard access.
+  2. **On Mobile (`/studio/fireside`)**:
+     - Formulated for elders reclining in armchairs, holding smartphones, tablets, or foldables.
+     - *Example Expression*: Three oversized $\ge 56\text{px}$ glowing amber chips positioned directly above the $88\text{px}$ central tactile record trigger, featuring $25\text{ms}$ mobile haptic pulses, warm halos, and bottom-sheet drawers.
+- **Unified Bi-Directional State Hook**:
+  - Wire both expressions into the shared hook (`useCurriculumVault.ts` or equivalent) to ensure real-time Firestore synchronization between desktop and armchair mobile.
+
+## Stage 3: EXECUTION & VERIFICATION (Chat 2 [Use Fast])
+- **Parallel Component Implementation**:
+  - Implement or update the UI controls on both surfaces according to their respective ergonomic definitions.
+  - Apply canonical `data-hotspot-id` attributes to all new interactive controls for the Hotspot Overlay (`Ctrl+H`).
+  - Wire non-invasive journey telemetry (`useJourneyLogger`) capturing interaction vectors with micro-build Git SHA tracing (Rule 6, Rule 8).
+- **Mandatory Automated Invariant Tests (Rule 9)**:
+  - Write dedicated Vitest invariant unit tests (e.g. in `src/test/curriculum_vault.test.ts`).
+  - **The Bi-Directional Invariant Gate**: The test suite MUST explicitly assert that a selection, tag, or take recorded on mobile (`/studio/fireside`) is faithfully returned when queried on desktop (`/studio`), and vice versa.
+  - Run `node ./node_modules/vitest/vitest.mjs run <test-file>` and ensure 100% test pass rate before proceeding.
+
+## Stage 4: PRE-PUSH BUILD GATE & AUTONOMOUS ROLLOUT (Chat 2 / Primary Agent)
+- **Local Production Build Gate**:
+  - Execute `npm.cmd run build` locally. Confirm all 45+ routes compile cleanly to exit code 0.
+- **Unbroken Autonomous Push & Verification (Rule 5)**:
+  - Autonomously stage (`git add`), commit (`git commit`), and push (`git push origin dev`).
+  - Set calibrated poll timer (4.5 to 5 minutes) and programmatically probe `https://dev.memoryweaver.studio/api/version`.
+- **Interactive QA Handoff (Rule 30)**:
+  - Automatically update `qa_checklist_interactive.html` with dedicated test cards, fully qualified URLs, screenshot dropzones, and telemetry vector ingestion boxes.
+  - Synchronise Plane.so backlog tickets via `scripts/plane.js` (Rule 15).
+
