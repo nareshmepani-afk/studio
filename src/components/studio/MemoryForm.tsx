@@ -62,7 +62,8 @@ const SEED_CATALOG: Record<string, string[]> = {
   ]
 };
 
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+import { MONTHS, formatMonthShort } from '@/utils/dateFormatter';
+export { formatMonthShort };
 const DAYS = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 const YEARS = Array.from({ length: 150 }, (_, i) => (2026 - i).toString());
 
@@ -146,7 +147,11 @@ const StudioSelect = ({
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const selectedItem = items.find(i => i.value === value);
+  const selectedItem = items.find(i => 
+    i.value === value || 
+    i.label.toLowerCase() === value?.toLowerCase() ||
+    (typeof value === 'string' && value.length >= 3 && i.label.toLowerCase() === value.substring(0, 3).toLowerCase())
+  );
 
   return (
     <div className="relative" ref={containerRef}>
@@ -2317,9 +2322,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         </div>
                         <div className="flex items-center gap-2">
                            <Calendar className="w-3 h-3 text-amber-400/50" />
-                           <span className="text-[9px] font-black uppercase tracking-widest text-white/80">
-                             {day !== 'none' ? day : ''} {month !== 'none' ? MONTHS[parseInt(month)-1].substring(0,3) : ''} {year !== 'none' ? year : 'UNDATED'}
-                           </span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-white/80">
+                              {day !== 'none' && day ? day : ''} {formatMonthShort(month)} {year !== 'none' && year ? year : 'UNDATED'}
+                            </span>
                         </div>
                     </div>
                   </div>
