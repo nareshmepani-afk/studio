@@ -172,4 +172,45 @@ describe('Act I Validation Shield (Unit & Boundary Tests)', () => {
       expect(isActAvailable(2, completeMemory)).toBe(true);
     });
   });
+
+  describe('Act I Validity Change Stability & Bailout Shield', () => {
+    it('bails out and preserves previous state reference when validity and missing array match', () => {
+      const stateUpdater = (
+        prev: { isValid: boolean; missing: string[] } | null,
+        isValid: boolean,
+        missing: string[]
+      ) => {
+        if (
+          prev &&
+          prev.isValid === isValid &&
+          prev.missing.length === missing.length &&
+          prev.missing.every((m, idx) => m === missing[idx])
+        ) {
+          return prev; // Bail out! Same reference prevents React re-render cascade.
+        }
+        return { isValid, missing };
+      };
+
+      const initial = stateUpdater(null, false, ['Theatrical Title', 'City / Venue']);
+      expect(initial).toEqual({ isValid: false, missing: ['Theatrical Title', 'City / Venue'] });
+
+      // Second dispatch with identical values must return exact same reference
+      const nextSame = stateUpdater(initial, false, ['Theatrical Title', 'City / Venue']);
+      expect(nextSame).toBe(initial);
+
+      // Dispatch with changed missing items must return new reference
+      const nextChanged = stateUpdater(initial, false, ['Theatrical Title']);
+      expect(nextChanged).not.toBe(initial);
+      expect(nextChanged.missing).toEqual(['Theatrical Title']);
+
+      // Dispatch with valid state must return new reference
+      const nextValid = stateUpdater(nextChanged, true, []);
+      expect(nextValid.isValid).toBe(true);
+      expect(nextValid).not.toBe(nextChanged);
+
+      // Re-dispatch valid state must return same reference
+      const nextValidSame = stateUpdater(nextValid, true, []);
+      expect(nextValidSame).toBe(nextValid);
+    });
+  });
 });

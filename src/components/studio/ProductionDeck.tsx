@@ -348,6 +348,19 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const [highlightClarity, setHighlightClarity] = useState(false);
     const [isSavingNext, setIsSavingNext] = useState(false);
     const [act1LiveValidity, setAct1LiveValidity] = useState<{ isValid: boolean; missing: string[] } | null>(null);
+    const handleValidityChange = useCallback((isValid: boolean, missing: string[]) => {
+        setAct1LiveValidity(prev => {
+            if (
+                prev &&
+                prev.isValid === isValid &&
+                prev.missing.length === missing.length &&
+                prev.missing.every((m, idx) => m === missing[idx])
+            ) {
+                return prev;
+            }
+            return { isValid, missing };
+        });
+    }, []);
     const formRef = useRef<any>(null);
     const synthesisAbortRef = useRef<boolean>(false);
     const [lobbyConfirmed, setLobbyConfirmed] = useState<boolean>(false);
@@ -750,7 +763,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         isUntouched={isUntouched}
                         onActivity={resetIdleTimer}
                         onClearBackup={checkUnsavedTake}
-                        onValidityChange={(isValid, missing) => setAct1LiveValidity({ isValid, missing })}
+                        onValidityChange={handleValidityChange}
                         onSelectRoom={(room) => {
                             setLobbyConfirmed(true);
                             setActiveRoom(room);

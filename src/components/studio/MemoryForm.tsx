@@ -487,6 +487,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     isSaving: isCloudSaving
   }));
 
+  const onValidityChangeRef = useRef(onValidityChange);
+  useEffect(() => {
+    onValidityChangeRef.current = onValidityChange;
+  });
+
   // Validation Shield: Report Act I live validity to parent
   useEffect(() => {
     const result = validateAct1RequiredFields({
@@ -497,8 +502,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       prose,
       description
     });
-    onValidityChange?.(result.isValid, result.missing);
-  }, [title, location, country, year, prose, description, data?.dateComponents?.year, data?.year, onValidityChange]);
+    onValidityChangeRef.current?.(result.isValid, result.missing);
+  }, [title, location, country, year, prose, description, data?.dateComponents?.year, data?.year]);
 
   const lastPropsId = useRef(data?.id || data?.promptId);
   const lastPromptId = useRef(data?.promptId);
