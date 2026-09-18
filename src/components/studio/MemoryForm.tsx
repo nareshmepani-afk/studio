@@ -8,7 +8,7 @@ import {
   Save, Rocket, AlertCircle, Loader2, Edit3, ChevronRight, ChevronDown, Maximize2, 
   Trash2, Plus, Minus, Info, Layout, Layers, Wand2, Music, Wind, Coffee, Zap,
   FileText, ImageIcon, Video, Share2, MoreHorizontal, Square, History, UserCircle,
-  RotateCcw, Lock, Eye
+  RotateCcw, Lock, Eye, Film
 } from 'lucide-react';
 import { Memory, SensoryPromptTemplate, ActionResponse, CatalystType, StructuredScript } from '@/types';
 import { useDictionary } from '@/hooks/use-dictionary';
@@ -43,7 +43,9 @@ const SEED_CATALOG: Record<string, string[]> = {
   'p1': [
     "The kitchen was always thick with the aroma of my mother's cooking...",
     "We sat at the dinner table, the air filled with the familiar sounds of our language...",
-    "I ran my fingers over the family heirloom, feeling its unique texture..."
+    "The wooden floorboards creaked underfoot as I walked into the old family house...",
+    "Sunlight streamed through the window, catching the dancing dust motes...",
+    "The cold winter wind rattled the glass, but inside the hearth burned bright..."
   ],
   'p2': [
     "The smell of the living room was a mixture of old carpet and wood polish...",
@@ -69,10 +71,10 @@ const YEARS = Array.from({ length: 150 }, (_, i) => (2026 - i).toString());
 
 export const ACT_TITLES = [
   "Act I: The Inciting Memory",
-  "Act II: The Deep Weave",
-  "Act III: The Sensory Capture",
-  "Act IV: The Final Cut",
-  "Act V: The Premiere"
+  "Act II: The Weave",
+  "Act III: Capture",
+  "Act IV: The Cut",
+  "Act V: Premiere"
 ];
 
 
@@ -1093,7 +1095,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     <LayoutGroup>
       <div className="w-full relative">
         {/* --- PERSISTENT PRODUCTION HEADER --- */}
-        {modality !== null && (
+        {productionStage === 0 && modality !== null && (
           <div className="mb-12 flex items-center justify-between max-w-[95vw] xl:max-w-screen-2xl mx-auto">
             <div className="flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
               <div className="w-8 h-px bg-emerald-500/30" />
@@ -2303,9 +2305,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 {/* Pinned Metadata Header */}
                 <div className="mb-12">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
-                      <div className="w-8 h-px bg-emerald-500/30" />
-                      Act II: The Narrative Build
+                    <div className="flex items-center gap-2.5 text-white/60 font-mono text-[10px] uppercase tracking-widest truncate max-w-md">
+                      <Film className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
+                      <span className="truncate">{title || (data as any)?.title || 'Original Memory'}</span>
                     </div>
                     
                     {/* Compact Slate for Act II */}
@@ -2583,11 +2585,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 className="w-full max-w-4xl mx-auto space-y-8 pb-8 pt-2"
               >
                 <div className="text-center space-y-4 mb-12">
-                    <div className="inline-flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
-                      <div className="w-8 h-px bg-emerald-500/30" />
-                      Act III: Sensory Deepening
-                      <div className="w-8 h-px bg-emerald-500/30" />
-                    </div>
+                    <p className="text-[10px] font-mono font-bold text-white/40 uppercase tracking-[0.4em]">
+                      Anchor your memory with sensory textures and sounds
+                    </p>
                     <h2 className="text-6xl font-serif text-white/90 italic">Atmospheric Details</h2>
                 </div>
 
@@ -2677,10 +2677,6 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
               >
                 <div className="flex-1 space-y-12 max-w-xl">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
-                      <div className="w-8 h-px bg-emerald-500/30" />
-                      Act IV: The Final Cut
-                    </div>
                     <h2 className="text-6xl font-serif text-white/90 italic leading-tight">Prepare for the Premiere</h2>
                     <p className="text-white/40 text-lg leading-relaxed font-serif italic">Your memory has been woven. The credits are set. All that remains is to release it to the world's collective soul.</p>
                   </div>

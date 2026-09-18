@@ -3032,6 +3032,39 @@ describe('🔒 Global Forbidden-Pattern Anti-Regression Scanner', () => {
       ).toBe(false);
     }
   });
+
+  describe('Header Hierarchy Pruning & Deduplication (MW-267)', () => {
+    it('ANTI-REGRESSION: MemoryForm does not contain redundant sub-headers', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const memoryFormPath = path.resolve(process.cwd(), 'src/components/studio/MemoryForm.tsx');
+      const content = fs.readFileSync(memoryFormPath, 'utf-8');
+
+      expect(content).not.toContain('Act II: The Narrative Build');
+      expect(content).not.toContain('Act III: Sensory Deepening');
+      expect(content).not.toContain('Act IV: The Final Cut');
+    });
+
+    it('ANTI-REGRESSION: MemoryForm persistent header is scoped to Act I (productionStage === 0)', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const memoryFormPath = path.resolve(process.cwd(), 'src/components/studio/MemoryForm.tsx');
+      const content = fs.readFileSync(memoryFormPath, 'utf-8');
+
+      expect(content).toContain('productionStage === 0 && modality !== null');
+    });
+
+    it('ANTI-REGRESSION: SelectionDeck uses The Sensory Weave title and authentic voice subtitle', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const selectionDeckPath = path.resolve(process.cwd(), 'src/components/studio/Scriptorium/Ceremony/SelectionDeck.tsx');
+      const content = fs.readFileSync(selectionDeckPath, 'utf-8');
+
+      expect(content).toContain('const headerTitle = isActII ? "The Sensory Weave" : "Director\'s Cut";');
+      expect(content).toContain('Select the interpretation that captures your authentic voice');
+      expect(content).not.toContain('const headerTitle = isActII ? "The Deep Weave"');
+    });
+  });
 });
 
 

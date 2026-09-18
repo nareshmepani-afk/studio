@@ -162,10 +162,10 @@ export const SelectionDeck = ({
   const activeTakeText = selectedTake || selectedText;
 
   const isActII = currentStage === 1;
-  const headerTitle = isActII ? "The Deep Weave" : "Director's Cut";
+  const headerTitle = isActII ? "The Sensory Weave" : "Director's Cut";
   const countWord = drafts?.length ? (drafts.length === 5 ? 'five' : drafts.length) : 'five';
   const headerSubtitle = isActII 
-    ? `The AI Weaver has synthesised ${countWord} sensory interpretations of your script` 
+    ? "Select the interpretation that captures your authentic voice" 
     : `The Director has prepared ${countWord} narrative interpretations of your memory`;
   const temporalNoteLabel = isActII 
     ? "Director's Sensory Note" 
