@@ -246,6 +246,15 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         
         if (template) {
           cp = { ...template, memory: matchedMemory };
+        } else {
+          // Robust Fallback: Synthesize prompt template wrapper for custom/freestyle memories
+          cp = {
+            id: matchedMemory.promptId || matchedMemory.id,
+            title: matchedMemory.title || 'Untitled Memory',
+            description: matchedMemory.description || '',
+            category: (matchedMemory as any).category || 'personal',
+            memory: matchedMemory
+          } as any;
         }
       }
     }
