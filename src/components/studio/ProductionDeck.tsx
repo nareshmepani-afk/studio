@@ -20,7 +20,7 @@ import { StudioLobby } from './StudioLobby';
 const CollaborativeStage = dynamic(() => import('./CollaborativeStage'), { ssr: false });
 import { InstrumentSelection } from './InstrumentSelection';
 import { ProductionRail, PRODUCTION_ACTS } from './ProductionRail';
-import { resolveMemoryMilestones } from '@/lib/curriculum/milestoneTruth';
+import { resolveMemoryMilestones, isActMilestoneCompleted } from '@/lib/curriculum/milestoneTruth';
 import { cn } from '@/lib/utils';
 import { ResizableDivider } from './ResizableDivider';
 import { ProductionControlBar } from './ProductionControlBar';
@@ -1136,14 +1136,48 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                       className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
                                   >
                                       <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
-                                      <span className="text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold">
-                                          {currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
-                                           currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
-                                           currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
-                                           currentStage === 3 ? `${groupTitle} — ACT IV: THE CUT` :
-                                           currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
-                                           `${groupTitle} — ACT ${currentStage + 1}`}
-                                      </span>
+                                       {(() => {
+                                           const actTitle =
+                                               currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
+                                               currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
+                                               currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
+                                               currentStage === 3 ? `${groupTitle} — ACT IV: THE CUT` :
+                                               currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
+                                               `${groupTitle} — ACT ${currentStage + 1}`;
+
+                                           const milestones = resolveMemoryMilestones(memoryData);
+                                           const isActCompleted = isActMilestoneCompleted(currentStage, milestones);
+
+                                           const isAct5 = currentStage === 4;
+                                           const isMasteredReel = isAct5 && milestones.hasRecordedMedia;
+                                           const isPublished = isAct5 && milestones.isPublished;
+
+                                           const badgeLabel = isPublished
+                                               ? '✓ Completed'
+                                               : isMasteredReel
+                                               ? '🌟 Mastered'
+                                               : isActCompleted
+                                               ? '✓ Completed'
+                                               : '⏳ Pending';
+
+                                           const isPositiveStatus = isPublished || isMasteredReel || isActCompleted;
+
+                                           return (
+                                               <span className="inline-flex items-center flex-wrap gap-2 text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold">
+                                                   <span>{actTitle}</span>
+                                                   <span
+                                                       className={cn(
+                                                           "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wide border shadow-sm transition-all",
+                                                           isPositiveStatus
+                                                               ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                                               : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                                                       )}
+                                                   >
+                                                       {badgeLabel}
+                                                   </span>
+                                               </span>
+                                           );
+                                       })()}
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="bottom" className="bg-slate-900 border border-emerald-500/30 text-emerald-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">

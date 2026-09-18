@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { ScopeToggleGroup } from '@/components/studio/ScopeToggleGroup';
 import { ScriptLightBox } from '@/components/studio/Scriptorium/Ceremony/ScriptLightBox';
 import { generateAutobiographyHtml, downloadFusedAutobiography } from '@/utils/autobiographyExporter';
+import { resolveMemoryMilestones, isActMilestoneCompleted } from '@/lib/curriculum/milestoneTruth';
 
 vi.mock('framer-motion', () => {
   const cleanProps = ({
@@ -972,6 +973,69 @@ describe('Studio Regression Tests', () => {
       expect(containerClass).toContain("flex-col");
       expect(notepadClass).toContain("w-full");
       expect(notepadClass).toContain("flex-1");
+    });
+
+    it('MW-267: Theatrical Header Act Status Suffix renders truthful glass pill badges', () => {
+      const resolveHeaderPill = (stage: number, memory: any) => {
+        const milestones = resolveMemoryMilestones(memory);
+        const isActCompleted = isActMilestoneCompleted(stage, milestones);
+        const isAct5 = stage === 4;
+        const isMasteredReel = isAct5 && milestones.hasRecordedMedia;
+        const isPublished = isAct5 && milestones.isPublished;
+
+        const badgeLabel = isPublished
+            ? '✓ Completed'
+            : isMasteredReel
+            ? '🌟 Mastered'
+            : isActCompleted
+            ? '✓ Completed'
+            : '⏳ Pending';
+
+        const isPositiveStatus = isPublished || isMasteredReel || isActCompleted;
+        return { badgeLabel, isPositiveStatus };
+      };
+
+      // Test Case 1: Unrecorded draft memory (tech_scout_draft_test)
+      const draftMemory = {
+        id: 'tech_scout_draft_test',
+        prose: 'A Sunday morning in Nairobi where rain drummed on tin roofs and chai warmed our hands.',
+        status: 'draft',
+      };
+
+      // Act I: Prose exists -> Completed
+      expect(resolveHeaderPill(0, draftMemory)).toEqual({ badgeLabel: '✓ Completed', isPositiveStatus: true });
+      // Act II: No weave -> Pending
+      expect(resolveHeaderPill(1, draftMemory)).toEqual({ badgeLabel: '⏳ Pending', isPositiveStatus: false });
+      // Act III: No recording -> Pending
+      expect(resolveHeaderPill(2, draftMemory)).toEqual({ badgeLabel: '⏳ Pending', isPositiveStatus: false });
+      // Act IV: No cut -> Pending
+      expect(resolveHeaderPill(3, draftMemory)).toEqual({ badgeLabel: '⏳ Pending', isPositiveStatus: false });
+      // Act V: No recording/published -> Pending
+      expect(resolveHeaderPill(4, draftMemory)).toEqual({ badgeLabel: '⏳ Pending', isPositiveStatus: false });
+
+      // Test Case 2: Mastered memory with authentic recorded reel (ey96djU6qR1BrDGnvZwp)
+      const masteredMemory = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        prose: 'A Sunday morning in Nairobi where rain drummed on tin roofs and chai warmed our hands.',
+        videoStory: 'A cinematic treatment of our family kitchen in 1964.',
+        videoUrl: 'https://firebasestorage.googleapis.com/.../final.webm',
+        status: 'pre-release',
+      };
+
+      // Acts I-IV: All authentically complete
+      expect(resolveHeaderPill(0, masteredMemory)).toEqual({ badgeLabel: '✓ Completed', isPositiveStatus: true });
+      expect(resolveHeaderPill(1, masteredMemory)).toEqual({ badgeLabel: '✓ Completed', isPositiveStatus: true });
+      expect(resolveHeaderPill(2, masteredMemory)).toEqual({ badgeLabel: '✓ Completed', isPositiveStatus: true });
+      expect(resolveHeaderPill(3, masteredMemory)).toEqual({ badgeLabel: '✓ Completed', isPositiveStatus: true });
+      // Act V: Reel exists in pre-release -> 🌟 Mastered
+      expect(resolveHeaderPill(4, masteredMemory)).toEqual({ badgeLabel: '🌟 Mastered', isPositiveStatus: true });
+
+      // Test Case 3: Fully published memory
+      const publishedMemory = {
+        ...masteredMemory,
+        status: 'published',
+      };
+      expect(resolveHeaderPill(4, publishedMemory)).toEqual({ badgeLabel: '✓ Completed', isPositiveStatus: true });
     });
 
     it('MW-138 ACT III CAPTURE: should define tooltips for NEXT, LINT, and BACK interview controls', () => {
