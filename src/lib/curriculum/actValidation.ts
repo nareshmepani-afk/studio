@@ -81,3 +81,51 @@ export function validateAct1RequiredFields(fields: Act1Fields): ActValidationRes
 export function isAct1Complete(fields: Act1Fields): boolean {
   return validateAct1RequiredFields(fields).isValid;
 }
+
+/**
+ * Smoothly scrolls the viewport to the first incomplete catalyst element
+ * and applies a focused ambient pulse ring to guide the narrator.
+ */
+export function scrollToFirstMissingCatalyst(missing?: string[]): void {
+  if (typeof window === 'undefined' || !missing || missing.length === 0) return;
+
+  const first = missing[0];
+  let targetId = '';
+
+  if (first.includes('Title')) {
+    targetId = 'catalyst-title';
+  } else if (first.includes('City') || first.includes('Venue')) {
+    targetId = 'catalyst-location';
+  } else if (first.includes('Country') || first.includes('Region')) {
+    targetId = 'catalyst-country';
+  } else if (first.includes('Time') || first.includes('Year')) {
+    targetId = 'catalyst-year';
+  } else if (first.includes('Story Hook') || first.includes('Hook')) {
+    targetId = 'catalyst-hook';
+  }
+
+  if (!targetId) return;
+
+  const el = document.getElementById(targetId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Focus if element is focusable
+    if ('focus' in el && typeof (el as HTMLElement).focus === 'function') {
+      setTimeout(() => {
+        try {
+          (el as HTMLElement).focus({ preventScroll: true });
+        } catch {
+          // Ignore focus failures on non-inputs
+        }
+      }, 350);
+    }
+
+    // Apply temporary ambient pulse ring
+    el.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-slate-950', 'transition-all');
+    setTimeout(() => {
+      el.classList.remove('ring-2', 'ring-amber-400', 'ring-offset-2', 'ring-offset-slate-950');
+    }, 2200);
+  }
+}
+

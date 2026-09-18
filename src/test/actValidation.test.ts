@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { validateAct1RequiredFields, isAct1Complete } from '@/lib/curriculum/actValidation';
+import { describe, it, expect, vi } from 'vitest';
+import { validateAct1RequiredFields, isAct1Complete, scrollToFirstMissingCatalyst } from '@/lib/curriculum/actValidation';
 
 describe('Act I Validation Shield (Unit & Boundary Tests)', () => {
   const completeValidFields = {
@@ -211,6 +211,82 @@ describe('Act I Validation Shield (Unit & Boundary Tests)', () => {
       // Re-dispatch valid state must return same reference
       const nextValidSame = stateUpdater(nextValid, true, []);
       expect(nextValidSame).toBe(nextValid);
+    });
+  });
+
+  describe('Auto-Scroll to Missing Catalyst Affordance', () => {
+    it('gracefully handles missing or empty arrays', () => {
+      expect(() => scrollToFirstMissingCatalyst(undefined)).not.toThrow();
+      expect(() => scrollToFirstMissingCatalyst([])).not.toThrow();
+    });
+
+    it('locates catalyst-location and triggers scrollIntoView and focus for City / Venue', () => {
+      const mockElement = {
+        scrollIntoView: vi.fn(),
+        focus: vi.fn(),
+        classList: {
+          add: vi.fn(),
+          remove: vi.fn()
+        }
+      };
+
+      const getElementByIdSpy = vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as any);
+
+      scrollToFirstMissingCatalyst(['City / Venue', 'Country / Region']);
+
+      expect(getElementByIdSpy).toHaveBeenCalledWith('catalyst-location');
+      expect(mockElement.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+      expect(mockElement.classList.add).toHaveBeenCalledWith(
+        'ring-2',
+        'ring-amber-400',
+        'ring-offset-2',
+        'ring-offset-slate-950',
+        'transition-all'
+      );
+
+      getElementByIdSpy.mockRestore();
+    });
+
+    it('locates catalyst-title when Theatrical Title is missing', () => {
+      const mockElement = {
+        scrollIntoView: vi.fn(),
+        focus: vi.fn(),
+        classList: { add: vi.fn(), remove: vi.fn() }
+      };
+      const getElementByIdSpy = vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as any);
+
+      scrollToFirstMissingCatalyst(['Theatrical Title']);
+      expect(getElementByIdSpy).toHaveBeenCalledWith('catalyst-title');
+
+      getElementByIdSpy.mockRestore();
+    });
+
+    it('locates catalyst-year when Time / Year Anchor is missing', () => {
+      const mockElement = {
+        scrollIntoView: vi.fn(),
+        focus: vi.fn(),
+        classList: { add: vi.fn(), remove: vi.fn() }
+      };
+      const getElementByIdSpy = vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as any);
+
+      scrollToFirstMissingCatalyst(['Time / Year Anchor']);
+      expect(getElementByIdSpy).toHaveBeenCalledWith('catalyst-year');
+
+      getElementByIdSpy.mockRestore();
+    });
+
+    it('locates catalyst-hook when Story Hook is missing', () => {
+      const mockElement = {
+        scrollIntoView: vi.fn(),
+        focus: vi.fn(),
+        classList: { add: vi.fn(), remove: vi.fn() }
+      };
+      const getElementByIdSpy = vi.spyOn(document, 'getElementById').mockReturnValue(mockElement as any);
+
+      scrollToFirstMissingCatalyst(['Story Hook (minimum 10 characters)']);
+      expect(getElementByIdSpy).toHaveBeenCalledWith('catalyst-hook');
+
+      getElementByIdSpy.mockRestore();
     });
   });
 });

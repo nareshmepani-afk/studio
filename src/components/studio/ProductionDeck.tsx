@@ -21,7 +21,7 @@ const CollaborativeStage = dynamic(() => import('./CollaborativeStage'), { ssr: 
 import { InstrumentSelection } from './InstrumentSelection';
 import { ProductionRail, PRODUCTION_ACTS } from './ProductionRail';
 import { resolveMemoryMilestones, isActMilestoneCompleted } from '@/lib/curriculum/milestoneTruth';
-import { validateAct1RequiredFields, isAct1Complete } from '@/lib/curriculum/actValidation';
+import { validateAct1RequiredFields, isAct1Complete, scrollToFirstMissingCatalyst } from '@/lib/curriculum/actValidation';
 import { cn } from '@/lib/utils';
 import { ResizableDivider } from './ResizableDivider';
 import { ProductionControlBar } from './ProductionControlBar';
@@ -810,7 +810,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if (!act1Check.isValid) {
                 console.warn("[ProductionDeck] Act I progression blocked: Missing required fields:", act1Check.missing);
                 toast.error("CATALYSTS REQUIRED", {
-                    description: `Please complete required stage items: ${act1Check.missing.join(", ")}`
+                    description: `Please complete required stage items: ${act1Check.missing.join(", ")}`,
+                    action: {
+                        label: "Take Me There ↗",
+                        onClick: () => scrollToFirstMissingCatalyst(act1Check.missing)
+                    },
+                    duration: 7000
                 });
                 return;
             }
@@ -1111,7 +1116,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if (!act1Check.isValid) {
                 console.warn("[ProductionDeck] Stage jump blocked: Missing required Act I fields:", act1Check.missing);
                 toast.error("CATALYSTS REQUIRED", {
-                    description: `Please complete required stage items: ${act1Check.missing.join(", ")}`
+                    description: `Please complete required stage items: ${act1Check.missing.join(", ")}`,
+                    action: {
+                        label: "Take Me There ↗",
+                        onClick: () => scrollToFirstMissingCatalyst(act1Check.missing)
+                    },
+                    duration: 7000
                 });
                 return;
             }

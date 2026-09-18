@@ -15,6 +15,7 @@ import {
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useAudioFeedback } from '@/hooks/studio/useAudioFeedback';
 import { toast } from 'sonner';
+import { scrollToFirstMissingCatalyst } from '@/lib/curriculum/actValidation';
 
 interface ProductionControlBarProps {
   currentStage: number;
@@ -197,7 +198,12 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
       const reqList = missingRequirements.length > 0 ? missingRequirements.join(', ') : "Mandatory requirements incomplete.";
       toast.error("CATALYSTS REQUIRED", {
         description: `Please complete required stage items: ${reqList}`,
-        icon: <AlertTriangle className="w-4 h-4 text-amber-400" />
+        icon: <AlertTriangle className="w-4 h-4 text-amber-400" />,
+        action: {
+          label: "Take Me There ↗",
+          onClick: () => scrollToFirstMissingCatalyst(missingRequirements)
+        },
+        duration: 7000
       });
       return;
     }

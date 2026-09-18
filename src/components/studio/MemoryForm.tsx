@@ -1403,6 +1403,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       </span>
                       <input 
                         type="text"
+                        id="catalyst-title"
                         value={title}
                         onChange={(e) => { setTitle(e.target.value); onActivity?.(); }}
                         onFocus={() => { setLastFocusedField('title'); onActivity?.(); }}
@@ -1472,6 +1473,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   <div className="flex flex-col">
                                     <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">City / Venue</span>
                                     <input 
+                                      id="catalyst-location"
                                       value={location}
                                       onChange={(e) => { setLocation(e.target.value); onActivity?.(); }}
                                       onFocus={() => setLastFocusedField('metadata')}
@@ -1502,6 +1504,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   <div className="flex flex-col">
                                     <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Country</span>
                                     <input 
+                                      id="catalyst-country"
                                       value={country}
                                       onChange={(e) => { setCountry(e.target.value); onActivity?.(); }}
                                       onFocus={() => setLastFocusedField('metadata')}
@@ -1564,7 +1567,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   />
                                 </div>
                                 <div className="w-px h-8 bg-white/5 mx-1" />
-                                <div className="flex flex-col">
+                                <div id="catalyst-year" className="flex flex-col">
                                   <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Year</span>
                                   <StudioSelect 
                                     value={year} 
@@ -1677,7 +1680,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       </div>
                     )}
 
-                    <div className="relative z-10 space-y-8">
+                    <div id="catalyst-hook" className="relative z-10 space-y-8">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="flex flex-col gap-1 relative">
