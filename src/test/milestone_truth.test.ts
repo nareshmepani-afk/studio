@@ -89,11 +89,25 @@ describe('Milestone Truth Resolver (Unit & Boundary Shield)', () => {
       expect(isActMilestoneCompleted(1, result)).toBe(true);
     });
 
-    it('resolves hasWeave: true when aiTakes contains a master or poetic draft', () => {
+    it('resolves hasWeave: false when only Act I draft prose exists without AI treatments or videoStory', () => {
       const result = resolveMemoryMilestones({
-        aiTakes: {
-          master: 'The auteur cinematic treatment of the memory.',
-        },
+        prose: 'An unrecorded draft memory used for validating the Truthful Milestone Pre-Flight experience.',
+        description: 'An unrecorded draft memory used for validating the Truthful Milestone Pre-Flight experience.',
+      });
+      expect(result.hasScript).toBe(true);
+      expect(result.hasWeave).toBe(false);
+      expect(isActMilestoneCompleted(1, result)).toBe(false);
+    });
+
+    it('resolves hasWeave: true when productionTakes contains generated script treatments', () => {
+      const result = resolveMemoryMilestones({
+        prose: 'Draft monologue prose.',
+        productionTakes: [
+          {
+            cleanScript: 'Polished first-person monologue with sensory depth.',
+            visionType: 'Poetic',
+          },
+        ] as any,
       });
       expect(result.hasWeave).toBe(true);
       expect(isActMilestoneCompleted(1, result)).toBe(true);
@@ -215,6 +229,32 @@ describe('Milestone Truth Resolver (Unit & Boundary Shield)', () => {
       expect(isActMilestoneCompleted(2, milestones)).toBe(false);
       expect(isActMilestoneCompleted(3, milestones)).toBe(false);
       expect(isActMilestoneCompleted(4, milestones)).toBe(false);
+    });
+
+    it('truthfully isolates tech_scout_draft_test so ONLY Act I is complete, while Acts II, III, IV, and V are incomplete', () => {
+      const draftStub: Partial<Memory> = {
+        id: 'tech_scout_draft_test',
+        title: 'The First Journey (Draft Pre-Flight)',
+        prose: 'An unrecorded draft memory used for validating the Truthful Milestone Pre-Flight experience.',
+        description: 'An unrecorded draft memory used for validating the Truthful Milestone Pre-Flight experience.',
+        originalHook: 'An unrecorded draft memory used for validating the Truthful Milestone Pre-Flight experience.',
+        status: 'draft',
+        productionStage: 0,
+      };
+
+      const milestones = resolveMemoryMilestones(draftStub);
+
+      expect(milestones.hasScript).toBe(true);         // Act I (✓)
+      expect(milestones.hasWeave).toBe(false);        // Act II (Pending)
+      expect(milestones.hasRecordedMedia).toBe(false); // Act III (Pending)
+      expect(milestones.hasCompletedCut).toBe(false);   // Act IV (Pending)
+      expect(milestones.isPublished).toBe(false);      // Act V (Pending)
+
+      expect(isActMilestoneCompleted(0, milestones)).toBe(true);  // Act I: ✓
+      expect(isActMilestoneCompleted(1, milestones)).toBe(false); // Act II: ⏳
+      expect(isActMilestoneCompleted(2, milestones)).toBe(false); // Act III: ⏳
+      expect(isActMilestoneCompleted(3, milestones)).toBe(false); // Act IV: ⏳
+      expect(isActMilestoneCompleted(4, milestones)).toBe(false); // Act V: ⏳
     });
   });
 });

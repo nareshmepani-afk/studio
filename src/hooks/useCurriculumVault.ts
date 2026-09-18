@@ -161,6 +161,12 @@ export function useCurriculumVault({
           const loadedScenes: Record<string, UnifiedCurriculumMemory> = {};
           snapshot.docs.forEach((docSnap) => {
             const data = docSnap.data() as any;
+
+            // ZERO-CONTAMINATION SHIELD: Strictly ignore flight simulator micro-onboarding memories
+            if (data.isFlightSimulator === true || data.sceneId === 'prologue-flight-simulator' || docSnap.id === 'first_flight_rehearsal') {
+              return;
+            }
+
             const rawIdentifier = data.sceneId || data.promptId || docSnap.id;
             const sceneDef = resolveSceneFromPromptId(rawIdentifier) || getSceneById(rawIdentifier);
             const canonicalSceneId = data.sceneId || sceneDef?.id || docSnap.id;

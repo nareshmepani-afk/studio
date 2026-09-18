@@ -5,7 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioData } from '@/hooks/studio/useStudioData';
 import { storyScripts } from '@/lib/storyScripts';
-import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ProductionDeck from './ProductionDeck';
 import { Loader2, Plus, AlertCircle } from 'lucide-react';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { resolveTemplateFixture, resolveTemplateFixtureAsync } from '@/utils/templateResolver';
+import { FIRST_FLIGHT_FIXTURE } from '@/lib/fixtures/firstFlightFixture';
 import { MobilePortalOverlay } from './overlays/MobilePortalOverlay';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
@@ -166,6 +167,17 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
             return;
           }
         }
+
+        // 4. FIRST FLIGHT SYNCHRONOUS FALLBACK:
+        // If promptId is 'first_flight_rehearsal' or 'prologue-flight-simulator', boot instantly from FIRST_FLIGHT_FIXTURE
+        if (active && (promptId === 'first_flight_rehearsal' || promptId === 'prologue-flight-simulator')) {
+          console.log(`[ProductionDeckContainer] Booting First Flight rehearsal from synchronous fixture...`);
+          setSelectedProductionData(FIRST_FLIGHT_FIXTURE);
+          setIsReady(true);
+          setIsNotFound(false);
+          lastLoadedId.current = promptId;
+          return;
+        }
       } catch (err) {
         console.warn("[ProductionDeckContainer] Direct document resolution warning:", err);
       }
@@ -257,6 +269,17 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           } as any;
         }
       }
+    }
+
+    // Robust Fallback: Synthesize prompt template wrapper for First Flight rehearsal
+    if (!cp && (promptId === 'first_flight_rehearsal' || promptId === 'prologue-flight-simulator')) {
+      cp = {
+        id: FIRST_FLIGHT_FIXTURE.id!,
+        title: FIRST_FLIGHT_FIXTURE.title!,
+        description: FIRST_FLIGHT_FIXTURE.description!,
+        category: 'personal',
+        memory: FIRST_FLIGHT_FIXTURE as any
+      } as any;
     }
 
     // If it is not a template ID, and we haven't resolved cp (the memory), we must wait for it to sync
@@ -438,7 +461,16 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
 
       // Only perform update if there is actually data to save (excluding ID)
       if (Object.keys(cleanData).length > 0) {
-        await updateDoc(doc(db, 'users', user.uid, 'memories', memoryId), cleanData);
+        if (memoryId === 'first_flight_rehearsal') {
+          await setDoc(doc(db, 'users', user.uid, 'memories', memoryId), {
+            ...cleanData,
+            isFlightSimulator: true,
+            sceneId: 'prologue-flight-simulator',
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        } else {
+          await updateDoc(doc(db, 'users', user.uid, 'memories', memoryId), cleanData);
+        }
       }
     } catch (e) {
       console.error("[ProductionDeckContainer] Auto-save error:", e);

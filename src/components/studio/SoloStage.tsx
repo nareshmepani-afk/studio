@@ -5377,7 +5377,7 @@ export default function SoloStage({
 
 
   const renderShowcase = () => (
-    <div className="max-w-[95vw] xl:max-w-screen-2xl mx-auto w-full pt-4 pb-8 space-y-12">
+    <div className="max-w-[95vw] xl:max-w-screen-2xl mx-auto w-full pt-4 pb-32 space-y-12">
        <motion.div 
          initial={{ opacity: 0, y: 30 }}
          animate={{ opacity: 1, y: 0 }}
@@ -5468,9 +5468,9 @@ export default function SoloStage({
             initial={{ scale: 0.9, opacity: 0, rotateY: 20 }}
             animate={{ scale: 1, opacity: 1, rotateY: 0 }}
             transition={{ delay: 0.4, duration: 1.2, ease: "easeOut" }}
-            className="relative group perspective-2000 shrink-0"
+            className="relative group perspective-2000 shrink-0 w-full max-w-[320px] mx-auto"
           >
-             <div className="absolute -inset-20 bg-sky-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
+             <div className="absolute -inset-20 bg-sky-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-1000 pointer-events-none" />
              <div className="relative z-10">
                 <CinemaPoster memory={{
                   ...data,

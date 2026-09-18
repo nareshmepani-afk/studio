@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Badge } from '@/components/ui/badge';
 import ProductionDeck from './ProductionDeck';
 import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
+import { FlightSimulatorCard } from './FlightSimulatorCard';
 import { stripScreenplayCues } from '@/lib/sanitizer';
 
 // Icons
@@ -236,6 +237,9 @@ export function StudioDashboard({
             </TooltipProvider>
           </div>
         </header>
+
+        {/* First Flight 60-Second Micro-Onboarding Banner */}
+        <FlightSimulatorCard />
 
         {/* Master Control Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-16" data-hotspot-id="HS_STUDIO_STATS_ROW">

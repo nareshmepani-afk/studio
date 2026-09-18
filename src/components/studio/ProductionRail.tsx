@@ -197,13 +197,15 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                               "relative z-10 w-12 h-12 rounded-2xl border flex items-center justify-center transition-all duration-500 shrink-0",
                               active 
                                 ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.4)]" 
-                                : available 
-                                  ? "bg-white/5 border-white/10 text-white/60 group-hover:border-emerald-500/50 group-hover:text-emerald-400" 
-                                  : "bg-black/40 border-white/5 text-white/10"
+                                : completed
+                                  ? "bg-emerald-950/60 border-emerald-500/60 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.25)]"
+                                  : available 
+                                    ? "bg-white/5 border-white/10 text-white/60 group-hover:border-emerald-500/50 group-hover:text-emerald-400" 
+                                    : "bg-black/40 border-white/5 text-white/10"
                             )}
                           >
                             {completed ? (
-                              <CheckCircle2 className="w-6 h-6" />
+                              <CheckCircle2 className={cn("w-6 h-6", active ? "text-slate-900" : "text-emerald-400")} />
                             ) : (
                               (() => {
                                 if (act.id === 0) {
@@ -222,12 +224,23 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                               animate={{ opacity: 1, x: 0 }}
                               className="flex flex-col pt-1 overflow-hidden"
                             >
-                              <span className={cn(
-                                "text-[10px] font-black uppercase tracking-widest leading-none mb-1 whitespace-nowrap",
-                                active ? "text-emerald-400" : "text-white/70"
-                              )}>
-                                {act.label}
-                              </span>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={cn(
+                                  "text-[10px] font-black uppercase tracking-widest leading-none whitespace-nowrap",
+                                  active ? "text-emerald-400" : completed ? "text-emerald-400/90" : "text-white/70"
+                                )}>
+                                  {act.label}
+                                </span>
+                                {completed ? (
+                                  <span className="text-[8px] font-mono font-bold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    ✓ COMPLETED
+                                  </span>
+                                ) : !active ? (
+                                  <span className="text-[8px] font-mono font-bold text-amber-400/90 bg-amber-950/50 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    PENDING
+                                  </span>
+                                ) : null}
+                              </div>
                               <span className={cn(
                                 "text-sm font-bold tracking-tight transition-colors whitespace-nowrap",
                                 active ? "text-white" : "text-white/90 group-hover:text-white"
@@ -251,9 +264,21 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                           )}
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent side="right" sideOffset={10} className="bg-slate-950 border-white/10 text-white p-3 rounded-xl shadow-2xl max-w-[200px] z-[1002]">
-                        <div className="space-y-1">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">{act.title}</span>
+                      <TooltipContent side="right" sideOffset={10} className="bg-slate-950 border-white/10 text-white p-3 rounded-xl shadow-2xl max-w-[220px] z-[1002]">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">{act.title}</span>
+                            <span className={cn(
+                              "text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider",
+                              completed
+                                ? "text-emerald-300 bg-emerald-950/70 border border-emerald-500/40"
+                                : active
+                                  ? "text-sky-300 bg-sky-950/70 border border-sky-500/40"
+                                  : "text-amber-400/90 bg-amber-950/50 border border-amber-500/30"
+                            )}>
+                              {completed ? "✓ COMPLETED" : active ? "▶ ACTIVE" : "⏳ PENDING"}
+                            </span>
+                          </div>
                           <p className="text-[10px] text-white/50 leading-relaxed italic">{act.description}</p>
                         </div>
                       </TooltipContent>

@@ -49,20 +49,20 @@ export function resolveMemoryMilestones(
   const contentLength = typeof (memory as any).content === 'string' ? (memory as any).content.trim().length : 0;
   const hasScript = proseLength >= 30 || descriptionLength >= 30 || contentLength >= 30;
 
-  // Act II: Narrative Weave exists if fused videoStory, originalHook, selectedHook, or AI takes exist
+  // Act II: Narrative Weave exists if fused videoStory, selectedHook, productionTakes, actsCompleted, or AI takes exist
   const productionTakes = Array.isArray(memory.productionTakes) ? memory.productionTakes : [];
+  const actsCompleted = Array.isArray((memory as any).actsCompleted) ? (memory as any).actsCompleted : [];
   const hasWeave = Boolean(
     (typeof memory.videoStory === 'string' && memory.videoStory.trim().length > 0) ||
     (typeof (memory as any).selectedHook === 'string' && (memory as any).selectedHook.trim().length > 0) ||
-    (typeof memory.originalHook === 'string' && memory.originalHook.trim().length > 0) ||
     (productionTakes.length > 0) ||
+    (actsCompleted.includes('act2')) ||
     (memory.aiTakes && (
       Boolean(memory.aiTakes.master) ||
       Boolean(memory.aiTakes.poetic) ||
       Boolean(memory.aiTakes.direct) ||
       Boolean(memory.aiTakes.nostalgic)
-    )) ||
-    (hasScript && proseLength >= 50)
+    ))
   );
 
   // Act III: Capture exists if actual media URL or recorded takes exist

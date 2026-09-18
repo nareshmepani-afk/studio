@@ -132,6 +132,7 @@ export interface Memory {
   passcode?: string;
   optionalPasscode?: string;
   hlsMasterPlaylistUrl?: string;
+  isFlightSimulator?: boolean;
   atmosphericSuggestions?: string[]; // Script Supervisor enhancements
   emotionalBeats?: {
     time: number;
