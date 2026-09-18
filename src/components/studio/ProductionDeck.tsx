@@ -21,6 +21,7 @@ const CollaborativeStage = dynamic(() => import('./CollaborativeStage'), { ssr: 
 import { InstrumentSelection } from './InstrumentSelection';
 import { ProductionRail, PRODUCTION_ACTS } from './ProductionRail';
 import { resolveMemoryMilestones, isActMilestoneCompleted } from '@/lib/curriculum/milestoneTruth';
+import { validateAct1RequiredFields, isAct1Complete } from '@/lib/curriculum/actValidation';
 import { cn } from '@/lib/utils';
 import { ResizableDivider } from './ResizableDivider';
 import { ProductionControlBar } from './ProductionControlBar';
@@ -346,6 +347,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const [hasDismissedOnboarding, setHasDismissedOnboarding] = useState(false);
     const [highlightClarity, setHighlightClarity] = useState(false);
     const [isSavingNext, setIsSavingNext] = useState(false);
+    const [act1LiveValidity, setAct1LiveValidity] = useState<{ isValid: boolean; missing: string[] } | null>(null);
     const formRef = useRef<any>(null);
     const synthesisAbortRef = useRef<boolean>(false);
     const [lobbyConfirmed, setLobbyConfirmed] = useState<boolean>(false);
@@ -384,17 +386,17 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         switch (stage) {
             case 0: // Act I: Hook
-                // If the production is already sealed (isProductionLocked === true on Act I),
-                // treat the act as complete so the proceed button stays visible and enabled.
-                if (isProductionLocked) return true;
-                return !!(
-                    memoryData?.title?.trim() && 
-                    (memoryData?.description?.trim()?.length > 10) && 
-                    memoryData?.location?.trim() && 
-                    memoryData?.dateComponents?.year && 
-                    memoryData?.dateComponents?.year !== 'none' &&
-                    memoryData?.dateComponents?.year !== ''
-                );
+                if (act1LiveValidity !== null) {
+                    return act1LiveValidity.isValid;
+                }
+                return isAct1Complete({
+                    title: memoryData?.title,
+                    location: memoryData?.narratorLocationAtEvent || memoryData?.location,
+                    country: memoryData?.country,
+                    year: memoryData?.dateComponents?.year || memoryData?.year,
+                    prose: memoryData?.prose,
+                    description: memoryData?.description
+                });
             case 1: // Act II: Weave
                 return ['poetic', 'direct', 'nostalgic', 'cinematic', 'master', 'weave'].includes(memoryData?.activeVision || '') || !!isProductionLocked;
             case 2: // Act III: Capture
@@ -414,7 +416,23 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             default:
                 return false;
         }
-    }, [currentStage, isProductionLocked, memoryData?.title, memoryData?.description, memoryData?.videoUrl, memoryData?.posterImageUrl, memoryData?.imageUrl, memoryData?.location, memoryData?.dateComponents?.year, memoryData?.activeVision]);
+    }, [
+        currentStage, 
+        isProductionLocked, 
+        act1LiveValidity,
+        memoryData?.title, 
+        memoryData?.description, 
+        memoryData?.prose,
+        memoryData?.location, 
+        memoryData?.narratorLocationAtEvent,
+        memoryData?.country,
+        memoryData?.dateComponents?.year, 
+        memoryData?.year,
+        memoryData?.videoUrl, 
+        memoryData?.posterImageUrl, 
+        memoryData?.imageUrl, 
+        memoryData?.activeVision
+    ]);
 
     const isLowClarity = useMemo(() => {
         const isAct1 = currentStage === 0;
@@ -423,12 +441,21 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     }, [currentStage, hotClarity, totalCharge]);
 
     const missingRequirements = useMemo(() => {
-        const reqs = [];
+        const reqs: string[] = [];
         if (currentStage === 0) {
-            if (!memoryData?.title?.trim()) reqs.push("Theatrical Title");
-            if (!memoryData?.location?.trim()) reqs.push("Cinematic Location");
-            if (!memoryData?.dateComponents?.year) reqs.push("Time/Year Anchor");
-            if (memoryData?.description?.trim()?.length < 10) reqs.push("Narrative Hook (> 10 chars)");
+            if (act1LiveValidity !== null) {
+                reqs.push(...act1LiveValidity.missing);
+            } else {
+                const validation = validateAct1RequiredFields({
+                    title: memoryData?.title,
+                    location: memoryData?.narratorLocationAtEvent || memoryData?.location,
+                    country: memoryData?.country,
+                    year: memoryData?.dateComponents?.year || memoryData?.year,
+                    prose: memoryData?.prose,
+                    description: memoryData?.description
+                });
+                reqs.push(...validation.missing);
+            }
             if (hotClarity < 15) reqs.push("Scene Clarity (needs sensory keywords)");
         } else if (currentStage === 1) {
             const hasWeave = ['poetic', 'direct', 'nostalgic', 'cinematic'].includes(memoryData?.activeVision || '');
@@ -447,7 +474,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if (!hasPosterKeyArt) reqs.push("Anchored Movie Key Art Poster");
         }
         return reqs;
-    }, [currentStage, memoryData, hotClarity]);
+    }, [currentStage, act1LiveValidity, memoryData, hotClarity]);
 
     const router = useRouter();
     const groupId = searchParams.get('groupId');
@@ -723,6 +750,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         isUntouched={isUntouched}
                         onActivity={resetIdleTimer}
                         onClearBackup={checkUnsavedTake}
+                        onValidityChange={(isValid, missing) => setAct1LiveValidity({ isValid, missing })}
                         onSelectRoom={(room) => {
                             setLobbyConfirmed(true);
                             setActiveRoom(room);
@@ -754,6 +782,26 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         }
 
         const isAct1 = currentStage === 0;
+
+        // Validation Shield: If transitioning from Act I (stage 0), rigorously validate all required catalysts
+        if (isAct1) {
+            const stateToValidate = {
+                title: flushedState?.title || memoryData?.title,
+                location: flushedState?.location || flushedState?.narratorLocationAtEvent || memoryData?.location || memoryData?.narratorLocationAtEvent,
+                country: flushedState?.country || memoryData?.country,
+                year: flushedState?.dateComponents?.year || flushedState?.year || memoryData?.dateComponents?.year || memoryData?.year,
+                prose: flushedState?.prose || memoryData?.prose,
+                description: flushedState?.description || memoryData?.description
+            };
+            const act1Check = validateAct1RequiredFields(stateToValidate);
+            if (!act1Check.isValid) {
+                console.warn("[ProductionDeck] Act I progression blocked: Missing required fields:", act1Check.missing);
+                toast.error("CATALYSTS REQUIRED", {
+                    description: `Please complete required stage items: ${act1Check.missing.join(", ")}`
+                });
+                return;
+            }
+        }
 
         // 1. If advancing from Act I with a sealed monologue, transition to Act II (stage 1 - The Weave):
         if (currentStage === 0 && isProductionLocked && !isReviewing) {
@@ -1024,16 +1072,38 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         if (newStage === currentStage) return;
         
         // COMMIT MANTLE: Flush state before jumping to a specific act
+        let flushedState: any = null;
         if (formRef.current?.flush) {
             setIsSavingNext(true);
             try {
-                await formRef.current.flush();
+                flushedState = await formRef.current.flush();
             } catch (err) {
                 console.error("Flush failed during stage jump", err);
             } finally {
                 setIsSavingNext(false);
             }
         }
+
+        // VALIDATION SHIELD: Jumping forward from Act I (stage 0 -> newStage > 0) requires all mandatory catalysts!
+        if (currentStage === 0 && newStage > 0) {
+            const stateToValidate = {
+                title: flushedState?.title || memoryData?.title,
+                location: flushedState?.location || flushedState?.narratorLocationAtEvent || memoryData?.location || memoryData?.narratorLocationAtEvent,
+                country: flushedState?.country || memoryData?.country,
+                year: flushedState?.dateComponents?.year || flushedState?.year || memoryData?.dateComponents?.year || memoryData?.year,
+                prose: flushedState?.prose || memoryData?.prose,
+                description: flushedState?.description || memoryData?.description
+            };
+            const act1Check = validateAct1RequiredFields(stateToValidate);
+            if (!act1Check.isValid) {
+                console.warn("[ProductionDeck] Stage jump blocked: Missing required Act I fields:", act1Check.missing);
+                toast.error("CATALYSTS REQUIRED", {
+                    description: `Please complete required stage items: ${act1Check.missing.join(", ")}`
+                });
+                return;
+            }
+        }
+
         if (newStage === 0) {
             setIsReviewing(false);
         }

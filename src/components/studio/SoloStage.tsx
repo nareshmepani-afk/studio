@@ -126,6 +126,7 @@ interface RoomProps {
     onClearBackup?: () => void;
     onSelectRoom?: (room: 'solo' | 'collaborative' | 'guest') => void;
     onTheaterToggle?: (isOpen: boolean) => void;
+    onValidityChange?: (isValid: boolean, missing: string[]) => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -141,7 +142,7 @@ export default function SoloStage({
   currentStage, mentorActive, onToggleMentor, onClarityChange,
   onNext, onPrev, isComplete, charge, wordCount, highlightClarity,
   onboardingJustClosed, isUntouched, onActivity, formRef, onClearBackup,
-  onSelectRoom, onTheaterToggle
+  onSelectRoom, onTheaterToggle, onValidityChange
 }: RoomProps) {
   const [mounted, setMounted] = useState(false);
   const { user, syncStatus } = useAuth();
@@ -2575,6 +2576,7 @@ export default function SoloStage({
         isUntouched={isUntouched}
         onActivity={onActivity}
         onNext={onNext}
+        onValidityChange={onValidityChange}
       />
     </div>
   );

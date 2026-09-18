@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ACT_TITLES } from './MemoryForm';
 import { resolveMemoryMilestones, isActMilestoneCompleted, MemoryMilestones } from '@/lib/curriculum/milestoneTruth';
+import { isAct1Complete } from '@/lib/curriculum/actValidation';
 import type { Memory } from '@/types';
 
 export interface Act {
@@ -102,8 +103,16 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
   // Logic: "Tech Scout" Mode - All acts are clickable for "Peeking"
   // but acts beyond the current threshold will be guarded by a read-only UI in the stage.
   const isActAvailable = (id: number) => {
-    // Acts are always available for peeking once in the studio
-    return true; 
+    if (id === 0) return true;
+    // Beyond Act I, require all mandatory Act I catalysts to be completed
+    return isAct1Complete({
+      title: memory?.title,
+      location: memory?.narratorLocationAtEvent || memory?.location,
+      country: memory?.country,
+      year: memory?.dateComponents?.year || memory?.year,
+      prose: memory?.prose,
+      description: memory?.description
+    });
   };
   
   // Logic: Functional Unlock - Is the act fully functional (not a tech scout)?

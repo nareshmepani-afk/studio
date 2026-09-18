@@ -192,6 +192,16 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
       return;
     }
 
+    if (!isComplete && currentStage !== 4) {
+      console.log("[ProductionControlBar] Act Incomplete. Missing:", missingRequirements);
+      const reqList = missingRequirements.length > 0 ? missingRequirements.join(', ') : "Mandatory requirements incomplete.";
+      toast.error("CATALYSTS REQUIRED", {
+        description: `Please complete required stage items: ${reqList}`,
+        icon: <AlertTriangle className="w-4 h-4 text-amber-400" />
+      });
+      return;
+    }
+
     if (isLowClarity) {
       const now = Date.now();
       if (now - lastClickTime < 500) {
@@ -212,16 +222,6 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
         });
       }
       setLastClickTime(now);
-      return;
-    }
-
-    if (!isComplete && currentStage !== 4) {
-      console.log("[ProductionControlBar] Act Incomplete. Missing:", missingRequirements);
-      const reqList = missingRequirements.length > 0 ? missingRequirements.join(', ') : "Mandatory requirements incomplete.";
-      toast.error("CATALYSTS REQUIRED", {
-        description: `Please complete required stage items: ${reqList}`,
-        icon: <AlertTriangle className="w-4 h-4 text-amber-400" />
-      });
       return;
     }
 
@@ -573,9 +573,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                         "relative px-5 sm:px-8 lg:px-10 py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max",
                         (isComplete && !isLowClarity) 
                           ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
-                          : isLowClarity
-                            ? "bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10"
-                            : "bg-rose-500/10 text-rose-300/60 border border-rose-500/30 cursor-not-allowed hover:bg-rose-500/15",
+                          : !isComplete
+                            ? "bg-rose-500/10 text-rose-300/60 border border-rose-500/30 cursor-not-allowed hover:bg-rose-500/15"
+                            : "bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10",
                         (isPending || isGeneratingDrafts || isSaving) && "opacity-80 cursor-wait brightness-90"
                       )}
                     >
@@ -607,6 +607,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                         ) : (
                           <ChevronRight className="w-4 h-4 relative z-10 group-hover/btn:translate-x-1 transition-transform" />
                         )
+                      ) : !isComplete ? (
+                        <AlertCircle className="w-4 h-4 relative z-10 text-rose-400/60" />
                       ) : isLowClarity ? (
                         <div className="relative">
                            <Circle className="w-4 h-4 relative z-10 opacity-20" />

@@ -38,6 +38,7 @@ import { ArchiveDrawer } from './ArchiveDrawer';
 import { ScopeToggleGroup } from './ScopeToggleGroup';
 import { TimeframeScope } from '@/types';
 import { mockPromptGroups } from '@/lib/mockData';
+import { validateAct1RequiredFields } from '@/lib/curriculum/actValidation';
 
 const SEED_CATALOG: Record<string, string[]> = {
   'p1': [
@@ -96,6 +97,7 @@ interface MemoryFormProps {
   onActivity?: () => void;
   onNext?: () => void;
   onSavingChange?: (isSaving: boolean) => void;
+  onValidityChange?: (isValid: boolean, missing: string[]) => void;
 }
 
 import {
@@ -235,7 +237,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   isUntouched,
   onActivity,
   onNext,
-  onSavingChange
+  onSavingChange,
+  onValidityChange
 }, ref) => {
   const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
   // Prose snapshot taken at unlock time — used to detect if user made changes before re-locking.
@@ -454,6 +457,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const scriptoriumRef = useRef<any>(null);
 
   useImperativeHandle(ref, () => ({
+    validate: () => {
+      return validateAct1RequiredFields({
+        title,
+        location,
+        country,
+        year: year && year !== 'none' ? year : (data?.dateComponents?.year || data?.year),
+        prose,
+        description
+      });
+    },
     flush: async (overrides?: any) => {
       let finalOverrides = { ...overrides };
       if (scriptoriumRef.current?.flush) {
@@ -473,6 +486,19 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     },
     isSaving: isCloudSaving
   }));
+
+  // Validation Shield: Report Act I live validity to parent
+  useEffect(() => {
+    const result = validateAct1RequiredFields({
+      title,
+      location,
+      country,
+      year: year && year !== 'none' ? year : (data?.dateComponents?.year || data?.year),
+      prose,
+      description
+    });
+    onValidityChange?.(result.isValid, result.missing);
+  }, [title, location, country, year, prose, description, data?.dateComponents?.year, data?.year, onValidityChange]);
 
   const lastPropsId = useRef(data?.id || data?.promptId);
   const lastPromptId = useRef(data?.promptId);
