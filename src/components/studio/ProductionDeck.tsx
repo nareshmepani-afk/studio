@@ -34,6 +34,8 @@ import { generateSoundtrack } from '@/actions/audioWeaver';
 import { StudioBlueprint } from './StudioBlueprint';
 import { useAuth } from '@/hooks/useAuth';
 import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
+import { useHardwarePrivacy } from '@/context/HardwarePrivacyContext';
+import { OpticsPrivacyShield } from './OpticsPrivacyShield';
 
 
 const DEFAULT_SIDEBAR_WIDTH = 280;
@@ -131,14 +133,21 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const [hasNavigatedBack, setHasNavigatedBack] = useState(false);
     const [isTheaterActive, setIsTheaterActive] = useState(false);
     const prevStageRef = useRef<number>(0);
+    const { killAllHardwareFeeds } = useHardwarePrivacy();
 
     useEffect(() => {
         if (prevStageRef.current >= 1 && currentStage === 0) {
             console.log("[ProductionDeck] Navigated back from Act II+ to Act I. Setting hasNavigatedBack to true.");
             setHasNavigatedBack(true);
         }
+        // Milestone MW-89: Universal Hardware Privacy Shield & App-Wide Camera Lifecycle Policy
+        // When navigating away from Act III (currentStage !== 2), automatically invoke killAllHardwareFeeds()
+        if (prevStageRef.current === 2 && currentStage !== 2) {
+            console.log("[ProductionDeck] Navigating away from Act III (Soundstage). Severing all hardware feeds.");
+            killAllHardwareFeeds();
+        }
         prevStageRef.current = currentStage;
-    }, [currentStage]);
+    }, [currentStage, killAllHardwareFeeds]);
 
     const lastLoadedIdRef = useRef<string | null>(null);
     const isNewMemoryRef = useRef<boolean>(!memoryData?.id);
@@ -1258,8 +1267,14 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                                : isMasteredReel
                                                ? '🌟 Mastered'
                                                : isEffectivelyCompleted
-                                               ? '✓ Completed'
-                                               : '⏳ Pending';
+                                               ? (currentStage === 0 ? '✓ Picture Locked' : '✓ Completed')
+                                               : (
+                                                   currentStage === 0 ? '✈️ Pre-Flight Draft' :
+                                                   currentStage === 1 ? '✈️ Pre-Flight Scout' :
+                                                   currentStage === 2 ? '✈️ Stage Pre-Flight' :
+                                                   currentStage === 3 ? '✈️ Director Prep' :
+                                                   '✈️ Premiere Prep'
+                                               );
 
                                            const isPositiveStatus = isPublished || isMasteredReel || isEffectivelyCompleted;
 
@@ -1276,6 +1291,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                                    >
                                                        {badgeLabel}
                                                    </span>
+                                                   {/* Milestone MW-89: Hardware Privacy Shield */}
+                                                   <OpticsPrivacyShield className="ml-1" compact />
                                                </span>
                                            );
                                        })()}
