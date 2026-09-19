@@ -324,6 +324,12 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
         lastSyncedBlocksRef.current = finalJSON;
       }
       return latestBlocksRef.current;
+    },
+    resetBlocks: (newBlocks: ScriptBlock[]) => {
+      setBlocks(newBlocks);
+      latestBlocksRef.current = newBlocks;
+      lastSyncedBlocksRef.current = JSON.stringify(newBlocks);
+      onSync(newBlocks);
     }
   }));
 

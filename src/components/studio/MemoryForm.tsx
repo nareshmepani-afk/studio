@@ -35,6 +35,8 @@ import {
 } from './Scriptorium/Ceremony/SelectionDeck';
 import { stripScreenplayCues } from '@/lib/sanitizer';
 import { ArchiveDrawer } from './ArchiveDrawer';
+import { ResetDraftModal } from '@/components/modals/ResetDraftModal';
+import { isDraftResetAllowed, executeDraftReset } from '@/lib/draftReset';
 import { ScopeToggleGroup } from './ScopeToggleGroup';
 import { TimeframeScope } from '@/types';
 import { mockPromptGroups } from '@/lib/mockData';
@@ -399,10 +401,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isReviewingSensory, setIsReviewingSensory] = useState(false);
   const [showOriginalSparkModal, setShowOriginalSparkModal] = useState(false);
+  const [showResetDraftModal, setShowResetDraftModal] = useState(false);
+  const [isResettingDraft, setIsResettingDraft] = useState(false);
   const { isProductionLocked: globalLocked, actions: { setIsProductionLocked: setGlobalLocked } } = useGlobalStudioState();
   
   // Local sync for persistence
   const isProductionLocked = data?.isProductionLocked !== false && (data?.isProductionLocked || globalLocked || (data?.productionStage || 0) >= 1);
+  const resetEligibility = isDraftResetAllowed(data, isProductionLocked);
+  const isResetDisabled = !resetEligibility.allowed;
   const activeVisionVal = data?.activeVision || data?.activeVisionLabel || selectedVision?.type || selectedVision?.label;
   const isSensory = !!activeVisionVal && ['poetic', 'direct', 'nostalgic', 'master', 'sensory', 'cinematic', 'original', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave', 'The Atmospheric Weave', 'The Flow', 'The Memory Weave'].includes(activeVisionVal);
 
@@ -504,6 +510,64 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     });
     onValidityChangeRef.current?.(result.isValid, result.missing);
   }, [title, location, country, year, prose, description, data?.dateComponents?.year, data?.year]);
+
+  // 🏛️ Draft Reset Handler (Ticket MW-272)
+  const handleConfirmDraftReset = useCallback(async () => {
+    try {
+      setIsResettingDraft(true);
+      const resetDelta = executeDraftReset(data, isProductionLocked);
+
+      // 1. Synchronously update local form states (0ms UI feedback)
+      setLocation('');
+      setCountry('');
+      setDay('none');
+      setMonth('none');
+      setYear('none');
+      setAiTakes(null);
+
+      const targetProse = resetDelta.prose || '';
+      setProse(targetProse);
+      setDescription(targetProse);
+      setOriginalHook(targetProse);
+
+      const targetBlocks = resetDelta.scriptBlocks || [];
+      setScriptBlocks(targetBlocks);
+      scriptoriumRef.current?.resetBlocks?.(targetBlocks);
+
+      globalActions.setSelectedVision?.(null as any, null);
+
+      // 2. Clear local storage draft cache keys
+      if (typeof window !== 'undefined') {
+        const id = data?.id || data?.promptId || 'unknown';
+        localStorage.removeItem(`draft_hook_${id}`);
+        localStorage.removeItem(`draft_prose_${id}`);
+        localStorage.removeItem('draft_hook_unknown');
+      }
+
+      // 3. Sync lifted stage if controller provided
+      setProductionStage?.(0);
+
+      // 4. Dual-sync persistence to parent and Firestore
+      update(resetDelta);
+      await flush(resetDelta as any);
+
+      setShowResetDraftModal(false);
+      toast.success(
+        resetEligibility.isRehearsal ? "Rehearsal Baseline Restored" : "Draft Reset to Blank Canvas",
+        {
+          description: resetEligibility.isRehearsal
+            ? "Canonical rehearsal monologue restored. Coordinates cleared."
+            : "Manuscript and volatile takes have been cleared for a fresh start."
+        }
+      );
+    } catch (err: any) {
+      toast.error("Failed to Reset Draft", {
+        description: err?.message || "An unexpected error occurred while resetting the draft."
+      });
+    } finally {
+      setIsResettingDraft(false);
+    }
+  }, [data, isProductionLocked, resetEligibility.isRehearsal, setProductionStage, update, flush, globalActions]);
 
   const lastPropsId = useRef(data?.id || data?.promptId);
   const lastPromptId = useRef(data?.promptId);
@@ -1885,6 +1949,24 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                     <History className="w-2.5 h-2.5" />
                                     Archive
                                   </button>
+
+                                  {/* RESET DRAFT TRIGGER BUTTON (Ticket MW-272) */}
+                                  <button 
+                                    type="button"
+                                    data-hotspot-id="HS_ACT1_RESET_DRAFT_BTN"
+                                    onClick={() => setShowResetDraftModal(true)}
+                                    disabled={isResetDisabled}
+                                    className={cn(
+                                      "px-3 py-1 bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 transition-all",
+                                      isResetDisabled 
+                                        ? "opacity-30 cursor-not-allowed text-white/30 border-white/5" 
+                                        : "hover:bg-amber-500/10 hover:border-amber-500/30 hover:text-amber-400 text-white/40 cursor-pointer"
+                                    )}
+                                    title={resetEligibility.reason || "Reset manuscript and unselected takes to clean slate"}
+                                  >
+                                    <RotateCcw className="w-2.5 h-2.5" />
+                                    <span>Reset Draft</span>
+                                  </button>
                                 </div>
                                 
                                 {(() => {
@@ -2797,6 +2879,15 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             setIsArchiveOpen(false);
             toast.success("Script Version Restored");
           }}
+        />
+
+        {/* Reset Draft Confirmation Modal (Ticket MW-272) */}
+        <ResetDraftModal
+          isOpen={showResetDraftModal}
+          onClose={() => setShowResetDraftModal(false)}
+          onConfirm={handleConfirmDraftReset}
+          isFlightSimulator={resetEligibility.isRehearsal}
+          isPending={isResettingDraft}
         />
       </LayoutGroup>
 
