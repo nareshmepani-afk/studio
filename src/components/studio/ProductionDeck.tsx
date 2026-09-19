@@ -474,7 +474,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             const hasWeave = ['poetic', 'direct', 'nostalgic', 'cinematic'].includes(memoryData?.activeVision || '');
             if (!hasWeave) reqs.push("Sensory Weave Selection");
         } else if (currentStage === 2) {
-            if (!memoryData?.videoUrl) reqs.push("Video Recording");
+            if (!memoryData?.videoUrl) reqs.push("Recorded Video Take");
         } else if (currentStage === 3) {
             const hasPosterKeyArt = !!(
                 memoryData?.posterImageUrl || 
@@ -1483,6 +1483,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                   setLobbyConfirmed(true);
                                   setActiveRoom(room);
                                 }}
+                                isLobbyConfirmed={lobbyConfirmed}
                             />
                         </footer>
                     )}

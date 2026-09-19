@@ -35,6 +35,7 @@ interface ProductionControlBarProps {
   isTheaterOpen?: boolean;
   activeRoom?: 'solo' | 'collaborative' | 'guest';
   onSelectRoom?: (room: 'solo' | 'collaborative' | 'guest') => void;
+  isLobbyConfirmed?: boolean;
 }
 
 const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }) => {
@@ -99,7 +100,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   isProductionLocked = false,
   isTheaterOpen = false,
   activeRoom = 'solo',
-  onSelectRoom
+  onSelectRoom,
+  isLobbyConfirmed = true
 }) => {
   const { 
     detectedAnchors, 
@@ -178,6 +180,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     transition: { duration: 0.4 }
   };
 
+  const isLobbyGate = currentStage === 2 && isLobbyConfirmed === false;
+  const isStageReady = (isComplete && !isLowClarity) || isLobbyGate;
+
   const handleNextClick = () => {
     console.log("[ProductionControlBar] handleNextClick triggered", {
       currentStage,
@@ -185,7 +190,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
       isLowClarity,
       isPending,
       isGeneratingDrafts,
-      isReviewing
+      isReviewing,
+      isLobbyConfirmed,
+      isLobbyGate
     });
 
     if (isPending || isGeneratingDrafts || isSaving) {
@@ -193,16 +200,91 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
       return;
     }
 
+    // Direct progression into recording booth when at the stage door lobby
+    if (isLobbyGate) {
+      console.log("[ProductionControlBar] Stepping into recording booth from stage door lobby");
+      onSelectRoom?.(activeRoom || 'solo');
+      return;
+    }
+
     if (!isComplete && currentStage !== 4) {
       console.log("[ProductionControlBar] Act Incomplete. Missing:", missingRequirements);
-      const reqList = missingRequirements.length > 0 ? missingRequirements.join(', ') : "Mandatory requirements incomplete.";
-      toast.error("CATALYSTS REQUIRED", {
-        description: `Please complete required stage items: ${reqList}`,
+
+      if (currentStage === 0) {
+        const reqList = missingRequirements.length > 0 ? missingRequirements.join(', ') : "Mandatory narrative catalysts incomplete.";
+        toast.error("CATALYSTS REQUIRED", {
+          description: `Please complete required narrative anchors: ${reqList}`,
+          icon: <AlertTriangle className="w-4 h-4 text-amber-400" />,
+          action: {
+            label: "Take Me There ↗",
+            onClick: () => scrollToFirstMissingCatalyst(missingRequirements)
+          },
+          duration: 7000
+        });
+        return;
+      }
+
+      if (currentStage === 1) {
+        toast.warning("WEAVE SELECTION REQUIRED", {
+          description: "Please select a cinematic weave treatment card above before entering the recording studio.",
+          icon: <Sparkles className="w-4 h-4 text-cyan-400" />,
+          action: {
+            label: "Select Weave ↗",
+            onClick: () => {
+              const el = document.querySelector('[data-blueprint="SelectionDeck"]') || document.querySelector('[data-blueprint="StageArea"]');
+              el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          },
+          duration: 7000
+        });
+        return;
+      }
+
+      if (currentStage === 2) {
+        toast.warning("VIDEO TAKE REQUIRED", {
+          description: "Please record a video take of your performance before finalising footage.",
+          icon: <Video className="w-4 h-4 text-rose-400" />,
+          action: {
+            label: "Record Take ↗",
+            onClick: () => {
+              const recordBtn = document.querySelector<HTMLButtonElement>(
+                '[data-hotspot-id*="RECORD"], #prompter-record-btn, button[title*="Record"]'
+              );
+              if (recordBtn) {
+                recordBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                try {
+                  recordBtn.focus();
+                } catch {
+                  // ignore
+                }
+              }
+            }
+          },
+          duration: 7000
+        });
+        return;
+      }
+
+      if (currentStage === 3) {
+        toast.warning("DIRECTOR'S CUT REQUIRED", {
+          description: "Please review your master reel and anchor a movie key art poster before premiere.",
+          icon: <Scissors className="w-4 h-4 text-amber-400" />,
+          action: {
+            label: "Review Reel ↗",
+            onClick: () => {
+              const el = document.querySelector('[data-blueprint="StageArea"]');
+              el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          },
+          duration: 7000
+        });
+        return;
+      }
+
+      // Generic fallback
+      toast.error("REQUIREMENTS NOT MET", {
+        description: missingRequirements.length > 0 ? `Please complete: ${missingRequirements.join(', ')}` : "Mandatory requirements incomplete.",
         icon: <AlertTriangle className="w-4 h-4 text-amber-400" />,
-        action: {
-          label: "Take Me There ↗",
-          onClick: () => scrollToFirstMissingCatalyst(missingRequirements)
-        },
         duration: 7000
       });
       return;
@@ -247,31 +329,64 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     }
   };
 
+  const getRequirementHeader = () => {
+    switch (currentStage) {
+      case 0: return "INCOMPLETE CATALYSTS";
+      case 1: return "WEAVE SELECTION REQUIRED";
+      case 2: return isLobbyGate ? "RECORDING BOOTH REQUIRED" : "VIDEO TAKE REQUIRED";
+      case 3: return "DIRECTOR'S CUT REQUIRED";
+      default: return "REQUIREMENTS NOT MET";
+    }
+  };
+
+  const getRequirementInstruction = () => {
+    switch (currentStage) {
+      case 0: return "Fill all mandatory narrative catalysts to enter the weave.";
+      case 1: return "Select a cinematic treatment card above to enter the recording studio.";
+      case 2: return isLobbyGate 
+        ? "Step into the Solo Booth to calibrate prompter and record your take."
+        : "Record your spoken monologue in the booth before finalising footage.";
+      case 3: return "Review your master reel and anchor a movie key art poster before premiere.";
+      default: return "Complete all required stage items to proceed.";
+    }
+  };
+
   const getRequirementTooltip = () => {
-    if (isComplete && !isLowClarity) return "Ready for the next phase.";
+    if (isStageReady) {
+      if (isLobbyGate) {
+        return "Ready to enter the recording booth and calibrate prompter.";
+      }
+      return "Ready for the next phase.";
+    }
     
     if (missingRequirements.length > 0) {
-        return (
-            <div className="space-y-2">
-                <p className="text-rose-400 font-bold border-b border-rose-500/20 pb-1">INCOMPLETE CATALYSTS</p>
-                <ul className="space-y-1">
-                    {missingRequirements.map((req, i) => (
-                        <li key={i} className="flex items-center gap-2 text-white/70">
-                            <div className="w-1 h-1 bg-rose-500 rounded-full" />
-                            {req}
-                        </li>
-                    ))}
-                </ul>
-                <p className="text-[8px] text-white/30 pt-1 italic font-normal">Fill all mandatory fields to activate the Director's Cut ceremony.</p>
-            </div>
-        );
+      return (
+        <div className="space-y-2">
+          <p className="text-rose-400 font-bold border-b border-rose-500/20 pb-1">
+            {getRequirementHeader()}
+          </p>
+          <ul className="space-y-1">
+            {missingRequirements.map((req, i) => (
+              <li key={i} className="flex items-center gap-2 text-white/70">
+                <div className="w-1 h-1 bg-rose-500 rounded-full" />
+                {req}
+              </li>
+            ))}
+          </ul>
+          <p className="text-[8px] text-white/30 pt-1 italic font-normal">
+            {getRequirementInstruction()}
+          </p>
+        </div>
+      );
     }
 
     switch (currentStage) {
       case 0: return isLowClarity ? "Scene Clarity below 15% threshold." : "Title, Description, and Year are mandatory catalysts.";
       case 1: return "Selecting a Sensory Weave is required before recording.";
-      case 2: return "A video recording is required to anchor this memory.";
-      case 3: return "Final review pending.";
+      case 2: return isLobbyGate 
+        ? "Step into your recording booth to record a video take." 
+        : "A video recording is required to anchor this memory.";
+      case 3: return "Final review and poster art pending.";
       default: return "Requirements not met.";
     }
   };
@@ -281,7 +396,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     
     switch (currentStage) {
       case 0:
-        if (isGeneratingDrafts || isPending) return 'SYNTHESIZING...';
+        if (isGeneratingDrafts || isPending) return 'SYNTHESISING...';
         if (isReviewing) return 'SEAL THE MEMORY';
         return 'ENTER THE WEAVE';
 
@@ -291,7 +406,11 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
       case 2:
         if (isPending) return 'SAVING FOOTAGE...';
-        return 'FINALIZE FOOTAGE';
+        if (isLobbyGate) {
+          const boothName = activeRoom === 'collaborative' ? 'COLLAB SUITE' : activeRoom === 'guest' ? "DIRECTOR'S CHAIR" : 'SOLO BOOTH';
+          return `STEP INTO ${boothName}`;
+        }
+        return 'FINALISE FOOTAGE';
 
       case 3:
         if (isPending) return 'CUTTING PREMIERE...';
@@ -553,7 +672,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                         label={
                           currentStage === 0 ? "Seal & Weave Monologue" :
                           currentStage === 1 ? "Launch Recording Studio" :
-                          currentStage === 2 ? "Finalize Footage & Submit Take" :
+                          currentStage === 2 ? "Finalise Footage & Submit Take" :
                           currentStage === 3 ? "Prepare Premiere Cut" :
                           "Share Cinema Package"
                         } 
@@ -565,7 +684,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                           "HS_ACT5_MENTOR_STEP3"
                         }
                         isAct1Guard={currentStage === 0}
-                        isCompleted={isComplete && !isLowClarity}
+                        isCompleted={isStageReady}
                         className="-top-4 -right-4" 
                       />
                     )}
@@ -577,7 +696,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                       onClick={handleNextClick}
                       className={cn(
                         "relative px-5 sm:px-8 lg:px-10 py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max",
-                        (isComplete && !isLowClarity) 
+                        isStageReady 
                           ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
                           : !isComplete
                             ? "bg-rose-500/10 text-rose-300/60 border border-rose-500/30 cursor-not-allowed hover:bg-rose-500/15"
@@ -585,7 +704,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                         (isPending || isGeneratingDrafts || isSaving) && "opacity-80 cursor-wait brightness-90"
                       )}
                     >
-                      {isComplete && !isLowClarity && (
+                      {isStageReady && (
                         <>
                           <motion.div 
                             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
@@ -605,7 +724,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                       
                       <span className="relative z-10">{getActionLabel()}</span>
                       
-                      {isComplete && !isLowClarity ? (
+                      {isStageReady ? (
                         (isPending || isGeneratingDrafts || isSaving) ? (
                           <Loader2 className="w-4 h-4 animate-spin relative z-10" />
                         ) : currentStage === 4 ? (
@@ -636,15 +755,15 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                   sideOffset={12} 
                   className={cn(
                     "border text-[10px] font-bold uppercase tracking-widest px-4 py-3 mb-4 rounded-xl shadow-2xl z-[9999]",
-                    (isComplete && !isLowClarity)
+                    isStageReady
                       ? "bg-emerald-950 border-emerald-500/50 text-emerald-200"
                       : "bg-rose-950 border-rose-500/50 text-rose-200"
                   )}
                 >
                   <div className="flex flex-col gap-1">
                     <span className="flex items-center gap-2">
-                      {isComplete && !isLowClarity ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                      {isComplete && !isLowClarity ? "Production Ready" : "Requirements Not Met"}
+                      {isStageReady ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <AlertCircle className="w-3 h-3 text-rose-400" />}
+                      {isStageReady ? (isLobbyGate ? "Ready to Enter" : "Production Ready") : "Requirements Not Met"}
                     </span>
                     <span className="text-[9px] opacity-60 normal-case">{getRequirementTooltip()}</span>
                   </div>
