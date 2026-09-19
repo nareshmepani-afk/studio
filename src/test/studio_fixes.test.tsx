@@ -3065,6 +3065,48 @@ describe('🔒 Global Forbidden-Pattern Anti-Regression Scanner', () => {
       expect(content).not.toContain('const headerTitle = isActII ? "The Deep Weave"');
     });
   });
+
+  describe('Universal 5-Act Stage Progression & Header Harmonisation (MW-271)', () => {
+    it('ANTI-REGRESSION: MemoryForm does not render redundant ACT_TITLES subheaders in any stage', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const memoryFormPath = path.resolve(process.cwd(), 'src/components/studio/MemoryForm.tsx');
+      const content = fs.readFileSync(memoryFormPath, 'utf-8');
+
+      expect(content).not.toContain('{ACT_TITLES[productionStage]}');
+    });
+
+    it('ANTI-REGRESSION: ProductionDeck advances to Act II (stage 1) upon synthesizing Act I visions', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const productionDeckPath = path.resolve(process.cwd(), 'src/components/studio/ProductionDeck.tsx');
+      const content = fs.readFileSync(productionDeckPath, 'utf-8');
+
+      expect(content).toContain('setStage(1);');
+      expect(content).toContain('productionStage: 1,');
+      expect(content).toContain('isEffectivelyCompleted = isActCompleted && !isReviewing');
+    });
+
+    it('ANTI-REGRESSION: MemoryForm Act II supports both isReviewing and isReviewingSensory for SelectionDeck', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const memoryFormPath = path.resolve(process.cwd(), 'src/components/studio/MemoryForm.tsx');
+      const content = fs.readFileSync(memoryFormPath, 'utf-8');
+
+      expect(content).toContain('(isReviewing || isReviewingSensory)');
+      expect(content).toContain('setProductionStage?.(0);');
+      expect(content).toContain('globalActions.setStage(0);');
+    });
+
+    it('ANTI-REGRESSION: SelectionDeck supports currentStage >= 1 for Act II Weave title', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const selectionDeckPath = path.resolve(process.cwd(), 'src/components/studio/Scriptorium/Ceremony/SelectionDeck.tsx');
+      const content = fs.readFileSync(selectionDeckPath, 'utf-8');
+
+      expect(content).toContain('const isActII = currentStage >= 1;');
+    });
+  });
 });
 
 

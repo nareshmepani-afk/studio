@@ -161,7 +161,7 @@ export const SelectionDeck = ({
   const activeVisionTitle = selectedVision?.label;
   const activeTakeText = selectedTake || selectedText;
 
-  const isActII = currentStage === 1;
+  const isActII = currentStage >= 1;
   const headerTitle = isActII ? "The Sensory Weave" : "Director's Cut";
   const countWord = drafts?.length ? (drafts.length === 5 ? 'five' : drafts.length) : 'five';
   const headerSubtitle = isActII 

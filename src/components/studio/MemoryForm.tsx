@@ -1125,13 +1125,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     <div className="relative w-full z-10 px-8 pb-24 pt-4">
     <LayoutGroup>
       <div className="w-full relative">
-        {/* --- PERSISTENT PRODUCTION HEADER --- */}
-        {productionStage === 0 && modality !== null && (
-          <div className="mb-12 flex items-center justify-between max-w-[95vw] xl:max-w-screen-2xl mx-auto">
-            <div className="flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
-              <div className="w-8 h-px bg-emerald-500/30" />
-              {ACT_TITLES[productionStage]}
-            </div>
+        {/* --- PERSISTENT PRODUCTION HEADER (Sole Authority: Top Chrome) --- */}
+        {productionStage === 0 && modality !== null && !isReviewing && (
+          <div className="mb-12 flex items-center justify-end max-w-[95vw] xl:max-w-screen-2xl mx-auto">
             
             <div className="flex items-center gap-4">
               {modality && (
@@ -2378,7 +2374,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       }}
                     />
                   </div>
-                ) : isReviewingSensory ? (
+                ) : (isReviewing || isReviewingSensory) ? (
                   <SelectionDeck 
                     drafts={
                       (reviewDrafts && reviewDrafts.length > 0) ? reviewDrafts :
@@ -2395,8 +2391,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                     onBackToEditor={async () => {
                       setIsReviewingSensory(false);
                       globalActions.setIsReviewing(false);
+                      setProductionStage?.(0);
+                      globalActions.setStage(0);
                       await flush({
-                        isReviewing: false
+                        isReviewing: false,
+                        productionStage: 0
                       });
                     }}
                     onSelect={async (text, type, label, structured) => {
@@ -2404,19 +2403,29 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         { id: crypto.randomUUID(), text: text, type: 'beat', catalysts: [] }
                       ];
                       setScriptBlocks(blocks);
+                      // Rule 12: Synchronously flip state flags for zero-latency UI transition
                       setIsReviewingSensory(false);
                       globalActions.setIsReviewing(false);
-                      
-                      // Match Act I: Set selection dynamically in local state
                       globalActions.setSelectedVision(type as any, label);
                       globalActions.setSelectedTake(text || '');
                       
+                      // Rule 14: Story Hook Fallback & Text Preservation Hierarchy
+                      // Synchronise description to match prose so placeholders never survive
+                      setDescription(text || '');
+                      if (structured) {
+                        setStructuredScript(structured);
+                      }
+                      setGlobalLocked(true);
+
                       await flush({
                         prose: text,
+                        description: text,
+                        structuredScript: structured || undefined,
                         scriptBlocks: blocks,
                         activeVision: type,
                         activeVisionLabel: label,
-                        isReviewing: false
+                        isReviewing: false,
+                        isProductionLocked: true
                       });
                       
                       toast.success("Sensory Weave Sealed", {

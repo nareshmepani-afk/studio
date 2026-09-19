@@ -919,9 +919,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     nostalgic: visions.find((v: any) => v.visionType === 'The Flow' || v.visionType === 'The Generational Weave' || v.visionType?.includes('Flow'))?.cleanScript || '',
                     master: visions.find((v: any) => v.visionType === 'The Memory Weave' || v.visionType?.includes('Memory'))?.cleanScript || ''
                 };
-                // Persist the generated drafts, review state, locked draft state, aiTakes, and raw prose immediately to Firestore
+                // Universal Stage Synchronisation (MW-271): Advance stage to Act II: The Weave in lockstep with the ceremony
                 setIsProductionLocked(true);
+                setStage(1);
                 await handleUpdate({
+                    productionStage: 1,
                     productionTakes: completeDrafts,
                     reviewDrafts: completeDrafts,
                     aiTakes: newAiTakes,
@@ -1245,15 +1247,18 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                            const isMasteredReel = isAct5 && milestones.hasRecordedMedia;
                                            const isPublished = isAct5 && milestones.isPublished;
 
+                                           // Truthful Status Badge Guard (MW-271): While ceremony/review is active, force '⏳ Pending'
+                                           const isEffectivelyCompleted = isActCompleted && !isReviewing;
+
                                            const badgeLabel = isPublished
                                                ? '✓ Completed'
                                                : isMasteredReel
                                                ? '🌟 Mastered'
-                                               : isActCompleted
+                                               : isEffectivelyCompleted
                                                ? '✓ Completed'
                                                : '⏳ Pending';
 
-                                           const isPositiveStatus = isPublished || isMasteredReel || isActCompleted;
+                                           const isPositiveStatus = isPublished || isMasteredReel || isEffectivelyCompleted;
 
                                            return (
                                                <span className="inline-flex items-center flex-wrap gap-2 text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold">
