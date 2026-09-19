@@ -1240,8 +1240,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                                currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
                                                `${groupTitle} — ACT ${currentStage + 1}`;
 
-                                           const milestones = resolveMemoryMilestones(memoryData);
-                                           const isActCompleted = isActMilestoneCompleted(currentStage, milestones);
+                                            const milestones = resolveMemoryMilestones(memoryData);
+                                            // Act I requires mandatory catalysts to be completed unless already progressed (MW-271/MW-272)
+                                            const isActCompleted = currentStage === 0
+                                                ? Boolean(isActComplete && isActMilestoneCompleted(0, milestones))
+                                                : isActMilestoneCompleted(currentStage, milestones);
 
                                            const isAct5 = currentStage === 4;
                                            const isMasteredReel = isAct5 && milestones.hasRecordedMedia;
@@ -1410,6 +1413,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             mentorActive={mentorModeActive}
                             onToggleMentor={toggleMentor}
                             memory={memoryData}
+                            isAct1LiveValid={act1LiveValidity !== null ? act1LiveValidity.isValid : isActComplete}
                         />
 
                         {/* DIRECTOR'S DRAG: THE RESIZABLE DIVIDER */}

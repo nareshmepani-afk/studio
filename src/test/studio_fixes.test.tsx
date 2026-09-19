@@ -3106,6 +3106,27 @@ describe('🔒 Global Forbidden-Pattern Anti-Regression Scanner', () => {
 
       expect(content).toContain('const isActII = currentStage >= 1;');
     });
+
+    it('ANTI-REGRESSION MW-272: ProductionDeck Top Chrome Act I status badge enforces mandatory catalysts before displaying Completed', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const productionDeckPath = path.resolve(process.cwd(), 'src/components/studio/ProductionDeck.tsx');
+      const content = fs.readFileSync(productionDeckPath, 'utf-8');
+
+      expect(content).toContain('currentStage === 0');
+      expect(content).toContain('Boolean(isActComplete && isActMilestoneCompleted(0, milestones))');
+    });
+
+    it('ANTI-REGRESSION MW-272: ProductionRail enforces isAct1TruthfullyComplete before rendering completed checkmark on Act I', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const productionRailPath = path.resolve(process.cwd(), 'src/components/studio/ProductionRail.tsx');
+      const content = fs.readFileSync(productionRailPath, 'utf-8');
+
+      expect(content).toContain('isAct1LiveValid');
+      expect(content).toContain('isAct1TruthfullyComplete = isAct1CatalystsComplete || resolvedMilestones.hasWeave || resolvedMilestones.hasRecordedMedia');
+      expect(content).toContain('Boolean(isActMilestoneCompleted(0, resolvedMilestones) && isAct1TruthfullyComplete)');
+    });
   });
 });
 

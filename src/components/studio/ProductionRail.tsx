@@ -57,6 +57,7 @@ interface ProductionRailProps {
   isSaving?: boolean;
   memory?: Partial<Memory> | Record<string, any> | null;
   milestones?: MemoryMilestones;
+  isAct1LiveValid?: boolean;
 }
 
 export const ProductionRail: React.FC<ProductionRailProps> = ({
@@ -71,7 +72,8 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
   onToggleMentor,
   isSaving = false,
   memory,
-  milestones
+  milestones,
+  isAct1LiveValid
 }) => {
   const resolvedMilestones = React.useMemo(() => {
     if (milestones) return milestones;
@@ -105,11 +107,14 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
   const isActAvailable = (id: number) => {
     if (id === 0) return true;
     // Beyond Act I, require all mandatory Act I catalysts to be completed
+    if (isAct1LiveValid !== undefined && !isAct1LiveValid && !resolvedMilestones.hasWeave && !resolvedMilestones.hasRecordedMedia) {
+      return false;
+    }
     return isAct1Complete({
       title: memory?.title,
-      location: memory?.narratorLocationAtEvent || memory?.location,
+      location: (memory as any)?.narratorLocationAtEvent || memory?.location,
       country: memory?.country,
-      year: memory?.dateComponents?.year || memory?.year,
+      year: (memory as any)?.dateComponents?.year || memory?.year,
       prose: memory?.prose,
       description: memory?.description
     });
@@ -171,8 +176,21 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
           <div className="space-y-6">
             {PRODUCTION_ACTS.map((act, index) => {
               const active = currentStage === act.id;
+              const isAct1CatalystsComplete = isAct1LiveValid !== undefined
+                ? isAct1LiveValid
+                : isAct1Complete({
+                    title: memory?.title,
+                    location: (memory as any)?.narratorLocationAtEvent || memory?.location,
+                    country: memory?.country,
+                    year: (memory as any)?.dateComponents?.year || memory?.year,
+                    prose: memory?.prose,
+                    description: memory?.description
+                  });
+              const isAct1TruthfullyComplete = isAct1CatalystsComplete || resolvedMilestones.hasWeave || resolvedMilestones.hasRecordedMedia;
+              const completed = act.id === 0
+                ? Boolean(isActMilestoneCompleted(0, resolvedMilestones) && isAct1TruthfullyComplete)
+                : isActMilestoneCompleted(act.id, resolvedMilestones);
               const available = isActAvailable(act.id) && !isSaving;
-              const completed = isActMilestoneCompleted(act.id, resolvedMilestones);
               
               return (
                 <div key={act.id} className="relative">
