@@ -111,10 +111,24 @@ export function useStudioData(userId: string | undefined) {
     return mockPromptGroups.map((group): UnifiedChapter => {
       const correlatedPrompts = group.prompts.map((p): CorrelatedPrompt => {
         const sceneDef = resolveSceneFromPromptId(p.id);
-        // Trace forward: Follow the chain of memory pointer documents to find the latest leaf memory
-        let memory: Memory | undefined = memories.find(
+        // Trace forward: Follow the chain of memory pointer documents to find the latest leaf memory.
+        // CANDIDATE RESOLUTION SHIELD: If multiple memory documents exist matching the prompt,
+        // prioritise authentic non-test memories and completed/in-progress takes over unrecorded stage-0 test drafts.
+        const candidateMemories = memories.filter(
           m => m.promptId === p.id || (sceneDef && (m as any).sceneId === sceneDef.id)
         );
+        let memory: Memory | undefined = candidateMemories.slice().sort((a, b) => {
+          const aIsTest = a.id.includes('test') || (a as any).isTestFixture ? 1 : 0;
+          const bIsTest = b.id.includes('test') || (b as any).isTestFixture ? 1 : 0;
+          if (aIsTest !== bIsTest) return aIsTest - bIsTest;
+
+          const aCompleted = (a.status === 'published' || a.status === 'pre-release' || (a.productionStage ?? 0) > 0) ? 1 : 0;
+          const bCompleted = (b.status === 'published' || b.status === 'pre-release' || (b.productionStage ?? 0) > 0) ? 1 : 0;
+          if (aCompleted !== bCompleted) return bCompleted - aCompleted;
+
+          return 0; // retain default ordering (createdAt desc)
+        })[0];
+
         if (memory) {
           const visited = new Set<string>();
           while (memory) {

@@ -37,6 +37,7 @@ import StudioChapterContent from '../studio/StudioChapterContent';
 
 type PromptCardProps = {
   promptId: string;
+  memoryId?: string;
   promptText: string;
   promptSubtitle?: string;
   storyScript: string;
@@ -87,6 +88,7 @@ export function PromptCard(props: PromptCardProps) {
 
   const {
     promptId,
+    memoryId,
     promptText,
     promptSubtitle,
     isCompleted,
@@ -167,11 +169,13 @@ export function PromptCard(props: PromptCardProps) {
     </Button>
   );
 
+  const targetRouteId = (isCompleted && memoryId) ? memoryId : promptId;
+
   const cardContent = (
       <div className={cardClasses} data-hotspot-id={`HS_PROMPT_CARD_${promptId}`}>
         {/* The Link Overlay for Intercepting Routes */}
         <Link 
-          href={`/studio/production/${promptId}${isCompleted ? '?act=1' : ''}`}
+          href={`/studio/production/${targetRouteId}${isCompleted ? '?act=1' : ''}`}
           onClick={handleAction}
           className="absolute inset-0 z-0"
           prefetch={true}

@@ -180,7 +180,10 @@ function generateQAChecklistHtml(config) {
           <h2 class="text-lg font-bold text-white">${t.title}</h2>
           <p class="text-xs text-gray-400 leading-relaxed">${t.instructions}</p>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
+        <div class="flex items-center gap-2 shrink-0 flex-wrap">
+          <button onclick="copySingleTestReport(${num})" id="copy-test-btn-${num}" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-amber-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+            <span>📋 Copy Test ${num}</span>
+          </button>
           <a href="${t.url}" target="_blank" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-amber-300 border border-gray-700 flex items-center gap-1.5 transition">
             <span>🔗 Open Test Route</span>
             <span class="text-[10px]">↗</span>
@@ -262,15 +265,20 @@ function generateQAChecklistHtml(config) {
       </div>` : ''}
 
       <!-- STATUS BUTTONS TRIPLET -->
-      <div class="flex items-center gap-2 pt-2 pb-4 border-b border-gray-800/60">
-        <button onclick="setStatus(${num}, 'PASS')" id="btn-${num}-PASS" class="btn-pass flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-emerald-400 hover:border-emerald-500/50 transition">
-          ✅ PASS
-        </button>
-        <button onclick="setStatus(${num}, 'FAIL')" id="btn-${num}-FAIL" class="btn-fail flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-rose-400 hover:border-rose-500/50 transition">
-          ❌ FAIL
-        </button>
-        <button onclick="setStatus(${num}, 'BACKLOG')" id="btn-${num}-BACKLOG" class="btn-backlog flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-amber-400 hover:border-amber-500/50 transition">
-          ⚠️ BACKLOG
+      <div class="flex items-center justify-between gap-2 pt-2 pb-4 border-b border-gray-800/60 flex-wrap">
+        <div class="flex items-center gap-2 flex-1 sm:flex-initial">
+          <button onclick="setStatus(${num}, 'PASS')" id="btn-${num}-PASS" class="btn-pass flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-emerald-400 hover:border-emerald-500/50 transition cursor-pointer">
+            ✅ PASS
+          </button>
+          <button onclick="setStatus(${num}, 'FAIL')" id="btn-${num}-FAIL" class="btn-fail flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-rose-400 hover:border-rose-500/50 transition cursor-pointer">
+            ❌ FAIL
+          </button>
+          <button onclick="setStatus(${num}, 'BACKLOG')" id="btn-${num}-BACKLOG" class="btn-backlog flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-amber-400 hover:border-amber-500/50 transition cursor-pointer">
+            ⚠️ BACKLOG
+          </button>
+        </div>
+        <button onclick="copySingleTestReport(${num})" id="copy-test-btn-sub-${num}" class="px-3 py-1.5 rounded-lg bg-gray-900/80 hover:bg-amber-500/20 text-[11px] font-mono font-medium text-amber-300 border border-gray-800 hover:border-amber-500/40 flex items-center gap-1.5 transition cursor-pointer">
+          <span>📋 Copy Test ${num} Report</span>
         </button>
       </div>
 
@@ -612,12 +620,16 @@ function generateQAChecklistHtml(config) {
     }
 
     function handleCardPaste(e, testNum) {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
       const items = Array.from(e.clipboardData?.items || []);
       const imageItem = items.find(item => item.type.startsWith('image/'));
       if (imageItem) {
         const file = imageItem.getAsFile();
         if (file) {
           processImageFile(file, testNum);
+          if (activeTag === 'textarea' || activeTag === 'input') {
+            e.preventDefault();
+          }
         }
       }
     }
@@ -768,6 +780,52 @@ function generateQAChecklistHtml(config) {
       }
     }
 
+    function copySingleTestReport(testNum) {
+      const s = state.statuses[testNum] || 'UNTESTED';
+      const meta = TEST_METADATA[testNum - 1];
+      const title = meta?.title || ('Test ' + testNum);
+      const notes = (document.getElementById('notes-' + testNum)?.value || state.notes[testNum] || '').trim() || 'None provided';
+      const telemetry = (document.getElementById('telemetry-' + testNum)?.value || state.telemetry[testNum] || '').trim();
+      const imgCount = (state.screenshots[testNum] || []).length;
+
+      let snippet = '═══════════════════════════════════════════════════════════════════════════════\\n';
+      snippet += 'QA VERIFICATION: Test ' + testNum + ' — ' + title + '\\n';
+      snippet += 'Edge Commit SHA: ${commitSha} | Target: ${commitSha} | Environment: ${environmentUrl.replace("https://", "")}\\n';
+      snippet += '═══════════════════════════════════════════════════════════════════════════════\\n\\n';
+      snippet += '[Test ' + testNum + ': ' + title + ']\\n';
+      snippet += 'Verdict: ' + s + '\\n';
+      if (meta && meta.statusAttribution) {
+        snippet += 'Status Attribution: ' + meta.statusAttribution + '\\n';
+      }
+      snippet += 'Notes: ' + notes + '\\n';
+      if (telemetry) {
+        snippet += 'Telemetry Vector: ' + telemetry + '\\n';
+      }
+      snippet += 'Screenshots Attached: ' + imgCount + '\\n\\n';
+      snippet += '═══════════════════════════════════════════════════════════════════════════════\\n';
+
+      navigator.clipboard.writeText(snippet).then(() => {
+        ['copy-test-btn-' + testNum, 'copy-test-btn-sub-' + testNum].forEach(id => {
+          const btn = document.getElementById(id);
+          if (btn) {
+            const original = btn.innerHTML;
+            btn.innerHTML = '<span>✅ Copied Test ' + testNum + '!</span>';
+            btn.classList.add('bg-emerald-500', 'text-gray-950');
+            setTimeout(() => {
+              btn.innerHTML = original;
+              btn.classList.remove('bg-emerald-500', 'text-gray-950');
+            }, 1500);
+          }
+        });
+      }).catch(() => {
+        prompt('Copy Test ' + testNum + ' Report:', snippet);
+      });
+    }
+
+    function copyVerdictReport() {
+      copyMarkdownReport();
+    }
+
     function copyMarkdownReport() {
       let pass = 0, fail = 0, backlog = 0;
       for (let i = 1; i <= TOTAL_TESTS; i++) {
@@ -867,173 +925,115 @@ if (require.main === module) {
   const targetCommit = args[1] || 'fe57798';
 
   const defaultTestSuite = {
-    commitSha: targetCommit,
+    commitSha: targetCommit === 'fe57798' ? '1b359a35' : targetCommit,
     environmentUrl: 'https://dev.memoryweaver.studio',
-    suiteTitle: 'MW-87 & MW-85 Staging Verification Suite',
+    suiteTitle: "Act-Specific Guidance, Stage Door Entry & UK Orthography Suite (MW-272)",
     passcode: 'MW-STAGE-2026',
     tests: [
       {
-        category: 'Perimeter Access',
-        title: 'MW-87: Staging Lock Auto-Redirect & Clean Placeholder (Zero Leaks)',
-        instructions: 'Open Incognito tab to public route. Verify automatic 307 redirect to <code class="text-amber-300">/staging-lock</code> and that input placeholder is cleanly masked as <code class="text-gray-300">"Enter access passcode..."</code> with zero leaked password hints.',
-        url: 'https://dev.memoryweaver.studio/pricing',
+        category: 'Stage Progression & Soundstage Entry',
+        title: 'Act III Stage Door: Direct Unlatch via [ STEP INTO SOLO BOOTH ↗ ]',
+        instructions: '1) Open the staging route below: <strong>ACT III: THE STAGE DOOR</strong>.<br/>2) Observe the primary action button in the bottom-right of the control bar.<br/>3) Confirm it now displays <strong>[ STEP INTO SOLO BOOTH ]</strong> in glowing emerald ready state (<code class="text-emerald-400">bg-emerald-500 text-slate-950</code>), replacing the previous disabled red <code class="text-rose-400">FINALIZE FOOTAGE (!)</code>.<br/>4) Hover over the button: confirm status header <strong>"Ready to Enter"</strong> and tooltip: <em>"Ready to enter the recording booth and calibrate prompter."</em><br/>5) Click <strong>[ STEP INTO SOLO BOOTH ]</strong>: confirm it immediately unlatches the booth door and steps into the soundstage without throwing any blocking errors or toasts.',
+        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test',
         governingRules: [
-          'Rule 5: Exclusive Staging URL Gate',
-          'Rule 7: Universal Non-Degradation',
-          'MW-87: Edge Perimeter Defense'
+          'Rule 7: Universal Non-Degradation Across All Features',
+          'Rule 23: Direct Room Mode & Teleprompter Modal Unlocking Rule',
+          'Rule 20: Mandatory UK English Orthography Standard'
         ],
         testData: [
-          { label: 'Public Ingress Route', value: 'https://dev.memoryweaver.studio/pricing' },
-          { label: 'Expected Redirect Target', value: 'https://dev.memoryweaver.studio/staging-lock' },
-          { label: 'Masked Placeholder', value: 'Enter access passcode...' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test' },
+          { label: 'Stage Door Primary Button', value: '[ STEP INTO SOLO BOOTH ]' },
+          { label: 'Styling Contract', value: 'bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)]' },
+          { label: 'Tooltip Header', value: 'Ready to Enter' },
+          { label: 'Edge Commit SHA', value: '1b359a35' }
         ],
-        defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit fe57798)',
-        statusRationale: 'Verified clean placeholder with zero leaked hints on staging.',
-        defaultNotes: 'Verified clean placeholder with zero leaked hints.'
+        defaultStatus: 'UNTESTED',
+        statusAttribution: '⏳ PENDING — Deployed to Staging (Commit 1b359a3)',
+        statusRationale: 'Replaces disabled FINALIZE FOOTAGE on Stage Door with direct-entry STEP INTO SOLO BOOTH.',
+        defaultNotes: ''
       },
       {
-        category: 'Authentication & UX Polish',
-        title: 'MW-87: Passcode Entry (MW-STAGE-2026 / mw-stage-2026) & 900ms Feedback',
-        instructions: 'Enter passcode in lowercase (<code class="text-amber-400">mw-stage-2026</code>). Verify case-insensitivity, 900ms visual confirmation toast, and seamless redirect to target destination with 30-day token.',
-        url: 'https://dev.memoryweaver.studio/staging-lock',
+        category: 'Incomplete Requirements & Actionable Guidance',
+        title: 'Act III In-Booth Video Requirement Guidance & [ Record Take ↗ ] CTA',
+        instructions: '1) Step onto the Soundstage (inside the Solo Booth). Prior to recording a take, locate the bottom-right action button.<br/>2) Confirm the button displays <strong>[ FINALISE FOOTAGE ]</strong> in disabled/pending rose state (<code class="text-rose-400">border-rose-500/30 text-rose-300/60</code>) with UK spelling (<strong>FINALISE</strong>, not FINALIZE).<br/>3) Hover over the button to inspect the tooltip:<br/>&nbsp;&nbsp;• Category Header: <strong>VIDEO TAKE REQUIRED</strong> (No longer says "INCOMPLETE CATALYSTS"!).<br/>&nbsp;&nbsp;• Item Bullet: <strong>• Recorded Video Take</strong> (No longer says "Video Recording").<br/>&nbsp;&nbsp;• Guidance Subtext: <em>"Record your spoken monologue in the booth before finalising footage."</em> (No longer says "Fill all mandatory fields...").<br/>4) Click <strong>[ FINALISE FOOTAGE ]</strong>:<br/>&nbsp;&nbsp;• Confirm actionable warning toast: <strong>"VIDEO TAKE REQUIRED"</strong> with description: <em>"Please record a video take of your performance before finalising footage."</em><br/>&nbsp;&nbsp;• Confirm action button in toast: <strong>[ Record Take ↗ ]</strong>.<br/>&nbsp;&nbsp;• Click <strong>[ Record Take ↗ ]</strong>: confirm it smoothly scrolls to and focuses the teleprompter record button.',
+        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test',
         governingRules: [
-          'MW-87: Case-Insensitive SHA-256 Passcode Normalization',
-          'Rule 12: Zero-Latency Optimistic UI & 900ms Handshake'
+          'Rule 20: Mandatory UK English Orthography Standard',
+          'Rule 7: Universal Non-Degradation Across All Features',
+          'Rule 12: Zero-Latency Optimistic UI & Async Handshake Decoupling'
         ],
         testData: [
-          { label: 'Passcode (Uppercase)', value: 'MW-STAGE-2026' },
-          { label: 'Passcode (Lowercase)', value: 'mw-stage-2026' },
-          { label: 'Session Cookie Token', value: 'staging_access_granted (30 Days)' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test' },
+          { label: 'Disabled Button Label', value: 'FINALISE FOOTAGE' },
+          { label: 'Tooltip Category Header', value: 'VIDEO TAKE REQUIRED' },
+          { label: 'Tooltip Bullet', value: 'Recorded Video Take' },
+          { label: 'Toast Title', value: 'VIDEO TAKE REQUIRED' },
+          { label: 'Toast CTA Action', value: '[ Record Take ↗ ]' }
         ],
-        defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit fe57798)',
-        statusRationale: 'Verified case-insensitivity and 900ms visual confirmation toast.',
-        defaultNotes: 'Verified case-insensitivity and 900ms visual confirmation.'
+        defaultStatus: 'UNTESTED',
+        statusAttribution: '⏳ PENDING — Deployed to Staging (Commit 1b359a3)',
+        statusRationale: 'Eliminates misleading catalyst jargon and provides actionable directions with direct Record Take CTA.',
+        defaultNotes: ''
       },
       {
-        category: 'Backstage Command Centre',
-        title: 'MW-87 & Backstage: Admin Knowledge Hub & Dedicated Log Out Button',
-        instructions: 'Navigate to Admin Command Centre. Verify <code class="text-purple-300">MW_87_STAGING_ACCESS_SECURITY</code> playbook is searchable in Living Knowledge Hub. Confirm new dedicated <strong>Log Out</strong> button in top header and sidebar logs out cleanly to <code class="text-gray-300">/admin/login</code>.',
-        url: 'https://dev.memoryweaver.studio/admin?suite=knowledge',
+        category: 'Orthography & Theatrical Standards',
+        title: 'Rule 20 Mandatory British English Across Studio Stage Controls',
+        instructions: '1) Verify British English spelling throughout the stage control bar:<br/>&nbsp;&nbsp;• Act III Button: <strong>FINALISE FOOTAGE</strong> (with "S", not "Z").<br/>&nbsp;&nbsp;• Act III Hotspot 3: <strong>Finalise Footage & Submit Take</strong>.<br/>&nbsp;&nbsp;• Act I Synthesis: <strong>SYNTHESISING...</strong> (with "S", not "Z").<br/>&nbsp;&nbsp;• Clean Reading mode toggle: <strong>Sensory View</strong>.<br/>2) Confirm zero American spelling variations (<code class="text-rose-400">FINALIZE</code>, <code class="text-rose-400">SYNTHESIZING</code>) in the DOM or UI labels.',
+        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test',
         governingRules: [
-          'Rule 20: Mandatory UK English Orthography (Command Centre)',
-          'Backstage Admin Security & Living Knowledge Sync'
+          'Rule 20: Mandatory UK English Orthography Standard',
+          'Rule 8: Zero-Footprint Telemetry & Layout Integrity Rule'
         ],
         testData: [
-          { label: 'Admin Route', value: 'https://dev.memoryweaver.studio/admin?suite=knowledge' },
-          { label: 'Knowledge Query', value: 'MW_87_STAGING_ACCESS_SECURITY' },
-          { label: 'Logout Destination', value: 'https://dev.memoryweaver.studio/admin/login' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test' },
+          { label: 'Mandatory UK Mapping', value: 'Finalize -> Finalise, Synthesize -> Synthesise' },
+          { label: 'Automated Vitest Proof', value: 'src/test/production_control_bar_acts.test.tsx (Suite 4 Passed)' }
         ],
-        defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit fe57798)',
-        statusRationale: 'Verified Living Knowledge Hub documentation and new Log Out button.',
-        defaultNotes: 'Verified Living Knowledge Hub documentation and new Log Out button.'
+        defaultStatus: 'UNTESTED',
+        statusAttribution: '⏳ PENDING — Deployed to Staging (Commit 1b359a3)',
+        statusRationale: 'Strict adherence to British English orthography verified across all stage controls.',
+        defaultNotes: ''
       },
       {
-        category: 'Checkout & Session Retention',
-        title: 'MW-85: 31-Day Director Pass Checkout (£12.99) — Clean Checkout & Direct Settings Return',
-        instructions: 'From <code class="text-amber-300">/pricing</code> or <code class="text-amber-300">/settings</code>, click "Buy 31-Day Pass". Verify Stripe Checkout is clean with <strong>zero promo code clutter</strong> and luxury activation text. Complete checkout with test card and verify browser returns directly to <code class="text-emerald-400">/settings?checkout=success</code> <strong>without dropping session or bouncing to login</strong>.',
-        url: 'https://dev.memoryweaver.studio/pricing',
+        category: 'Vault Non-Degradation Invariant Shield',
+        title: 'Recorded Media Shielding & Generational Vault Protection (Test 4 Walkthrough)',
+        instructions: '<strong>Live Staging Walkthrough:</strong><br/>1) <strong>Step into Solo Booth</strong>: Click <code class="text-emerald-400">[ STEP INTO SOLO BOOTH ]</code> to enter the soundstage.<br/>2) <strong>Record Video Take</strong>: Click Record on the prompter, speak or wait 3–5 seconds, stop recording, and commit the take.<br/>3) <strong>Observe Button Transition</strong>: Once the take is saved, confirm the primary button turns glowing emerald: <strong>[ FINALISE FOOTAGE ]</strong>.<br/>4) <strong>Return to Act I</strong>: Append <code class="text-emerald-400">?act=1</code> to the URL or click <em>"Edit Scene"</em>.<br/>5) <strong>Verify Vault Shield Invariant</strong>: Observe that <code class="text-stone-400">[ ↺ Reset Draft ]</code> is now <strong>disabled</strong> (<code class="text-stone-400">opacity-35 cursor-not-allowed</code>) with tooltip: <em>"Reset disabled: Recorded media takes exist for this theatrical performance."</em> Clicking it does nothing, proving recorded family takes cannot be accidentally wiped.',
+        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test',
         governingRules: [
-          'Stripe Cross-Origin SameSite Lax Session Retention',
-          'Rule 12: Zero-Latency Optimistic UI & Async Decoupling',
-          'MW-85: Luxury Studio Activation Messaging'
+          'Rule 7: Universal Non-Degradation Across All Features',
+          'Rule 9: Test-Driven Verification & Regression Shield'
         ],
         testData: [
-          { label: 'Stripe Test Card', value: '4242 4242 4242 4242' },
-          { label: 'Expiry Date', value: '12/28' },
-          { label: 'CVC Security Code', value: '123' },
-          { label: 'UK Postal Code', value: 'SW1A 1AA' },
-          { label: 'Transaction Amount', value: '£12.99 GBP' },
-          { label: 'Expected Return Route', value: 'https://dev.memoryweaver.studio/settings?checkout=success' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test' },
+          { label: 'Pre-Flight Return Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test?act=1' },
+          { label: 'Vault Invariant', value: 'Reset forbidden once media takes exist in Generational Vault' },
+          { label: 'Disabled Tooltip', value: 'Reset disabled: Recorded media takes exist for this theatrical performance.' },
+          { label: 'Automated Vitest Proof', value: 'src/test/draft_reset.test.ts (8/8 Passed)' }
         ],
-        defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit f1d7f5a)',
-        statusRationale: 'Verified clean checkout and direct settings return with plan display.',
-        defaultNotes: 'After stripe payment has proceed the screen returns back. Shows active plan.'
+        defaultStatus: 'UNTESTED',
+        statusAttribution: '⏳ PENDING — Ready for Staging Walkthrough (Commit 1b359a3)',
+        statusRationale: 'Follow the walkthrough to record a video take in Act III and verify Reset Draft disabling in Act I.',
+        defaultNotes: ''
       },
       {
-        category: 'Vault Upgrades',
-        title: 'MW-85: Generational Vault Lifetime Archival (£195.00)',
-        instructions: 'Select "Claim Lifetime Vault" (£195). Complete test transaction with test card and verify Firestore account status activates lifetime archival tier with 100 GB cloud vault quota.',
-        url: 'https://dev.memoryweaver.studio/pricing',
+        category: 'Cross-Act Requirement Harmonisation',
+        title: 'Act I & Act II Truthful Guidance & Direct Action CTAs',
+        instructions: '1) On Act I (<code class="text-emerald-400">?act=1</code>), click <code class="text-amber-300">[ ↺ Reset Draft ]</code> to clear catalysts to baseline.<br/>2) Try clicking <code class="text-rose-400">[ ENTER THE WEAVE ]</code>: confirm error toast <strong>"CATALYSTS REQUIRED"</strong> with list of missing items and <strong>[ Take Me There ↗ ]</strong> CTA.<br/>3) Click <strong>[ Take Me There ↗ ]</strong>: confirm it scrolls smoothly to the first missing catalyst field.<br/>4) Advance to Act II (<code class="text-emerald-400">?act=2</code>) without picking a vision card, then click <code class="text-rose-400">[ ENTER RECORDING STUDIO ]</code>: confirm warning toast <strong>"WEAVE SELECTION REQUIRED"</strong> with <strong>[ Select Weave ↗ ]</strong> CTA.<br/>5) Click <strong>[ Select Weave ↗ ]</strong>: confirm it smoothly scrolls to the treatment selection deck.',
+        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test?act=1',
         governingRules: [
-          'MW-85: Lifetime Tier Firestore Plan Mutation',
-          'Rule 14: Story Hook Fallback & Text Preservation'
+          'Rule 7: Universal Non-Degradation Across All Features',
+          'Rule 12: Zero-Latency Optimistic UI',
+          'Rule 18: Direct Event Prop Binding vs DOM Selector Reliance'
         ],
         testData: [
-          { label: 'Stripe Test Card', value: '4242 4242 4242 4242' },
-          { label: 'Expiry & CVC', value: '12/28 • CVC: 123' },
-          { label: 'SKU Tier', value: 'Generational Vault Lifetime Archival' },
-          { label: 'Transaction Amount', value: '£195.00 GBP' },
-          { label: 'Vault Quota Unlocked', value: '100 GB Permanent Storage' }
+          { label: 'Act I Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test?act=1' },
+          { label: 'Act II Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test?act=2' },
+          { label: 'Act I CTA', value: '[ Take Me There ↗ ] (Scrolls & pulses missing catalyst)' },
+          { label: 'Act II CTA', value: '[ Select Weave ↗ ] (Scrolls to SelectionDeck cards)' }
         ],
-        defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit f1d7f5a)',
-        statusRationale: 'Verified Generational Vault Lifetime Archival checkout and active tier display.',
-        defaultNotes: 'Verified Generational Vault tier display and checkout.'
-      },
-      {
-        category: 'Pass Stacking Logic',
-        title: 'MW-85: Cumulative Pass Stacking ("Extend 31 Days")',
-        instructions: 'With an active 31-day pass, verify that <code class="text-amber-300">/settings</code> displays the exact date range: <code class="text-emerald-400">Active Period: [start] – [end] (31-Day Pass Active • Extend anytime to stack +31 days)</code>. Click "Extend 31 Days", complete checkout with test card, and verify the return URL updates the active period by +31 days cumulatively.',
-        url: 'https://dev.memoryweaver.studio/settings',
-        governingRules: [
-          'MW-85: Non-Destructive Cumulative Timestamp Math',
-          'Rule 12: Zero-Latency Optimistic UI'
-        ],
-        testData: [
-          { label: 'Action Button', value: 'Extend 31 Days' },
-          { label: 'Expected Display', value: 'Active Period: [start] – [end] (31-Day Pass Active • Extend anytime to stack +31 days)' },
-          { label: 'Stripe Test Card', value: '4242 4242 4242 4242' }
-        ],
-        defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit ad6bf9d)',
-        statusRationale: 'Verified active period date range and cumulative +31 days extension on staging.',
-        defaultNotes: 'Verified active period display and pass extension.'
-      },
-      {
-        category: 'Billing Compliance',
-        title: 'MW-85: Self-Serve VAT Receipt & Invoice Portal',
-        instructions: 'In <code class="text-amber-300">/settings</code>, click the button labelled <strong class="text-white">"Manage Billing & Download VAT Invoices ↗"</strong> in either the Active Membership Tier card or the Generational Vault / Director Pass box. Verify instant seamless redirect to the Stripe Customer Billing Portal.',
-        url: 'https://dev.memoryweaver.studio/settings',
-        governingRules: [
-          'Stripe Billing Customer Portal Handshake',
-          'Rule 20: Mandatory UK English Orthography'
-        ],
-        testData: [
-          { label: 'Button Label', value: 'Manage Billing & Download VAT Invoices ↗' },
-          { label: 'Portal Gateway', value: 'Stripe Customer Billing Portal' },
-          { label: 'Document Format', value: 'Official VAT Invoice PDF' }
-        ],
-        defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit ad6bf9d)',
-        statusRationale: 'Verified self-serve VAT Receipt & Invoice Portal button and Stripe handshake.',
-        defaultNotes: 'Verified self-serve VAT Receipt & Invoice Portal.'
-      },
-      {
-        category: 'Sandbox Resilience',
-        title: '✨ Try Einstein Demo Quick-Start (The Magnetic Compass) & Vault Isolation',
-        instructions: 'Click "✨ Try Einstein Demo" in Studio Header or open <code class="text-amber-300">/studio/production/p_einstein</code>. Confirm pre-loaded sample memory loads with authentic spoken monologue: <em>"I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand..."</em> and rich documentary anchors: <code class="text-amber-300">Age: 5</code>, <code class="text-amber-300">Year: 1884</code>, <code class="text-amber-300">Span: 1 Childhood Afternoon</code>, <code class="text-amber-300">Location: Munich Residence</code>, and rich sensory anchors (Cold Brass Pocket Compass, Trembling Needle, Munich Bedroom Linens).',
-        url: 'https://dev.memoryweaver.studio/studio/production/p_einstein',
-        governingRules: [
-          'Rule 11: Spoken Monologue Integrity & Server-Side Sanitizer',
-          'Rule 14: Story Hook Fallback & Text Preservation Hierarchy',
-          'Rule 20: Mandatory UK English Orthography (realised)'
-        ],
-        testData: [
-          { label: 'Direct Production Route', value: 'https://dev.memoryweaver.studio/studio/production/p_einstein' },
-          { label: 'Story Hook', value: 'Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.' },
-          { label: 'Spoken Monologue', value: 'I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.' },
-          { label: 'Biographical Anchors', value: 'I WAS: 5 • YEAR: 1884 • SPAN: 1 Childhood Afternoon' },
-          { label: 'Location Anchor', value: 'Munich (Family Residence)' },
-          { label: 'Country Anchor', value: 'Germany' },
-          { label: 'Sensory Anchors', value: 'Cold Brass Pocket Compass, Trembling Magnetic Needle (Unseen North), Munich Bedroom Rain & Linens' }
-        ],
-        defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit 5fb97d6)',
-        statusRationale: 'Verified authentic 1884 Munich magnetic compass monologue, demographic anchors (Location: Munich, Country: Germany), and 0ms sync hydration on staging.',
+        defaultStatus: 'UNTESTED',
+        statusAttribution: '⏳ PENDING — Deployed to Staging (Commit 1b359a3)',
+        statusRationale: 'Harmonises requirements and directional guidance across all theatrical acts.',
         defaultNotes: ''
       }
     ]

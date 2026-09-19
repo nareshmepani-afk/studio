@@ -113,8 +113,7 @@ export function StudioDashboard({
     if (isCompleted) {
         const chapterPrompts = chapters.flatMap(c => c.prompts);
         const cp = chapterPrompts.find(p => p.id === promptId);
-        // We still route by promptId to let the container rehydrate it.
-        targetId = promptId;
+        targetId = cp?.memory?.id || promptId;
     }
     const actParam = isCompleted ? '?act=1' : '';
     router.push(`/studio/production/${targetId}${actParam}`);
@@ -353,6 +352,7 @@ export function StudioDashboard({
                         <div key={cp.id} className="transform transition-all active:scale-[0.98]">
                           <PromptCard
                             promptId={cp.id}
+                            memoryId={cp.memory?.id}
                             promptText={cp.title}
                             promptSubtitle={cp.subtitle}
                             storyScript={storyScripts[cp.id] || "No script available."}

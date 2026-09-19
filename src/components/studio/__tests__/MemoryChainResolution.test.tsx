@@ -161,4 +161,52 @@ describe('State Machine: Memory Chain Resolution', () => {
     expect(p1Chapter?.memory?.id).toBe('docC');
     expect(p1Chapter?.memory?.title).toBe('Doc C title');
   });
+
+  it('useStudioData prioritises authentic completed/mastered memories over stage-0 test fixture drafts matching the same promptId', async () => {
+    const { result } = renderHook(() => useStudioData('user-123'));
+
+    // Simulate Firestore returning a test draft created AFTER an authentic recorded memory
+    const mockMemories = [
+      { 
+        id: 'tech_scout_draft_test', 
+        data: () => ({ 
+          promptId: 'p1', 
+          title: 'The First Journey (Draft Pre-Flight)', 
+          status: 'draft', 
+          productionStage: 0,
+          createdAt: '2026-09-17T20:00:00.000Z' 
+        }) 
+      },
+      { 
+        id: 'ey96djU6qR1BrDGnvZwp', 
+        data: () => ({ 
+          promptId: 'p1', 
+          title: 'A Child of Two Worlds', 
+          status: 'pre-release', 
+          productionStage: 4,
+          createdAt: '2026-06-29T17:20:53.139Z' 
+        }) 
+      },
+    ];
+
+    await act(async () => {
+      if (memoriesCallback) {
+        memoriesCallback({ docs: mockMemories });
+      }
+      if (requestsCallback) {
+        requestsCallback({ docs: [] });
+      }
+    });
+
+    const p1Chapter = result.current.chapters
+      .flatMap(c => c.prompts)
+      .find(p => p.id === 'p1');
+
+    expect(p1Chapter).toBeDefined();
+    expect(p1Chapter?.memory).toBeDefined();
+    // Shield must select the authentic pre-release memory 'ey96djU6qR1BrDGnvZwp' over 'tech_scout_draft_test'
+    expect(p1Chapter?.memory?.id).toBe('ey96djU6qR1BrDGnvZwp');
+    expect(p1Chapter?.memory?.title).toBe('A Child of Two Worlds');
+    expect(p1Chapter?.memory?.status).toBe('pre-release');
+  });
 });

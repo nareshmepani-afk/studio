@@ -157,7 +157,20 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           }
           
           if (active && !userMemSnap.empty) {
-            const foundDoc = userMemSnap.docs[0];
+            const sortedDocs = userMemSnap.docs.slice().sort((docA, docB) => {
+              const dataA = docA.data() as any;
+              const dataB = docB.data() as any;
+              const aIsTest = docA.id.includes('test') || dataA.isTestFixture ? 1 : 0;
+              const bIsTest = docB.id.includes('test') || dataB.isTestFixture ? 1 : 0;
+              if (aIsTest !== bIsTest) return aIsTest - bIsTest;
+
+              const aCompleted = (dataA.status === 'published' || dataA.status === 'pre-release' || (dataA.productionStage ?? 0) > 0) ? 1 : 0;
+              const bCompleted = (dataB.status === 'published' || dataB.status === 'pre-release' || (dataB.productionStage ?? 0) > 0) ? 1 : 0;
+              if (aCompleted !== bCompleted) return bCompleted - aCompleted;
+
+              return 0;
+            });
+            const foundDoc = sortedDocs[0];
             const fetchedMemory = { id: foundDoc.id, ...foundDoc.data() };
             console.log(`[ProductionDeckContainer] Direct promptId/sceneId query succeeded for "${promptId}". Found document ID: "${foundDoc.id}", Title: "${(fetchedMemory as any).title}", Stage: ${(fetchedMemory as any).productionStage}`);
             setSelectedProductionData(fetchedMemory);
