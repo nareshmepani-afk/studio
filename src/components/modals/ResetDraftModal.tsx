@@ -18,6 +18,7 @@ interface ResetDraftModalProps {
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
   isFlightSimulator?: boolean;
+  isLocked?: boolean;
   isPending?: boolean;
 }
 
@@ -37,6 +38,7 @@ export const ResetDraftModal: React.FC<ResetDraftModalProps> = ({
   onClose,
   onConfirm,
   isFlightSimulator = false,
+  isLocked = false,
   isPending = false,
 }) => {
   return (
@@ -51,6 +53,11 @@ export const ResetDraftModal: React.FC<ResetDraftModalProps> = ({
           </AlertDialogTitle>
           <AlertDialogDescription className="text-stone-300/80 text-sm leading-relaxed font-sans">
             Reset Draft to Baseline? This will clear your current manuscript and unselected takes so you can begin this memory anew. Your curriculum placement will remain intact.
+            {isLocked && (
+              <span className="block mt-2 text-amber-300/90 text-xs font-medium">
+                🔒 Note: Picture Lock is active and will be released upon resetting to baseline.
+              </span>
+            )}
             {isFlightSimulator && (
               <span className="block mt-2 text-amber-300/90 text-xs font-medium">
                 🎭 Rehearsal Note: The canonical seed monologue will be restored to provide an immediate rehearsal baseline.

@@ -42,44 +42,41 @@ export interface DraftResetEligibility {
   allowed: boolean;
   reason?: string;
   isRehearsal: boolean;
+  isLocked: boolean;
 }
 
 /**
  * Determines whether a memory draft can safely be reset to baseline.
+ * Draft reset is always available during Act I draft stage, even when Picture Lock
+ * is active (the reset confirmation modal will release the lock upon resetting).
  */
 export function isDraftResetAllowed(
   memory?: Partial<Memory> | null,
   isProductionLocked: boolean = false
 ): DraftResetEligibility {
   const isRehearsal = isRehearsalDraft(memory);
+  const isLocked = Boolean(isProductionLocked || memory?.isProductionLocked === true);
 
   if (!memory) {
     return {
       allowed: false,
       reason: 'Draft synchronisation record unavailable.',
       isRehearsal: false,
+      isLocked,
     };
   }
 
-  // Guard 1: Picture Lock active
-  if (isProductionLocked || memory.isProductionLocked === true) {
-    return {
-      allowed: false,
-      reason: 'Reset disabled: Picture Lock is active. Release theatrical lock to reset draft.',
-      isRehearsal,
-    };
-  }
-
-  // Guard 2: Memory status progressed beyond draft
+  // Guard 1: Memory status progressed beyond draft
   if (memory.status && memory.status !== 'draft') {
     return {
       allowed: false,
       reason: `Reset disabled: Memory has progressed beyond draft stage (status: ${memory.status}).`,
       isRehearsal,
+      isLocked,
     };
   }
 
-  // Guard 3: Recorded media takes exist
+  // Guard 2: Recorded media takes exist (Rule 7 Universal Non-Degradation)
   const milestones = resolveMemoryMilestones(memory);
   const memAny = memory as any;
   const hasRecordedMedia = Boolean(
@@ -96,12 +93,14 @@ export function isDraftResetAllowed(
       allowed: false,
       reason: 'Reset disabled: Recorded media takes exist for this theatrical performance.',
       isRehearsal,
+      isLocked,
     };
   }
 
   return {
     allowed: true,
     isRehearsal,
+    isLocked,
   };
 }
 

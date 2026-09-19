@@ -110,17 +110,16 @@ describe('🏛️ Draft Reset & Clean Slate Regression Shield (Ticket MW-272)', 
     expect(resetDelta.productionStage).toBe(0);
   });
 
-  it('4. Reset is strictly blocked when Picture Lock is active (isProductionLocked: true)', () => {
-    const eligibility = isDraftResetAllowed(baseStandardMemory, true);
-    expect(eligibility.allowed).toBe(false);
-    expect(eligibility.reason).toMatch(/Picture Lock is active/i);
-
-    // Also assert when memory itself carries isProductionLocked: true
+  it('4. Draft reset is always available during Picture Lock and releases lock upon reset', () => {
     const lockedMemory = { ...baseStandardMemory, isProductionLocked: true };
-    const eligibilityFromMem = isDraftResetAllowed(lockedMemory, false);
-    expect(eligibilityFromMem.allowed).toBe(false);
+    const eligibility = isDraftResetAllowed(lockedMemory, true);
+    
+    // User Directive: Reset button should always be enabled in draft stage
+    expect(eligibility.allowed).toBe(true);
+    expect(eligibility.isLocked).toBe(true);
 
-    expect(() => executeDraftReset(lockedMemory, false)).toThrow(/Picture Lock is active/i);
+    const resetDelta = executeDraftReset(lockedMemory, true);
+    expect(resetDelta.isProductionLocked).toBe(false);
   });
 
   it('5. Reset is strictly blocked when memory status has progressed beyond draft', () => {

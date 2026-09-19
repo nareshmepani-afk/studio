@@ -518,6 +518,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       const resetDelta = executeDraftReset(data, isProductionLocked);
 
       // 1. Synchronously update local form states (0ms UI feedback)
+      setGlobalLocked(false);
       setLocation('');
       setCountry('');
       setDay('none');
@@ -1957,14 +1958,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                     onClick={() => setShowResetDraftModal(true)}
                                     disabled={isResetDisabled}
                                     className={cn(
-                                      "px-3 py-1 bg-white/5 border border-white/10 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 transition-all",
+                                      "px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest transition-all",
                                       isResetDisabled 
-                                        ? "opacity-30 cursor-not-allowed text-white/30 border-white/5" 
-                                        : "hover:bg-amber-500/10 hover:border-amber-500/30 hover:text-amber-400 text-white/40 cursor-pointer"
+                                        ? "opacity-35 cursor-not-allowed border border-stone-800 bg-stone-900/40 text-stone-500" 
+                                        : "bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-400 text-amber-300 hover:text-amber-100 shadow-[0_0_15px_rgba(245,158,11,0.15)] hover:scale-105 active:scale-95 cursor-pointer"
                                     )}
                                     title={resetEligibility.reason || "Reset manuscript and unselected takes to clean slate"}
                                   >
-                                    <RotateCcw className="w-2.5 h-2.5" />
+                                    <RotateCcw className={cn("w-3 h-3", isResetDisabled ? "text-stone-500" : "text-amber-400")} />
                                     <span>Reset Draft</span>
                                   </button>
                                 </div>
@@ -2887,6 +2888,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           onClose={() => setShowResetDraftModal(false)}
           onConfirm={handleConfirmDraftReset}
           isFlightSimulator={resetEligibility.isRehearsal}
+          isLocked={resetEligibility.isLocked}
           isPending={isResettingDraft}
         />
       </LayoutGroup>
