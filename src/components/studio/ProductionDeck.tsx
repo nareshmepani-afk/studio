@@ -1256,48 +1256,51 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         return (
                             <header className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
 
-                                {/* Back Navigation & Act Context */}
-                                <TooltipProvider delayDuration={200}>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                          onClick={async () => {
-                                              if (isDemoMode) {
-                                                  toast.info("Exited Demo Mode");
-                                                  await handleExit();
-                                                  return;
-                                              }
-                                              toast.info("Securing Draft...", { duration: 1500 });
-                                              await handleExit();
-                                              toast.success("Draft Saved", { description: "Your progress is secure." });
-                                          }}
-                                          className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
-                                      >
-                                          <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
-                                          <span className="text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold truncate max-w-[180px] sm:max-w-xs md:max-w-md">
-                                              {actTitle}
-                                          </span>
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="bg-slate-900 border border-emerald-500/30 text-emerald-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
-                                      Secure draft to cloud &amp; return to saved memories
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                                {/* Left Cluster: Back Navigation, Act Context & Mode Posture Badge */}
+                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                  <TooltipProvider delayDuration={200}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                            onClick={async () => {
+                                                if (isDemoMode) {
+                                                    toast.info("Exited Demo Mode");
+                                                    await handleExit();
+                                                    return;
+                                                }
+                                                toast.info("Securing Draft...", { duration: 1500 });
+                                                await handleExit();
+                                                toast.success("Draft Saved", { description: "Your progress is secure." });
+                                            }}
+                                            className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-3 rounded-xl hover:bg-white/5 group shrink-0"
+                                        >
+                                            <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
+                                            <span className="text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold truncate max-w-[160px] sm:max-w-xs md:max-w-sm">
+                                                {actTitle}
+                                            </span>
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="bottom" className="bg-slate-900 border border-emerald-500/30 text-emerald-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
+                                        Secure draft to cloud &amp; return to saved memories
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
 
+                                  {/* Soft-coded Mode Status Indicator: (Draft Pre-Flight) Situated right of Scene / Act Title (Top Left) */}
+                                  <span
+                                      className={cn(
+                                          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none shrink-0 min-h-[38px]",
+                                          isPositiveStatus
+                                              ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                              : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                                      )}
+                                  >
+                                      {badgeLabel}
+                                  </span>
+                                </div>
+
+                                {/* Right Cluster: Hardware Privacy Shield & Studio Utilities */}
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    {/* Soft-coded Mode Status Indicator: (Draft Pre-Flight) */}
-                                    <span
-                                        className={cn(
-                                            "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none min-h-[44px]",
-                                            isPositiveStatus
-                                                ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-                                                : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
-                                        )}
-                                    >
-                                        {badgeLabel}
-                                    </span>
-
                                     {/* Milestone MW-89: Universal Hardware Privacy Shield (OPTICS SEVERED / LIVE / INACTIVE) */}
                                     <OpticsPrivacyShield compact />
                                   {/* CLEAN READ MODE / SENSORY VIEW TOGGLE (HEADER HOTSPOT) */}
