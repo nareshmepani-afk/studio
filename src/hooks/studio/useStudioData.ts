@@ -69,7 +69,9 @@ export function useStudioData(userId: string | undefined) {
     const qMemories = query(memoriesRef, orderBy('createdAt', 'desc'));
     
     const unsubMemories = onSnapshot(qMemories, (snapshot) => {
-      const mems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Memory));
+      const mems = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Memory))
+        .filter(m => !m.isFlightSimulator && (m as any).sceneId !== 'prologue-flight-simulator' && m.id !== 'first_flight_rehearsal');
       const memsJSON = JSON.stringify(mems);
       
       if (memsJSON !== lastMemoriesJSON.current) {

@@ -163,7 +163,7 @@ export function useCurriculumVault({
             const data = docSnap.data() as any;
 
             // ZERO-CONTAMINATION SHIELD: Strictly ignore flight simulator micro-onboarding memories
-            if (data.isFlightSimulator === true || data.sceneId === 'prologue-flight-simulator' || docSnap.id === 'first_flight_rehearsal') {
+            if (data.isFlightSimulator === true || data.sceneId === 'prologue-flight-simulator' || data.promptId === 'prologue-flight-simulator' || docSnap.id === 'first_flight_rehearsal') {
               return;
             }
 
@@ -335,6 +335,11 @@ export function useCurriculumVault({
       const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
       const canonicalSceneId = sceneDef?.id || sceneId;
       const mappedPromptId = sceneDef?.promptId;
+
+      // ZERO-CONTAMINATION SHIELD: Ignore rehearsal takes
+      if (sceneId === 'first_flight_rehearsal' || sceneId === 'prologue-flight-simulator' || canonicalSceneId === 'prologue-flight-simulator') {
+        return;
+      }
 
       let updatedTakesToPersist: MemoirTake[] = [];
       let updatedActsToPersist: ActIdentifier[] = [];
