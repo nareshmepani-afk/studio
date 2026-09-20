@@ -1242,16 +1242,20 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         // Truthful Status Badge Guard (MW-271): While ceremony/review is active, force '(Draft Pre-Flight)'
                         const isEffectivelyCompleted = isActCompleted && !isReviewing;
 
-                        // Soft-coded operational posture across all Acts and Views
+                        // Pre-Flight Acts: Act I (Scriptorium) & Act II (The Weave) prior to recorded performance
+                        const isPreFlightAct = (currentStage === 0 || currentStage === 1) && !milestones.hasRecordedMedia && !isPublished;
+
+                        // Soft-coded operational posture: clearly shows '✈️ Pre-Flight' on Acts I & II,
+                        // and disappears when navigating to Acts that are not via Pre-Flight (Acts III, IV, V).
                         const badgeLabel = isPublished
                             ? '✓ (Published)'
                             : isMasteredReel
                             ? '🌟 (Mastered)'
-                            : isEffectivelyCompleted
-                            ? (currentStage === 0 ? '✓ (Picture Locked)' : '✓ (Completed)')
-                            : '✈️ (Draft Pre-Flight)';
+                            : isPreFlightAct
+                            ? '✈️ Pre-Flight'
+                            : null;
 
-                        const isPositiveStatus = isPublished || isMasteredReel || isEffectivelyCompleted;
+                        const isPositiveStatus = isPublished || isMasteredReel;
 
                         return (
                             <header className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
@@ -1286,17 +1290,19 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                     </Tooltip>
                                   </TooltipProvider>
 
-                                  {/* Soft-coded Mode Status Indicator: (Draft Pre-Flight) Situated right of Scene / Act Title (Top Left) */}
-                                  <span
-                                      className={cn(
-                                          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none shrink-0 min-h-[38px]",
-                                          isPositiveStatus
-                                              ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-                                              : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
-                                      )}
-                                  >
-                                      {badgeLabel}
-                                  </span>
+                                  {/* Soft-coded Pre-Flight Mode Status Indicator on same row as MY LIFE JOURNEY */}
+                                  {badgeLabel && (
+                                      <span
+                                          className={cn(
+                                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none shrink-0 min-h-[36px]",
+                                              isPositiveStatus
+                                                  ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                                  : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                                          )}
+                                      >
+                                          {badgeLabel}
+                                      </span>
+                                  )}
                                 </div>
 
                                 {/* Right Cluster: Hardware Privacy Shield & Studio Utilities */}

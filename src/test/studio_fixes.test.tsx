@@ -3127,6 +3127,18 @@ describe('🔒 Global Forbidden-Pattern Anti-Regression Scanner', () => {
       expect(content).toContain('isAct1TruthfullyComplete = isAct1CatalystsComplete || resolvedMilestones.hasWeave || resolvedMilestones.hasRecordedMedia');
       expect(content).toContain('Boolean(isActMilestoneCompleted(0, resolvedMilestones) && isAct1TruthfullyComplete)');
     });
+
+    it('ANTI-REGRESSION MW-274: ProductionDeck soft-codes Pre-Flight badge on same row as Scene Title for Acts I and II, disappearing in Acts III-V', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const productionDeckPath = path.resolve(process.cwd(), 'src/components/studio/ProductionDeck.tsx');
+      const content = fs.readFileSync(productionDeckPath, 'utf-8');
+
+      expect(content).toContain('const isPreFlightAct = (currentStage === 0 || currentStage === 1) && !milestones.hasRecordedMedia && !isPublished;');
+      expect(content).toContain(': isPreFlightAct');
+      expect(content).toContain("? '✈️ Pre-Flight'");
+      expect(content).toContain('{badgeLabel && (');
+    });
   });
 });
 
