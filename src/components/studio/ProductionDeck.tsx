@@ -1219,92 +1219,87 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     )}
 
                     {/* ROW 1: Stage Header & Navigation */}
-                    {modality !== null && (
-                        <header className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
+                    {/* ROW 1: Stage Header & Navigation */}
+                    {modality !== null && (() => {
+                        const actTitle =
+                            currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
+                            currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
+                            currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
+                            currentStage === 3 ? `${groupTitle} — ACT IV: THE CUT` :
+                            currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
+                            `${groupTitle} — ACT ${currentStage + 1}`;
 
-                            {/* Back Navigation */}
-                            <TooltipProvider delayDuration={200}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                      onClick={async () => {
-                                          if (isDemoMode) {
-                                              toast.info("Exited Demo Mode");
+                        const milestones = resolveMemoryMilestones(memoryData);
+                        // Act I requires mandatory catalysts to be completed unless already progressed (MW-271/MW-272)
+                        const isActCompleted = currentStage === 0
+                            ? Boolean(isActComplete && isActMilestoneCompleted(0, milestones))
+                            : isActMilestoneCompleted(currentStage, milestones);
+
+                        const isAct5 = currentStage === 4;
+                        const isMasteredReel = isAct5 && milestones.hasRecordedMedia;
+                        const isPublished = isAct5 && milestones.isPublished;
+
+                        // Truthful Status Badge Guard (MW-271): While ceremony/review is active, force '(Draft Pre-Flight)'
+                        const isEffectivelyCompleted = isActCompleted && !isReviewing;
+
+                        // Soft-coded operational posture across all Acts and Views
+                        const badgeLabel = isPublished
+                            ? '✓ (Published)'
+                            : isMasteredReel
+                            ? '🌟 (Mastered)'
+                            : isEffectivelyCompleted
+                            ? (currentStage === 0 ? '✓ (Picture Locked)' : '✓ (Completed)')
+                            : '✈️ (Draft Pre-Flight)';
+
+                        const isPositiveStatus = isPublished || isMasteredReel || isEffectivelyCompleted;
+
+                        return (
+                            <header className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
+
+                                {/* Back Navigation & Act Context */}
+                                <TooltipProvider delayDuration={200}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                          onClick={async () => {
+                                              if (isDemoMode) {
+                                                  toast.info("Exited Demo Mode");
+                                                  await handleExit();
+                                                  return;
+                                              }
+                                              toast.info("Securing Draft...", { duration: 1500 });
                                               await handleExit();
-                                              return;
-                                          }
-                                          toast.info("Securing Draft...", { duration: 1500 });
-                                          await handleExit();
-                                          toast.success("Draft Saved", { description: "Your progress is secure." });
-                                      }}
-                                      className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
-                                  >
-                                      <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
-                                       {(() => {
-                                           const actTitle =
-                                               currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
-                                               currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
-                                               currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
-                                               currentStage === 3 ? `${groupTitle} — ACT IV: THE CUT` :
-                                               currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
-                                               `${groupTitle} — ACT ${currentStage + 1}`;
+                                              toast.success("Draft Saved", { description: "Your progress is secure." });
+                                          }}
+                                          className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
+                                      >
+                                          <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
+                                          <span className="text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold truncate max-w-[180px] sm:max-w-xs md:max-w-md">
+                                              {actTitle}
+                                          </span>
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="bg-slate-900 border border-emerald-500/30 text-emerald-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
+                                      Secure draft to cloud &amp; return to saved memories
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
 
-                                            const milestones = resolveMemoryMilestones(memoryData);
-                                            // Act I requires mandatory catalysts to be completed unless already progressed (MW-271/MW-272)
-                                            const isActCompleted = currentStage === 0
-                                                ? Boolean(isActComplete && isActMilestoneCompleted(0, milestones))
-                                                : isActMilestoneCompleted(currentStage, milestones);
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Soft-coded Mode Status Indicator: (Draft Pre-Flight) */}
+                                    <span
+                                        className={cn(
+                                            "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none min-h-[44px]",
+                                            isPositiveStatus
+                                                ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                                : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                                        )}
+                                    >
+                                        {badgeLabel}
+                                    </span>
 
-                                           const isAct5 = currentStage === 4;
-                                           const isMasteredReel = isAct5 && milestones.hasRecordedMedia;
-                                           const isPublished = isAct5 && milestones.isPublished;
-
-                                           // Truthful Status Badge Guard (MW-271): While ceremony/review is active, force '⏳ Pending'
-                                           const isEffectivelyCompleted = isActCompleted && !isReviewing;
-
-                                           const badgeLabel = isPublished
-                                               ? '✓ Completed'
-                                               : isMasteredReel
-                                               ? '🌟 Mastered'
-                                               : isEffectivelyCompleted
-                                               ? (currentStage === 0 ? '✓ Picture Locked' : '✓ Completed')
-                                               : (
-                                                   currentStage === 0 ? '✈️ Pre-Flight Draft' :
-                                                   currentStage === 1 ? '✈️ Pre-Flight Scout' :
-                                                   currentStage === 2 ? '✈️ Stage Pre-Flight' :
-                                                   currentStage === 3 ? '✈️ Director Prep' :
-                                                   '✈️ Premiere Prep'
-                                               );
-
-                                           const isPositiveStatus = isPublished || isMasteredReel || isEffectivelyCompleted;
-
-                                           return (
-                                               <span className="inline-flex items-center flex-wrap gap-2 text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold">
-                                                   <span>{actTitle}</span>
-                                                   <span
-                                                       className={cn(
-                                                           "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wide border shadow-sm transition-all",
-                                                           isPositiveStatus
-                                                               ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-                                                               : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
-                                                       )}
-                                                   >
-                                                       {badgeLabel}
-                                                   </span>
-                                                   {/* Milestone MW-89: Hardware Privacy Shield */}
-                                                   <OpticsPrivacyShield className="ml-1" compact />
-                                               </span>
-                                           );
-                                       })()}
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="bottom" className="bg-slate-900 border border-emerald-500/30 text-emerald-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
-                                  Secure draft to cloud &amp; return to saved memories
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-
-                              <div className="flex items-center gap-2">
+                                    {/* Milestone MW-89: Universal Hardware Privacy Shield (OPTICS SEVERED / LIVE / INACTIVE) */}
+                                    <OpticsPrivacyShield compact />
                                   {/* CLEAN READ MODE / SENSORY VIEW TOGGLE (HEADER HOTSPOT) */}
                                   <TooltipProvider delayDuration={200}>
                                       <Tooltip>
@@ -1397,7 +1392,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                  </TooltipProvider>
                              </div>
                         </header>
-                    )}
+                    );
+                })()}
 
                     {/* ROW 2: Stage Canvas & Production Rail (Sole Scroll Domain) */}
                     <main
