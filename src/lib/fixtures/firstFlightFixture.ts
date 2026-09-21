@@ -18,7 +18,7 @@ export const FIRST_FLIGHT_FIXTURE: Partial<Memory> = {
   description: "The Sunday kettle whistling on the stove, rain drumming against the windowpane, and warm cardamom chai served in cracked ceramic cups. It wasn't fancy, but for those two hours, our whole world was safe. In that kitchen, nobody was in a hurry.",
   originalHook: "The Sunday kettle whistling on the stove, rain drumming against the windowpane, and warm cardamom chai served in cracked ceramic cups. It wasn't fancy, but for those two hours, our whole world was safe. In that kitchen, nobody was in a hurry.",
   timeframeScope: 'Morning' as any,
-  location: 'Family Kitchen',
+  location: 'London',
   country: 'United Kingdom',
   year: 1994,
   dateComponents: {

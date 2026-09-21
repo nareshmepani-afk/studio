@@ -222,7 +222,7 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
 
   it('5. FIRST_FLIGHT_FIXTURE is fully pre-hydrated with valid demographic catalysts (Year, Age, Country, City)', async () => {
     const { validateAct1RequiredFields } = await import('@/lib/curriculum/actValidation');
-    expect(FIRST_FLIGHT_FIXTURE.location).toBe('Family Kitchen');
+    expect(FIRST_FLIGHT_FIXTURE.location).toBe('London');
     expect(FIRST_FLIGHT_FIXTURE.country).toBe('United Kingdom');
     expect(FIRST_FLIGHT_FIXTURE.year).toBe(1994);
     expect(FIRST_FLIGHT_FIXTURE.narratorAgeAtTime).toBe(26);
