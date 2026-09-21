@@ -94,6 +94,13 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         checkUnsavedTake();
     }, [memoryData?.id, checkUnsavedTake]);
 
+    const isRehearsalFlight = Boolean(
+        (memoryData as any)?.isFlightSimulator || 
+        memoryData?.promptId === 'prologue-flight-simulator' || 
+        memoryData?.sceneId === 'prologue-flight-simulator' || 
+        memoryData?.id === 'first_flight_rehearsal'
+    );
+
     // 1. Unified Global State
     const { 
         currentStage, 
@@ -1245,12 +1252,15 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         // Pre-Flight Acts: Act I (Scriptorium) & Act II (The Weave) prior to recorded performance
                         const isPreFlightAct = (currentStage === 0 || currentStage === 1) && !milestones.hasRecordedMedia && !isPublished;
 
-                        // Soft-coded operational posture: clearly shows '✈️ Pre-Flight' on Acts I & II,
-                        // and disappears when navigating to Acts that are not via Pre-Flight (Acts III, IV, V).
+                        // Soft-coded operational posture: clearly shows '✈️ Pre-Flight Rehearsal' across all 5 Acts
+                        // during Flight Simulator mode, '✈️ Pre-Flight' on Acts I & II for standard drafts,
+                        // and status indicators once recorded/mastered/published.
                         const badgeLabel = isPublished
                             ? '✓ (Published)'
                             : isMasteredReel
                             ? '🌟 (Mastered)'
+                            : isRehearsalFlight
+                            ? '✈️ Pre-Flight Rehearsal'
                             : isPreFlightAct
                             ? '✈️ Pre-Flight'
                             : null;
@@ -1453,14 +1463,15 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                              "relative flex-1 min-h-0 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
                              modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
                          )} data-blueprint="StageArea">
-                             {currentStage === 2 && !lobbyConfirmed && !hasUnsavedTake && !memoryData?.videoUrl ? (
-                                 <StudioLobby
-                                     onConfirm={(mode) => {
-                                         setLobbyConfirmed(true);
-                                         setActiveRoom(mode);
-                                     }}
-                                 />
-                             ) : (
+                              {currentStage === 2 && !lobbyConfirmed && !hasUnsavedTake && !memoryData?.videoUrl ? (
+                                  <StudioLobby
+                                      isFlightSimulator={isRehearsalFlight}
+                                      onConfirm={(mode) => {
+                                          setLobbyConfirmed(true);
+                                          setActiveRoom(mode);
+                                      }}
+                                  />
+                              ) : (
                                  renderRoom()
                              )}
 

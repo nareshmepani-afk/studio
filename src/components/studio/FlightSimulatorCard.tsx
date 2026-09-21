@@ -42,7 +42,7 @@ export function FlightSimulatorCard() {
         className="w-full mb-8 relative rounded-3xl overflow-hidden bg-slate-950/80 backdrop-blur-2xl border border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.15)] group"
       >
         {/* Specular Edge Highlight */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-300/70 to-transparent shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
 
         {/* Ambient Warm Gradient Backdrop */}
         <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/10 via-transparent to-sky-500/10 blur-2xl opacity-50 pointer-events-none" />
@@ -65,9 +65,9 @@ export function FlightSimulatorCard() {
             </h2>
 
             {/* The 3-Sentence Universal Script Excerpt */}
-            <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-white/[0.05] border border-white/15 text-white/90 shadow-inner">
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-black/60 border border-white/20 border-l-4 border-l-amber-400 text-white shadow-xl">
               <Coffee className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs sm:text-sm font-serif italic leading-relaxed text-zinc-100">
+              <p className="text-xs sm:text-sm font-serif italic leading-relaxed text-white font-medium drop-shadow-sm">
                 &ldquo;{FIRST_FLIGHT_FIXTURE.prose}&rdquo;
               </p>
             </div>

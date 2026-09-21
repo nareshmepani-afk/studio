@@ -13,6 +13,8 @@ export interface Act1Fields {
   location?: string | null;
   country?: string | null;
   year?: string | number | null;
+  narratorAgeAtTime?: number | null;
+  age?: number | null;
   prose?: string | null;
   description?: string | null;
 }

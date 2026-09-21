@@ -51,11 +51,11 @@ export const StudioUpgradeBadge: React.FC<StudioUpgradeBadgeProps> = ({ onBefore
 
       <Rocket className="w-4 h-4 text-emerald-300 group-hover:text-amber-300 animate-bounce transition-colors" />
 
-      <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] font-extrabold">
+      <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] font-extrabold hidden md:inline">
         STUDIO UPGRADE
       </span>
 
-      <Sparkles className="w-3 h-3 text-amber-300 opacity-80 group-hover:opacity-100 transition-opacity" />
+      <Sparkles className="w-3 h-3 text-amber-300 opacity-80 group-hover:opacity-100 transition-opacity hidden md:inline" />
     </button>
   );
 };

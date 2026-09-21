@@ -8,9 +8,10 @@ import { useStudioState } from '@/hooks/studio/useStudioState';
 
 interface StudioLobbyProps {
   onConfirm: (mode: 'solo' | 'collaborative' | 'guest') => void;
+  isFlightSimulator?: boolean;
 }
 
-export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
+export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm, isFlightSimulator = false }) => {
   const { currentStage } = useStudioState();
   const [selectedStation, setSelectedStation] = useState<'solo' | 'collaborative' | 'guest'>('solo');
   const [timeLeft, setTimeLeft] = useState<number>(30);
@@ -125,7 +126,13 @@ export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]" />
               <h2 className="text-lg font-headline tracking-widest text-emerald-400 uppercase">SOLO BOOTH</h2>
             </div>
-            <span className="font-mono text-[9px] tracking-widest text-purple-400/80 uppercase px-2 py-0.5 rounded-md border border-purple-500/10 bg-purple-950/20">Authorized Path</span>
+            {isFlightSimulator ? (
+              <span className="font-mono text-[9px] tracking-widest text-amber-300 uppercase px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-950/40">
+                🚀 Rehearsal Station
+              </span>
+            ) : (
+              <span className="font-mono text-[9px] tracking-widest text-purple-400/80 uppercase px-2 py-0.5 rounded-md border border-purple-500/10 bg-purple-950/20">Authorized Path</span>
+            )}
           </div>
 
           <p className="text-xs text-white/50 leading-relaxed font-light mb-6 px-4 z-10">
@@ -196,12 +203,14 @@ export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
 
         {/* 2. COLLABORATIVE STAGE (The Ensemble) */}
         <div
-          onMouseEnter={() => handleStationHover('collaborative')}
-          onClick={() => handleSelectStation('collaborative')}
-          className={`relative rounded-3xl p-6 border transition-all duration-700 cursor-pointer overflow-hidden group flex flex-col items-center justify-between text-center ${
-            selectedStation === 'collaborative'
-              ? 'bg-gradient-to-b from-cyan-500/10 via-slate-900/5 to-slate-950 border-cyan-500/40 shadow-[0_0_50px_rgba(6,182,212,0.15)] scale-[1.03]'
-              : 'bg-white/[0.02] border-white/5 hover:border-cyan-500/20 hover:bg-white/[0.04]'
+          onMouseEnter={() => !isFlightSimulator && handleStationHover('collaborative')}
+          onClick={() => !isFlightSimulator && handleSelectStation('collaborative')}
+          className={`relative rounded-3xl p-6 border transition-all duration-700 overflow-hidden group flex flex-col items-center justify-between text-center ${
+            isFlightSimulator
+              ? 'opacity-35 grayscale pointer-events-none cursor-not-allowed bg-white/[0.01] border-white/5'
+              : selectedStation === 'collaborative'
+              ? 'bg-gradient-to-b from-cyan-500/10 via-slate-900/5 to-slate-950 border-cyan-500/40 shadow-[0_0_50px_rgba(6,182,212,0.15)] scale-[1.03] cursor-pointer'
+              : 'bg-white/[0.02] border-white/5 hover:border-cyan-500/20 hover:bg-white/[0.04] cursor-pointer'
           }`}
         >
           {/* Glowing Ambient Backdrop */}
@@ -224,20 +233,28 @@ export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
           </div>
 
           <div className="w-full px-4 mb-4 z-10">
-            <div className="text-[9px] font-mono text-cyan-400/60 border border-cyan-500/10 bg-cyan-950/10 py-1.5 rounded-xl uppercase tracking-wider">
-              Dual-Weave Enabled
-            </div>
+            {isFlightSimulator ? (
+              <div className="text-[9px] font-mono text-zinc-400 border border-zinc-700/40 bg-zinc-900/60 py-1.5 rounded-xl uppercase tracking-wider">
+                🔒 Available in standard mode
+              </div>
+            ) : (
+              <div className="text-[9px] font-mono text-cyan-400/60 border border-cyan-500/10 bg-cyan-950/10 py-1.5 rounded-xl uppercase tracking-wider">
+                Dual-Weave Enabled
+              </div>
+            )}
           </div>
         </div>
 
         {/* 3. GUEST DIRECTOR (The Masterclass) */}
         <div
-          onMouseEnter={() => handleStationHover('guest')}
-          onClick={() => handleSelectStation('guest')}
-          className={`relative rounded-3xl p-6 border transition-all duration-700 cursor-pointer overflow-hidden group flex flex-col items-center justify-between text-center ${
-            selectedStation === 'guest'
-              ? 'bg-gradient-to-b from-amber-500/10 via-slate-900/5 to-slate-950 border-amber-500/40 shadow-[0_0_50px_rgba(245,158,11,0.15)] scale-[1.03]'
-              : 'bg-white/[0.02] border-white/5 hover:border-amber-500/20 hover:bg-white/[0.04]'
+          onMouseEnter={() => !isFlightSimulator && handleStationHover('guest')}
+          onClick={() => !isFlightSimulator && handleSelectStation('guest')}
+          className={`relative rounded-3xl p-6 border transition-all duration-700 overflow-hidden group flex flex-col items-center justify-between text-center ${
+            isFlightSimulator
+              ? 'opacity-35 grayscale pointer-events-none cursor-not-allowed bg-white/[0.01] border-white/5'
+              : selectedStation === 'guest'
+              ? 'bg-gradient-to-b from-amber-500/10 via-slate-900/5 to-slate-950 border-amber-500/40 shadow-[0_0_50px_rgba(245,158,11,0.15)] scale-[1.03] cursor-pointer'
+              : 'bg-white/[0.02] border-white/5 hover:border-amber-500/20 hover:bg-white/[0.04] cursor-pointer'
           }`}
         >
           {/* Glowing Ambient Backdrop */}
@@ -260,9 +277,15 @@ export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
           </div>
 
           <div className="w-full px-4 mb-4 z-10">
-            <div className="text-[9px] font-mono text-amber-400/60 border border-amber-500/10 bg-amber-950/10 py-1.5 rounded-xl uppercase tracking-wider">
-              Perfect for Legacies
-            </div>
+            {isFlightSimulator ? (
+              <div className="text-[9px] font-mono text-zinc-400 border border-zinc-700/40 bg-zinc-900/60 py-1.5 rounded-xl uppercase tracking-wider">
+                🔒 Available in standard mode
+              </div>
+            ) : (
+              <div className="text-[9px] font-mono text-amber-400/60 border border-amber-500/10 bg-amber-950/10 py-1.5 rounded-xl uppercase tracking-wider">
+                Perfect for Legacies
+              </div>
+            )}
           </div>
         </div>
 

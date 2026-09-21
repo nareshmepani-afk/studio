@@ -113,7 +113,7 @@ export function Navbar() {
   return (
     <TooltipProvider delayDuration={300}>
       <header className="sticky top-0 z-[100] w-full transition-all duration-300 ease-in-out border-b bg-background/40 backdrop-blur-md border-white/5 shadow-2xl group/nav">
-        <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-8 flex h-16 items-center justify-between">
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-8 flex h-16 items-center justify-between gap-2 sm:gap-4 min-w-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href={isAuthenticated ? "/studio" : "/"} data-hotspot-id="HS_NAV_LOGO" className="mr-2 sm:mr-4 lg:mr-6 flex items-center space-x-1.5 sm:space-x-2 shrink-0" aria-label="Memory Weaver Homepage">
@@ -127,7 +127,7 @@ export function Navbar() {
           </Tooltip>
           
           {(isAuthenticated || isGuestDirectorView) ? (
-            <nav className="flex flex-1 items-center space-x-2 sm:space-x-3 lg:space-x-4 xl:space-x-6 overflow-x-auto no-scrollbar">
+            <nav className="flex flex-1 items-center space-x-2 sm:space-x-3 lg:space-x-4 xl:space-x-6 overflow-x-auto no-scrollbar min-w-0">
               {isGuestDirectorView ? (
                 // Focused Guest Director View
                  <Tooltip>
@@ -285,9 +285,9 @@ export function Navbar() {
             </nav>
           )}
 
-          <div className="flex items-center ml-auto space-x-1.5 sm:space-x-3 shrink-0">
+          <div className="flex items-center ml-auto space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
             <StudioUpgradeBadge />
-            {isStudio && <OpticsPrivacyShield />}
+            {isStudio && <OpticsPrivacyShield compact className="shrink-0 max-xl:[&>span]:hidden" />}
             {isStudioWorkspace && (
               <div data-hotspot-id="HS_NAV_LANGUAGE_TOGGLE">
                 <LanguageToggle />

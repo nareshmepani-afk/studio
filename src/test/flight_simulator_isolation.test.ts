@@ -219,4 +219,17 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
       expect(strippedCardCopy).not.toMatch(pattern);
     });
   });
+
+  it('5. FIRST_FLIGHT_FIXTURE is fully pre-hydrated with valid demographic catalysts (Year, Age, Country, City)', async () => {
+    const { validateAct1RequiredFields } = await import('@/lib/curriculum/actValidation');
+    expect(FIRST_FLIGHT_FIXTURE.location).toBe('Family Kitchen');
+    expect(FIRST_FLIGHT_FIXTURE.country).toBe('United Kingdom');
+    expect(FIRST_FLIGHT_FIXTURE.year).toBe(1994);
+    expect(FIRST_FLIGHT_FIXTURE.narratorAgeAtTime).toBe(26);
+    expect(FIRST_FLIGHT_FIXTURE.age).toBe(26);
+
+    const validation = validateAct1RequiredFields(FIRST_FLIGHT_FIXTURE as any);
+    expect(validation.isValid).toBe(true);
+    expect(validation.missing).toHaveLength(0);
+  });
 });
