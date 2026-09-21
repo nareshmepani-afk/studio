@@ -36,4 +36,8 @@ test-results/
 !scripts/*.js
 scratch/
 !tailwind.config.js
-!postcss.config.js
+!postcss.config.js
+
+# Antigravity IDE Agent Policies (local workspace config — never commit)
+.antigravity/
+

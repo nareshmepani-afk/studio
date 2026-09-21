@@ -2,5 +2,9 @@
 // Triggering deployment
 {
     "IDX.aI.enableInlineCompletion": true,
-    "IDX.aI.enableCodebaseIndexing": true
-}
+    "IDX.aI.enableCodebaseIndexing": true,
+    "terminal.integrated.commandsToSkipShell": [
+        "npm.cmd run test",
+        "npm.cmd run build"
+    ]
+}
