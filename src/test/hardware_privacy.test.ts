@@ -9,6 +9,20 @@ import { OpticsPrivacyShield } from '@/components/studio/OpticsPrivacyShield';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { toast } from 'sonner';
+
+const mockUsePathname = vi.fn().mockReturnValue('/studio');
+vi.mock('next/navigation', () => ({
+  usePathname: () => mockUsePathname(),
+}));
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  },
+}));
 
 describe('MW-89: Universal Hardware Privacy Shield & Stream Lifecycle Policy', () => {
   let mockOriginalGetUserMedia: any;
@@ -150,6 +164,7 @@ describe('MW-89: Universal Hardware Privacy Shield & Stream Lifecycle Policy', (
   });
 
   it('renders 3-state OpticsPrivacyShield UI component with correct badges and interactions', async () => {
+    mockUsePathname.mockReturnValue('/studio');
     render(
       React.createElement(
         HardwarePrivacyProvider,
@@ -171,21 +186,51 @@ describe('MW-89: Universal Hardware Privacy Shield & Stream Lifecycle Policy', (
     expect(shieldBtn).toHaveAttribute('data-status', 'live');
     expect(shieldBtn.textContent).toContain('CAMERA LIVE • Sever Feed ✕');
 
-    // Click shield button to sever feed -> State 3: Severed
+    // Click shield button to sever feed -> State 3: Severed (on /studio)
     act(() => {
       fireEvent.click(shieldBtn);
     });
 
     expect(shieldBtn).toHaveAttribute('data-status', 'severed');
-    expect(shieldBtn.textContent).toContain('Optics Severed • Click to Restore');
+    expect(shieldBtn.textContent).toContain('Optics Severed • Re-Arm Permissions');
 
-    // Click again to restore/re-arm
+    // Click again to restore/re-arm on non-soundstage route
     act(() => {
       fireEvent.click(shieldBtn);
     });
 
     expect(shieldBtn).toHaveAttribute('data-status', 'inactive');
     expect(shieldBtn.textContent).toContain('Optics Inactive');
+    expect(toast.success).toHaveBeenCalledWith(
+      'Optics Re-Armed',
+      expect.objectContaining({
+        description: expect.stringContaining('Soundstage'),
+      })
+    );
+  });
+
+  it('renders soundstage-specific restore label when severed inside active production soundstage', async () => {
+    mockUsePathname.mockReturnValue('/studio/production/sample-scene');
+    render(
+      React.createElement(
+        HardwarePrivacyProvider,
+        null,
+        React.createElement(OpticsPrivacyShield)
+      )
+    );
+
+    const shieldBtn = screen.getByTestId('optics-privacy-shield-btn');
+
+    await act(async () => {
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    });
+
+    act(() => {
+      fireEvent.click(shieldBtn);
+    });
+
+    expect(shieldBtn).toHaveAttribute('data-status', 'severed');
+    expect(shieldBtn.textContent).toContain('Optics Severed • Click to Restore');
   });
 
   it('handles visibilitychange lifecycle by severing feeds when document is hidden', async () => {

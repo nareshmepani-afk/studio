@@ -127,7 +127,7 @@ export function Navbar() {
           </Tooltip>
           
           {(isAuthenticated || isGuestDirectorView) ? (
-            <nav className="flex flex-1 items-center space-x-2 sm:space-x-3 lg:space-x-4 xl:space-x-6 overflow-x-auto no-scrollbar min-w-0">
+            <nav className="flex flex-1 items-center space-x-2 sm:space-x-3 lg:space-x-4 xl:space-x-6 overflow-visible min-w-0">
               {isGuestDirectorView ? (
                 // Focused Guest Director View
                  <Tooltip>
@@ -189,8 +189,8 @@ export function Navbar() {
                     </TooltipContent>
                   </Tooltip>
 
-                  {/* Tablet Contextual Explore Pill (768px–1279px) */}
-                  <div className="hidden md:flex xl:hidden items-center pl-1 border-l border-white/10 shrink-0">
+                  {/* Contextual Explore Pill (768px–1535px) */}
+                  <div className="hidden md:flex 2xl:hidden items-center pl-1 border-l border-white/10 shrink-0">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button 
@@ -226,8 +226,8 @@ export function Navbar() {
                     </DropdownMenu>
                   </div>
 
-                  {/* Desktop Secondary Links (≥ 1280px) */}
-                  <div className="hidden xl:flex items-center space-x-3 xl:space-x-5 pl-2 border-l border-white/10 shrink-0">
+                  {/* Widescreen Secondary Links (≥ 1536px) */}
+                  <div className="hidden 2xl:flex items-center space-x-3 xl:space-x-5 pl-2 border-l border-white/10 shrink-0">
                     <Link
                       href="/how-it-works"
                       className={`${navLinkClass} ${pathname === '/how-it-works' ? activeNavLinkClass : ''}`}

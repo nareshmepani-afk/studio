@@ -412,13 +412,13 @@ describe('Responsive Device UI & Viewport Contract Shield', () => {
       expect(desktopGiftLink).toBeDefined();
     });
 
-    it('renders the tablet explore popover button on intermediate viewports (768px–1279px)', () => {
+    it('renders the explore popover button on intermediate viewports (768px–1535px)', () => {
       mockUsePathname.mockReturnValue('/');
       render(<Navbar />);
 
       const exploreButton = screen.getByRole('button', { name: /explore more pages/i });
       expect(exploreButton).toBeDefined();
-      const parentContainer = exploreButton.closest('[class*="md:flex"][class*="xl:hidden"]');
+      const parentContainer = exploreButton.closest('[class*="md:flex"][class*="2xl:hidden"]');
       expect(parentContainer).not.toBeNull();
     });
 

@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { ShieldCheck, ShieldAlert, Ban } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -18,7 +20,14 @@ interface OpticsPrivacyShieldProps {
 
 export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivacyShieldProps) {
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
   const { status, killAllHardwareFeeds, rearmHardware } = useHardwarePrivacy();
+
+  const isSoundstageRoute = Boolean(
+    pathname?.startsWith('/studio/production') ||
+    pathname?.startsWith('/studio/remote-camera') ||
+    pathname?.startsWith('/interviewer')
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -44,6 +53,11 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
       killAllHardwareFeeds();
     } else if (isSevered) {
       rearmHardware();
+      if (!isSoundstageRoute) {
+        toast.success('Optics Re-Armed', {
+          description: 'Hardware permissions restored. Feeds will activate automatically upon entering the Soundstage.',
+        });
+      }
     }
   };
 
@@ -52,6 +66,9 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
       return 'Hardware camera and microphone live. Click to sever all hardware feeds immediately.';
     }
     if (isSevered) {
+      if (!isSoundstageRoute) {
+        return 'Hardware policy severed. Click to re-arm camera permissions for the Soundstage.';
+      }
       return 'Hardware feeds severed. Click to restore camera and microphone access.';
     }
     return 'Optics inactive. Feeds initialise automatically upon entering the soundstage.';
@@ -105,7 +122,9 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
               <>
                 <Ban className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
                 <span className={cn('tracking-widest font-black text-rose-300', compact && 'hidden sm:inline')}>
-                  🚫 Optics Severed • Click to Restore
+                  {isSoundstageRoute
+                    ? (compact ? '🚫 Severed • Restore' : '🚫 Optics Severed • Click to Restore')
+                    : (compact ? '🚫 Severed • Re-Arm' : '🚫 Optics Severed • Re-Arm Permissions')}
                 </span>
               </>
             )}
