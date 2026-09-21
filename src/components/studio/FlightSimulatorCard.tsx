@@ -55,25 +55,25 @@ export function FlightSimulatorCard() {
                 <Compass className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 🚀 FLIGHT SIMULATOR // 60s REHEARSAL
               </span>
-              <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">
+              <span className="text-[11px] font-mono text-amber-200/90 font-semibold uppercase tracking-wider">
                 Zero-Friction Practice Flight
               </span>
             </div>
 
             <h2 className="text-xl sm:text-2xl md:text-3xl font-headline font-bold text-white italic tracking-tight">
-              Experience the 5 Acts of Memory Weaver Without Writing
+              Free Walkthrough &mdash; Experience the 5 Acts of Memory Weaver Without Writing
             </h2>
 
             {/* The 3-Sentence Universal Script Excerpt */}
-            <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 text-white/80">
+            <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-white/[0.05] border border-white/15 text-white/90 shadow-inner">
               <Coffee className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs sm:text-sm font-serif italic leading-relaxed text-zinc-300">
+              <p className="text-xs sm:text-sm font-serif italic leading-relaxed text-zinc-100">
                 &ldquo;{FIRST_FLIGHT_FIXTURE.prose}&rdquo;
               </p>
             </div>
 
-            <p className="text-[11px] font-mono text-white/40 leading-relaxed">
-              Step through the entire theatrical arc: Hook &rarr; 1-Click AI Weave &rarr; 15s Prompter Take &rarr; 4K Exhibition Premiere. Your Generational Vault progress remains untouched.
+            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
+              Step through the entire theatrical arc: <span className="text-amber-300 font-semibold">Hook</span> &rarr; <span className="text-amber-300 font-semibold">1-Click AI Weave</span> &rarr; <span className="text-amber-300 font-semibold">15s Prompter Take</span> &rarr; <span className="text-amber-300 font-semibold">4K Exhibition Premiere</span>. <span className="text-emerald-300/90 font-medium">Your Generational Vault progress remains untouched.</span>
             </p>
           </div>
 
