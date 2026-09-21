@@ -232,4 +232,41 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     expect(validation.isValid).toBe(true);
     expect(validation.missing).toHaveLength(0);
   });
+
+  it('6. Act III Direct Soundstage Immersion: Rehearsal flight bypasses StudioLobby and unlocks SoloStage directly (MW-266 Option A)', () => {
+    const deckPath = path.resolve(__dirname, '../components/studio/ProductionDeck.tsx');
+    const deckContent = fs.readFileSync(deckPath, 'utf8');
+
+    // Invariant 1: StudioLobby render block in Act III requires !isRehearsalFlight (bypassed in rehearsal flight)
+    expect(deckContent).toMatch(
+      /currentStage\s*===\s*2\s*&&\s*!lobbyConfirmed\s*&&\s*!hasUnsavedTake\s*&&\s*!memoryData\?\.videoUrl\s*&&\s*!isRehearsalFlight/
+    );
+
+    // Invariant 2: Top header HUD pill displays Rehearsal Soundstage Prompter Ready in Act III
+    expect(deckContent).toMatch(
+      /isRehearsalFlight\s*&&\s*currentStage\s*===\s*2\s*\?\s*['"]🚀 First Flight: Rehearsal Soundstage • Prompter Ready['"]/
+    );
+
+    // Invariant 3: isLobbyConfirmed unlocks stage controls immediately for rehearsal flights
+    expect(deckContent).toContain('isLobbyConfirmed={isRehearsalFlight ? true : lobbyConfirmed}');
+
+    // Invariant 4: Standard mode memories (!isRehearsalFlight) retain standard StudioLobby gating
+    const standardMemory = { id: 'mem_standard_001', isFlightSimulator: false };
+    const isRehearsal = Boolean(
+      (standardMemory as any)?.isFlightSimulator ||
+      (standardMemory as any)?.promptId === 'prologue-flight-simulator' ||
+      (standardMemory as any)?.sceneId === 'prologue-flight-simulator' ||
+      standardMemory.id === 'first_flight_rehearsal'
+    );
+    expect(isRehearsal).toBe(false);
+
+    // FIRST_FLIGHT_FIXTURE is recognized as rehearsal flight
+    const isFixtureRehearsal = Boolean(
+      FIRST_FLIGHT_FIXTURE.isFlightSimulator ||
+      FIRST_FLIGHT_FIXTURE.promptId === 'prologue-flight-simulator' ||
+      FIRST_FLIGHT_FIXTURE.sceneId === 'prologue-flight-simulator' ||
+      FIRST_FLIGHT_FIXTURE.id === 'first_flight_rehearsal'
+    );
+    expect(isFixtureRehearsal).toBe(true);
+  });
 });

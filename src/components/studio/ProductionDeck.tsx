@@ -1259,6 +1259,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             ? '✓ (Published)'
                             : isMasteredReel
                             ? '🌟 (Mastered)'
+                            : isRehearsalFlight && currentStage === 2
+                            ? '🚀 First Flight: Rehearsal Soundstage • Prompter Ready'
                             : isRehearsalFlight
                             ? '✈️ Pre-Flight Rehearsal'
                             : isPreFlightAct
@@ -1463,17 +1465,17 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                              "relative flex-1 min-h-0 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
                              modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
                          )} data-blueprint="StageArea">
-                              {currentStage === 2 && !lobbyConfirmed && !hasUnsavedTake && !memoryData?.videoUrl ? (
-                                  <StudioLobby
-                                      isFlightSimulator={isRehearsalFlight}
-                                      onConfirm={(mode) => {
-                                          setLobbyConfirmed(true);
-                                          setActiveRoom(mode);
-                                      }}
-                                  />
-                              ) : (
-                                 renderRoom()
-                             )}
+                               {currentStage === 2 && !lobbyConfirmed && !hasUnsavedTake && !memoryData?.videoUrl && !isRehearsalFlight ? (
+                                   <StudioLobby
+                                       isFlightSimulator={isRehearsalFlight}
+                                       onConfirm={(mode) => {
+                                           setLobbyConfirmed(true);
+                                           setActiveRoom(mode);
+                                       }}
+                                   />
+                               ) : (
+                                  renderRoom()
+                              )}
 
                             {/* HUD Watermark Label - Bottom Left */}
                             {modality !== null && (
@@ -1516,7 +1518,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                   setLobbyConfirmed(true);
                                   setActiveRoom(room);
                                 }}
-                                isLobbyConfirmed={lobbyConfirmed}
+                                isLobbyConfirmed={isRehearsalFlight ? true : lobbyConfirmed}
                             />
                         </footer>
                     )}
