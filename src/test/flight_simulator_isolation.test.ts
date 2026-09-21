@@ -269,4 +269,38 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     );
     expect(isFixtureRehearsal).toBe(true);
   });
+
+  it('7. Rehearsal Fast-Path: Act I → Act II bypasses AI synthesis and SelectionDeck for isRehearsalFlight (MW-266)', () => {
+    const deckPath = path.resolve(__dirname, '../components/studio/ProductionDeck.tsx');
+    const deckContent = fs.readFileSync(deckPath, 'utf8');
+
+    // Invariant 1: Rehearsal fast-path guard is present using isAct1 && isRehearsalFlight
+    expect(deckContent).toMatch(/isAct1\s*&&\s*isRehearsalFlight/);
+
+    // Invariant 2: Fast-path sets isReviewing to false (no SelectionDeck presented)
+    // The guard block must contain setIsReviewing(false) before the ceremony trigger
+    const fastPathBlock = deckContent.match(/isAct1\s*&&\s*isRehearsalFlight[\s\S]*?return;\s*\}/);
+    expect(fastPathBlock).not.toBeNull();
+    expect(fastPathBlock![0]).toContain('setIsReviewing(false)');
+
+    // Invariant 3: Fast-path sets isProductionLocked to true (picture-lock active)
+    expect(fastPathBlock![0]).toContain('setIsProductionLocked(true)');
+
+    // Invariant 4: Fast-path advances to stage 1 (Act II - The Weave)
+    expect(fastPathBlock![0]).toContain('setStage(1)');
+
+    // Invariant 5: Fast-path updates productionStage: 1 in Firestore
+    expect(fastPathBlock![0]).toContain('productionStage: 1');
+
+    // Invariant 6: Fast-path guard appears BEFORE the ceremony trigger call site (await generateDraftOptions)
+    // Use Array.from() on matchAll iterator (avoids TS2802 downlevelIteration requirement)
+    const fastPathIdx = deckContent.indexOf('isAct1 && isRehearsalFlight');
+    const ceremonyCalls = Array.from(deckContent.matchAll(/await generateDraftOptions\(/g)).map(m => m.index!);
+    expect(fastPathIdx).toBeGreaterThan(0);
+    expect(ceremonyCalls.length).toBeGreaterThan(0);
+    // Every ceremony call site must appear after the rehearsal fast-path guard
+    for (const callIdx of ceremonyCalls) {
+      expect(callIdx).toBeGreaterThan(fastPathIdx);
+    }
+  });
 });
