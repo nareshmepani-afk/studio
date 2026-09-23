@@ -2304,7 +2304,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                              ref={setStoryHookRef}
                              block={{ id: 'story-hook', text: description, type: 'hook' }} 
                              isActive={productionStage === 0}
-                             hideAnchors={isCleanView}
+                             hideAnchors={false}
                              onUpdate={(text: string) => {
                                setDescription(text);
                                onActivity?.(); // Reset idle timer

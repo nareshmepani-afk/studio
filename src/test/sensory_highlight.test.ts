@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { 
   detectAnchors, 
   filterDominantSensoryAnchors, 
-  DetectedAnchor 
+  DetectedAnchor,
+  SENSORY_DICTIONARY_DETAILED
 } from '@/hooks/studio/useDirectorInk';
 
 describe('MW-266 / Sensory Highlight & Golden Trio Modal Filter Suite', () => {
@@ -87,5 +88,11 @@ describe('MW-266 / Sensory Highlight & Golden Trio Modal Filter Suite', () => {
     expect(filtered.length).toBe(3);
     const distinctTypes = new Set(filtered.map(a => a.type));
     expect(distinctTypes.size).toBe(3);
+  });
+
+  it('6. provides cinematic rationale for all Golden Trio modalities in SENSORY_DICTIONARY_DETAILED', () => {
+    expect(SENSORY_DICTIONARY_DETAILED.aroma.reason).toContain('AROMA:');
+    expect(SENSORY_DICTIONARY_DETAILED.soundscape.reason).toContain('SOUND:');
+    expect(SENSORY_DICTIONARY_DETAILED.visual.reason).toContain('VISUAL:');
   });
 });

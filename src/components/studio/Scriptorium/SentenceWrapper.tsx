@@ -7,7 +7,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ScriptBlock } from '@/types';
 import { cn } from '@/lib/utils';
-import { detectAnchors, filterDominantSensoryAnchors, SENSORY_DICTIONARY_DETAILED } from '@/hooks/studio/useDirectorInk';
+import { detectAnchors, filterDominantSensoryAnchors, SENSORY_DICTIONARY_DETAILED, DetectedAnchor } from '@/hooks/studio/useDirectorInk';
 import { Sparkles, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -33,6 +33,48 @@ interface PivotSuggestions {
   grit: string[];
   heritage: string[];
 }
+
+const MODALITY_BADGE_STYLES: Record<string, {
+  border: string;
+  text: string;
+  shadow: string;
+  hoverBg: string;
+  hoverText: string;
+  headerColor: string;
+  dotBg: string;
+  underlineLabel: string;
+}> = {
+  aroma: {
+    border: 'border-amber-400',
+    text: 'text-amber-400',
+    shadow: 'shadow-[0_0_15px_rgba(245,158,11,0.5)]',
+    hoverBg: 'hover:bg-amber-400',
+    hoverText: 'hover:text-slate-950',
+    headerColor: 'text-amber-400',
+    dotBg: 'bg-amber-400',
+    underlineLabel: 'Amber Underline',
+  },
+  soundscape: {
+    border: 'border-sky-400',
+    text: 'text-sky-400',
+    shadow: 'shadow-[0_0_15px_rgba(56,189,248,0.5)]',
+    hoverBg: 'hover:bg-sky-400',
+    hoverText: 'hover:text-slate-950',
+    headerColor: 'text-sky-400',
+    dotBg: 'bg-sky-400',
+    underlineLabel: 'Sky Blue Underline',
+  },
+  visual: {
+    border: 'border-emerald-400',
+    text: 'text-emerald-400',
+    shadow: 'shadow-[0_0_15px_rgba(16,185,129,0.5)]',
+    hoverBg: 'hover:bg-emerald-400',
+    hoverText: 'hover:text-slate-950',
+    headerColor: 'text-emerald-400',
+    dotBg: 'bg-emerald-400',
+    underlineLabel: 'Emerald Underline',
+  },
+};
 
 const TONAL_PIVOT_MAP: Record<string, PivotSuggestions> = {
   sustenance: {
@@ -573,6 +615,47 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     }
   };
 
+  const [hoveredAnchorInfo, setHoveredAnchorInfo] = useState<{
+    anchor: DetectedAnchor;
+    rect: DOMRect;
+  } | null>(null);
+
+  const handleEditorMouseMove = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
+    if (hideAnchors || anchors.length === 0) {
+      if (hoveredAnchorInfo) setHoveredAnchorInfo(null);
+      return;
+    }
+
+    const mx = e.clientX;
+    const my = e.clientY;
+
+    let matched: { anchor: DetectedAnchor; rect: DOMRect } | null = null;
+    for (const [tokenId, rect] of Object.entries(rects)) {
+      if (!rect || rect.width === 0) continue;
+      if (mx >= rect.left && mx <= rect.right && my >= rect.top - 2 && my <= rect.bottom + 4) {
+        const parts = tokenId.split('-');
+        const idx = parseInt(parts[parts.length - 1], 10);
+        const token = tokens[idx];
+        if (token) {
+          const clean = token.toLowerCase();
+          const anchor = anchors.find(a => a.word.toLowerCase() === clean);
+          if (anchor) {
+            matched = { anchor, rect };
+            break;
+          }
+        }
+      }
+    }
+
+    if (matched?.anchor.word !== hoveredAnchorInfo?.anchor.word) {
+      setHoveredAnchorInfo(matched);
+    }
+  }, [anchors, hideAnchors, rects, tokens, hoveredAnchorInfo]);
+
+  const handleEditorMouseLeave = useCallback(() => {
+    setHoveredAnchorInfo(null);
+  }, []);
+
   const portalContent = useMemo(() => {
     if (!isSensoryViewActive || hideAnchors || readOnly) return null;
     return tokens.map((token: string, idx: number) => {
@@ -582,6 +665,8 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       const rect = rects[tokenId];
 
       if (!anchor || !rect || rect.width === 0) return null;
+
+      const modStyle = (anchor.type && MODALITY_BADGE_STYLES[anchor.type]) || MODALITY_BADGE_STYLES.visual;
 
       return (
         <Tooltip key={tokenId}>
@@ -595,7 +680,14 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
                 top: rect.top - 24,
                 pointerEvents: 'auto'
               }}
-              className="w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 border border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)] hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-pointer"
+              className={cn(
+                "w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 flex items-center justify-center border transition-all cursor-pointer",
+                modStyle.border,
+                modStyle.text,
+                modStyle.shadow,
+                modStyle.hoverBg,
+                modStyle.hoverText
+              )}
               onMouseEnter={() => {
                 const xOffset = rect.left + (rect.width / 2) - (window.innerWidth / 2);
                 actions.triggerSynapse(anchor.word, anchor.type, xOffset);
@@ -605,10 +697,18 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
               <Sparkles className="w-3.5 h-3.5" />
             </motion.button>
           </TooltipTrigger>
-          <TooltipContent className="bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md px-3 py-1.5 rounded-lg z-[10000]">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Sensory Anchor</span>
-              <span className="text-xs font-mono text-white capitalize">{anchor.word} ({anchor.type})</span>
+          <TooltipContent className="bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md px-3.5 py-2 rounded-xl z-[10000] max-w-[280px]">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1.5">
+                <span className={cn("w-2 h-2 rounded-full", modStyle.dotBg, modStyle.shadow)} />
+                <span className={cn("text-[10px] font-black uppercase tracking-widest", modStyle.headerColor)}>
+                  Sensory Anchor ({modStyle.underlineLabel})
+                </span>
+              </div>
+              <span className="text-xs font-mono text-white capitalize">&ldquo;{anchor.word}&rdquo; ({anchor.type})</span>
+              <p className="text-[11px] text-gray-300 leading-snug">
+                {SENSORY_DICTIONARY_DETAILED[anchor.type]?.reason || `${anchor.type.toUpperCase()} anchor detected.`}
+              </p>
             </div>
           </TooltipContent>
         </Tooltip>
@@ -950,6 +1050,46 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
               {pivotPortalContent}
               {directivePortals}
               <AnimatePresence>
+                {hoveredAnchorInfo && (
+                  <motion.div
+                    key={`hover-anchor-${hoveredAnchorInfo.anchor.word}`}
+                    initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 2, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: 'fixed',
+                      left: hoveredAnchorInfo.rect.left + (hoveredAnchorInfo.rect.width / 2),
+                      top: hoveredAnchorInfo.rect.top - 10,
+                      transform: 'translate(-50%, -100%)',
+                      pointerEvents: 'none'
+                    }}
+                    className="bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md px-3.5 py-2.5 rounded-xl z-[10000] flex flex-col gap-1 min-w-[220px] max-w-[300px]"
+                  >
+                    {(() => {
+                      const mod = hoveredAnchorInfo.anchor.type || 'visual';
+                      const s = MODALITY_BADGE_STYLES[mod] || MODALITY_BADGE_STYLES.visual;
+                      return (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <span className={cn("w-2 h-2 rounded-full", s.dotBg, s.shadow)} />
+                            <span className={cn("text-[10px] font-black uppercase tracking-widest", s.headerColor)}>
+                              {mod} Anchor ({s.underlineLabel})
+                            </span>
+                          </div>
+                          <span className="text-xs font-semibold text-white capitalize">
+                            &ldquo;{hoveredAnchorInfo.anchor.word}&rdquo;
+                          </span>
+                          <p className="text-[11px] text-gray-300 leading-snug">
+                            {SENSORY_DICTIONARY_DETAILED[mod]?.reason || `${mod.toUpperCase()} sensory memory trigger.`}
+                          </p>
+                        </>
+                      );
+                    })()}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <AnimatePresence>
                 {sparkleTriggerPortal}
               </AnimatePresence>
               <AnimatePresence>
@@ -972,11 +1112,14 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           onBlur={(e) => {
             setSuggestionsOpen(false);
             setGhostWordInfo(null);
+            setHoveredAnchorInfo(null);
             onBlur?.(e);
           }}
           onSelect={handleCaretOrSelectionChange}
           onKeyUp={handleCaretOrSelectionChange}
           onMouseUp={handleCaretOrSelectionChange}
+          onMouseMove={handleEditorMouseMove}
+          onMouseLeave={handleEditorMouseLeave}
           readOnly={readOnly}
           spellCheck={false}
           data-gramm="false"
@@ -1010,7 +1153,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
             let charOffset = 0;
             return tokens.map((token: string, idx: number) => {
               const clean = token.toLowerCase();
-              const isAnchor = !effectiveHideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
+              const isAnchor = !hideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
               
               const cleanCleaned = clean.trim().replace(/[^\w]/g, '');
               const pivotInfo = getActivePivotInfo(cleanCleaned);
