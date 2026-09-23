@@ -21,7 +21,7 @@ import { restrictToVerticalAxis, restrictToWindowEdges } from '@dnd-kit/modifier
 import { useStoryScript } from '@/hooks/studio/useStoryScript';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useAudioFeedback } from '@/hooks/studio/useAudioFeedback';
-import { useDirectorInk, detectAnchors } from '@/hooks/studio/useDirectorInk';
+import { useDirectorInk, detectAnchors, filterDominantSensoryAnchors } from '@/hooks/studio/useDirectorInk';
 import { SentenceWrapper } from './SentenceWrapper';
 import { ScriptBlock, Memory } from '@/types';
 import { LayoutGroup } from 'framer-motion';
@@ -268,14 +268,15 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
     // Aggregate anchors across all blocks (Heavy Regex Operation)
     const allText = debouncedBlocks.map(b => b.text).join(' ');
     const uniqueAnchors = detectAnchors(allText);
-    const activeTypes = Array.from(new Set(uniqueAnchors.map(a => a.type)));
+    const filteredAnchors = filterDominantSensoryAnchors(uniqueAnchors);
+    const activeTypes = Array.from(new Set(filteredAnchors.map(a => a.type)));
     
     // Diagnostic: Identify Overloaded Beats
     const overloadedIds = debouncedBlocks
       .filter(b => detectAnchors(b.text).length >= 4)
       .map(b => b.id);
     
-    actions.setDetectedAnchors(uniqueAnchors);
+    actions.setDetectedAnchors(filteredAnchors);
     actions.setOverloadedBlocks(overloadedIds);
     actions.setActiveAnchorTypes(activeTypes);
 

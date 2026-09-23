@@ -4,7 +4,31 @@ import { CatalystType } from '@/types';
 export interface DetectedAnchor {
   word: string;
   type: CatalystType;
+  score?: number;
 }
+
+/**
+ * Filters sensory anchors to the Golden Trio (maximum 3 distinct modalities).
+ * Prioritises distinct modalities in order of appearance in the text.
+ * If two words share a modality (e.g. two 'soundscape' triggers), picks the first one.
+ * Strictly adheres to British English orthography (prioritised, categorised).
+ */
+export const filterDominantSensoryAnchors = (anchors: DetectedAnchor[]): DetectedAnchor[] => {
+  if (!anchors || anchors.length === 0) return [];
+
+  const seenModalities = new Set<CatalystType>();
+  const dominant: DetectedAnchor[] = [];
+
+  for (const anchor of anchors) {
+    if (!seenModalities.has(anchor.type)) {
+      seenModalities.add(anchor.type);
+      dominant.push(anchor);
+      if (dominant.length === 3) break;
+    }
+  }
+
+  return dominant;
+};
 
 // THE SENSORY DICTIONARY (Bespoke Edition with Cinematic Rationale)
 export const SENSORY_DICTIONARY_DETAILED: Record<string, { words: string[], reason: string }> = {

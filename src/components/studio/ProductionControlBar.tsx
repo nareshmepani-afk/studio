@@ -398,7 +398,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     switch (currentStage) {
       case 0:
         if (isGeneratingDrafts || isPending) return 'SYNTHESISING...';
-        if (isReviewing) return 'SEAL THE MEMORY';
+        if (isReviewing) return '⏳ Select a Vision Above to Advance';
         return 'ENTER THE WEAVE';
 
       case 1:
@@ -426,7 +426,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   return (
     <div className={cn(
       "w-full max-w-[98vw] sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto pointer-events-auto transition-all duration-500 ease-in-out relative",
-      (isReviewing || isDirectorOpen) && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none"
+      isDirectorOpen && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none",
+      isReviewing && "opacity-60 select-none pointer-events-none"
     )}>
       <motion.div 
         data-blueprint="ProductionControlBar"
@@ -700,11 +701,13 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                       onClick={handleNextClick}
                       className={cn(
                         "relative px-5 sm:px-8 lg:px-10 py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max",
-                        isStageReady 
-                          ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
-                          : !isComplete
-                            ? "bg-rose-500/10 text-rose-300/60 border border-rose-500/30 cursor-not-allowed hover:bg-rose-500/15"
-                            : "bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10",
+                        isReviewing
+                          ? "opacity-60 cursor-not-allowed bg-stone-900/60 border border-stone-800 text-stone-400"
+                          : isStageReady 
+                            ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
+                            : !isComplete
+                              ? "bg-rose-500/10 text-rose-300/60 border border-rose-500/30 cursor-not-allowed hover:bg-rose-500/15"
+                              : "bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10",
                         (isPending || isGeneratingDrafts || isSaving) && "opacity-80 cursor-wait brightness-90"
                       )}
                     >

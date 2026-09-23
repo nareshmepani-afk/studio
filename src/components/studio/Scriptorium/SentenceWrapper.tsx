@@ -7,7 +7,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ScriptBlock } from '@/types';
 import { cn } from '@/lib/utils';
-import { detectAnchors } from '@/hooks/studio/useDirectorInk';
+import { detectAnchors, filterDominantSensoryAnchors } from '@/hooks/studio/useDirectorInk';
 import { Sparkles, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -436,7 +436,8 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
 
   const { isCleanView } = useStudioState();
   const effectiveHideAnchors = hideAnchors || isCleanView;
-  const anchors = useMemo(() => effectiveHideAnchors ? [] : detectAnchors(block.text), [block.text, effectiveHideAnchors]);
+  const isSensoryViewActive = !isCleanView;
+  const anchors = useMemo(() => effectiveHideAnchors ? [] : filterDominantSensoryAnchors(detectAnchors(block.text)), [block.text, effectiveHideAnchors]);
 
   // 1. REFINED TOKENIZATION ENGINE (V4.6 - CODE RED STABILIZATION)
   const tokens = useMemo(() => {
@@ -1027,12 +1028,19 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
               const isDirective = !!overlap;
               charOffset += tokenLength;
 
+              const matchingAnchor = isAnchor ? anchors.find(a => a.word.toLowerCase() === clean) : null;
+              const anchorModality = matchingAnchor?.type;
+
               return (
                 <span 
                   key={tokenId}
                   data-token-id={tokenId}
                   className={cn(
-                    isAnchor && "anchor-span border-b-2 border-emerald-500/40 bg-emerald-500/10 text-zinc-100 font-medium",
+                    isAnchor && "anchor-span border-b-2 font-medium",
+                    isAnchor && anchorModality === 'aroma' && "border-amber-500/50 bg-amber-500/10 text-amber-100",
+                    isAnchor && anchorModality === 'soundscape' && "border-sky-500/50 bg-sky-500/10 text-sky-100",
+                    isAnchor && anchorModality === 'visual' && "border-emerald-500/50 bg-emerald-500/10 text-emerald-100",
+                    isAnchor && !['aroma', 'soundscape', 'visual'].includes(anchorModality || '') && "border-emerald-500/40 bg-emerald-500/10 text-zinc-100",
                     isPivoted && "pivot-span border-b-2",
                     isPivoted && pivotTone === 'poetic' && "border-sky-500/40 bg-sky-500/10 text-sky-100 font-semibold shadow-[0_0_12px_rgba(56,189,248,0.15)]",
                     isPivoted && pivotTone === 'grit' && "border-amber-500/40 bg-amber-500/10 text-amber-100 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.15)]",

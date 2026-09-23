@@ -345,6 +345,22 @@ ${bundleText}`;
           <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.5em]">{headerSubtitle}</p>
         </div>
 
+        {/* 🎯 ONBOARDING INSTRUCTION: Clear action prompt for first-time narrators */}
+        {!activeVisionTitle && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-lg mx-auto px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-center"
+          >
+            <p className="text-sm font-bold text-amber-300 mb-1">
+              👆 Tap a card to preview your vision
+            </p>
+            <p className="text-xs text-amber-200/60">
+              Browse the carousel, then tap the centred card to open a full preview. Select the one that captures your voice.
+            </p>
+          </motion.div>
+        )}
+
         {activeVisionTitle && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -572,6 +588,25 @@ ${bundleText}`;
                       "{stripScreenplayCues(opt.cleanScript || '')}"
                     </p>
                   </div>
+
+                  {/* Centred Card Action Pill */}
+                  {isFocused && (
+                    <div className="pt-3 mt-auto border-t border-white/10 flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-amber-300/80 font-bold uppercase tracking-wider">
+                        {isSelected ? '✓ Selected Blueprint' : 'Centred Option'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPreview(opt);
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:scale-105"
+                      >
+                        <span>📖 Preview &amp; Select Script ↗</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );

@@ -837,22 +837,6 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             }
         }
 
-        // 🚀 REHEARSAL FAST-PATH: Bypass AI synthesis and review ceremony for onboarding flights.
-        // The fixture prose is pre-sealed — no SelectionDeck, no 5-card spinner, no hidden control bar.
-        // Jump directly to Act II (The Weave) with picture-lock active.
-        if (isAct1 && isRehearsalFlight) {
-            console.log('[ProductionDeck] 🚀 Rehearsal fast-path: bypassing AI synthesis. Sealing fixture prose and advancing to Act II...');
-            setIsReviewing(false);
-            setIsProductionLocked(true);
-            setStage(1);
-            await handleUpdate({
-                productionStage: 1,
-                isProductionLocked: true,
-                isReviewing: false,
-            });
-            return;
-        }
-
         // 1. If advancing from Act I with a sealed monologue, transition to Act II (stage 1 - The Weave):
         if (currentStage === 0 && isProductionLocked && !isReviewing) {
             console.log("[ProductionDeck] Advancing from Act I to Act II (The Weave - Stage 1)...");
