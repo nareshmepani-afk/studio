@@ -68,4 +68,24 @@ describe('MW-266 / Sensory Highlight & Golden Trio Modal Filter Suite', () => {
     const types = new Set(filtered.map(a => a.type));
     expect(types.size).toBe(filtered.length);
   });
+
+  it('5. invariant: passing anchors across soundscape, visual, aroma yields array of length 3 (not 1)', () => {
+    const mixedAnchors: DetectedAnchor[] = [
+      { word: 'whistling', type: 'soundscape' },
+      { word: 'windowpane', type: 'visual' },
+      { word: 'cardamom', type: 'aroma' },
+    ];
+
+    const result = filterDominantSensoryAnchors(mixedAnchors);
+    expect(result.length).toBe(3);
+    expect(result.map(a => a.type)).toEqual(['soundscape', 'visual', 'aroma']);
+
+    // Also assert First Flight fixture text detects 3 distinct modalities
+    const fixtureText = "The Sunday kettle whistling on the stove, rain drumming against the windowpane, and warm cardamom chai served in cracked ceramic cups.";
+    const detected = detectAnchors(fixtureText);
+    const filtered = filterDominantSensoryAnchors(detected);
+    expect(filtered.length).toBe(3);
+    const distinctTypes = new Set(filtered.map(a => a.type));
+    expect(distinctTypes.size).toBe(3);
+  });
 });

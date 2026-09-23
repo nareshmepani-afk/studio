@@ -7,7 +7,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ScriptBlock } from '@/types';
 import { cn } from '@/lib/utils';
-import { detectAnchors, filterDominantSensoryAnchors } from '@/hooks/studio/useDirectorInk';
+import { detectAnchors, filterDominantSensoryAnchors, SENSORY_DICTIONARY_DETAILED } from '@/hooks/studio/useDirectorInk';
 import { Sparkles, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -437,7 +437,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   const { isCleanView } = useStudioState();
   const effectiveHideAnchors = hideAnchors || isCleanView;
   const isSensoryViewActive = !isCleanView;
-  const anchors = useMemo(() => effectiveHideAnchors ? [] : filterDominantSensoryAnchors(detectAnchors(block.text)), [block.text, effectiveHideAnchors]);
+  const anchors = useMemo(() => hideAnchors ? [] : filterDominantSensoryAnchors(detectAnchors(block.text)), [block.text, hideAnchors]);
 
   // 1. REFINED TOKENIZATION ENGINE (V4.6 - CODE RED STABILIZATION)
   const tokens = useMemo(() => {
@@ -574,7 +574,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   };
 
   const portalContent = useMemo(() => {
-    if (effectiveHideAnchors || readOnly) return null;
+    if (!isSensoryViewActive || hideAnchors || readOnly) return null;
     return tokens.map((token: string, idx: number) => {
       const clean = token.toLowerCase();
       const anchor = anchors.find(a => a.word.toLowerCase() === clean);
@@ -614,7 +614,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         </Tooltip>
       );
     });
-  }, [tokens, anchors, rects, block.id, actions, effectiveHideAnchors, readOnly]);
+  }, [tokens, anchors, rects, block.id, actions, isSensoryViewActive, hideAnchors, readOnly]);
 
   const pivotPortalContent = useMemo(() => {
     if (effectiveHideAnchors || readOnly) return null;
@@ -1035,8 +1035,9 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
                 <span 
                   key={tokenId}
                   data-token-id={tokenId}
+                  title={isAnchor && anchorModality ? (SENSORY_DICTIONARY_DETAILED[anchorModality]?.reason || `${anchorModality.toUpperCase()} anchor`) : undefined}
                   className={cn(
-                    isAnchor && "anchor-span border-b-2 font-medium",
+                    isAnchor && "anchor-span border-b-2 font-medium cursor-help",
                     isAnchor && anchorModality === 'aroma' && "border-amber-500/50 bg-amber-500/10 text-amber-100",
                     isAnchor && anchorModality === 'soundscape' && "border-sky-500/50 bg-sky-500/10 text-sky-100",
                     isAnchor && anchorModality === 'visual' && "border-emerald-500/50 bg-emerald-500/10 text-emerald-100",

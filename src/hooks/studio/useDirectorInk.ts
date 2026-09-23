@@ -13,35 +13,34 @@ export interface DetectedAnchor {
  * If two words share a modality (e.g. two 'soundscape' triggers), picks the first one.
  * Strictly adheres to British English orthography (prioritised, categorised).
  */
-export const filterDominantSensoryAnchors = (anchors: DetectedAnchor[]): DetectedAnchor[] => {
-  if (!anchors || anchors.length === 0) return [];
-
-  const seenModalities = new Set<CatalystType>();
-  const dominant: DetectedAnchor[] = [];
+export function filterDominantSensoryAnchors(anchors: DetectedAnchor[]): DetectedAnchor[] {
+  const selected: DetectedAnchor[] = [];
+  const usedTypes = new Set<string>();
 
   for (const anchor of anchors) {
-    if (!seenModalities.has(anchor.type)) {
-      seenModalities.add(anchor.type);
-      dominant.push(anchor);
-      if (dominant.length === 3) break;
+    const anchorType = anchor.type;
+    if (!anchorType) continue;
+
+    if (!usedTypes.has(anchorType) && selected.length < 3) {
+      selected.push(anchor);
+      usedTypes.add(anchorType);
     }
   }
-
-  return dominant;
-};
+  return selected;
+}
 
 // THE SENSORY DICTIONARY (Bespoke Edition with Cinematic Rationale)
 export const SENSORY_DICTIONARY_DETAILED: Record<string, { words: string[], reason: string }> = {
   aroma: {
-    words: ['soil', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'farming', 'staple', 'food', 'village', 'machinery', 'produce', 'labourers', 'oregano', 'lavender', 'musk', 'scent', 'aroma', 'spice', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty', 'perfume', 'cardamom', 'sandalwood', 'petrichor', 'frankincense', 'jasmine', 'turmeric'],
+    words: ['soil', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'farming', 'staple', 'food', 'village', 'machinery', 'produce', 'labourers', 'oregano', 'lavender', 'musk', 'scent', 'aroma', 'spice', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty', 'perfume', 'cardamom', 'chai', 'sandalwood', 'petrichor', 'frankincense', 'jasmine', 'turmeric'],
     reason: 'AROMA: Scent-memories like soil, farming, or regional food detected.'
   },
   soundscape: {
-    words: ['language', 'Gujarati', 'lessons', 'parents', 'voice', 'culture', 'education', 'mother tongue', 'skills', 'tongue', 'thunder', 'whisper', 'echo', 'melody', 'rhythm', 'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'hum', 'silence', 'clatter', 'clink', 'rustle', 'crescendo', 'monotone', 'thrum', 'chime'],
+    words: ['language', 'Gujarati', 'lessons', 'parents', 'voice', 'culture', 'education', 'mother tongue', 'skills', 'tongue', 'thunder', 'whisper', 'echo', 'melody', 'rhythm', 'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'hum', 'silence', 'clatter', 'clink', 'rustle', 'crescendo', 'monotone', 'thrum', 'chime', 'whistling'],
     reason: 'SOUND: Language, dialects, education, or environmental sounds detected.'
   },
   visual: {
-    words: ['Nairobi', 'Kenya', 'India', 'England', 'heritage', 'traveling', 'journey', 'values', 'ancestors', 'generations', 'Granddad', 'Granddads', 'roots', 'neon', 'shadow', 'glow', 'emerald', 'crimson', 'bright', 'dark', 'blue', 'red', 'gold', 'clear', 'blurry', 'huge', 'tiny', 'light', 'sepia', 'monochrome', 'silhouette', 'radiant', 'amber', 'dappled', 'obsidian', 'red soil'],
+    words: ['Nairobi', 'Kenya', 'India', 'England', 'heritage', 'traveling', 'journey', 'values', 'ancestors', 'generations', 'Granddad', 'Granddads', 'roots', 'neon', 'shadow', 'glow', 'emerald', 'crimson', 'bright', 'dark', 'blue', 'red', 'gold', 'clear', 'blurry', 'huge', 'tiny', 'light', 'sepia', 'monochrome', 'silhouette', 'radiant', 'amber', 'dappled', 'obsidian', 'red soil', 'windowpane'],
     reason: 'VISUAL: Geographic locations, heritage, roots, or striking visual details detected.'
   },
   clarity: {
