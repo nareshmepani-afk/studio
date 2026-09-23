@@ -1424,12 +1424,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 ) : (
                   <div className={cn(
                     "act-1-content transition-all duration-500",
-                    (data?.productionStage || 0) >= 1 && "border border-amber-500/30 bg-amber-950/10 backdrop-blur-md rounded-[2.5rem] p-8 lg:p-12 shadow-[0_0_50px_rgba(245,158,11,0.05)] relative overflow-hidden"
+                    isProductionLocked && (data?.productionStage || 0) >= 1 && "border border-amber-500/30 bg-amber-950/10 backdrop-blur-md rounded-[2.5rem] p-8 lg:p-12 shadow-[0_0_50px_rgba(245,158,11,0.05)] relative overflow-hidden"
                   )}>
-                    {(data?.productionStage || 0) >= 1 && (
+                    {isProductionLocked && (data?.productionStage || 0) >= 1 && (
                       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500/0 via-amber-500/60 to-amber-500/0" />
                     )}
-                    {(data?.productionStage || 0) >= 1 && (
+                    {isProductionLocked && (data?.productionStage || 0) >= 1 && (
                       <div className="mb-8 flex items-center justify-between bg-amber-500/10 border border-amber-500/20 rounded-2xl px-6 py-4 backdrop-blur-sm">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-amber-500/20 rounded-lg border border-amber-500/30 text-amber-400">
@@ -2584,13 +2584,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                             onClick={async () => {
                               // Release sensory lock with 0ms optimistic local UI flip
                               globalActions.setSelectedVision(null as any, null);
+                              setGlobalLocked(false);
                               update({
                                 activeVision: "",
-                                activeVisionLabel: ""
+                                activeVisionLabel: "",
+                                isProductionLocked: false
                               });
                               await flush({
                                 activeVision: "",
-                                activeVisionLabel: ""
+                                activeVisionLabel: "",
+                                isProductionLocked: false
                               });
                               toast.success("Sensory Weave Unlocked", {
                                 description: "You can now edit your script or select another sensory weave."
