@@ -233,6 +233,11 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **The Premature Milestone Celebration Lock**:
   - The agent is **STRICTLY FORBIDDEN** from declaring a milestone 100% complete, closing tickets, or transitioning to future ideation/suggestions if ANY user comment, note, observation, or question in the QA submission remains unanalyzed, unanswered, or unaddressed.
 
+# 30.3. Mandatory Route-Grouped Test Card Organisation
+- **Strict Grouping by Target Route**: Whenever generating or updating `qa_checklist_interactive.html` or `scripts/generate_qa_checklist.js`, test cards MUST be grouped strictly by their target staging URL route (e.g. Group 1: `first_flight_rehearsal`, Group 2: `studio/production/[id]`, Group 3: `studio/fireside`) rather than by abstract architectural tracks that force the user to jump back and forth between URLs.
+- **Chronological User-Flow Ordering Within Each Route Group**: Within each route group, test cards MUST be ordered sequentially following the natural user journey (e.g. Act I Scriptorium -> Act I to Act II Synthesis -> Act II SelectionDeck -> Act III Soundstage -> Post-Flight Isolation).
+- **Interactive Route Filter Bar & Group Banner Headers**: The top HUD of `qa_checklist_interactive.html` MUST render one-click route filter pills (`All Routes`, `Pending Only`, and individual route pills) alongside a prominent group banner header (`data-route-group`) with a `[ 🚀 Launch Route ↗ ]` CTA for each route group.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)

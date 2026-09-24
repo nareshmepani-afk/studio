@@ -1122,8 +1122,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             }
         }
 
-        // VALIDATION SHIELD: Jumping forward from Act I (stage 0 -> newStage > 0) requires all mandatory catalysts!
-        if (currentStage === 0 && newStage > 0) {
+        // VALIDATION SHIELD: Sequential Act Progression — each Act must be completed before jumping to the next Act!
+        const milestones = resolveMemoryMilestones({ ...memoryData, ...(flushedState || {}) });
+        if (newStage > 0) {
             const stateToValidate = {
                 title: flushedState?.title || memoryData?.title,
                 location: flushedState?.location || flushedState?.narratorLocationAtEvent || memoryData?.location || memoryData?.narratorLocationAtEvent,
@@ -1133,7 +1134,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 description: flushedState?.description || memoryData?.description
             };
             const act1Check = validateAct1RequiredFields(stateToValidate);
-            if (!act1Check.isValid) {
+            if (!act1Check.isValid && !milestones.hasWeave && !milestones.hasRecordedMedia) {
                 console.warn("[ProductionDeck] Stage jump blocked: Missing required Act I fields:", act1Check.missing);
                 toast.error("CATALYSTS REQUIRED", {
                     description: `Please complete required stage items: ${act1Check.missing.join(", ")}`,
@@ -1142,6 +1143,30 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         onClick: () => scrollToFirstMissingCatalyst(act1Check.missing)
                     },
                     duration: 7000
+                });
+                return;
+            }
+        }
+
+        if (newStage > currentStage) {
+            if (newStage >= 2 && !isActMilestoneCompleted(1, milestones) && !selectedVision?.label && !selectedTake) {
+                toast.error("ACT II COMPLETION REQUIRED", {
+                    description: "Please synthesise and seal your narrative weave in Act II before entering Act III: Capture.",
+                    duration: 5000
+                });
+                return;
+            }
+            if (newStage >= 3 && !isActMilestoneCompleted(2, milestones) && !hasUnsavedTake) {
+                toast.error("ACT III COMPLETION REQUIRED", {
+                    description: "Please record a vocal or video performance take in Act III before entering Act IV: The Cut.",
+                    duration: 5000
+                });
+                return;
+            }
+            if (newStage >= 4 && !isActMilestoneCompleted(3, milestones) && !milestones.hasRecordedMedia) {
+                toast.error("ACT IV COMPLETION REQUIRED", {
+                    description: "Please complete your Director's Cut in Act IV before entering Act V: Premiere.",
+                    duration: 5000
                 });
                 return;
             }

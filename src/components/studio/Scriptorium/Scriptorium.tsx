@@ -150,7 +150,7 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
           }));
           setBlocks(migrated);
         } else {
-          setBlocks([{ id: uuidv4(), type: 'hook', text: '', catalysts: [] }]);
+          setBlocks([{ id: uuidv4(), type: 'hook', text: data.prose, catalysts: [] }]);
         }
       } else {
         setBlocks([{ id: uuidv4(), type: 'hook', text: '', catalysts: [] }]);
@@ -359,22 +359,27 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
   );
 
   // Modality Counts & Navigation for Sensory Palette Key (Test 1 / Test 4 UX)
+  const anchorJumpIdxRef = useRef<Record<string, number>>({});
   const sensoryCounts = useMemo(() => {
     const allText = blocks.map(b => b.text).join(' ');
-    const allAnchors = detectAnchors(allText);
+    const rawAnchors = detectAnchors(allText);
+    const dominantAnchors = filterDominantSensoryAnchors(rawAnchors);
     const map: Record<string, { count: number; word?: string; words: string[] }> = {
       soundscape: { count: 0, words: [] },
       visual: { count: 0, words: [] },
       aroma: { count: 0, words: [] }
     };
-    allAnchors.forEach(a => {
+    dominantAnchors.forEach(a => {
       const type = (a.type || '').toLowerCase();
       if (map[type]) {
         map[type].count += 1;
         if (!map[type].word) map[type].word = a.word;
-        if (!map[type].words.includes(a.word.toLowerCase())) {
-          map[type].words.push(a.word.toLowerCase());
-        }
+      }
+    });
+    rawAnchors.forEach(a => {
+      const type = (a.type || '').toLowerCase();
+      if (map[type] && !map[type].words.includes(a.word.toLowerCase())) {
+        map[type].words.push(a.word.toLowerCase());
       }
     });
     return map;
@@ -383,9 +388,14 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
   const scrollToAnchor = useCallback((modality: string) => {
     const modLower = modality.toLowerCase();
     
-    // 1. Query target anchor element: by data-anchor-type first, then fallback to word
-    let el = document.querySelector<HTMLElement>(`[data-anchor-type="${modLower}"]`);
-    if (!el && sensoryCounts[modLower]?.words.length > 0) {
+    // 1. Query all target anchor elements for this modality and cycle through them
+    const allTypeEls = Array.from(document.querySelectorAll<HTMLElement>(`[data-anchor-type="${modLower}"]`));
+    let el: HTMLElement | null = null;
+    if (allTypeEls.length > 0) {
+      const idx = (anchorJumpIdxRef.current[modLower] || 0) % allTypeEls.length;
+      el = allTypeEls[idx];
+      anchorJumpIdxRef.current[modLower] = idx + 1;
+    } else if (sensoryCounts[modLower]?.words.length > 0) {
       for (const w of sensoryCounts[modLower].words) {
         el = document.querySelector<HTMLElement>(`[data-anchor-word="${w}"]`);
         if (el) break;

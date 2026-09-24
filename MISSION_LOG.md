@@ -330,3 +330,29 @@
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
+### [2026-09-24 19:15 BST] • Checkpoint #014 — QA Report Remediation: Act I/II Sensory Palette Key, Draggable Teleprompter Sidebars, AI Director Minimise Toggle & Sequential Act Gating
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Executed staging QA verification on commit `7c614fd0` (5/11 PASS) and reported 4 actionable enhancements/defects across Test 1 (Step 5 & 6 Sensory Palette Key visibility in Act I), Test 6 (draggable Teleprompter sidebars), and Test 7 (Minimise `"AI DIRECTOR: INTERVIEW ACTIVE"` panel + Sequential Act completion gating across all Acts with explicit status badges).
+  - ⚡ **Antigravity Execution**:
+    1. **Test 1 (Step 5 & 6 — Act I & Act II Sensory Palette Key)**: Added the interactive Sensory Palette Key & Modality Counters tray (`data-testid="sensory-palette-key"` with `[ 🎧 Soundscape (1) ] • [ 👁️ Visual (1) ] • [ ☕ Aroma (1) ]`) to the Act I Story Hook editor in `MemoryForm.tsx` and synced `Scriptorium.tsx` to hydrate plain-text `data.prose` and compute Golden Trio counts via `filterDominantSensoryAnchors`.
+    2. **Test 6 (Draggable Teleprompter Sidebars)**: Added interactive left (`prompter-resize-left`), right (`prompter-resize-right`), and bottom (`prompter-resize-bottom`) resize handles to `SoloStage.tsx` (`key="cinematic-teleprompter"`), allowing performers to drag the teleprompter sidebars to expand/narrow width (300px to viewport width) and height (with double-click reset).
+    3. **Test 7 Part 1 (Minimise AI Director Interview Panel)**: Added `isInterviewerMinimised` state and `Minimise` (`minimise-interviewer-card-btn`) / `Expand` (`expand-interviewer-card-btn`) controls to `key="interviewer-card"` in `SoloStage.tsx`.
+    4. **Test 7 Part 2 (Sequential Act Completion Gating & Status Badges)**: Updated `ProductionRail.tsx` and `ProductionDeck.tsx` (`handleStageJump`) so that each Act must be completed before unlocking the next Act (`Act I ➔ Act II ➔ Act III ➔ Act IV ➔ Act V`), and every Act displays an explicit status badge (`✓ COMPLETED`, `▶ IN PROGRESS`, `⏳ READY`, `🔒 LOCKED`).
+    5. **Rule 30.3 Route-Grouped QA Checklist Standard**: Codified route-grouped test card organisation in `.agents/AGENTS.md`, `.antigravity/rules/autonomous_command_chaining.md`, and `scripts/generate_qa_checklist.js`.
+  - 🛡️ **QA Gatekeeper**: Expanded Vitest invariant suite to 597/597 passing tests across 52 test files (`src/test/flight_simulator_isolation.test.ts`, `src/test/qa_template.test.ts`, `src/test/hardware_privacy.test.ts`, `src/test/studio_fixes.test.tsx`).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\components\studio\MemoryForm.tsx`
+  - `C:\Users\home\studio\src\components\studio\Scriptorium\Scriptorium.tsx`
+  - `C:\Users\home\studio\src\components\studio\SoloStage.tsx`
+  - `C:\Users\home\studio\src\components\studio\ProductionRail.tsx`
+  - `C:\Users\home\studio\src\components\studio\ProductionDeck.tsx`
+  - `C:\Users\home\studio\src\test\flight_simulator_isolation.test.ts`
+  - `C:\Users\home\studio\src\test\hardware_privacy.test.ts`
+  - `C:\Users\home\studio\src\test\qa_template.test.ts`
+  - `C:\Users\home\studio\scripts\generate_qa_checklist.js`
+  - `C:\Users\home\studio\.agents\AGENTS.md`
+  - `C:\Users\home\studio\.antigravity\rules\autonomous_command_chaining.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---

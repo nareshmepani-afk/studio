@@ -319,4 +319,56 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
       /!isMuted\s*&&\s*!isTableReadActive\s*&&\s*!isRehearsalFlight\s*&&\s*\(\s*<div\s*data-blueprint=['"]DirectorsHUD['"]/
     );
   });
+
+  it('9. Act I & Act II Sensory Palette Key: MemoryForm and Scriptorium render Golden Trio modality counters and interactive beacon pulse', () => {
+    const memoryFormPath = path.resolve(__dirname, '../components/studio/MemoryForm.tsx');
+    const memoryFormContent = fs.readFileSync(memoryFormPath, 'utf8');
+    const scriptoriumPath = path.resolve(__dirname, '../components/studio/Scriptorium/Scriptorium.tsx');
+    const scriptoriumContent = fs.readFileSync(scriptoriumPath, 'utf8');
+
+    // MemoryForm renders sensory-palette-key in Act I Story Hook editor
+    expect(memoryFormContent).toContain('data-testid="sensory-palette-key"');
+    expect(memoryFormContent).toContain('scrollToStoryHookAnchor');
+    expect(memoryFormContent).toContain('filterDominantSensoryAnchors(descAnchors)');
+
+    // Scriptorium hydrates plain-text data.prose and uses filterDominantSensoryAnchors for Golden Trio parity
+    expect(scriptoriumContent).toContain('data-testid="sensory-palette-key"');
+    expect(scriptoriumContent).toContain('filterDominantSensoryAnchors(rawAnchors)');
+    expect(scriptoriumContent).toContain("setBlocks([{ id: uuidv4(), type: 'hook', text: data.prose, catalysts: [] }]);");
+  });
+
+  it('10. SoloStage Teleprompter Draggable Resize Sidebars & AI Director Interview Minimise Toggle', () => {
+    const soloStagePath = path.resolve(__dirname, '../components/studio/SoloStage.tsx');
+    const soloStageContent = fs.readFileSync(soloStagePath, 'utf8');
+
+    // Draggable resize sidebars on Teleprompter performance view
+    expect(soloStageContent).toContain('data-testid="prompter-resize-left"');
+    expect(soloStageContent).toContain('data-testid="prompter-resize-right"');
+    expect(soloStageContent).toContain('data-testid="prompter-resize-bottom"');
+    expect(soloStageContent).toContain('handlePrompterResizeStart');
+
+    // AI Director Interview Active panel Minimise/Expand controls
+    expect(soloStageContent).toContain('data-testid="minimise-interviewer-card-btn"');
+    expect(soloStageContent).toContain('data-testid="expand-interviewer-card-btn"');
+    expect(soloStageContent).toContain('isInterviewerMinimised');
+  });
+
+  it('11. Sequential Act Completion Gating & Status Badges in ProductionRail and ProductionDeck', () => {
+    const railPath = path.resolve(__dirname, '../components/studio/ProductionRail.tsx');
+    const railContent = fs.readFileSync(railPath, 'utf8');
+    const deckPath = path.resolve(__dirname, '../components/studio/ProductionDeck.tsx');
+    const deckContent = fs.readFileSync(deckPath, 'utf8');
+
+    // ProductionRail enforces sequential Act completion before unlocking subsequent Acts
+    expect(railContent).toContain('if (id >= 2 && !isActMilestoneCompleted(1, resolvedMilestones)) return false;');
+    expect(railContent).toContain('if (id >= 3 && !isActMilestoneCompleted(2, resolvedMilestones)) return false;');
+    expect(railContent).toContain('if (id >= 4 && !isActMilestoneCompleted(3, resolvedMilestones)) return false;');
+    expect(railContent).toContain('act-status-badge-');
+
+    // ProductionDeck handleStageJump blocks premature forward stage jumps with clear UK English guidance
+    expect(deckContent).toContain('ACT II COMPLETION REQUIRED');
+    expect(deckContent).toContain('ACT III COMPLETION REQUIRED');
+    expect(deckContent).toContain('ACT IV COMPLETION REQUIRED');
+  });
 });
+

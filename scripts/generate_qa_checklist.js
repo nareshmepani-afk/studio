@@ -18,6 +18,24 @@
 const fs = require('fs');
 const path = require('path');
 
+function getRouteInfo(t, environmentUrl) {
+  const rawUrl = (t.url || environmentUrl || 'https://dev.memoryweaver.studio').split('?')[0];
+  if (t.routeGroup) {
+    return {
+      key: t.routeGroup.replace(/[^a-zA-Z0-9_-]/g, '_'),
+      label: t.routeLabel || t.routeGroup,
+      baseUrl: rawUrl
+    };
+  }
+  const pathPart = rawUrl.replace(/^https?:\/\/[^/]+\/?/, '') || '/';
+  let label = pathPart;
+  if (pathPart.includes('first_flight_rehearsal')) {
+    label = 'first_flight_rehearsal';
+  }
+  const key = label.replace(/[^a-zA-Z0-9_-]/g, '_');
+  return { key, label, baseUrl: rawUrl };
+}
+
 function generateQAChecklistHtml(config) {
   const {
     commitSha = 'fe57798',
@@ -27,9 +45,28 @@ function generateQAChecklistHtml(config) {
     tests = []
   } = config;
 
+  // Group tests by target route in order of first appearance (Rule 30.3)
+  const routeGroupsMap = new Map();
+  tests.forEach((t) => {
+    const info = getRouteInfo(t, environmentUrl);
+    if (!routeGroupsMap.has(info.key)) {
+      routeGroupsMap.set(info.key, { ...info, items: [] });
+    }
+    routeGroupsMap.get(info.key).items.push(t);
+  });
+  const routeGroups = Array.from(routeGroupsMap.values());
+  const groupedTests = [];
+  routeGroups.forEach((g) => {
+    g.items.forEach((item) => {
+      groupedTests.push({ ...item, _routeKey: g.key, _routeLabel: g.label, _routeUrl: g.baseUrl });
+    });
+  });
+
   const storageKey = `mw_qa_state_v1_commit_${commitSha}`;
-  const totalTests = tests.length;
-  const testsJson = JSON.stringify(tests);
+  const totalTests = groupedTests.length;
+  const testsJson = JSON.stringify(groupedTests);
+
+  let cardIndexCounter = 0;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -70,6 +107,11 @@ function generateQAChecklistHtml(config) {
       color: #fbbf24;
       box-shadow: 0 0 14px rgba(245, 158, 11, 0.35);
     }
+    .filter-tab.active {
+      background-color: rgba(245, 158, 11, 0.2) !important;
+      border-color: #f59e0b !important;
+      color: #fde68a !important;
+    }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -107,7 +149,7 @@ function generateQAChecklistHtml(config) {
           <span>${suiteTitle}</span>
         </h1>
         <p class="text-sm text-gray-400 max-w-2xl">
-          Standardized QA verification suite with inline test data credentials, governing architectural rules, screenshot dropzones, clipboard paste, and telemetry ingestion.
+          Organised strictly by target staging route (Rule 30.3) with inline test data credentials, governing architectural rules, screenshot dropzones, clipboard paste, and telemetry ingestion.
         </p>
       </div>
 
@@ -141,17 +183,32 @@ function generateQAChecklistHtml(config) {
       </div>
     </div>
 
+    <!-- INTERACTIVE ROUTE FILTER BAR (Rule 30.3) -->
+    <div id="route-filter-bar" class="mt-5 pt-4 border-t border-gray-800/60 flex items-center gap-2 flex-wrap text-xs font-mono">
+      <span class="text-gray-500 uppercase tracking-wider text-[11px] mr-1">Filter by Route:</span>
+      <button onclick="filterByRoute('all')" id="tab-all" class="filter-tab active px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 transition cursor-pointer">
+        🌐 All Routes (${totalTests})
+      </button>
+      <button onclick="filterByRoute('pending')" id="tab-pending" class="filter-tab px-3 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 transition cursor-pointer">
+        ⏳ Pending Only (<span id="pending-tab-count">${totalTests}</span>)
+      </button>
+      ${routeGroups.map(g => `
+      <button onclick="filterByRoute('${g.key}')" id="tab-${g.key}" class="filter-tab px-3 py-1.5 rounded-lg bg-gray-900/80 hover:bg-gray-800 text-sky-300 border border-gray-700 transition cursor-pointer">
+        📍 ${g.label} (${g.items.length})
+      </button>`).join('')}
+    </div>
+
     <!-- QUICK ACTIONS BAR -->
-    <div class="mt-6 pt-4 border-t border-gray-800/80 flex flex-wrap items-center justify-between gap-3">
+    <div class="mt-4 pt-4 border-t border-gray-800/80 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2 flex-wrap">
-        <button onclick="copyMarkdownReport()" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs tracking-wide transition shadow-lg shadow-amber-500/10 flex items-center gap-1.5">
+        <button onclick="copyMarkdownReport()" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs tracking-wide transition shadow-lg shadow-amber-500/10 flex items-center gap-1.5 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
           <span>📋 Copy Markdown Report</span>
         </button>
-        <button onclick="exportJSON()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-mono transition border border-gray-700">
+        <button onclick="exportJSON()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-mono transition border border-gray-700 cursor-pointer">
           💾 Export JSON
         </button>
-        <button onclick="document.getElementById('import-file').click()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-mono transition border border-gray-700">
+        <button onclick="document.getElementById('import-file').click()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-mono transition border border-gray-700 cursor-pointer">
           📂 Import JSON
         </button>
         <input type="file" id="import-file" class="hidden" accept=".json" onchange="importJSON(event)" />
@@ -164,17 +221,37 @@ function generateQAChecklistHtml(config) {
     </div>
   </header>
 
-  <!-- TEST CARDS CONTAINER -->
-  <main class="max-w-6xl mx-auto space-y-6" id="test-cards-container">
-    ${tests.map((t, idx) => {
-      const num = idx + 1;
-      return `
+  <!-- TEST CARDS CONTAINER (GROUPED BY ROUTE — Rule 30.3) -->
+  <main class="max-w-6xl mx-auto space-y-8" id="test-cards-container">
+    ${routeGroups.map((g, gIdx) => `
+    <!-- ROUTE GROUP ${gIdx + 1}: ${g.label} -->
+    <section id="group-${g.key}" data-route-group="${g.key}" class="space-y-6">
+      <div class="obsidian-card rounded-2xl p-5 border border-amber-500/30 bg-gray-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              ROUTE GROUP ${gIdx + 1} • ${g.items.length} TEST${g.items.length === 1 ? '' : 'S'}
+            </span>
+            <code class="text-xs font-mono text-amber-200 bg-gray-950/80 px-2.5 py-1 rounded border border-gray-800">${g.baseUrl}</code>
+          </div>
+          <h2 class="text-lg font-black text-white">📍 Route: <span class="text-amber-400">${g.label}</span></h2>
+        </div>
+        <a href="${g.baseUrl}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-xs tracking-wide transition shadow-lg shadow-amber-500/20 flex items-center gap-2 shrink-0 self-start md:self-center">
+          <span>🚀 Launch Route ↗</span>
+        </a>
+      </div>
+
+      ${g.items.map((t) => {
+        cardIndexCounter++;
+        const num = cardIndexCounter;
+        return `
     <!-- TEST CARD ${num} -->
-    <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-${num}" tabindex="0" onpaste="handleCardPaste(event, ${num})">
+    <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-${num}" data-route="${g.key}" tabindex="0" onpaste="handleCardPaste(event, ${num})">
       <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
         <div class="space-y-1">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-gray-800 text-amber-400 border border-gray-700">TEST ${num}</span>
+            <span class="text-xs font-mono text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">${g.label}</span>
             <span class="text-xs font-mono text-gray-400">${t.category || 'Verification'}</span>
           </div>
           <h2 class="text-lg font-bold text-white">${t.title}</h2>
@@ -326,7 +403,8 @@ function generateQAChecklistHtml(config) {
         <div id="thumbnails-${num}" class="flex flex-wrap gap-3 mt-3"></div>
       </div>
     </div>`;
-    }).join('\n')}
+      }).join('\n')}
+    </section>`).join('\n')}
   </main>
 
   <!-- FULLSCREEN LIGHTBOX MODAL -->
@@ -711,6 +789,47 @@ function generateQAChecklistHtml(config) {
       }
     }
 
+    let currentRouteFilter = 'all';
+
+    function filterByRoute(mode) {
+      currentRouteFilter = mode;
+      document.querySelectorAll('.route-tab').forEach(btn => {
+        btn.className = 'route-tab px-3 py-1.5 rounded-lg text-xs font-mono border border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-600 transition';
+      });
+      const activeBtn = document.getElementById(\`tab-\${mode}\`);
+      if (activeBtn) {
+        activeBtn.className = 'route-tab px-3 py-1.5 rounded-lg text-xs font-bold border border-indigo-500/40 bg-indigo-500/20 text-indigo-300 transition';
+      }
+
+      document.querySelectorAll('section[data-route-group]').forEach(sec => {
+        const groupKey = sec.getAttribute('data-route-group');
+        if (mode === 'all') {
+          sec.style.display = '';
+          sec.querySelectorAll('.obsidian-card').forEach(c => c.style.display = '');
+        } else if (mode === 'pending') {
+          let visibleInGroup = 0;
+          sec.querySelectorAll('.obsidian-card').forEach(c => {
+            const idNum = parseInt(c.id.replace('card-', ''), 10);
+            const st = state.statuses[idNum];
+            if (!st || st === 'UNTESTED' || st === 'FAIL') {
+              c.style.display = '';
+              visibleInGroup++;
+            } else {
+              c.style.display = 'none';
+            }
+          });
+          sec.style.display = visibleInGroup > 0 ? '' : 'none';
+        } else {
+          if (groupKey === mode) {
+            sec.style.display = '';
+            sec.querySelectorAll('.obsidian-card').forEach(c => c.style.display = '');
+          } else {
+            sec.style.display = 'none';
+          }
+        }
+      });
+    }
+
     function updateHUD() {
       let pass = 0, fail = 0, backlog = 0;
       for (let i = 1; i <= TOTAL_TESTS; i++) {
@@ -732,6 +851,9 @@ function generateQAChecklistHtml(config) {
       }
 
       document.getElementById('tally-display').textContent = \`\${pass} Pass • \${fail} Fail • \${backlog} Backlog • \${pend} Pend\`;
+      const pendTabCount = document.getElementById('pending-tab-count');
+      if (pendTabCount) pendTabCount.textContent = pend;
+      if (currentRouteFilter === 'pending') filterByRoute('pending');
     }
 
     function scrollToNextPending() {
@@ -841,11 +963,17 @@ function generateQAChecklistHtml(config) {
       md += \`**Summary**: \${pass} Passed | \${fail} Failed | \${backlog} Backlog | \${TOTAL_TESTS - pass - fail - backlog} Pending\\n\\n\`;
       md += \`### 🧪 Detailed Test Breakdown\\n\\n\`;
 
+      let lastRouteUrl = '';
       for (let i = 1; i <= TOTAL_TESTS; i++) {
         const s = state.statuses[i] || 'PENDING';
         const icon = s === 'PASS' ? '✅ PASS' : s === 'FAIL' ? '❌ FAIL' : s === 'BACKLOG' ? '⚠️ BACKLOG' : '⏳ PENDING';
         const meta = TEST_METADATA[i - 1];
         const title = meta?.title || \`Test \${i}\`;
+        const routeUrl = meta?.url || '';
+        if (routeUrl && routeUrl !== lastRouteUrl) {
+          md += \`### 📍 Route: \\\`\${routeUrl}\\\`\\n\\n\`;
+          lastRouteUrl = routeUrl;
+        }
         
         md += \`#### \${icon} — Test \${i}: \${title}\\n\`;
         if (meta?.statusAttribution) {
@@ -922,118 +1050,169 @@ module.exports = { generateQAChecklistHtml };
 if (require.main === module) {
   const args = process.argv.slice(2);
   const targetOutput = args[0] || path.join(__dirname, '../qa_checklist_interactive.html');
-  const targetCommit = args[1] || 'fe57798';
+  const targetCommit = args[1] || '7c614fd0';
 
   const defaultTestSuite = {
-    commitSha: targetCommit === 'fe57798' ? '1b359a35' : targetCommit,
+    commitSha: targetCommit,
     environmentUrl: 'https://dev.memoryweaver.studio',
-    suiteTitle: "Act-Specific Guidance, Stage Door Entry & UK Orthography Suite (MW-272)",
+    suiteTitle: "Master QA Verification Suite — Organised by Route (Commit 7c614fd0)",
     passcode: 'MW-STAGE-2026',
     tests: [
       {
-        category: 'Stage Progression & Soundstage Entry',
-        title: 'Act III Stage Door: Direct Unlatch via [ STEP INTO SOLO BOOTH ↗ ]',
-        instructions: '1) Open the staging route below: <strong>ACT III: THE STAGE DOOR</strong>.<br/>2) Observe the primary action button in the bottom-right of the control bar.<br/>3) Confirm it now displays <strong>[ STEP INTO SOLO BOOTH ]</strong> in glowing emerald ready state (<code class="text-emerald-400">bg-emerald-500 text-slate-950</code>), replacing the previous disabled red <code class="text-rose-400">FINALIZE FOOTAGE (!)</code>.<br/>4) Hover over the button: confirm status header <strong>"Ready to Enter"</strong> and tooltip: <em>"Ready to enter the recording booth and calibrate prompter."</em><br/>5) Click <strong>[ STEP INTO SOLO BOOTH ]</strong>: confirm it immediately unlatches the booth door and steps into the soundstage without throwing any blocking errors or toasts.',
-        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test',
-        governingRules: [
-          'Rule 7: Universal Non-Degradation Across All Features',
-          'Rule 23: Direct Room Mode & Teleprompter Modal Unlocking Rule',
-          'Rule 20: Mandatory UK English Orthography Standard'
-        ],
+        category: 'Route 1: first_flight_rehearsal • Act I',
+        title: 'Scriptorium: Modality-Matched Floating Badges & Clean View Gating',
+        instructions: '1) Navigate to the Rehearsal Sandbox route below.<br/>2) Ensure the top-right toggle is set to <strong>Sensory View</strong>.<br/>3) Verify floating sensory anchor badges use modality-matched colours and collapse cleanly in Clean View.',
+        url: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal',
+        governingRules: ['Rule 7: Universal Non-Degradation', 'Rule 20: Mandatory UK English Orthography'],
         testData: [
-          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test' },
-          { label: 'Stage Door Primary Button', value: '[ STEP INTO SOLO BOOTH ]' },
-          { label: 'Styling Contract', value: 'bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)]' },
-          { label: 'Tooltip Header', value: 'Ready to Enter' },
-          { label: 'Edge Commit SHA', value: '1b359a35' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal' },
+          { label: 'Edge Commit SHA', value: '7c614fd' }
+        ],
+        defaultStatus: 'PASS',
+        statusAttribution: '✅ CERTIFIED PASS ON STAGING',
+        statusRationale: 'Modality-matched floating badges and Clean View gating verified.',
+        defaultNotes: 'Certified PASS on staging.'
+      },
+      {
+        category: 'Route 1: first_flight_rehearsal • Act I',
+        title: 'Scriptorium: Subtle Modality Underline Tints & Direct Text-Hover Tooltips',
+        instructions: '1) In Sensory View, inspect the inline highlighted anchor words inside the narrative editor.<br/>2) Confirm subtle modality underline tints and direct hover tooltips render cleanly.',
+        url: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal',
+        governingRules: ['Rule 7: Universal Non-Degradation', 'Rule 20: Mandatory UK English Orthography'],
+        testData: [
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal' }
+        ],
+        defaultStatus: 'PASS',
+        statusAttribution: '✅ CERTIFIED PASS ON STAGING',
+        statusRationale: 'Subtle underline tints and hover tooltips verified.',
+        defaultNotes: 'Certified PASS on staging. Subtle underline tints and hover tooltips render cleanly directly on anchored terms.'
+      },
+      {
+        category: 'Route 1: first_flight_rehearsal • Act I',
+        title: 'Scriptorium: Sensory Palette Key, Live Modality Counters & Step 5 Jump-to-Highlight Beacon Pulse (UPDATED)',
+        instructions: '1) In Sensory View, inspect the Sensory Palette Key bar directly above the narrative editor.<br/>2) Confirm live modality counts (<code>Sight (N)</code>, <code>Sound (N)</code>, <code>Smell (N)</code>, <code>Touch (N)</code>, <code>Emotion (N)</code>).<br/>3) Confirm inline prose remains 100% clean (no microscopic superscript letters).<br/>4) Hover over any modality pill to inspect its tooltip.<br/>5) <strong>Click a Modality Pill (Step 5 Upgrade)</strong>: Click any pill with count > 0 and confirm it smoothly scrolls to the next matching inline phrase AND triggers a prominent <strong>1.6-second glowing beacon pulse + floating modality badge</strong> above the word.',
+        url: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal',
+        governingRules: ['Rule 7: Universal Non-Degradation', 'Rule 20: Mandatory UK English Orthography', 'Rule 12: Zero-Latency Optimistic UI'],
+        testData: [
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal' },
+          { label: 'Step 5 Beacon Class', value: 'mw-sensory-jump-pulse (scale 1.16x + glowing ring + floating modality tag)' }
         ],
         defaultStatus: 'UNTESTED',
-        statusAttribution: '⏳ PENDING — Deployed to Staging (Commit 1b359a3)',
-        statusRationale: 'Replaces disabled FINALIZE FOOTAGE on Stage Door with direct-entry STEP INTO SOLO BOOTH.',
+        statusAttribution: '⏳ PENDING RE-TEST — Step 5 Upgraded in Commit 7c614fd0',
+        statusRationale: 'Added prominent 1.6s scale-up beacon ring + floating modality tag above target word on pill click.',
         defaultNotes: ''
       },
       {
-        category: 'Incomplete Requirements & Actionable Guidance',
-        title: 'Act III In-Booth Video Requirement Guidance & [ Record Take ↗ ] CTA',
-        instructions: '1) Step onto the Soundstage (inside the Solo Booth). Prior to recording a take, locate the bottom-right action button.<br/>2) Confirm the button displays <strong>[ FINALISE FOOTAGE ]</strong> in disabled/pending rose state (<code class="text-rose-400">border-rose-500/30 text-rose-300/60</code>) with UK spelling (<strong>FINALISE</strong>, not FINALIZE).<br/>3) Hover over the button to inspect the tooltip:<br/>&nbsp;&nbsp;• Category Header: <strong>VIDEO TAKE REQUIRED</strong> (No longer says "INCOMPLETE CATALYSTS"!).<br/>&nbsp;&nbsp;• Item Bullet: <strong>• Recorded Video Take</strong> (No longer says "Video Recording").<br/>&nbsp;&nbsp;• Guidance Subtext: <em>"Record your spoken monologue in the booth before finalising footage."</em> (No longer says "Fill all mandatory fields...").<br/>4) Click <strong>[ FINALISE FOOTAGE ]</strong>:<br/>&nbsp;&nbsp;• Confirm actionable warning toast: <strong>"VIDEO TAKE REQUIRED"</strong> with description: <em>"Please record a video take of your performance before finalising footage."</em><br/>&nbsp;&nbsp;• Confirm action button in toast: <strong>[ Record Take ↗ ]</strong>.<br/>&nbsp;&nbsp;• Click <strong>[ Record Take ↗ ]</strong>: confirm it smoothly scrolls to and focuses the teleprompter record button.',
-        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test',
-        governingRules: [
-          'Rule 20: Mandatory UK English Orthography Standard',
-          'Rule 7: Universal Non-Degradation Across All Features',
-          'Rule 12: Zero-Latency Optimistic UI & Async Handshake Decoupling'
-        ],
+        category: 'Route 1: first_flight_rehearsal • Act II',
+        title: 'SelectionDeck: Direct 1-Click Card Selection & Synchronised Control Bar CTA',
+        instructions: '1) Click <strong>ENTER THE WEAVE</strong> to open the 5 Sensory Weave cards.<br/>2) Click directly anywhere on a card body to select it immediately.<br/>3) Confirm the bottom control bar button turns glowing emerald (<code>ENTER RECORDING STUDIO</code>) and advances to Act III when clicked.',
+        url: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal',
+        governingRules: ['Rule 12: Zero-Latency Optimistic UI', 'Rule 18: Direct Event Prop Binding'],
         testData: [
-          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test' },
-          { label: 'Disabled Button Label', value: 'FINALISE FOOTAGE' },
-          { label: 'Tooltip Category Header', value: 'VIDEO TAKE REQUIRED' },
-          { label: 'Tooltip Bullet', value: 'Recorded Video Take' },
-          { label: 'Toast Title', value: 'VIDEO TAKE REQUIRED' },
-          { label: 'Toast CTA Action', value: '[ Record Take ↗ ]' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal' }
+        ],
+        defaultStatus: 'PASS',
+        statusAttribution: '✅ CERTIFIED PASS ON STAGING',
+        statusRationale: '1-click card selection and synchronised bottom CTA verified.',
+        defaultNotes: 'Certified PASS on staging. 1-click card selection and synchronised bottom control bar CTA work seamlessly.'
+      },
+      {
+        category: 'Route 1: first_flight_rehearsal • Act III',
+        title: 'Rehearsal Sandbox: Zero Duplicate Header Chrome & Viewport Fit',
+        instructions: '1) Confirm the global top navbar is suppressed on the rehearsal route and only the unified amber rehearsal banner is rendered.',
+        url: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal',
+        governingRules: ['Rule 7: Universal Non-Degradation', 'Rule 8: Zero-Footprint Layout Integrity'],
+        testData: [
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal' }
+        ],
+        defaultStatus: 'PASS',
+        statusAttribution: '✅ CERTIFIED PASS ON STAGING',
+        statusRationale: 'Single unified rehearsal banner verified.',
+        defaultNotes: 'Certified PASS on staging.'
+      },
+      {
+        category: 'Route 1: first_flight_rehearsal • Act III',
+        title: 'Rehearsal Sandbox: Unmounted Director HUD Bar & Unclipped Booth Frame (UPDATED)',
+        instructions: '1) Advance to <strong>Act III: Solo Booth</strong> on the Rehearsal route.<br/>2) Confirm the redundant <code>DIRECTOR HUD / REHEARSAL SANDBOX / 3-STEP TOUR / SKIP TO REAL STUDIO</code> bar is completely unmounted.<br/>3) Confirm the 16:9 camera monitor and bottom recording controls fit comfortably inside a 1080p desktop viewport without vertical clipping.',
+        url: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal',
+        governingRules: ['Rule 7: Universal Non-Degradation', 'Rule 8: Zero-Footprint Layout Integrity'],
+        testData: [
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal' },
+          { label: 'Unmounted Redundant Bar', value: 'isRehearsal -> suppress inner Director HUD bar' }
         ],
         defaultStatus: 'UNTESTED',
-        statusAttribution: '⏳ PENDING — Deployed to Staging (Commit 1b359a3)',
-        statusRationale: 'Eliminates misleading catalyst jargon and provides actionable directions with direct Record Take CTA.',
+        statusAttribution: '⏳ PENDING RE-TEST — Director HUD Unmounted in Commit 7c614fd0',
+        statusRationale: 'Completely unmounts inner Director HUD bar when isRehearsal is true to reclaim ~68px of vertical height.',
         defaultNotes: ''
       },
       {
-        category: 'Orthography & Theatrical Standards',
-        title: 'Rule 20 Mandatory British English Across Studio Stage Controls',
-        instructions: '1) Verify British English spelling throughout the stage control bar:<br/>&nbsp;&nbsp;• Act III Button: <strong>FINALISE FOOTAGE</strong> (with "S", not "Z").<br/>&nbsp;&nbsp;• Act III Hotspot 3: <strong>Finalise Footage & Submit Take</strong>.<br/>&nbsp;&nbsp;• Act I Synthesis: <strong>SYNTHESISING...</strong> (with "S", not "Z").<br/>&nbsp;&nbsp;• Clean Reading mode toggle: <strong>Sensory View</strong>.<br/>2) Confirm zero American spelling variations (<code class="text-rose-400">FINALIZE</code>, <code class="text-rose-400">SYNTHESIZING</code>) in the DOM or UI labels.',
-        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test',
-        governingRules: [
-          'Rule 20: Mandatory UK English Orthography Standard',
-          'Rule 8: Zero-Footprint Telemetry & Layout Integrity Rule'
-        ],
+        category: 'Route 2: studio/production/ey96djU6qR1BrDGnvZwp • Act I–III',
+        title: 'Authenticated Tech Scout: No False-Positive Rehearsal Banner on Real Memories',
+        instructions: '1) Open the real memory production route below.<br/>2) Confirm the amber Rehearsal Mode banner is NOT rendered on real authenticated memories.<br/>3) Confirm the inner Director HUD bar with <strong>[ 💡 3-STEP TOUR ]</strong> remains present and functional.',
+        url: 'https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp',
+        governingRules: ['Rule 7: Universal Non-Degradation', 'Rule 14: Story Hook Fallback Hierarchy'],
         testData: [
-          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test' },
-          { label: 'Mandatory UK Mapping', value: 'Finalize -> Finalise, Synthesize -> Synthesise' },
-          { label: 'Automated Vitest Proof', value: 'src/test/production_control_bar_acts.test.tsx (Suite 4 Passed)' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp' }
         ],
         defaultStatus: 'UNTESTED',
-        statusAttribution: '⏳ PENDING — Deployed to Staging (Commit 1b359a3)',
-        statusRationale: 'Strict adherence to British English orthography verified across all stage controls.',
+        statusAttribution: '⏳ PENDING STAGING VERIFICATION (Commit 7c614fd0)',
+        statusRationale: 'Strict ID match (id === "first_flight_rehearsal") prevents false-positive rehearsal banner.',
         defaultNotes: ''
       },
       {
-        category: 'Vault Non-Degradation Invariant Shield',
-        title: 'Recorded Media Shielding & Generational Vault Protection (Test 4 Walkthrough)',
-        instructions: '<strong>Live Staging Walkthrough:</strong><br/>1) <strong>Step into Solo Booth</strong>: Click <code class="text-emerald-400">[ STEP INTO SOLO BOOTH ]</code> to enter the soundstage.<br/>2) <strong>Record Video Take</strong>: Click Record on the prompter, speak or wait 3–5 seconds, stop recording, and commit the take.<br/>3) <strong>Observe Button Transition</strong>: Once the take is saved, confirm the primary button turns glowing emerald: <strong>[ FINALISE FOOTAGE ]</strong>.<br/>4) <strong>Return to Act I</strong>: Append <code class="text-emerald-400">?act=1</code> to the URL or click <em>"Edit Scene"</em>.<br/>5) <strong>Verify Vault Shield Invariant</strong>: Observe that <code class="text-stone-400">[ ↺ Reset Draft ]</code> is now <strong>disabled</strong> (<code class="text-stone-400">opacity-35 cursor-not-allowed</code>) with tooltip: <em>"Reset disabled: Recorded media takes exist for this theatrical performance."</em> Clicking it does nothing, proving recorded family takes cannot be accidentally wiped.',
-        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test',
-        governingRules: [
-          'Rule 7: Universal Non-Degradation Across All Features',
-          'Rule 9: Test-Driven Verification & Regression Shield'
-        ],
+        category: 'Route 3: studio/fireside • Mobile Light Mode',
+        title: 'Mobile Light Fireside: High-Contrast Warm Alabaster Surface & Espresso Ink',
+        instructions: '1) Open the Fireside route below on a mobile viewport (390x844) in Light Mode.<br/>2) Confirm Warm Alabaster surfaces and deep Espresso ink headers.',
+        url: 'https://dev.memoryweaver.studio/studio/fireside',
+        governingRules: ['Rule 7: Universal Non-Degradation', 'Rule 20: Mandatory UK English Orthography'],
         testData: [
-          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test' },
-          { label: 'Pre-Flight Return Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test?act=1' },
-          { label: 'Vault Invariant', value: 'Reset forbidden once media takes exist in Generational Vault' },
-          { label: 'Disabled Tooltip', value: 'Reset disabled: Recorded media takes exist for this theatrical performance.' },
-          { label: 'Automated Vitest Proof', value: 'src/test/draft_reset.test.ts (8/8 Passed)' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/fireside' }
         ],
         defaultStatus: 'UNTESTED',
-        statusAttribution: '⏳ PENDING — Ready for Staging Walkthrough (Commit 1b359a3)',
-        statusRationale: 'Follow the walkthrough to record a video take in Act III and verify Reset Draft disabling in Act I.',
+        statusAttribution: '⏳ PENDING STAGING VERIFICATION',
+        statusRationale: 'High-contrast daylight readability on Mobile Light Fireside.',
         defaultNotes: ''
       },
       {
-        category: 'Cross-Act Requirement Harmonisation',
-        title: 'Act I & Act II Truthful Guidance & Direct Action CTAs',
-        instructions: '1) On Act I (<code class="text-emerald-400">?act=1</code>), click <code class="text-amber-300">[ ↺ Reset Draft ]</code> to clear catalysts to baseline.<br/>2) Try clicking <code class="text-rose-400">[ ENTER THE WEAVE ]</code>: confirm error toast <strong>"CATALYSTS REQUIRED"</strong> with list of missing items and <strong>[ Take Me There ↗ ]</strong> CTA.<br/>3) Click <strong>[ Take Me There ↗ ]</strong>: confirm it scrolls smoothly to the first missing catalyst field.<br/>4) Advance to Act II (<code class="text-emerald-400">?act=2</code>) without picking a vision card, then click <code class="text-rose-400">[ ENTER RECORDING STUDIO ]</code>: confirm warning toast <strong>"WEAVE SELECTION REQUIRED"</strong> with <strong>[ Select Weave ↗ ]</strong> CTA.<br/>5) Click <strong>[ Select Weave ↗ ]</strong>: confirm it smoothly scrolls to the treatment selection deck.',
-        url: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test?act=1',
-        governingRules: [
-          'Rule 7: Universal Non-Degradation Across All Features',
-          'Rule 12: Zero-Latency Optimistic UI',
-          'Rule 18: Direct Event Prop Binding vs DOM Selector Reliance'
-        ],
+        category: 'Route 3: studio/fireside • Mobile Light Mode',
+        title: 'Mobile Light Fireside: Crisp Pill Segmented Tabs & Prompt Catalogue Cards',
+        instructions: '1) Inspect the 4 category tabs and prompt cards on Mobile Light Fireside.<br/>2) Confirm active tab uses deep burnt-amber fill with crisp white text.',
+        url: 'https://dev.memoryweaver.studio/studio/fireside',
+        governingRules: ['Rule 7: Universal Non-Degradation'],
         testData: [
-          { label: 'Act I Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test?act=1' },
-          { label: 'Act II Route', value: 'https://dev.memoryweaver.studio/studio/production/tech_scout_draft_test?act=2' },
-          { label: 'Act I CTA', value: '[ Take Me There ↗ ] (Scrolls & pulses missing catalyst)' },
-          { label: 'Act II CTA', value: '[ Select Weave ↗ ] (Scrolls to SelectionDeck cards)' }
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/fireside' }
         ],
         defaultStatus: 'UNTESTED',
-        statusAttribution: '⏳ PENDING — Deployed to Staging (Commit 1b359a3)',
-        statusRationale: 'Harmonises requirements and directional guidance across all theatrical acts.',
+        statusAttribution: '⏳ PENDING STAGING VERIFICATION',
+        statusRationale: 'Segmented pill tabs and high-contrast prompt cards.',
+        defaultNotes: ''
+      },
+      {
+        category: 'Route 3: studio/fireside • Mobile Light Mode',
+        title: 'Mobile Light Fireside: Elevated Bottom Sticky CTA Bar & Safe-Area Ergonomics',
+        instructions: '1) Select a story spark on Mobile Light Fireside.<br/>2) Confirm the sticky bottom CTA bar has a frosted alabaster surface and burnt-amber primary CTA button.',
+        url: 'https://dev.memoryweaver.studio/studio/fireside',
+        governingRules: ['Rule 7: Universal Non-Degradation'],
+        testData: [
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/fireside' }
+        ],
+        defaultStatus: 'UNTESTED',
+        statusAttribution: '⏳ PENDING STAGING VERIFICATION',
+        statusRationale: 'Sticky bottom CTA bar ergonomics in Mobile Light Mode.',
+        defaultNotes: ''
+      },
+      {
+        category: 'Route 3: studio/fireside • Theme Non-Regression',
+        title: 'Fireside Theme Non-Regression: Mobile Dark Mode & Desktop Layout Parity',
+        instructions: '1) Toggle Dark Mode on mobile and inspect Desktop viewport.<br/>2) Confirm nocturnal obsidian palette and desktop 2-column layout remain 100% intact.',
+        url: 'https://dev.memoryweaver.studio/studio/fireside',
+        governingRules: ['Rule 7: Universal Non-Degradation'],
+        testData: [
+          { label: 'Target Route', value: 'https://dev.memoryweaver.studio/studio/fireside' }
+        ],
+        defaultStatus: 'UNTESTED',
+        statusAttribution: '⏳ PENDING STAGING VERIFICATION',
+        statusRationale: 'Zero regression across Dark Mode and Desktop viewports.',
         defaultNotes: ''
       }
     ]

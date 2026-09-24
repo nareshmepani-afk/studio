@@ -110,23 +110,32 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
     if (isAct1LiveValid !== undefined && !isAct1LiveValid && !resolvedMilestones.hasWeave && !resolvedMilestones.hasRecordedMedia) {
       return false;
     }
-    return isAct1Complete({
-      title: memory?.title,
-      location: (memory as any)?.narratorLocationAtEvent || memory?.location,
-      country: memory?.country,
-      year: (memory as any)?.dateComponents?.year || memory?.year,
-      prose: memory?.prose,
-      description: memory?.description
-    });
+    const act1CatalystsValid = isAct1LiveValid !== undefined
+      ? isAct1LiveValid
+      : isAct1Complete({
+          title: memory?.title,
+          location: (memory as any)?.narratorLocationAtEvent || memory?.location,
+          country: memory?.country,
+          year: (memory as any)?.dateComponents?.year || memory?.year,
+          prose: memory?.prose,
+          description: memory?.description
+        });
+    const act1Done = Boolean(isActMilestoneCompleted(0, resolvedMilestones) && (act1CatalystsValid || resolvedMilestones.hasWeave || resolvedMilestones.hasRecordedMedia));
+    if (!act1Done) return false;
+    if (id <= currentStage) return true;
+    if (id >= 2 && !isActMilestoneCompleted(1, resolvedMilestones)) return false;
+    if (id >= 3 && !isActMilestoneCompleted(2, resolvedMilestones)) return false;
+    if (id >= 4 && !isActMilestoneCompleted(3, resolvedMilestones)) return false;
+    return true;
   };
   
   // Logic: Functional Unlock - Is the act fully functional (not a tech scout)?
   const isActFullyUnlocked = (id: number) => {
     if (id === 0) return true;
     if (id === 1) return resolvedMilestones.hasScript || wordCount >= 150;
-    if (id === 2) return resolvedMilestones.hasWeave || resolvedMilestones.hasScript;
+    if (id === 2) return resolvedMilestones.hasWeave;
     if (id === 3) return resolvedMilestones.hasRecordedMedia;
-    if (id === 4) return resolvedMilestones.hasRecordedMedia;
+    if (id === 4) return resolvedMilestones.hasCompletedCut || resolvedMilestones.hasRecordedMedia;
     return false;
   };
 
@@ -259,14 +268,22 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                                   {act.label}
                                 </span>
                                 {completed ? (
-                                  <span className="text-[8px] font-mono font-bold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                  <span data-testid={`act-status-badge-${act.id}`} className="text-[8px] font-mono font-bold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
                                     ✓ COMPLETED
                                   </span>
-                                ) : !active ? (
-                                  <span className="text-[8px] font-mono font-bold text-amber-400/90 bg-amber-950/50 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-                                    PENDING
+                                ) : active ? (
+                                  <span data-testid={`act-status-badge-${act.id}`} className="text-[8px] font-mono font-bold text-sky-300 bg-sky-950/70 border border-sky-500/40 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    ▶ IN PROGRESS
                                   </span>
-                                ) : null}
+                                ) : available ? (
+                                  <span data-testid={`act-status-badge-${act.id}`} className="text-[8px] font-mono font-bold text-amber-400/90 bg-amber-950/50 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    ⏳ READY
+                                  </span>
+                                ) : (
+                                  <span data-testid={`act-status-badge-${act.id}`} className="text-[8px] font-mono font-bold text-zinc-400 bg-zinc-900/80 border border-white/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                                    🔒 LOCKED
+                                  </span>
+                                )}
                               </div>
                               <span className={cn(
                                 "text-sm font-bold tracking-tight transition-colors whitespace-nowrap",
@@ -301,9 +318,11 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                                 ? "text-emerald-300 bg-emerald-950/70 border border-emerald-500/40"
                                 : active
                                   ? "text-sky-300 bg-sky-950/70 border border-sky-500/40"
-                                  : "text-amber-400/90 bg-amber-950/50 border border-amber-500/30"
+                                  : available
+                                    ? "text-amber-400/90 bg-amber-950/50 border border-amber-500/30"
+                                    : "text-zinc-400 bg-zinc-900/80 border border-white/10"
                             )}>
-                              {completed ? "✓ COMPLETED" : active ? "▶ ACTIVE" : "⏳ PENDING"}
+                              {completed ? "✓ COMPLETED" : active ? "▶ IN PROGRESS" : available ? "⏳ READY" : "🔒 LOCKED"}
                             </span>
                           </div>
                           <p className="text-[10px] text-white/50 leading-relaxed italic">{act.description}</p>

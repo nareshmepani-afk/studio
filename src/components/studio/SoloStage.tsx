@@ -16,7 +16,7 @@ import {
 import { 
   Video, Disc, Square, AlertTriangle, CheckCircle2, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, 
   Languages, Layout, Zap, Settings2, RefreshCw, Rocket, Mic, Tag, ArrowLeft, 
-  Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
+  Film as FilmIcon, BrainCircuit, Maximize2, Minimize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail, FileText,
   Tv, Airplay, Cast, Clock
 } from 'lucide-react';
@@ -312,13 +312,55 @@ export default function SoloStage({
     });
   }, [restoreLayoutSnapshot, setIsTableReadActive, globalActions]);
 
-  const prompterWidth = isInterviewMode 
+  const [customPrompterWidth, setCustomPrompterWidth] = useState<number | null>(null);
+  const [customPrompterHeight, setCustomPrompterHeight] = useState<number | null>(null);
+  const [isInterviewerMinimised, setIsInterviewerMinimised] = useState(false);
+
+  const defaultPrompterWidth = isInterviewMode 
     ? (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 440 : prompterSize === 'md' ? 620 : 800)
     : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 480 : prompterSize === 'md' ? 680 : 880);
 
-  const prompterHeight = isInterviewMode
+  const defaultPrompterHeight = isInterviewMode
     ? (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 360 : prompterSize === 'md' ? 480 : 640)
     : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 360 : prompterSize === 'md' ? 560 : 740);
+
+  const prompterWidth = customPrompterWidth ?? defaultPrompterWidth;
+  const prompterHeight = customPrompterHeight ?? defaultPrompterHeight;
+
+  const handlePrompterResizeStart = useCallback((e: React.PointerEvent, edge: 'left' | 'right' | 'bottom') => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const prompterEl = (e.currentTarget as HTMLElement).parentElement;
+    const rect = prompterEl?.getBoundingClientRect();
+    const startW = rect ? rect.width : prompterWidth;
+    const startH = rect ? rect.height : prompterHeight;
+
+    const onMove = (moveEvt: PointerEvent) => {
+      const dx = moveEvt.clientX - startX;
+      const dy = moveEvt.clientY - startY;
+      const maxW = Math.max(480, (typeof window !== 'undefined' ? window.innerWidth : 1440) - 64);
+      const maxH = Math.max(360, (typeof window !== 'undefined' ? window.innerHeight : 900) - 180);
+      if (edge === 'left') {
+        const multiplier = (prompterLayout === 'center' || isTableReadActive) ? 2 : 1;
+        setCustomPrompterWidth(Math.min(maxW, Math.max(300, Math.round(startW - dx * multiplier))));
+      } else if (edge === 'right') {
+        const multiplier = (prompterLayout === 'center' || isTableReadActive) ? 2 : 1;
+        setCustomPrompterWidth(Math.min(maxW, Math.max(300, Math.round(startW + dx * multiplier))));
+      } else if (edge === 'bottom') {
+        setCustomPrompterHeight(Math.min(maxH, Math.max(220, Math.round(startH + dy))));
+      }
+    };
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }, [prompterWidth, prompterHeight, prompterLayout, isTableReadActive]);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -3677,50 +3719,50 @@ export default function SoloStage({
                 prompterSize === 'sm' ? {
                   opacity: 1,
                   scale: 1,
-                  left: "22.5%",
+                  left: customPrompterWidth ? `calc(50% - ${Math.round(customPrompterWidth / 2)}px)` : "22.5%",
                   top: "15%",
                   x: 0,
                   y: 0,
-                  width: "55%",
-                  height: "55%",
+                  width: customPrompterWidth ?? "55%",
+                  height: customPrompterHeight ?? "55%",
                 } : prompterSize === 'md' ? {
                   opacity: 1,
                   scale: 1,
-                  left: "12.5%",
+                  left: customPrompterWidth ? `calc(50% - ${Math.round(customPrompterWidth / 2)}px)` : "12.5%",
                   top: "10%",
                   x: 0,
                   y: 0,
-                  width: "75%",
-                  height: "70%",
+                  width: customPrompterWidth ?? "75%",
+                  height: customPrompterHeight ?? "70%",
                 } : {
                   opacity: 1,
                   scale: 1,
-                  left: "3%",
+                  left: customPrompterWidth ? `calc(50% - ${Math.round(customPrompterWidth / 2)}px)` : "3%",
                   top: "40px",
                   x: 0,
                   y: 0,
-                  width: "94%",
-                  height: "80%",
+                  width: customPrompterWidth ?? "94%",
+                  height: customPrompterHeight ?? "80%",
                 }
               ) : prompterLayout === 'center' ? (
                isInterviewMode ? {
                  opacity: 1,
                  scale: 1,
-                 left: "calc(50% - 340px)",
+                 left: `calc(50% - ${Math.round((customPrompterWidth ?? 680) / 2)}px)`,
                  x: 0,
-                 top: 170,
+                 top: isInterviewerMinimised ? 90 : 170,
                  y: 0,
-                 width: 680,
-                 height: 340,
+                 width: customPrompterWidth ?? 680,
+                 height: customPrompterHeight ?? (isInterviewerMinimised ? 440 : 340),
                } : {
                  opacity: 1,
                  scale: 1,
-                 left: "12.5%",
+                 left: customPrompterWidth ? `calc(50% - ${Math.round(customPrompterWidth / 2)}px)` : "12.5%",
                  top: "17.5%",
                  x: 0,
                  y: 0,
-                 width: "75%",
-                 height: "65%",
+                 width: customPrompterWidth ?? "75%",
+                 height: customPrompterHeight ?? "65%",
                }
              ) : {
                opacity: 1,
@@ -3752,6 +3794,37 @@ export default function SoloStage({
                  : "absolute bg-zinc-950/85 backdrop-blur-3xl border border-white/10"
              )}
            >
+            {!isTheaterExpanded && (
+              <>
+                <div
+                  data-testid="prompter-resize-left"
+                  onPointerDown={(e) => handlePrompterResizeStart(e, 'left')}
+                  onDoubleClick={(e) => { e.stopPropagation(); setCustomPrompterWidth(null); }}
+                  title="Drag sidebar to expand or narrow Teleprompter width (double-click to reset)"
+                  className="absolute left-0 top-10 bottom-10 w-3.5 cursor-ew-resize z-50 flex items-center justify-center group/resize-l hover:bg-emerald-500/10 transition-colors rounded-r-lg"
+                >
+                  <div className="w-1 h-12 rounded-full bg-white/15 group-hover/resize-l:bg-emerald-400 group-hover/resize-l:h-16 group-hover/resize-l:shadow-[0_0_10px_rgba(52,211,153,0.8)] transition-all" />
+                </div>
+                <div
+                  data-testid="prompter-resize-right"
+                  onPointerDown={(e) => handlePrompterResizeStart(e, 'right')}
+                  onDoubleClick={(e) => { e.stopPropagation(); setCustomPrompterWidth(null); }}
+                  title="Drag sidebar to expand or narrow Teleprompter width (double-click to reset)"
+                  className="absolute right-0 top-10 bottom-10 w-3.5 cursor-ew-resize z-50 flex items-center justify-center group/resize-r hover:bg-emerald-500/10 transition-colors rounded-l-lg"
+                >
+                  <div className="w-1 h-12 rounded-full bg-white/15 group-hover/resize-r:bg-emerald-400 group-hover/resize-r:h-16 group-hover/resize-r:shadow-[0_0_10px_rgba(52,211,153,0.8)] transition-all" />
+                </div>
+                <div
+                  data-testid="prompter-resize-bottom"
+                  onPointerDown={(e) => handlePrompterResizeStart(e, 'bottom')}
+                  onDoubleClick={(e) => { e.stopPropagation(); setCustomPrompterHeight(null); }}
+                  title="Drag bottom edge to expand or shorten Teleprompter height (double-click to reset)"
+                  className="absolute bottom-0 left-12 right-12 h-3.5 cursor-ns-resize z-50 flex items-center justify-center group/resize-b hover:bg-emerald-500/10 transition-colors rounded-t-lg"
+                >
+                  <div className="h-1 w-14 rounded-full bg-white/15 group-hover/resize-b:bg-emerald-400 group-hover/resize-b:w-20 group-hover/resize-b:shadow-[0_0_10px_rgba(52,211,153,0.8)] transition-all" />
+                </div>
+              </>
+            )}
             <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/10 rounded-full opacity-50" />
             {/* Header Top Line: Title & Size Actions */}
             <div 
@@ -3798,7 +3871,11 @@ export default function SoloStage({
                     <TooltipTrigger asChild>
                       <button 
                         data-hotspot-id="HS_PROMPTER_SIZE_BTN"
-                        onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
+                        onClick={() => {
+                          setCustomPrompterWidth(null);
+                          setCustomPrompterHeight(null);
+                          setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm');
+                        }}
                         className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
                       >
                         <Maximize2 className="w-3 h-3" />
@@ -4109,21 +4186,41 @@ export default function SoloStage({
                           x: "-50%",
                           top: 30,
                           y: 0,
-                          width: 680,
-                          height: 120
+                          width: isInterviewerMinimised ? 290 : 680,
+                          height: isInterviewerMinimised ? 44 : 120
                         } : {
                           opacity: 0,
                           left: 40,
                           x: 0,
                           top: 100,
                           y: 0,
-                          width: 340,
-                          height: 320
+                          width: isInterviewerMinimised ? 290 : 340,
+                          height: isInterviewerMinimised ? 48 : 320
                         }}
                         animate={isAlchemySaving || reviewTake || captureModality === 'raw' ? {
                           opacity: 0,
                           scale: 0.95,
-                        } : prompterLayout === 'center' ? {
+                        } : isInterviewerMinimised ? (
+                          prompterLayout === 'center' ? {
+                            opacity: 1,
+                            scale: 1,
+                            left: "50%",
+                            x: "-50%",
+                            top: 24,
+                            y: 0,
+                            width: 310,
+                            height: 44
+                          } : {
+                            opacity: 1,
+                            scale: 1,
+                            left: 40,
+                            x: 0,
+                            top: 40,
+                            y: 0,
+                            width: 290,
+                            height: 48
+                          }
+                        ) : prompterLayout === 'center' ? {
                           opacity: 1,
                           scale: 1,
                           left: "50%",
@@ -4146,12 +4243,31 @@ export default function SoloStage({
                         style={{ touchAction: 'none' }}
                         transition={{ type: "spring", stiffness: 120, damping: 22 }}
                         className={cn(
-                          "absolute bg-slate-950/85 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-6 shadow-2xl z-40 overflow-hidden flex cursor-grab active:cursor-grabbing select-none",
+                          "absolute bg-slate-950/85 backdrop-blur-3xl border border-sky-500/30 shadow-2xl z-40 overflow-hidden flex cursor-grab active:cursor-grabbing select-none",
+                          isInterviewerMinimised ? "rounded-full px-4 py-2 flex-row items-center justify-between gap-3" : "rounded-[2.5rem] p-6",
                           isAlchemySaving || reviewTake || captureModality === 'raw' ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
-                          prompterLayout === 'center' ? "flex-row items-center gap-6 justify-between" : "flex-col text-center justify-between"
+                          !isInterviewerMinimised && (prompterLayout === 'center' ? "flex-row items-center gap-6 justify-between" : "flex-col text-center justify-between")
                         )}
                       >
-                        {prompterLayout === 'center' ? (
+                        {isInterviewerMinimised ? (
+                          <>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse shrink-0" />
+                              <span className="text-[9px] font-black text-sky-400 uppercase tracking-[0.2em] truncate">
+                                AI DIRECTOR: INTERVIEW ACTIVE
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              data-testid="expand-interviewer-card-btn"
+                              onClick={(e) => { e.stopPropagation(); setIsInterviewerMinimised(false); }}
+                              title="Expand AI Director Interview panel"
+                              className="px-2.5 py-1 rounded-full bg-sky-500/20 border border-sky-500/40 text-sky-300 hover:bg-sky-500/30 text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                            >
+                              <Maximize2 className="w-3 h-3" /> Expand
+                            </button>
+                          </>
+                        ) : prompterLayout === 'center' ? (
                           <>
                             <div className="flex flex-col gap-1 items-start select-none shrink-0 w-32 border-r border-white/10 pr-4">
                                <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest animate-pulse">AI DIRECTOR</span>
@@ -4196,13 +4312,38 @@ export default function SoloStage({
                                       Analyze live camera framing &amp; rule-of-thirds alignment
                                     </TooltipContent>
                                   </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        data-testid="minimise-interviewer-card-btn"
+                                        onClick={(e) => { e.stopPropagation(); setIsInterviewerMinimised(true); }}
+                                        title="Minimise AI Director Interview panel"
+                                        className="p-2 bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                                      >
+                                         <Minimize2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="bg-slate-900 border border-white/20 text-slate-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
+                                      Minimise AI Director Interview panel
+                                    </TooltipContent>
+                                  </Tooltip>
                                </div>
                              </TooltipProvider>
                           </>
                         ) : (
                           <>
-                            <div className="flex flex-col gap-1 items-center mb-1 select-none shrink-0">
+                            <div className="flex flex-col gap-1 items-center mb-1 select-none shrink-0 relative w-full">
                                <span className="text-[10px] font-black text-sky-400 uppercase tracking-[0.3em] animate-pulse">AI DIRECTOR: INTERVIEW ACTIVE</span>
+                               <button
+                                 type="button"
+                                 data-testid="minimise-interviewer-card-btn"
+                                 onClick={(e) => { e.stopPropagation(); setIsInterviewerMinimised(true); }}
+                                 title="Minimise AI Director Interview panel"
+                                 className="absolute right-0 -top-1 p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1 cursor-pointer"
+                               >
+                                 <Minimize2 className="w-3 h-3" />
+                               </button>
                                <div className="w-8 h-[1px] bg-sky-500/30 my-1" />
                             </div>
                             <div className="flex-grow flex items-center justify-center min-h-0 py-2">

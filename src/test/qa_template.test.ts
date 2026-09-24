@@ -110,4 +110,52 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     expect(html).toContain('resetAll()');
     expect(html).toContain('mw_qa_state_v1_commit_fe57798');
   });
+
+  it('enforces Rule 30.3 Mandatory Route-Grouped Test Card Organisation & Route Filter Bar', () => {
+    expect(html).toContain('id="route-filter-bar"');
+    expect(html).toContain("filterByRoute('all')");
+    expect(html).toContain("filterByRoute('pending')");
+    expect(html).toContain('data-route-group="pricing"');
+    expect(html).toContain('data-route-group="settings"');
+    expect(html).toContain('🚀 Launch Route ↗');
+
+    // Verify scattered tests targeting the same route are clustered together into a single route group section
+    const multiRouteSuite = {
+      commitSha: '7c614fd0',
+      environmentUrl: 'https://dev.memoryweaver.studio',
+      suiteTitle: 'Route Clustering Verification',
+      passcode: 'MW-STAGE-2026',
+      tests: [
+        {
+          category: 'Act I',
+          title: 'Rehearsal Card A',
+          instructions: 'Step 1',
+          url: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal'
+        },
+        {
+          category: 'Fireside',
+          title: 'Fireside Card B',
+          instructions: 'Step 2',
+          url: 'https://dev.memoryweaver.studio/studio/fireside'
+        },
+        {
+          category: 'Act III',
+          title: 'Rehearsal Card C',
+          instructions: 'Step 3',
+          url: 'https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal'
+        }
+      ]
+    };
+    const clusteredHtml = generateQAChecklistHtml(multiRouteSuite);
+    expect(clusteredHtml).toContain('data-route-group="first_flight_rehearsal"');
+    expect(clusteredHtml).toContain('data-route-group="studio_fireside"');
+    // Rehearsal Card A (Test 1) and Rehearsal Card C (Test 2) are clustered before Fireside Card B (Test 3)
+    const idxA = clusteredHtml.indexOf('Rehearsal Card A');
+    const idxC = clusteredHtml.indexOf('Rehearsal Card C');
+    const idxB = clusteredHtml.indexOf('Fireside Card B');
+    expect(idxA).toBeGreaterThan(0);
+    expect(idxC).toBeGreaterThan(idxA);
+    expect(idxB).toBeGreaterThan(idxC);
+  });
 });
+

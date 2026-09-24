@@ -8,7 +8,7 @@ import {
   Save, Rocket, AlertCircle, Loader2, Edit3, ChevronRight, ChevronDown, Maximize2, 
   Trash2, Plus, Minus, Info, Layout, Layers, Wand2, Music, Wind, Coffee, Zap,
   FileText, ImageIcon, Video, Share2, MoreHorizontal, Square, History, UserCircle,
-  RotateCcw, Lock, Eye, Film
+  RotateCcw, Lock, Eye, Film, Headphones
 } from 'lucide-react';
 import { Memory, SensoryPromptTemplate, ActionResponse, CatalystType, StructuredScript } from '@/types';
 import { useDictionary } from '@/hooks/use-dictionary';
@@ -23,7 +23,7 @@ import { useStudioState } from '@/hooks/useStudioState';
 import { DirectorNoteDrawer } from './DirectorNoteDrawer';
 import { ArchitectDrawer } from './ArchitectDrawer';
 import { cn } from '@/lib/utils';
-import { useDirectorInk, getAnchorAtCaret } from '@/hooks/studio/useDirectorInk';
+import { useDirectorInk, getAnchorAtCaret, filterDominantSensoryAnchors } from '@/hooks/studio/useDirectorInk';
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { MentorshipHotspot } from './MentorshipHotspot';
@@ -888,6 +888,86 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     text: description || '', 
     anchors: descAnchors 
   });
+
+  const act1AnchorJumpIdxRef = useRef<Record<string, number>>({});
+  const act1SensoryCounts = React.useMemo(() => {
+    const dominantAnchors = filterDominantSensoryAnchors(descAnchors);
+    const map: Record<string, { count: number; word?: string; words: string[] }> = {
+      soundscape: { count: 0, words: [] },
+      visual: { count: 0, words: [] },
+      aroma: { count: 0, words: [] }
+    };
+    dominantAnchors.forEach(a => {
+      const type = (a.type || '').toLowerCase();
+      if (map[type]) {
+        map[type].count += 1;
+        if (!map[type].word) map[type].word = a.word;
+      }
+    });
+    descAnchors.forEach(a => {
+      const type = (a.type || '').toLowerCase();
+      if (map[type] && !map[type].words.includes(a.word.toLowerCase())) {
+        map[type].words.push(a.word.toLowerCase());
+      }
+    });
+    return map;
+  }, [descAnchors]);
+
+  const scrollToStoryHookAnchor = useCallback((modality: string) => {
+    const modLower = modality.toLowerCase();
+    const allTypeEls = Array.from(document.querySelectorAll<HTMLElement>(`[data-anchor-type="${modLower}"]`));
+    let el: HTMLElement | null = null;
+    if (allTypeEls.length > 0) {
+      const idx = (act1AnchorJumpIdxRef.current[modLower] || 0) % allTypeEls.length;
+      el = allTypeEls[idx];
+      act1AnchorJumpIdxRef.current[modLower] = idx + 1;
+    } else if (act1SensoryCounts[modLower]?.words.length > 0) {
+      for (const w of act1SensoryCounts[modLower].words) {
+        el = document.querySelector<HTMLElement>(`[data-anchor-word="${w}"]`);
+        if (el) break;
+      }
+    }
+
+    if (!el) return;
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    const highlightClasses = {
+      soundscape: ['ring-4', 'ring-sky-400', 'bg-sky-400/40', 'text-white', 'shadow-[0_0_30px_rgba(56,189,248,0.9)]'],
+      visual: ['ring-4', 'ring-emerald-400', 'bg-emerald-400/40', 'text-white', 'shadow-[0_0_30px_rgba(16,185,129,0.9)]'],
+      aroma: ['ring-4', 'ring-amber-400', 'bg-amber-400/40', 'text-white', 'shadow-[0_0_30px_rgba(245,158,11,0.9)]']
+    }[modLower] || ['ring-4', 'ring-amber-400', 'bg-amber-400/40', 'text-white'];
+
+    el.style.display = 'inline-block';
+    el.style.position = 'relative';
+    el.style.zIndex = '60';
+    el.style.transform = 'scale(1.18)';
+    el.style.transition = 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    el.classList.add(...highlightClasses);
+
+    const anchorWord = el.getAttribute('data-anchor-word') || el.textContent?.trim() || '';
+    const parentBlock = el.closest('[data-sentence-block], [data-block-id]');
+    const textarea = parentBlock?.querySelector('textarea');
+    if (textarea && anchorWord) {
+      const idx = textarea.value.toLowerCase().indexOf(anchorWord.toLowerCase());
+      if (idx !== -1) {
+        textarea.focus();
+        textarea.setSelectionRange(idx, idx + anchorWord.length);
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('mw:pulse-anchor', {
+      detail: { modality: modLower, word: anchorWord }
+    }));
+
+    setTimeout(() => {
+      if (el) {
+        el.classList.remove(...highlightClasses);
+        el.style.transform = '';
+        el.style.zIndex = '';
+      }
+    }, 2200);
+  }, [act1SensoryCounts]);
 
   // DIRECTOR'S CUT: Ceremony State
   // (Consolidated into top-level hook call)
@@ -2327,6 +2407,67 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           </div>
                         )}
                       </div>
+
+                      {/* ACT I INSTRUMENTS TRAY: Sensory Palette Key & Modality Counters */}
+                      {!isCleanView && (
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 px-2">
+                          <div
+                            data-testid="sensory-palette-key"
+                            className="flex items-center gap-2 p-2 sm:p-2.5 rounded-2xl bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-lg flex-wrap"
+                          >
+                            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-white/40 pl-1.5 hidden sm:inline">
+                              Sensory Key:
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => scrollToStoryHookAnchor('soundscape')}
+                              disabled={act1SensoryCounts.soundscape.count === 0}
+                              className={cn(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                                act1SensoryCounts.soundscape.count > 0
+                                  ? "bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(56,189,248,0.15)]"
+                                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
+                              )}
+                              title={act1SensoryCounts.soundscape.count > 0 ? `Jump to Soundscape anchor "${act1SensoryCounts.soundscape.word}"` : "No soundscape anchors detected"}
+                            >
+                              <Headphones className="w-3.5 h-3.5 text-sky-400" />
+                              <span>Soundscape ({act1SensoryCounts.soundscape.count})</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => scrollToStoryHookAnchor('visual')}
+                              disabled={act1SensoryCounts.visual.count === 0}
+                              className={cn(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                                act1SensoryCounts.visual.count > 0
+                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
+                              )}
+                              title={act1SensoryCounts.visual.count > 0 ? `Jump to Visual anchor "${act1SensoryCounts.visual.word}"` : "No visual anchors detected"}
+                            >
+                              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Visual ({act1SensoryCounts.visual.count})</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => scrollToStoryHookAnchor('aroma')}
+                              disabled={act1SensoryCounts.aroma.count === 0}
+                              className={cn(
+                                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                                act1SensoryCounts.aroma.count > 0
+                                  ? "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
+                              )}
+                              title={act1SensoryCounts.aroma.count > 0 ? `Jump to Aroma anchor "${act1SensoryCounts.aroma.word}"` : "No aroma anchors detected"}
+                            >
+                              <Coffee className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Aroma ({act1SensoryCounts.aroma.count})</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* SCRIPT SUPERVISOR HUD (Act I Enhancements) */}
                       <AnimatePresence>
