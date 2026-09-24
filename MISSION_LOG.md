@@ -356,3 +356,20 @@
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
+### [2026-09-24 20:00 BST] • Checkpoint #015 — Test 1 Remediation: Compact Story Hook Sensory Palette Key & Persistent Luminous Jump Beacon
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Reported Test 1 failure on `d452e8d` (`/studio/production/first_flight_rehearsal`, Steps 5 & 6: Sensory Palette Key pushed off-screen by 500px gap / static header dots, and Director's Ink tooltip + `ring-4` halo wiped on click/scroll).
+  - ⚡ **Antigravity Execution**:
+    1. **Step 5 Fix (`MemoryForm.tsx`)**: Replaced `min-h-[500px]` on `data-block-id="story-hook"` with `min-h-[180px] flex flex-col justify-between gap-6`, embedded `data-testid="sensory-palette-key"` (`• [ 🎧 Soundscape (1) ] • [ 👁️ Visual (1) ] • [ ☕ Aroma (1) ]`) directly inside the bottom of the Story Hook editor right beneath the rehearsal prose, and upgraded the top Story Hook header legend from static 7px dots to interactive Golden Trio counter pills.
+    2. **Step 6 Fix (`SentenceWrapper.tsx` & `Scriptorium.tsx`)**: Added `isPulsingAnchorRef` and React state `pulsedWord` in `SentenceWrapper.tsx` so clicking any Sensory Palette Key button keeps the `ring-4` glowing halo in React state (preventing React re-renders from stripping DOM classes), locks `hoveredAnchorInfo` for 2.8 seconds across `scrollIntoView` and `mouseleave`/`blur`, re-syncs the bounding rect at `0ms`/`120ms`/`300ms`/`520ms`, and decouples the fixed `translate(-50%, -100%)` wrapper (`data-testid="director-ink-tooltip"`) from Framer Motion's `animate` transform.
+  - 🛡️ **QA Gatekeeper**: Verified `tsc --noEmit` (exit 0), Vitest suite (152/152 tests passing in modified suites), and full Next.js production build `npm.cmd run build` (45/45 routes compiled cleanly, exit 0).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\components\studio\MemoryForm.tsx`
+  - `C:\Users\home\studio\src\components\studio\Scriptorium\SentenceWrapper.tsx`
+  - `C:\Users\home\studio\src\components\studio\Scriptorium\Scriptorium.tsx`
+  - `C:\Users\home\studio\src\test\flight_simulator_isolation.test.ts`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+

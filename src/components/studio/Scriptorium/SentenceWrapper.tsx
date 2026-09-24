@@ -622,7 +622,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
 
   const handleEditorMouseMove = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
     if (hideAnchors || anchors.length === 0) {
-      if (hoveredAnchorInfo) setHoveredAnchorInfo(null);
+      if (hoveredAnchorInfo && !isPulsingAnchorRef.current) setHoveredAnchorInfo(null);
       return;
     }
 
@@ -647,16 +647,25 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       }
     }
 
+    if (!matched && isPulsingAnchorRef.current) {
+      return;
+    }
+
     if (matched?.anchor.word !== hoveredAnchorInfo?.anchor.word) {
       setHoveredAnchorInfo(matched);
     }
   }, [anchors, hideAnchors, rects, tokens, hoveredAnchorInfo]);
 
+  const isPulsingAnchorRef = useRef(false);
+  const pulseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pulsedWord, setPulsedWord] = useState<string | null>(null);
+
   const handleEditorMouseLeave = useCallback(() => {
+    if (isPulsingAnchorRef.current) return;
     setHoveredAnchorInfo(null);
   }, []);
 
-  // Listen for anchor pulse events dispatched from the Sensory Palette Key in Scriptorium
+  // Listen for anchor pulse events dispatched from the Sensory Palette Key in Scriptorium / Story Hook
   useEffect(() => {
     const handlePulse = (e: Event) => {
       const customEvent = e as CustomEvent<{ modality: string; word?: string }>;
@@ -672,21 +681,62 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       }
 
       if (targetAnchor && containerRef.current) {
+        const targetWordLower = targetAnchor.word.toLowerCase();
         const span = containerRef.current.querySelector<HTMLElement>(
-          `[data-anchor-word="${targetAnchor.word.toLowerCase()}"]`
+          `[data-anchor-word="${targetWordLower}"]`
         );
         if (span) {
-          const rect = span.getBoundingClientRect();
-          setHoveredAnchorInfo({ anchor: targetAnchor, rect });
-          setTimeout(() => {
+          isPulsingAnchorRef.current = true;
+          setPulsedWord(targetWordLower);
+
+          const syncTooltipRect = () => {
+            if (!containerRef.current) return;
+            const liveSpan = containerRef.current.querySelector<HTMLElement>(
+              `[data-anchor-word="${targetWordLower}"]`
+            );
+            if (liveSpan) {
+              setHoveredAnchorInfo({ anchor: targetAnchor!, rect: liveSpan.getBoundingClientRect() });
+            }
+          };
+
+          const syncNativeSelection = () => {
+            const textarea = editorRef.current;
+            if (textarea && targetAnchor) {
+              const escaped = targetAnchor.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const match = new RegExp(`\\b${escaped}\\b`, 'i').exec(textarea.value);
+              const idx = match ? match.index : textarea.value.toLowerCase().indexOf(targetWordLower);
+              if (idx !== -1) {
+                textarea.focus({ preventScroll: true });
+                textarea.setSelectionRange(idx, idx + targetAnchor.word.length);
+              }
+            }
+          };
+
+          syncTooltipRect();
+          syncNativeSelection();
+          const t1 = setTimeout(() => { syncTooltipRect(); syncNativeSelection(); }, 120);
+          const t2 = setTimeout(syncTooltipRect, 300);
+          const t3 = setTimeout(syncTooltipRect, 520);
+
+          if (pulseTimeoutRef.current) {
+            clearTimeout(pulseTimeoutRef.current);
+          }
+          pulseTimeoutRef.current = setTimeout(() => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+            isPulsingAnchorRef.current = false;
+            setPulsedWord(null);
             setHoveredAnchorInfo(null);
-          }, 2500);
+          }, 2800);
         }
       }
     };
 
     window.addEventListener('mw:pulse-anchor', handlePulse);
-    return () => window.removeEventListener('mw:pulse-anchor', handlePulse);
+    return () => {
+      window.removeEventListener('mw:pulse-anchor', handlePulse);
+    };
   }, [anchors]);
 
   // Floating circular sparkle badges above inline words are hidden to preserve clean prose reading flow (Test 4 UX)
@@ -1030,42 +1080,53 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
               {directivePortals}
               <AnimatePresence>
                 {hoveredAnchorInfo && (
-                  <motion.div
+                  <div
                     key={`hover-anchor-${hoveredAnchorInfo.anchor.word}`}
-                    initial={{ opacity: 0, y: 4, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 2, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
+                    data-testid="director-ink-tooltip"
                     style={{
                       position: 'fixed',
-                      left: hoveredAnchorInfo.rect.left + (hoveredAnchorInfo.rect.width / 2),
-                      top: hoveredAnchorInfo.rect.top - 10,
+                      left: Math.max(
+                        130,
+                        Math.min(
+                          typeof window !== 'undefined' ? window.innerWidth - 130 : 1000,
+                          hoveredAnchorInfo.rect.left + (hoveredAnchorInfo.rect.width / 2)
+                        )
+                      ),
+                      top: Math.max(76, hoveredAnchorInfo.rect.top - 12),
                       transform: 'translate(-50%, -100%)',
-                      pointerEvents: 'none'
+                      pointerEvents: 'none',
+                      zIndex: 10000
                     }}
-                    className="bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md px-3.5 py-2.5 rounded-xl z-[10000] flex flex-col gap-1 min-w-[220px] max-w-[300px]"
                   >
-                    {(() => {
-                      const mod = hoveredAnchorInfo.anchor.type || 'visual';
-                      const s = MODALITY_BADGE_STYLES[mod] || MODALITY_BADGE_STYLES.visual;
-                      return (
-                        <>
-                          <div className="flex items-center gap-1.5">
-                            <span className={cn("w-2 h-2 rounded-full", s.dotBg, s.shadow)} />
-                            <span className={cn("text-[10px] font-black uppercase tracking-widest", s.headerColor)}>
-                              {mod} Anchor ({s.underlineLabel})
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 3, scale: 0.95 }}
+                      transition={{ duration: 0.16 }}
+                      className="bg-slate-950/95 border border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-md px-3.5 py-2.5 rounded-xl flex flex-col gap-1 min-w-[230px] max-w-[310px]"
+                    >
+                      {(() => {
+                        const mod = hoveredAnchorInfo.anchor.type || 'visual';
+                        const s = MODALITY_BADGE_STYLES[mod] || MODALITY_BADGE_STYLES.visual;
+                        return (
+                          <>
+                            <div className="flex items-center gap-1.5">
+                              <span className={cn("w-2 h-2 rounded-full", s.dotBg, s.shadow)} />
+                              <span className={cn("text-[10px] font-black uppercase tracking-widest", s.headerColor)}>
+                                {mod} Anchor ({s.underlineLabel})
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold text-white capitalize">
+                              &ldquo;{hoveredAnchorInfo.anchor.word}&rdquo;
                             </span>
-                          </div>
-                          <span className="text-xs font-semibold text-white capitalize">
-                            &ldquo;{hoveredAnchorInfo.anchor.word}&rdquo;
-                          </span>
-                          <p className="text-[11px] text-gray-300 leading-snug">
-                            {SENSORY_DICTIONARY_DETAILED[mod]?.reason || `${mod.toUpperCase()} sensory memory trigger.`}
-                          </p>
-                        </>
-                      );
-                    })()}
-                  </motion.div>
+                            <p className="text-[11px] text-gray-300 leading-snug">
+                              {SENSORY_DICTIONARY_DETAILED[mod]?.reason || `${mod.toUpperCase()} sensory memory trigger.`}
+                            </p>
+                          </>
+                        );
+                      })()}
+                    </motion.div>
+                  </div>
                 )}
               </AnimatePresence>
               <AnimatePresence>
@@ -1091,7 +1152,9 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           onBlur={(e) => {
             setSuggestionsOpen(false);
             setGhostWordInfo(null);
-            setHoveredAnchorInfo(null);
+            if (!isPulsingAnchorRef.current) {
+              setHoveredAnchorInfo(null);
+            }
             onBlur?.(e);
           }}
           onSelect={handleCaretOrSelectionChange}
@@ -1152,6 +1215,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
 
               const matchingAnchor = isAnchor ? anchors.find(a => a.word.toLowerCase() === clean) : null;
               const anchorModality = matchingAnchor?.type;
+              const isPulsed = isAnchor && pulsedWord !== null && matchingAnchor?.word.toLowerCase() === pulsedWord;
 
               return (
                 <span 
@@ -1167,6 +1231,10 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
                     isAnchor && anchorModality === 'soundscape' && "border-sky-500/50 bg-sky-500/10 text-sky-100",
                     isAnchor && anchorModality === 'visual' && "border-emerald-500/50 bg-emerald-500/10 text-emerald-100",
                     isAnchor && !['aroma', 'soundscape', 'visual'].includes(anchorModality || '') && "border-emerald-500/40 bg-emerald-500/10 text-zinc-100",
+                    isPulsed && "z-[60] scale-[1.18] rounded-md px-1 ring-4",
+                    isPulsed && anchorModality === 'soundscape' && "ring-sky-400 bg-sky-400/40 text-white shadow-[0_0_30px_rgba(56,189,248,0.9)]",
+                    isPulsed && anchorModality === 'visual' && "ring-emerald-400 bg-emerald-400/40 text-white shadow-[0_0_30px_rgba(16,185,129,0.9)]",
+                    isPulsed && anchorModality === 'aroma' && "ring-amber-400 bg-amber-400/40 text-white shadow-[0_0_30px_rgba(245,158,11,0.9)]",
                     isPivoted && "pivot-span border-b-2",
                     isPivoted && pivotTone === 'poetic' && "border-sky-500/40 bg-sky-500/10 text-sky-100 font-semibold shadow-[0_0_12px_rgba(56,189,248,0.15)]",
                     isPivoted && pivotTone === 'grit' && "border-amber-500/40 bg-amber-500/10 text-amber-100 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.15)]",

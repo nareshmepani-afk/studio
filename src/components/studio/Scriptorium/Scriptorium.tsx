@@ -531,6 +531,8 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
               Sensory Key:
             </span>
             <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => scrollToAnchor('soundscape')}
               disabled={sensoryCounts.soundscape.count === 0}
               className={cn(
@@ -546,6 +548,8 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
             </button>
 
             <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => scrollToAnchor('visual')}
               disabled={sensoryCounts.visual.count === 0}
               className={cn(
@@ -561,6 +565,8 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
             </button>
 
             <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => scrollToAnchor('aroma')}
               disabled={sensoryCounts.aroma.count === 0}
               className={cn(

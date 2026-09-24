@@ -320,16 +320,25 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     );
   });
 
-  it('9. Act I & Act II Sensory Palette Key: MemoryForm and Scriptorium render Golden Trio modality counters and interactive beacon pulse', () => {
+  it('9. Act I & Act II Sensory Palette Key: MemoryForm, Scriptorium, and SentenceWrapper render Golden Trio modality counters, compact Story Hook tray, and persistent luminous beacon pulse', () => {
     const memoryFormPath = path.resolve(__dirname, '../components/studio/MemoryForm.tsx');
     const memoryFormContent = fs.readFileSync(memoryFormPath, 'utf8');
     const scriptoriumPath = path.resolve(__dirname, '../components/studio/Scriptorium/Scriptorium.tsx');
     const scriptoriumContent = fs.readFileSync(scriptoriumPath, 'utf8');
+    const sentenceWrapperPath = path.resolve(__dirname, '../components/studio/Scriptorium/SentenceWrapper.tsx');
+    const sentenceWrapperContent = fs.readFileSync(sentenceWrapperPath, 'utf8');
 
-    // MemoryForm renders sensory-palette-key in Act I Story Hook editor
+    // MemoryForm renders sensory-palette-key directly inside compact Act I Story Hook editor (no 500px gap)
     expect(memoryFormContent).toContain('data-testid="sensory-palette-key"');
+    expect(memoryFormContent).toContain('min-h-[180px] flex flex-col justify-between gap-6');
+    expect(memoryFormContent).not.toContain('group/hook min-h-[500px]');
     expect(memoryFormContent).toContain('scrollToStoryHookAnchor');
     expect(memoryFormContent).toContain('filterDominantSensoryAnchors(descAnchors)');
+
+    // SentenceWrapper locks floating Director's Ink tooltip and React-managed ring-4 halo during pulse
+    expect(sentenceWrapperContent).toContain('isPulsingAnchorRef');
+    expect(sentenceWrapperContent).toContain('pulsedWord');
+    expect(sentenceWrapperContent).toContain('data-testid="director-ink-tooltip"');
 
     // Scriptorium hydrates plain-text data.prose and uses filterDominantSensoryAnchors for Golden Trio parity
     expect(scriptoriumContent).toContain('data-testid="sensory-palette-key"');

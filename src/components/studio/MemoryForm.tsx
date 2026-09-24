@@ -2092,56 +2092,69 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 })()}
                               </h3>
                               
-                              {/* Director's Lexicon (Legend) */}
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className={cn(
-                                      "flex items-center gap-3 transition-all duration-700 cursor-help",
-                                      (descAnchors.length > 0) ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 group-focus-within:opacity-100 group-focus-within:translate-y-0"
-                                    )}>
-                                      <div className={cn("flex items-center gap-1 transition-opacity", descAnchors.some(a => a.type === 'soundscape') ? "opacity-100" : "opacity-40")}>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_5px_rgba(56,189,248,0.5)]" />
-                                        <span className="text-[7px] font-black text-white/40 uppercase tracking-tighter">Sound</span>
-                                      </div>
-                                      <div className={cn("flex items-center gap-1 transition-opacity", descAnchors.some(a => a.type === 'visual') ? "opacity-100" : "opacity-40")}>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
-                                        <span className="text-[7px] font-black text-white/40 uppercase tracking-tighter">Visual</span>
-                                      </div>
-                                      <div className={cn("flex items-center gap-1 transition-opacity", descAnchors.some(a => a.type === 'aroma') ? "opacity-100" : "opacity-40")}>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.5)]" />
-                                        <span className="text-[7px] font-black text-white/40 uppercase tracking-tighter">Aroma</span>
-                                      </div>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right" className="bg-slate-900 border-white/10 p-3 max-w-xs shadow-2xl z-[200]">
-                                    <div className="space-y-2">
-                                      <h4 className="text-[10px] font-black uppercase tracking-widest text-white/90">Sensory Insights</h4>
-                                      {descAnchors.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                          {descAnchors.map((anchor, i) => (
-                                            <div key={i} className="group/item flex flex-col gap-0.5">
-                                              <span className={cn(
-                                                "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase",
-                                                anchor.type === 'visual' ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
-                                                anchor.type === 'soundscape' ? "bg-sky-500/20 text-sky-400 border border-sky-500/30" :
-                                                "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                                              )}>
-                                                {anchor.word}
-                                              </span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-[9px] text-white/40 italic">Awaiting sensory clarity in your hook...</p>
-                                      )}
-                                      <p className="text-[8px] text-white/20 uppercase tracking-tighter pt-1 border-t border-white/5">
-                                        These anchors bridge your memory to cinematic space.
-                                      </p>
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              {/* Director's Lexicon (Interactive Golden Trio Counters) */}
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-2 flex-wrap"
+                              >
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    scrollToStoryHookAnchor('soundscape');
+                                  }}
+                                  disabled={act1SensoryCounts.soundscape.count === 0}
+                                  className={cn(
+                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-bold transition-all",
+                                    act1SensoryCounts.soundscape.count > 0
+                                      ? "bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(56,189,248,0.15)]"
+                                      : "bg-white/5 border-white/5 text-white/30 cursor-default"
+                                  )}
+                                  title={act1SensoryCounts.soundscape.count > 0 ? `Jump to Soundscape anchor "${act1SensoryCounts.soundscape.word}"` : "No soundscape anchors detected"}
+                                >
+                                  <Headphones className="w-3 h-3 text-sky-400" />
+                                  <span>Soundscape ({act1SensoryCounts.soundscape.count})</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    scrollToStoryHookAnchor('visual');
+                                  }}
+                                  disabled={act1SensoryCounts.visual.count === 0}
+                                  className={cn(
+                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-bold transition-all",
+                                    act1SensoryCounts.visual.count > 0
+                                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                      : "bg-white/5 border-white/5 text-white/30 cursor-default"
+                                  )}
+                                  title={act1SensoryCounts.visual.count > 0 ? `Jump to Visual anchor "${act1SensoryCounts.visual.word}"` : "No visual anchors detected"}
+                                >
+                                  <Eye className="w-3 h-3 text-emerald-400" />
+                                  <span>Visual ({act1SensoryCounts.visual.count})</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    scrollToStoryHookAnchor('aroma');
+                                  }}
+                                  disabled={act1SensoryCounts.aroma.count === 0}
+                                  className={cn(
+                                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[9px] font-bold transition-all",
+                                    act1SensoryCounts.aroma.count > 0
+                                      ? "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                                      : "bg-white/5 border-white/5 text-white/30 cursor-default"
+                                  )}
+                                  title={act1SensoryCounts.aroma.count > 0 ? `Jump to Aroma anchor "${act1SensoryCounts.aroma.word}"` : "No aroma anchors detected"}
+                                >
+                                  <Coffee className="w-3 h-3 text-amber-400" />
+                                  <span>Aroma ({act1SensoryCounts.aroma.count})</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                            
@@ -2343,7 +2356,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           }
                         }}
                         className={cn(
-                          "relative transition-all duration-700 rounded-3xl p-8 -mx-8 group/hook min-h-[500px] cursor-text",
+                          "relative transition-all duration-700 rounded-3xl p-8 -mx-8 group/hook min-h-[180px] flex flex-col justify-between gap-6 cursor-text",
                           "hover:bg-white/[0.02] focus-within:bg-white/[0.04]",
                           "ring-1 ring-transparent focus-within:ring-white/10",
                           isSaturated && "ring-4 ring-amber-500/50 bg-amber-500/10 scale-[1.02] shadow-[0_0_60px_rgba(245,158,11,0.2)]",
@@ -2406,68 +2419,83 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                             {interimTranscript}
                           </div>
                         )}
-                      </div>
 
-                      {/* ACT I INSTRUMENTS TRAY: Sensory Palette Key & Modality Counters */}
-                      {!isCleanView && (
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-4 px-2">
+                        {/* ACT I INSTRUMENTS TRAY: Sensory Palette Key & Modality Counters */}
+                        {!isCleanView && (
                           <div
-                            data-testid="sensory-palette-key"
-                            className="flex items-center gap-2 p-2 sm:p-2.5 rounded-2xl bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-lg flex-wrap"
+                            onClick={(e) => e.stopPropagation()}
+                            className="pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4 cursor-default"
                           >
-                            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-white/40 pl-1.5 hidden sm:inline">
-                              Sensory Key:
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => scrollToStoryHookAnchor('soundscape')}
-                              disabled={act1SensoryCounts.soundscape.count === 0}
-                              className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
-                                act1SensoryCounts.soundscape.count > 0
-                                  ? "bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(56,189,248,0.15)]"
-                                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
-                              )}
-                              title={act1SensoryCounts.soundscape.count > 0 ? `Jump to Soundscape anchor "${act1SensoryCounts.soundscape.word}"` : "No soundscape anchors detected"}
+                            <div
+                              data-testid="sensory-palette-key"
+                              className="flex items-center gap-2 p-2 sm:p-2.5 rounded-2xl bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-lg flex-wrap"
                             >
-                              <Headphones className="w-3.5 h-3.5 text-sky-400" />
-                              <span>Soundscape ({act1SensoryCounts.soundscape.count})</span>
-                            </button>
+                              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-white/40 pl-1.5 hidden sm:inline">
+                                Sensory Key:
+                              </span>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  scrollToStoryHookAnchor('soundscape');
+                                }}
+                                disabled={act1SensoryCounts.soundscape.count === 0}
+                                className={cn(
+                                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                                  act1SensoryCounts.soundscape.count > 0
+                                    ? "bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(56,189,248,0.15)]"
+                                    : "bg-white/5 border-white/5 text-white/20 cursor-default"
+                                )}
+                                title={act1SensoryCounts.soundscape.count > 0 ? `Jump to Soundscape anchor "${act1SensoryCounts.soundscape.word}"` : "No soundscape anchors detected"}
+                              >
+                                <Headphones className="w-3.5 h-3.5 text-sky-400" />
+                                <span>Soundscape ({act1SensoryCounts.soundscape.count})</span>
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={() => scrollToStoryHookAnchor('visual')}
-                              disabled={act1SensoryCounts.visual.count === 0}
-                              className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
-                                act1SensoryCounts.visual.count > 0
-                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-                                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
-                              )}
-                              title={act1SensoryCounts.visual.count > 0 ? `Jump to Visual anchor "${act1SensoryCounts.visual.word}"` : "No visual anchors detected"}
-                            >
-                              <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Visual ({act1SensoryCounts.visual.count})</span>
-                            </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  scrollToStoryHookAnchor('visual');
+                                }}
+                                disabled={act1SensoryCounts.visual.count === 0}
+                                className={cn(
+                                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                                  act1SensoryCounts.visual.count > 0
+                                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                    : "bg-white/5 border-white/5 text-white/20 cursor-default"
+                                )}
+                                title={act1SensoryCounts.visual.count > 0 ? `Jump to Visual anchor "${act1SensoryCounts.visual.word}"` : "No visual anchors detected"}
+                              >
+                                <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Visual ({act1SensoryCounts.visual.count})</span>
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={() => scrollToStoryHookAnchor('aroma')}
-                              disabled={act1SensoryCounts.aroma.count === 0}
-                              className={cn(
-                                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
-                                act1SensoryCounts.aroma.count > 0
-                                  ? "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(245,158,11,0.15)]"
-                                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
-                              )}
-                              title={act1SensoryCounts.aroma.count > 0 ? `Jump to Aroma anchor "${act1SensoryCounts.aroma.word}"` : "No aroma anchors detected"}
-                            >
-                              <Coffee className="w-3.5 h-3.5 text-amber-400" />
-                              <span>Aroma ({act1SensoryCounts.aroma.count})</span>
-                            </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  scrollToStoryHookAnchor('aroma');
+                                }}
+                                disabled={act1SensoryCounts.aroma.count === 0}
+                                className={cn(
+                                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                                  act1SensoryCounts.aroma.count > 0
+                                    ? "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                                    : "bg-white/5 border-white/5 text-white/20 cursor-default"
+                                )}
+                                title={act1SensoryCounts.aroma.count > 0 ? `Jump to Aroma anchor "${act1SensoryCounts.aroma.word}"` : "No aroma anchors detected"}
+                              >
+                                <Coffee className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Aroma ({act1SensoryCounts.aroma.count})</span>
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                       
                       {/* SCRIPT SUPERVISOR HUD (Act I Enhancements) */}
                       <AnimatePresence>
