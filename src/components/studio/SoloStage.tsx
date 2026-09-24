@@ -258,8 +258,11 @@ export default function SoloStage({
   // MOD-14: Cinematic Polish State
   const [prompterSize, setPrompterSize] = useState<'mini' | 'sm' | 'md' | 'lg'>('md');
   const [prompterLayout, setPrompterLayout] = useState<'side' | 'center'>('side');
+  const isRehearsalFlight = Boolean(
+    data?.id === 'first_flight_rehearsal' || (data as any)?.isFlightSimulator
+  );
   const [techAlignmentConfirmed, setTechAlignmentConfirmed] = useState(
-    data?.id === 'first_flight_rehearsal' || (data as any)?.isFlightSimulator || false
+    isRehearsalFlight
   );
   const [opticsBrightness, setOpticsBrightness] = useState(100);
   const [opticsContrast, setOpticsContrast] = useState(110);
@@ -2765,9 +2768,9 @@ export default function SoloStage({
             )}
           </AnimatePresence>
 
-          {/* Unified Director's HUD (Left Calibration Stack) */}
+          {/* Unified Director's HUD (Left Calibration Stack) - Bypassed in Rehearsal Flight */}
           <AnimatePresence>
-            {mounted && !isMuted && !isTableReadActive && (
+            {mounted && !isMuted && !isTableReadActive && !isRehearsalFlight && (
               <div 
                 data-blueprint="DirectorsHUD"
                 data-tour="directors-hud"

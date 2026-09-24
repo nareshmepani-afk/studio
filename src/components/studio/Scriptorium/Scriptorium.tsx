@@ -358,37 +358,88 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
     [blocks, activeId]
   );
 
-  // Modality Counts & Navigation for Sensory Palette Key (Test 4 UX)
+  // Modality Counts & Navigation for Sensory Palette Key (Test 1 / Test 4 UX)
   const sensoryCounts = useMemo(() => {
-    const map: Record<string, { count: number; word?: string }> = {
-      soundscape: { count: 0 },
-      visual: { count: 0 },
-      aroma: { count: 0 }
+    const allText = blocks.map(b => b.text).join(' ');
+    const allAnchors = detectAnchors(allText);
+    const map: Record<string, { count: number; word?: string; words: string[] }> = {
+      soundscape: { count: 0, words: [] },
+      visual: { count: 0, words: [] },
+      aroma: { count: 0, words: [] }
     };
-    (detectedAnchors || []).forEach(a => {
+    allAnchors.forEach(a => {
       const type = (a.type || '').toLowerCase();
       if (map[type]) {
         map[type].count += 1;
         if (!map[type].word) map[type].word = a.word;
+        if (!map[type].words.includes(a.word.toLowerCase())) {
+          map[type].words.push(a.word.toLowerCase());
+        }
       }
     });
     return map;
-  }, [detectedAnchors]);
+  }, [blocks]);
 
   const scrollToAnchor = useCallback((modality: string) => {
-    const anchorData = (detectedAnchors || []).find(a => (a.type || '').toLowerCase() === modality);
-    if (!anchorData) return;
+    const modLower = modality.toLowerCase();
     
-    const targetWord = anchorData.word.toLowerCase();
-    const el = document.querySelector<HTMLElement>(`[data-anchor-word="${targetWord}"]`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ring-2', 'ring-amber-400', 'bg-amber-400/30');
-      setTimeout(() => {
-        el.classList.remove('ring-2', 'ring-amber-400', 'bg-amber-400/30');
-      }, 1500);
+    // 1. Query target anchor element: by data-anchor-type first, then fallback to word
+    let el = document.querySelector<HTMLElement>(`[data-anchor-type="${modLower}"]`);
+    if (!el && sensoryCounts[modLower]?.words.length > 0) {
+      for (const w of sensoryCounts[modLower].words) {
+        el = document.querySelector<HTMLElement>(`[data-anchor-word="${w}"]`);
+        if (el) break;
+      }
     }
-  }, [detectedAnchors]);
+
+    if (!el) {
+      console.warn(`[Scriptorium] No anchor element found for modality: ${modality}`);
+      return;
+    }
+
+    // 2. Smoothly scroll into view
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // 3. Highlight with modality-specific high-contrast luminous pulse
+    const highlightClasses = {
+      soundscape: ['ring-4', 'ring-sky-400', 'bg-sky-400/40', 'text-white', 'shadow-[0_0_30px_rgba(56,189,248,0.9)]'],
+      visual: ['ring-4', 'ring-emerald-400', 'bg-emerald-400/40', 'text-white', 'shadow-[0_0_30px_rgba(16,185,129,0.9)]'],
+      aroma: ['ring-4', 'ring-amber-400', 'bg-amber-400/40', 'text-white', 'shadow-[0_0_30px_rgba(245,158,11,0.9)]']
+    }[modLower] || ['ring-4', 'ring-amber-400', 'bg-amber-400/40', 'text-white'];
+
+    el.style.display = 'inline-block';
+    el.style.position = 'relative';
+    el.style.zIndex = '60';
+    el.style.transform = 'scale(1.18)';
+    el.style.transition = 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    el.classList.add(...highlightClasses);
+
+    // 4. Focus parent textarea and select the exact word
+    const anchorWord = el.getAttribute('data-anchor-word') || el.textContent?.trim() || '';
+    const parentBlock = el.closest('[data-sentence-block], [data-block-id]');
+    const textarea = parentBlock?.querySelector('textarea');
+    if (textarea && anchorWord) {
+      const idx = textarea.value.toLowerCase().indexOf(anchorWord.toLowerCase());
+      if (idx !== -1) {
+        textarea.focus();
+        textarea.setSelectionRange(idx, idx + anchorWord.length);
+      }
+    }
+
+    // 5. Dispatch custom event to trigger rich tooltip on hovered anchor
+    window.dispatchEvent(new CustomEvent('mw:pulse-anchor', {
+      detail: { modality: modLower, word: anchorWord }
+    }));
+
+    // 6. Reset styling after 2.2 seconds
+    setTimeout(() => {
+      if (el) {
+        el.classList.remove(...highlightClasses);
+        el.style.transform = '';
+        el.style.zIndex = '';
+      }
+    }, 2200);
+  }, [sensoryCounts]);
 
   return (
     <section className="relative max-w-[95vw] xl:max-w-screen-2xl mx-auto mt-4 pb-8">

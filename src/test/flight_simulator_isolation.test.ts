@@ -293,7 +293,10 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
 
     // Invariant 1: SoloStage initializes techAlignmentConfirmed to true for first_flight_rehearsal and isFlightSimulator
     expect(soloStageContent).toMatch(
-      /const\s*\[techAlignmentConfirmed,\s*setTechAlignmentConfirmed\]\s*=\s*useState\(\s*data\?\.id\s*===\s*['"]first_flight_rehearsal['"]\s*\|\|\s*\(data\s*as\s*any\)\?\.isFlightSimulator\s*\|\|\s*false\s*\);/
+      /const\s*isRehearsalFlight\s*=\s*Boolean\(\s*data\?\.id\s*===\s*['"]first_flight_rehearsal['"]\s*\|\|\s*\(data\s*as\s*any\)\?\.isFlightSimulator\s*\);/
+    );
+    expect(soloStageContent).toMatch(
+      /const\s*\[techAlignmentConfirmed,\s*setTechAlignmentConfirmed\]\s*=\s*useState\(\s*isRehearsalFlight\s*\);/
     );
 
     // Invariant 2: Standard non-rehearsal memories default to false (requiring manual tech scout calibration)
@@ -310,5 +313,10 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
       (FIRST_FLIGHT_FIXTURE as any)?.isFlightSimulator ||
       false;
     expect(initialForRehearsal).toBe(true);
+
+    // Invariant 4: DirectorsHUD (Director & Rehearse floating card) unmounts during rehearsal flight
+    expect(soloStageContent).toMatch(
+      /!isMuted\s*&&\s*!isTableReadActive\s*&&\s*!isRehearsalFlight\s*&&\s*\(\s*<div\s*data-blueprint=['"]DirectorsHUD['"]/
+    );
   });
 });

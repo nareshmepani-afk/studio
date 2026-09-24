@@ -479,7 +479,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   const { isCleanView } = useStudioState();
   const effectiveHideAnchors = hideAnchors || isCleanView;
   const isSensoryViewActive = !isCleanView;
-  const anchors = useMemo(() => hideAnchors ? [] : filterDominantSensoryAnchors(detectAnchors(block.text)), [block.text, hideAnchors]);
+  const anchors = useMemo(() => hideAnchors ? [] : detectAnchors(block.text), [block.text, hideAnchors]);
 
   // 1. REFINED TOKENIZATION ENGINE (V4.6 - CODE RED STABILIZATION)
   const tokens = useMemo(() => {
@@ -655,6 +655,39 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   const handleEditorMouseLeave = useCallback(() => {
     setHoveredAnchorInfo(null);
   }, []);
+
+  // Listen for anchor pulse events dispatched from the Sensory Palette Key in Scriptorium
+  useEffect(() => {
+    const handlePulse = (e: Event) => {
+      const customEvent = e as CustomEvent<{ modality: string; word?: string }>;
+      const { modality, word } = customEvent.detail || {};
+      if (!modality && !word) return;
+
+      let targetAnchor: DetectedAnchor | undefined;
+      if (word) {
+        targetAnchor = anchors.find(a => a.word.toLowerCase() === word.toLowerCase());
+      }
+      if (!targetAnchor && modality) {
+        targetAnchor = anchors.find(a => (a.type || '').toLowerCase() === modality.toLowerCase());
+      }
+
+      if (targetAnchor && containerRef.current) {
+        const span = containerRef.current.querySelector<HTMLElement>(
+          `[data-anchor-word="${targetAnchor.word.toLowerCase()}"]`
+        );
+        if (span) {
+          const rect = span.getBoundingClientRect();
+          setHoveredAnchorInfo({ anchor: targetAnchor, rect });
+          setTimeout(() => {
+            setHoveredAnchorInfo(null);
+          }, 2500);
+        }
+      }
+    };
+
+    window.addEventListener('mw:pulse-anchor', handlePulse);
+    return () => window.removeEventListener('mw:pulse-anchor', handlePulse);
+  }, [anchors]);
 
   // Floating circular sparkle badges above inline words are hidden to preserve clean prose reading flow (Test 4 UX)
   const portalContent = useMemo(() => {
@@ -973,6 +1006,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       style={style}
       layout
       data-block-id={block.id}
+      data-sentence-block={block.id}
       onClick={(e) => {
         if (e.target !== editorRef.current && editorRef.current) {
           editorRef.current.focus();
@@ -1126,8 +1160,9 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
                   data-anchor-word={matchingAnchor ? matchingAnchor.word.toLowerCase() : undefined}
                   data-anchor-type={anchorModality || undefined}
                   title={isAnchor && anchorModality ? (SENSORY_DICTIONARY_DETAILED[anchorModality]?.reason || `${anchorModality.toUpperCase()} anchor`) : undefined}
+                  style={isAnchor ? { display: 'inline-block' } : undefined}
                   className={cn(
-                    isAnchor && "anchor-span border-b-2 font-medium cursor-help transition-all duration-300",
+                    isAnchor && "anchor-span relative border-b-2 font-medium cursor-help transition-all duration-300",
                     isAnchor && anchorModality === 'aroma' && "border-amber-500/50 bg-amber-500/10 text-amber-100",
                     isAnchor && anchorModality === 'soundscape' && "border-sky-500/50 bg-sky-500/10 text-sky-100",
                     isAnchor && anchorModality === 'visual' && "border-emerald-500/50 bg-emerald-500/10 text-emerald-100",
