@@ -286,4 +286,29 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     const prodDeckContent = fs.readFileSync(prodDeckPath, 'utf8');
     expect(prodDeckContent).not.toMatch(/isAct1\s*&&\s*isRehearsalFlight\s*\{[\s\S]*?setStage\(1\)/);
   });
+
+  it('8. Act III SoloStage Rehearsal Bypass: Rehearsal flights auto-confirm tech scout calibration (MW-266)', () => {
+    const soloStagePath = path.resolve(__dirname, '../components/studio/SoloStage.tsx');
+    const soloStageContent = fs.readFileSync(soloStagePath, 'utf8');
+
+    // Invariant 1: SoloStage initializes techAlignmentConfirmed to true for first_flight_rehearsal and isFlightSimulator
+    expect(soloStageContent).toMatch(
+      /const\s*\[techAlignmentConfirmed,\s*setTechAlignmentConfirmed\]\s*=\s*useState\(\s*data\?\.id\s*===\s*['"]first_flight_rehearsal['"]\s*\|\|\s*\(data\s*as\s*any\)\?\.isFlightSimulator\s*\|\|\s*false\s*\);/
+    );
+
+    // Invariant 2: Standard non-rehearsal memories default to false (requiring manual tech scout calibration)
+    const mockStandardData = { id: 'ey96djU6qR1BrDGnvZwp', isFlightSimulator: false };
+    const initialForStandard =
+      mockStandardData?.id === 'first_flight_rehearsal' ||
+      (mockStandardData as any)?.isFlightSimulator ||
+      false;
+    expect(initialForStandard).toBe(false);
+
+    // Invariant 3: First flight fixture auto-confirms
+    const initialForRehearsal =
+      FIRST_FLIGHT_FIXTURE.id === 'first_flight_rehearsal' ||
+      (FIRST_FLIGHT_FIXTURE as any)?.isFlightSimulator ||
+      false;
+    expect(initialForRehearsal).toBe(true);
+  });
 });

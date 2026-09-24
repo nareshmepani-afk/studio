@@ -258,7 +258,9 @@ export default function SoloStage({
   // MOD-14: Cinematic Polish State
   const [prompterSize, setPrompterSize] = useState<'mini' | 'sm' | 'md' | 'lg'>('md');
   const [prompterLayout, setPrompterLayout] = useState<'side' | 'center'>('side');
-  const [techAlignmentConfirmed, setTechAlignmentConfirmed] = useState(false);
+  const [techAlignmentConfirmed, setTechAlignmentConfirmed] = useState(
+    data?.id === 'first_flight_rehearsal' || (data as any)?.isFlightSimulator || false
+  );
   const [opticsBrightness, setOpticsBrightness] = useState(100);
   const [opticsContrast, setOpticsContrast] = useState(110);
   const [opticsFilter, setOpticsFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');

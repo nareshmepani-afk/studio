@@ -850,15 +850,17 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             return;
         }
 
-        // 2. If advancing from Act II (The Weave), transition to Act III (stage 2 - Recording Teleprompter Studio):
-        if (currentStage === 1) {
+        // 2. If advancing from Act II (The Weave) or during review with selected treatment, transition to Act III:
+        if (currentStage === 1 || isReviewing) {
             console.log("[ProductionDeck] Advancing from Act II to Act III (Recording Studio - Stage 2)...");
             setIsReviewing(false);
             setStage(2);
             handleUpdate({
                 productionStage: 2,
                 isProductionLocked: true,
-                isReviewing: false
+                isReviewing: false,
+                selectedTake: selectedTake || undefined,
+                selectedVision: selectedVision || undefined
             });
             return;
         }

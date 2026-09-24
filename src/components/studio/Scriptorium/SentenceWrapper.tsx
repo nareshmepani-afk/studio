@@ -656,65 +656,10 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     setHoveredAnchorInfo(null);
   }, []);
 
+  // Floating circular sparkle badges above inline words are hidden to preserve clean prose reading flow (Test 4 UX)
   const portalContent = useMemo(() => {
-    if (!isSensoryViewActive || hideAnchors || readOnly) return null;
-    return tokens.map((token: string, idx: number) => {
-      const clean = token.toLowerCase();
-      const anchor = anchors.find(a => a.word.toLowerCase() === clean);
-      const tokenId = `${block.id}-${idx}`;
-      const rect = rects[tokenId];
-
-      if (!anchor || !rect || rect.width === 0) return null;
-
-      const modStyle = (anchor.type && MODALITY_BADGE_STYLES[anchor.type]) || MODALITY_BADGE_STYLES.visual;
-
-      return (
-        <Tooltip key={tokenId}>
-          <TooltipTrigger asChild>
-            <motion.button
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              style={{
-                position: 'fixed',
-                left: rect.left + (rect.width / 2),
-                top: rect.top - 24,
-                pointerEvents: 'auto'
-              }}
-              className={cn(
-                "w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 flex items-center justify-center border transition-all cursor-pointer",
-                modStyle.border,
-                modStyle.text,
-                modStyle.shadow,
-                modStyle.hoverBg,
-                modStyle.hoverText
-              )}
-              onMouseEnter={() => {
-                const xOffset = rect.left + (rect.width / 2) - (window.innerWidth / 2);
-                actions.triggerSynapse(anchor.word, anchor.type, xOffset);
-              }}
-              onMouseLeave={() => actions.triggerSynapse('', 'visual', 0)}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-            </motion.button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md px-3.5 py-2 rounded-xl z-[10000] max-w-[280px]">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5">
-                <span className={cn("w-2 h-2 rounded-full", modStyle.dotBg, modStyle.shadow)} />
-                <span className={cn("text-[10px] font-black uppercase tracking-widest", modStyle.headerColor)}>
-                  Sensory Anchor ({modStyle.underlineLabel})
-                </span>
-              </div>
-              <span className="text-xs font-mono text-white capitalize">&ldquo;{anchor.word}&rdquo; ({anchor.type})</span>
-              <p className="text-[11px] text-gray-300 leading-snug">
-                {SENSORY_DICTIONARY_DETAILED[anchor.type]?.reason || `${anchor.type.toUpperCase()} anchor detected.`}
-              </p>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      );
-    });
-  }, [tokens, anchors, rects, block.id, actions, isSensoryViewActive, hideAnchors, readOnly]);
+    return null;
+  }, []);
 
   const pivotPortalContent = useMemo(() => {
     if (effectiveHideAnchors || readOnly) return null;
@@ -1178,9 +1123,11 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
                 <span 
                   key={tokenId}
                   data-token-id={tokenId}
+                  data-anchor-word={matchingAnchor ? matchingAnchor.word.toLowerCase() : undefined}
+                  data-anchor-type={anchorModality || undefined}
                   title={isAnchor && anchorModality ? (SENSORY_DICTIONARY_DETAILED[anchorModality]?.reason || `${anchorModality.toUpperCase()} anchor`) : undefined}
                   className={cn(
-                    isAnchor && "anchor-span border-b-2 font-medium cursor-help",
+                    isAnchor && "anchor-span border-b-2 font-medium cursor-help transition-all duration-300",
                     isAnchor && anchorModality === 'aroma' && "border-amber-500/50 bg-amber-500/10 text-amber-100",
                     isAnchor && anchorModality === 'soundscape' && "border-sky-500/50 bg-sky-500/10 text-sky-100",
                     isAnchor && anchorModality === 'visual' && "border-emerald-500/50 bg-emerald-500/10 text-emerald-100",

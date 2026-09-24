@@ -154,7 +154,7 @@ export const SelectionDeck = ({
   isSaving = false,
   onBackToEditor
 }: SelectionDeckProps) => {
-  const { mentorContext, currentStage, selectedVision, selectedTake } = useStudioState();
+  const { mentorContext, currentStage, selectedVision, selectedTake, actions: globalActions } = useStudioState();
   const { mentorModeActive } = mentorContext || {};
 
   const activeVisionKey = selectedVision?.type;
@@ -478,9 +478,13 @@ ${bundleText}`;
                 onClick={() => {
                   if (!isFocused) {
                     setCarouselIndex(idx);
-                  } else {
-                    onPreview(opt);
                   }
+                  const typeId = getVisionId(opt.visionType);
+                  globalActions?.setSelectedVision(typeId as any, opt.visionType);
+                  globalActions?.setSelectedTake(opt.cleanScript);
+                  toast.success("Blueprint Selected", {
+                    description: `Selected "${opt.visionType}". Click 'SEAL & ENTER SOUNDSTAGE' below to proceed.`
+                  });
                 }}
                 className="absolute w-[360px] sm:w-[380px] h-[440px] cursor-pointer outline-none"
               >

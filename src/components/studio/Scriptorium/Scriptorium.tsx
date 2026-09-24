@@ -24,14 +24,13 @@ import { useAudioFeedback } from '@/hooks/studio/useAudioFeedback';
 import { useDirectorInk, detectAnchors, filterDominantSensoryAnchors } from '@/hooks/studio/useDirectorInk';
 import { SentenceWrapper } from './SentenceWrapper';
 import { ScriptBlock, Memory } from '@/types';
-import { LayoutGroup } from 'framer-motion';
+import { LayoutGroup, motion } from 'framer-motion';
+import { StoryMoodTag } from '@/types/curriculum';
 
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
 import { StoryMoodDropdown } from '@/components/studio/StoryMoodDropdown';
-import { StoryMoodTag } from '@/types/curriculum';
-import { History, Lock, Unlock, BookOpen, RotateCcw, Eye } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { History, Lock, Unlock, BookOpen, RotateCcw, Eye, Headphones, Coffee, Sparkles } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
   AlertDialog,
@@ -359,6 +358,38 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
     [blocks, activeId]
   );
 
+  // Modality Counts & Navigation for Sensory Palette Key (Test 4 UX)
+  const sensoryCounts = useMemo(() => {
+    const map: Record<string, { count: number; word?: string }> = {
+      soundscape: { count: 0 },
+      visual: { count: 0 },
+      aroma: { count: 0 }
+    };
+    (detectedAnchors || []).forEach(a => {
+      const type = (a.type || '').toLowerCase();
+      if (map[type]) {
+        map[type].count += 1;
+        if (!map[type].word) map[type].word = a.word;
+      }
+    });
+    return map;
+  }, [detectedAnchors]);
+
+  const scrollToAnchor = useCallback((modality: string) => {
+    const anchorData = (detectedAnchors || []).find(a => (a.type || '').toLowerCase() === modality);
+    if (!anchorData) return;
+    
+    const targetWord = anchorData.word.toLowerCase();
+    const el = document.querySelector<HTMLElement>(`[data-anchor-word="${targetWord}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-amber-400', 'bg-amber-400/30');
+      setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-amber-400', 'bg-amber-400/30');
+      }, 1500);
+    }
+  }, [detectedAnchors]);
+
   return (
     <section className="relative max-w-[95vw] xl:max-w-screen-2xl mx-auto mt-4 pb-8">
       <LayoutGroup>
@@ -405,29 +436,85 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
       </LayoutGroup>
 
       {/* ACT II INSTRUMENTS: AI Polish & Catalysts */}
-      <div className="mt-12 flex items-center justify-between px-2">
-        <motion.div 
-          layout
-          className={cn(
-            "flex flex-col gap-2 p-4 rounded-2xl border transition-all duration-700",
-            auraStyles.border,
-            auraStyles.bg,
-            auraStyles.glow,
-            isSurging && "ring-2 ring-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)] scale-105"
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <ClarityWaveform charge={totalCharge} color={auraStyles.color} />
-            <div className={cn("font-mono text-[10px] uppercase tracking-[0.2em] font-black", auraStyles.text)}>
-              Scene Clarity: {totalCharge}%
+      <div className="mt-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 px-2">
+        <div className="flex items-center gap-4 flex-wrap">
+          <motion.div 
+            layout
+            className={cn(
+              "flex flex-col gap-2 p-4 rounded-2xl border transition-all duration-700",
+              auraStyles.border,
+              auraStyles.bg,
+              auraStyles.glow,
+              isSurging && "ring-2 ring-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)] scale-105"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <ClarityWaveform charge={totalCharge} color={auraStyles.color} />
+              <div className={cn("font-mono text-[10px] uppercase tracking-[0.2em] font-black", auraStyles.text)}>
+                Scene Clarity: {totalCharge}%
+              </div>
             </div>
+            <p className="text-[10px] text-white/30 italic max-w-[200px] leading-relaxed">
+              {isReady 
+                ? "The frequency is locked. Ignition sequence prepared." 
+                : `Deepen the ${dominantType !== 'none' ? dominantType : 'prose'} to tune the clarity.`}
+            </p>
+          </motion.div>
+
+          {/* SENSORY PALETTE KEY & COUNTERS (Test 4 UX) */}
+          <div 
+            data-testid="sensory-palette-key"
+            className="flex items-center gap-2 p-2 sm:p-2.5 rounded-2xl bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-lg flex-wrap"
+          >
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-white/40 pl-1.5 hidden sm:inline">
+              Sensory Key:
+            </span>
+            <button
+              onClick={() => scrollToAnchor('soundscape')}
+              disabled={sensoryCounts.soundscape.count === 0}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                sensoryCounts.soundscape.count > 0
+                  ? "bg-sky-500/10 border-sky-500/30 text-sky-300 hover:bg-sky-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(56,189,248,0.15)]"
+                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
+              )}
+              title={sensoryCounts.soundscape.count > 0 ? `Jump to Soundscape anchor "${sensoryCounts.soundscape.word}"` : "No soundscape anchors detected"}
+            >
+              <Headphones className="w-3.5 h-3.5 text-sky-400" />
+              <span>Soundscape ({sensoryCounts.soundscape.count})</span>
+            </button>
+
+            <button
+              onClick={() => scrollToAnchor('visual')}
+              disabled={sensoryCounts.visual.count === 0}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                sensoryCounts.visual.count > 0
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
+              )}
+              title={sensoryCounts.visual.count > 0 ? `Jump to Visual anchor "${sensoryCounts.visual.word}"` : "No visual anchors detected"}
+            >
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Visual ({sensoryCounts.visual.count})</span>
+            </button>
+
+            <button
+              onClick={() => scrollToAnchor('aroma')}
+              disabled={sensoryCounts.aroma.count === 0}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all",
+                sensoryCounts.aroma.count > 0
+                  ? "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20 active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(245,158,11,0.15)]"
+                  : "bg-white/5 border-white/5 text-white/20 cursor-default"
+              )}
+              title={sensoryCounts.aroma.count > 0 ? `Jump to Aroma anchor "${sensoryCounts.aroma.word}"` : "No aroma anchors detected"}
+            >
+              <Coffee className="w-3.5 h-3.5 text-amber-400" />
+              <span>Aroma ({sensoryCounts.aroma.count})</span>
+            </button>
           </div>
-          <p className="text-[10px] text-white/30 italic max-w-[200px] leading-relaxed">
-            {isReady 
-              ? "The frequency is locked. Ignition sequence prepared." 
-              : `Deepen the ${dominantType !== 'none' ? dominantType : 'prose'} to tune the clarity.`}
-          </p>
-        </motion.div>
+        </div>
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Story Resonance Mood Dropdown (Ticket #263) */}

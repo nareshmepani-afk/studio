@@ -112,7 +112,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     isReviewing,
     isGeneratingDrafts,
     isDirectorOpen,
-    isCleanView
+    isCleanView,
+    selectedVision,
+    selectedTake
   } = useStudioState();
 
   const getActModeLabel = (mode: 'solo' | 'collaborative' | 'guest', stage: number, isCompact: boolean = false) => {
@@ -182,7 +184,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   };
 
   const isLobbyGate = currentStage === 2 && isLobbyConfirmed === false;
-  const isStageReady = (isComplete && !isLowClarity) || isLobbyGate;
+  const hasSelectedTreatment = Boolean(selectedVision?.label || selectedTake);
+  const isStageReady = (isComplete && !isLowClarity) || isLobbyGate || (isReviewing && hasSelectedTreatment);
 
   const handleNextClick = () => {
     console.log("[ProductionControlBar] handleNextClick triggered", {
@@ -193,11 +196,25 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
       isGeneratingDrafts,
       isReviewing,
       isLobbyConfirmed,
-      isLobbyGate
+      isLobbyGate,
+      hasSelectedTreatment
     });
 
     if (isPending || isGeneratingDrafts || isSaving) {
       console.log("[ProductionControlBar] Click blocked: isPending, isSaving or isGeneratingDrafts is true");
+      return;
+    }
+
+    if (isReviewing) {
+      if (!hasSelectedTreatment) {
+        toast.warning("TREATMENT SELECTION REQUIRED", {
+          description: "Please select a sensory weave card from the deck above before proceeding to the Soundstage.",
+          icon: <Sparkles className="w-4 h-4 text-amber-400" />
+        });
+        return;
+      }
+      setIsPending(true);
+      onNext();
       return;
     }
 
@@ -398,11 +415,20 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     switch (currentStage) {
       case 0:
         if (isGeneratingDrafts || isPending) return 'SYNTHESISING...';
-        if (isReviewing) return '⏳ Select a Vision Above to Advance';
+        if (isReviewing) {
+          return hasSelectedTreatment 
+            ? 'SEAL & ENTER SOUNDSTAGE →' 
+            : 'SELECT A TREATMENT CARD TO PROCEED →';
+        }
         return 'ENTER THE WEAVE';
 
       case 1:
         if (isPending) return 'PREPARING STUDIO...';
+        if (isReviewing) {
+          return hasSelectedTreatment 
+            ? 'SEAL & ENTER SOUNDSTAGE →' 
+            : 'SELECT A TREATMENT CARD TO PROCEED →';
+        }
         return 'ENTER RECORDING STUDIO';
 
       case 2:
@@ -427,7 +453,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     <div className={cn(
       "w-full max-w-[98vw] sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto pointer-events-auto transition-all duration-500 ease-in-out relative",
       isDirectorOpen && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none",
-      isReviewing && "opacity-60 select-none pointer-events-none"
+      (isReviewing && !hasSelectedTreatment) && "opacity-90"
     )}>
       <motion.div 
         data-blueprint="ProductionControlBar"
@@ -437,7 +463,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
         transition={{ duration: 0.3 }}
         className={cn(
           "bg-slate-950/90 backdrop-blur-3xl border border-white/10 p-2.5 sm:p-3.5 rounded-[1.5rem] sm:rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.6)] ring-1 ring-white/5 flex flex-col gap-2 sm:gap-2.5 max-w-[95vw] xl:max-w-6xl mx-auto transition-all pointer-events-auto",
-          (isReviewing || isDirectorOpen) ? "pointer-events-none" : "pointer-events-auto",
+          isDirectorOpen ? "pointer-events-none" : "pointer-events-auto",
           !isComplete && currentStage !== 4 && "border-rose-500/20"
         )}
       >
@@ -697,12 +723,14 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                       data-hotspot-id={currentStage === 0 ? "HS_ACT1_DRAFT_COMPLETED_BTN" : "HS_ENTER_STUDIO_BTN"}
                       whileHover={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 1.02 } : {}}
                       whileTap={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 0.98 } : shakeAnimation}
-                      disabled={isPending || isGeneratingDrafts || isSaving}
+                      disabled={isPending || isGeneratingDrafts || isSaving || (isReviewing && !hasSelectedTreatment)}
                       onClick={handleNextClick}
                       className={cn(
                         "relative px-5 sm:px-8 lg:px-10 py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max",
                         isReviewing
-                          ? "opacity-60 cursor-not-allowed bg-stone-900/60 border border-stone-800 text-stone-400"
+                          ? hasSelectedTreatment
+                            ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)] cursor-pointer"
+                            : "bg-amber-500/10 border border-amber-500/30 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)] animate-pulse cursor-not-allowed"
                           : isStageReady 
                             ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
                             : !isComplete
