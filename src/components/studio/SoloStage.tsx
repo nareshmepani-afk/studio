@@ -2717,13 +2717,13 @@ export default function SoloStage({
           {mounted && isMuted && (
             <div 
               onClick={unmuteOptics}
-              className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center z-[35] animate-fade-in border border-rose-500/20 rounded-[2.5rem] cursor-pointer group/cam transition-all duration-500 hover:bg-slate-950/90"
+              className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center z-[70] pointer-events-auto animate-fade-in border border-rose-500/20 rounded-[2.5rem] cursor-pointer group/cam transition-all duration-500 hover:bg-slate-950/90"
               title="Click anywhere to ignite camera and mic"
             >
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center max-w-md text-center px-8 py-8 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.6)] pointer-events-auto"
+                className="relative z-[72] flex flex-col items-center max-w-md text-center px-8 py-8 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.6)] pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(245,158,11,0.15)] animate-pulse">
@@ -2781,15 +2781,16 @@ export default function SoloStage({
                       <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                       <div className="flex flex-col text-left">
                         <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Director's Rehearsal Tip</span>
-                        <span className="text-[10px] text-white/60 leading-relaxed font-sans">Relax, frame yourself in the center, and click below to ignite camera & mic. We will linter your shot once live.</span>
+                        <span className="text-[10px] text-white/60 leading-relaxed font-sans">Relax, frame yourself in the centre, and click below to ignite camera & mic. We will linter your shot once live.</span>
                       </div>
                     </div>
                   )}
                 </div>
 
                 <button 
+                  type="button"
                   onClick={unmuteOptics}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] cursor-pointer"
+                  className="relative z-[75] pointer-events-auto w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] cursor-pointer"
                 >
                   Ignite Camera & Mic
                 </button>
@@ -4173,7 +4174,7 @@ export default function SoloStage({
                 </AnimatePresence>
 
                  <AnimatePresence>
-                    {isInterviewMode && techAlignmentConfirmed && (
+                    {isInterviewMode && techAlignmentConfirmed && !isMuted && (
                       <motion.div 
                         key="interviewer-card"
                         drag
@@ -4404,7 +4405,7 @@ export default function SoloStage({
                <div className="flex-grow min-h-0 w-full flex flex-col items-center justify-center relative pointer-events-none" />
              )}
 
-             {techAlignmentConfirmed && (
+             {techAlignmentConfirmed && !isMuted && (
                 <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
                    {captureModality === 'raw' ? (
                      /* Bottom-Left: Elegant visual microphone level meter bar */

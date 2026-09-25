@@ -529,6 +529,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
 
   // Listen to Caret Position and Text Selection to auto-identify Word Pivot Target
   const handleCaretOrSelectionChange = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    if (isPulsingAnchorRef.current) return;
     const target = e.currentTarget;
     const start = target.selectionStart;
     const end = target.selectionEnd;
@@ -687,6 +688,8 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         );
         if (span) {
           isPulsingAnchorRef.current = true;
+          setGhostWordInfo(null);
+          setSuggestionsOpen(false);
           setPulsedWord(targetWordLower);
 
           const syncTooltipRect = () => {

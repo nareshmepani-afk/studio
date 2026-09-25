@@ -135,7 +135,16 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         }
 
         if (active && docSnap.exists()) {
-          const fetchedMemory = { id: docSnap.id, ...docSnap.data() };
+          const rawData = docSnap.data() as any;
+          const isFirstFlight = docSnap.id === 'first_flight_rehearsal' || promptId === 'first_flight_rehearsal' || rawData?.isFlightSimulator;
+          const fetchedMemory = {
+            id: docSnap.id,
+            ...rawData,
+            ...(isFirstFlight ? {
+              description: FIRST_FLIGHT_FIXTURE.description,
+              originalHook: FIRST_FLIGHT_FIXTURE.originalHook,
+            } : {})
+          };
           console.log(`[ProductionDeckContainer] Direct Firestore document lookup succeeded for "${promptId}". Title: "${(fetchedMemory as any).title}", Stage: ${(fetchedMemory as any).productionStage}`);
           setSelectedProductionData(fetchedMemory);
           setIsReady(true);
@@ -323,11 +332,16 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
                                (cp.memory.narratorAgeAtTime !== undefined && cp.memory.narratorAgeAtTime !== selectedProductionData?.narratorAgeAtTime);
 
          if (hasIdTransition || hasDataUpdate) {
+            const isFirstFlight = cp.memory.id === 'first_flight_rehearsal' || promptId === 'first_flight_rehearsal' || (cp.memory as any).isFlightSimulator;
             console.log(`[ProductionDeckContainer] Firestore update synced to local state. Stage: ${cp.memory.productionStage}`);
             setSelectedProductionData((prev: any) => ({
               ...prev,
               ...cp.memory,
               promptId: cp.id, // Enforce clean root prompt ID in local state update
+              ...(isFirstFlight ? {
+                description: FIRST_FLIGHT_FIXTURE.description,
+                originalHook: FIRST_FLIGHT_FIXTURE.originalHook,
+              } : {})
             }));
          }
       }
@@ -355,11 +369,16 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
             loadedProse = formattedProse;
         }
 
+        const isFirstFlight = cp.memory.id === 'first_flight_rehearsal' || promptId === 'first_flight_rehearsal' || (cp.memory as any).isFlightSimulator;
         memoryToEdit = {
             ...cp.memory,
             title: cp.memory.title || cp.title || '',
             promptId: cp.id, // Enforce resolved root template ID to break the chain at client-side source
-            prose: loadedProse
+            prose: loadedProse,
+            ...(isFirstFlight ? {
+                description: FIRST_FLIGHT_FIXTURE.description,
+                originalHook: FIRST_FLIGHT_FIXTURE.originalHook,
+            } : {})
         };
     } else {
         // New Production Draft

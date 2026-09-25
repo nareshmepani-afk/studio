@@ -946,19 +946,20 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     el.classList.add(...highlightClasses);
 
     const anchorWord = el.getAttribute('data-anchor-word') || el.textContent?.trim() || '';
+
+    window.dispatchEvent(new CustomEvent('mw:pulse-anchor', {
+      detail: { modality: modLower, word: anchorWord }
+    }));
+
     const parentBlock = el.closest('[data-sentence-block], [data-block-id]');
     const textarea = parentBlock?.querySelector('textarea');
     if (textarea && anchorWord) {
       const idx = textarea.value.toLowerCase().indexOf(anchorWord.toLowerCase());
       if (idx !== -1) {
-        textarea.focus();
+        textarea.focus({ preventScroll: true });
         textarea.setSelectionRange(idx, idx + anchorWord.length);
       }
     }
-
-    window.dispatchEvent(new CustomEvent('mw:pulse-anchor', {
-      detail: { modality: modLower, word: anchorWord }
-    }));
 
     setTimeout(() => {
       if (el) {

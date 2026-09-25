@@ -379,5 +379,35 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     expect(deckContent).toContain('ACT III COMPLETION REQUIRED');
     expect(deckContent).toContain('ACT IV COMPLETION REQUIRED');
   });
+
+  it('12. SoloStage Privacy Shield z-[70] / !isMuted Gating & First Flight Golden Trio Anchor Invariants', async () => {
+    const soloStagePath = path.resolve(__dirname, '../components/studio/SoloStage.tsx');
+    const soloStageContent = fs.readFileSync(soloStagePath, 'utf8');
+    const deckPath = path.resolve(__dirname, '../components/studio/ProductionDeck.tsx');
+    const deckContent = fs.readFileSync(deckPath, 'utf8');
+    const sentenceWrapperPath = path.resolve(__dirname, '../components/studio/Scriptorium/SentenceWrapper.tsx');
+    const sentenceWrapperContent = fs.readFileSync(sentenceWrapperPath, 'utf8');
+
+    // 1. Privacy Shield overlay sits at z-[70] and Ignite Camera & Mic button sits at z-[75], while z-40 bottom bar is gated by !isMuted
+    expect(soloStageContent).toContain('z-[70] pointer-events-auto animate-fade-in border border-rose-500/20');
+    expect(soloStageContent).toContain('relative z-[75] pointer-events-auto w-full py-4 bg-emerald-500');
+    expect(soloStageContent).toContain('{techAlignmentConfirmed && !isMuted && (');
+    expect(soloStageContent).toContain('{isInterviewMode && techAlignmentConfirmed && !isMuted && (');
+
+    // 2. SentenceWrapper guards handleCaretOrSelectionChange during mw:pulse-anchor
+    expect(sentenceWrapperContent).toContain('if (isPulsingAnchorRef.current) return;');
+
+    // 3. ProductionDeck unlocks Act I on ?act=1 or first_flight_rehearsal at stage 0
+    expect(deckContent).toContain('const isFirstFlightAct1 = currentStage === 0 && (memoryData.id === \'first_flight_rehearsal\' || (memoryData as any).isFlightSimulator);');
+
+    // 4. Golden Trio sensory detection yields Soundscape (1), Visual (1), Aroma (1) for both FIRST_FLIGHT_FIXTURE and AI Master Weave
+    const { detectAnchors, filterDominantSensoryAnchors } = await import('@/hooks/studio/useDirectorInk');
+    const act1Dominant = filterDominantSensoryAnchors(detectAnchors(FIRST_FLIGHT_FIXTURE.description || ''));
+    expect(act1Dominant.map(a => a.type).sort()).toEqual(['aroma', 'soundscape', 'visual']);
+
+    const masterWeaveSample = 'In 1994, our sanctuary took shape within the four modest walls of a kitchen, while autumn rain drummed relentlessly against the windowpane. The kettle would whistle its familiar chorus on the stove top. Into cracked ceramic cups went fresh cardamom chai.';
+    const masterDominant = filterDominantSensoryAnchors(detectAnchors(masterWeaveSample));
+    expect(masterDominant.map(a => a.type).sort()).toEqual(['aroma', 'soundscape', 'visual']);
+  });
 });
 

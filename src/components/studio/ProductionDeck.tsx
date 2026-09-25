@@ -184,24 +184,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         let targetStage = memoryData?.productionStage || 0;
         let isExplicitScriptEditorRequest = false;
 
-        // Explicit stage override from URL (e.g. ?act=1 or ?stage=0 when user clicks "Edit Scene" on Dashboard)
+        // Explicit stage override from URL (e.g. ?act=1 or ?stage=0 when user clicks "Edit Scene" on Dashboard or QA route)
         if (urlAct === '1' || urlStage === '0') {
             targetStage = 0;
             isExplicitScriptEditorRequest = true;
-            // Clean up sticky URL search parameters so future reloads/upgrades honor saved productionStage
-            if (typeof window !== 'undefined' && window.history?.replaceState) {
-                window.history.replaceState({}, '', window.location.pathname);
-            }
         } else if (urlAct) {
-            // Support direct navigation to any Act (e.g. ?act=5 from Back to Studio in Cinema)
+            // Support direct navigation to any Act (e.g. ?act=2, ?act=3, ?act=5)
             const actNum = parseInt(urlAct, 10);
             if (actNum >= 2 && actNum <= 5) {
                 targetStage = actNum - 1; // act=2 → stage 1, act=5 → stage 4
                 console.log('[ProductionDeck] Explicit Act override from URL: act=' + urlAct + ' → stage ' + targetStage);
-            }
-            // Clean up sticky URL search parameters
-            if (typeof window !== 'undefined' && window.history?.replaceState) {
-                window.history.replaceState({}, '', window.location.pathname);
             }
         }
 
@@ -262,7 +254,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         if (memoryData?.narratorAgeAtTime !== undefined) setNarratorAgeAtTime(memoryData.narratorAgeAtTime);
         
         // 6.5. Sync production lock
-        const isLocked = !!(memoryData?.isProductionLocked || targetStage >= 1);
+        const isFirstFlightAct1 = targetStage === 0 && (memoryData?.id === 'first_flight_rehearsal' || (memoryData as any)?.isFlightSimulator);
+        const isLocked = (isExplicitScriptEditorRequest || isFirstFlightAct1)
+            ? false
+            : !!(memoryData?.isProductionLocked || targetStage >= 1);
         setIsProductionLocked(isLocked);
         if (isLocked) {
             if (typeof setSelectedTake === 'function') {
@@ -315,11 +310,18 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     // bypassing the early-return ID-check guard of the main sync effect.
     useEffect(() => {
         if (!memoryData?.id) return;
-        const isLocked = !!(memoryData.isProductionLocked || (memoryData.productionStage || 0) >= 1);
+        const urlAct = searchParams.get('act');
+        const urlStage = searchParams.get('stage');
+        const isExplicitAct1 = urlAct === '1' || urlStage === '0';
+        const isFirstFlightAct1 = currentStage === 0 && (memoryData.id === 'first_flight_rehearsal' || (memoryData as any).isFlightSimulator);
+        const isLocked = (isExplicitAct1 || isFirstFlightAct1)
+            ? false
+            : !!(memoryData.isProductionLocked || currentStage >= 1);
         console.log("[ProductionDeck:SyncLock] Syncing production lock. memoryData:", {
             id: memoryData.id,
             isProductionLocked: memoryData.isProductionLocked,
             productionStage: memoryData.productionStage,
+            currentStage,
             proseLength: memoryData.prose?.length || 0,
             descriptionLength: memoryData.description?.length || 0,
             isLocked,
@@ -344,6 +346,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         memoryData?.productionStage,
         memoryData?.prose,
         memoryData?.description,
+        currentStage,
+        searchParams,
         isReviewing,
         setIsProductionLocked,
         setSelectedTake

@@ -32,15 +32,15 @@ export function filterDominantSensoryAnchors(anchors: DetectedAnchor[]): Detecte
 // THE SENSORY DICTIONARY (Bespoke Edition with Cinematic Rationale)
 export const SENSORY_DICTIONARY_DETAILED: Record<string, { words: string[], reason: string }> = {
   aroma: {
-    words: ['soil', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'farming', 'staple', 'food', 'village', 'machinery', 'produce', 'labourers', 'oregano', 'lavender', 'musk', 'scent', 'aroma', 'spice', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty', 'perfume', 'cardamom', 'chai', 'sandalwood', 'petrichor', 'frankincense', 'jasmine', 'turmeric'],
+    words: ['soil', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'farming', 'staple', 'food', 'village', 'machinery', 'produce', 'labourers', 'oregano', 'lavender', 'musk', 'scent', 'aroma', 'spice', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty', 'perfume', 'cardamom', 'chai', 'sandalwood', 'petrichor', 'frankincense', 'jasmine', 'turmeric', 'warm', 'fragrant', 'piping'],
     reason: 'AROMA: Scent-memories like soil, farming, or regional food detected.'
   },
   soundscape: {
-    words: ['language', 'Gujarati', 'lessons', 'parents', 'voice', 'culture', 'education', 'mother tongue', 'skills', 'tongue', 'thunder', 'whisper', 'echo', 'melody', 'rhythm', 'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'hum', 'silence', 'clatter', 'clink', 'rustle', 'crescendo', 'monotone', 'thrum', 'chime', 'whistling'],
+    words: ['language', 'Gujarati', 'lessons', 'parents', 'voice', 'culture', 'education', 'mother tongue', 'skills', 'tongue', 'thunder', 'whisper', 'echo', 'melody', 'rhythm', 'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'hum', 'silence', 'clatter', 'clink', 'rustle', 'crescendo', 'monotone', 'thrum', 'chime', 'whistling', 'whistle', 'whistles', 'drumming', 'drummed', 'chorus', 'singing', 'song'],
     reason: 'SOUND: Language, dialects, education, or environmental sounds detected.'
   },
   visual: {
-    words: ['Nairobi', 'Kenya', 'India', 'England', 'heritage', 'traveling', 'journey', 'values', 'ancestors', 'generations', 'Granddad', 'Granddads', 'roots', 'neon', 'shadow', 'glow', 'emerald', 'crimson', 'bright', 'dark', 'blue', 'red', 'gold', 'clear', 'blurry', 'huge', 'tiny', 'light', 'sepia', 'monochrome', 'silhouette', 'radiant', 'amber', 'dappled', 'obsidian', 'red soil', 'windowpane'],
+    words: ['Nairobi', 'Kenya', 'India', 'England', 'heritage', 'traveling', 'journey', 'values', 'ancestors', 'generations', 'Granddad', 'Granddads', 'roots', 'neon', 'shadow', 'glow', 'emerald', 'crimson', 'bright', 'dark', 'blue', 'red', 'gold', 'clear', 'blurry', 'huge', 'tiny', 'light', 'sepia', 'monochrome', 'silhouette', 'radiant', 'amber', 'dappled', 'obsidian', 'red soil', 'windowpane', 'cracked', 'ceramic', 'glass', 'steaming', 'stove'],
     reason: 'VISUAL: Geographic locations, heritage, roots, or striking visual details detected.'
   },
   clarity: {

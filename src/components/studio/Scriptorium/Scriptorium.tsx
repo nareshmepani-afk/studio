@@ -424,22 +424,22 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
     el.style.transition = 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
     el.classList.add(...highlightClasses);
 
-    // 4. Focus parent textarea and select the exact word
+    // 4. Dispatch custom event to trigger rich tooltip on hovered anchor before native selection fires onSelect
     const anchorWord = el.getAttribute('data-anchor-word') || el.textContent?.trim() || '';
+    window.dispatchEvent(new CustomEvent('mw:pulse-anchor', {
+      detail: { modality: modLower, word: anchorWord }
+    }));
+
+    // 5. Focus parent textarea and select the exact word
     const parentBlock = el.closest('[data-sentence-block], [data-block-id]');
     const textarea = parentBlock?.querySelector('textarea');
     if (textarea && anchorWord) {
       const idx = textarea.value.toLowerCase().indexOf(anchorWord.toLowerCase());
       if (idx !== -1) {
-        textarea.focus();
+        textarea.focus({ preventScroll: true });
         textarea.setSelectionRange(idx, idx + anchorWord.length);
       }
     }
-
-    // 5. Dispatch custom event to trigger rich tooltip on hovered anchor
-    window.dispatchEvent(new CustomEvent('mw:pulse-anchor', {
-      detail: { modality: modLower, word: anchorWord }
-    }));
 
     // 6. Reset styling after 2.2 seconds
     setTimeout(() => {
