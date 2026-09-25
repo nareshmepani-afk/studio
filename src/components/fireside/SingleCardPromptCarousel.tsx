@@ -101,10 +101,12 @@ export function SingleCardPromptCarousel({
 
   const currentLanguage = controlledLanguage || internalLanguage;
   const currentSpark = sparkDeck[currentIndex] || sparkDeck[0];
+  const onActivePromptChangeRef = React.useRef(onActivePromptChange);
+  onActivePromptChangeRef.current = onActivePromptChange;
 
   useEffect(() => {
-    onActivePromptChange?.(currentSpark);
-  }, [currentSpark, onActivePromptChange]);
+    onActivePromptChangeRef.current?.(currentSpark);
+  }, [currentSpark]);
   const categoryMeta = CATEGORY_META[currentSpark.category] || CATEGORY_META.childhood;
   const CategoryIcon = categoryMeta.icon;
 

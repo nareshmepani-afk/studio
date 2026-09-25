@@ -408,6 +408,28 @@ describe('MW-249: Fireside Video Memo & Master Curriculum Invariants', () => {
         })
       );
     });
+
+    it('does not re-fire onActivePromptChange on parent re-render when currentSpark has not changed', () => {
+      const spy = vi.fn();
+      const { rerender } = render(
+        <SingleCardPromptCarousel
+          prompts={FIRESIDE_PROMPT_SPARKS}
+          mediaMode="audio"
+          onActivePromptChange={(spark) => spy(spark)}
+        />
+      );
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      // Simulate parent re-render (e.g. switching mediaMode to video with a fresh inline callback)
+      rerender(
+        <SingleCardPromptCarousel
+          prompts={FIRESIDE_PROMPT_SPARKS}
+          mediaMode="video"
+          onActivePromptChange={(spark) => spy(spark)}
+        />
+      );
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
   });
 
   // ---------------------------------------------------------------------------

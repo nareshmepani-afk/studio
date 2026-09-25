@@ -240,29 +240,63 @@ export default function FiresideStudioClient() {
     }
   }, [initialLangParam]);
 
+  const handleActivePromptChange = useCallback((spark: FiresidePromptSpark) => {
+    setActivePromptSpark((prev) => {
+      if (prev && prev.id !== spark.id) {
+        setForceRecordMode(false);
+      }
+      return spark;
+    });
+  }, []);
+
   const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
     setSelectedSpark(spark);
+    setForceRecordMode(true);
+    const targetMode: FiresideMediaMode = mediaMode || spark.suggestedMediaMode || 'audio';
     logEvent('FIRESIDE_PROMPT_SELECTED', {
       promptId: spark.id,
       sceneId: spark.linkedSceneId,
-      mediaMode,
+      mediaMode: targetMode,
     });
+    setNotification(
+      targetMode === 'video'
+        ? `Recording "${spark.title}" in WhatsApp / FaceTime Video Studio.`
+        : `Recording "${spark.title}" in Voice & Photos Studio.`
+    );
 
-    if (mediaMode === 'video') {
-      videoRecorderRef.current?.scrollIntoView();
-      if (videoRecorderRef.current && videoRecorderRef.current.status !== 'recording') {
-        setRecordedVideoBlob(null);
-        setRecordedVideoDuration(0);
-        videoRecorderRef.current.startRecording();
+    const triggerStudio = () => {
+      if (targetMode === 'video') {
+        if (videoRecorderRef.current) {
+          videoRecorderRef.current.scrollIntoView();
+          if (videoRecorderRef.current.status !== 'recording') {
+            setRecordedVideoBlob(null);
+            setRecordedVideoDuration(0);
+            videoRecorderRef.current.startRecording();
+          }
+        } else {
+          document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        if (recorderRef.current) {
+          recorderRef.current.scrollIntoView();
+          if (recorderRef.current.status !== 'recording') {
+            setRecordedAudioBlob(null);
+            setRecordedAudioDuration(0);
+            recorderRef.current.startRecording();
+          }
+        } else {
+          document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
+    };
+
+    if (
+      (targetMode === 'video' && videoRecorderRef.current) ||
+      (targetMode === 'audio' && recorderRef.current)
+    ) {
+      triggerStudio();
     } else {
-      // Smoothly autoscroll to the 88px voice recorder and action the SPEAK button directly
-      recorderRef.current?.scrollIntoView();
-      if (recorderRef.current && recorderRef.current.status !== 'recording') {
-        setRecordedAudioBlob(null);
-        setRecordedAudioDuration(0);
-        recorderRef.current.startRecording();
-      }
+      setTimeout(triggerStudio, 80);
     }
   };
 
@@ -279,10 +313,12 @@ export default function FiresideStudioClient() {
         : 'Voice & Photos Studio ready below.'
     );
     setTimeout(() => {
-      if (newMode === 'video') {
-        videoRecorderRef.current?.scrollIntoView();
+      if (newMode === 'video' && videoRecorderRef.current) {
+        videoRecorderRef.current.scrollIntoView();
+      } else if (newMode === 'audio' && recorderRef.current) {
+        recorderRef.current.scrollIntoView();
       } else {
-        recorderRef.current?.scrollIntoView();
+        document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 80);
   };
@@ -543,14 +579,8 @@ export default function FiresideStudioClient() {
             initialPromptId={autoSparkId}
             activeLanguage={activeLanguage}
             mediaMode={mediaMode}
-            onSelectPrompt={(spark, lang) => {
-              setForceRecordMode(false);
-              handleSelectPrompt(spark, lang);
-            }}
-            onActivePromptChange={(spark) => {
-              setForceRecordMode(false);
-              setActivePromptSpark(spark);
-            }}
+            onSelectPrompt={handleSelectPrompt}
+            onActivePromptChange={handleActivePromptChange}
             onLanguageChange={handleLanguageChange}
             onPhotoPromptClick={handlePhotoPromptClick}
           />
@@ -558,7 +588,7 @@ export default function FiresideStudioClient() {
 
         {/* Conditional Media Surface: Completed Reel Card vs Active Recorders */}
         {isCompleted ? (
-          <div className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+          <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
             <FiresideCompletedReelCard
               sceneId={effectiveSceneId}
               sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
@@ -571,7 +601,7 @@ export default function FiresideStudioClient() {
           </div>
         ) : mediaMode === 'video' ? (
           /* Video Memo Recording Surface */
-          <div className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+          <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
             <div className="text-center mb-4">
               <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
                 WhatsApp / FaceTime Video Memo
@@ -608,7 +638,7 @@ export default function FiresideStudioClient() {
             </div>
 
             {/* Tactile Web Audio Voice Recorder (MW-246) */}
-            <div className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+            <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
               <div className="text-center mb-4">
                 <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
                   Fireside Voice Recording
@@ -634,11 +664,33 @@ export default function FiresideStudioClient() {
 
         {/* Selected Spark / Recording Confirmation Toast */}
         {notification && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] bg-stone-900/95 border border-amber-500/40 text-amber-200 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-lg flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
-            <p className="text-xs font-medium leading-relaxed">
-              {notification}
-            </p>
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] bg-stone-900/95 border border-amber-500/40 text-amber-200 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-lg flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
+              <p className="text-xs font-medium leading-relaxed">
+                {notification}
+              </p>
+            </div>
+            <a
+              href="#fireside-active-studio"
+              data-testid="toast-studio-jump-link"
+              onClick={(e) => {
+                e.preventDefault();
+                setForceRecordMode(true);
+                setTimeout(() => {
+                  if (mediaMode === 'video' && videoRecorderRef.current) {
+                    videoRecorderRef.current.scrollIntoView();
+                  } else if (mediaMode === 'audio' && recorderRef.current) {
+                    recorderRef.current.scrollIntoView();
+                  } else {
+                    document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }, 40);
+              }}
+              className="shrink-0 text-xs font-bold text-amber-300 hover:text-amber-100 underline underline-offset-2 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 transition-all cursor-pointer"
+            >
+              Open Studio ↓
+            </a>
           </div>
         )}
       </main>
