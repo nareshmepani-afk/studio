@@ -99,7 +99,7 @@ export default function CinemaStageSwitch({
               <div className="absolute top-0 left-0 w-full h-full bg-[repeating-linear-gradient(0deg,transparent,transparent_100px,rgba(255,255,255,0.05)_100px,rgba(255,255,255,0.05)_101px)]" />
             </div>
 
-            <div className="w-full h-full p-4 sm:p-6 md:p-8 pb-32 overflow-y-auto custom-scrollbar flex flex-col items-center relative z-20">
+            <div className={`w-full h-full ${currentStage === 2 ? 'p-2 sm:p-4 pb-4' : 'p-4 sm:p-6 md:p-8 pb-32'} overflow-y-auto custom-scrollbar flex flex-col items-center relative z-20`}>
               {children[currentStage]}
             </div>
           </motion.div>

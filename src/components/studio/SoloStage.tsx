@@ -314,6 +314,8 @@ export default function SoloStage({
 
   const [customPrompterWidth, setCustomPrompterWidth] = useState<number | null>(null);
   const [customPrompterHeight, setCustomPrompterHeight] = useState<number | null>(null);
+  const [prompterDragOffset, setPrompterDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isPrompterInteracting, setIsPrompterInteracting] = useState(false);
   const [isInterviewerMinimised, setIsInterviewerMinimised] = useState(false);
 
   const defaultPrompterWidth = isInterviewMode 
@@ -321,13 +323,13 @@ export default function SoloStage({
     : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 480 : prompterSize === 'md' ? 680 : 880);
 
   const defaultPrompterHeight = isInterviewMode
-    ? (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 360 : prompterSize === 'md' ? 480 : 640)
-    : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 360 : prompterSize === 'md' ? 560 : 740);
+    ? (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 340 : prompterSize === 'md' ? 450 : 580)
+    : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 340 : prompterSize === 'md' ? 500 : 640);
 
   const prompterWidth = customPrompterWidth ?? defaultPrompterWidth;
   const prompterHeight = customPrompterHeight ?? defaultPrompterHeight;
 
-  const handlePrompterResizeStart = useCallback((e: React.PointerEvent, edge: 'left' | 'right' | 'bottom') => {
+  const handlePrompterResizeStart = useCallback((e: React.PointerEvent, edge: 'top' | 'left' | 'right' | 'bottom') => {
     e.stopPropagation();
     e.preventDefault();
     const startX = e.clientX;
@@ -336,6 +338,8 @@ export default function SoloStage({
     const rect = prompterEl?.getBoundingClientRect();
     const startW = rect ? rect.width : prompterWidth;
     const startH = rect ? rect.height : prompterHeight;
+    const startOffsetY = prompterDragOffset.y;
+    setIsPrompterInteracting(true);
 
     const onMove = (moveEvt: PointerEvent) => {
       const dx = moveEvt.clientX - startX;
@@ -350,17 +354,59 @@ export default function SoloStage({
         setCustomPrompterWidth(Math.min(maxW, Math.max(300, Math.round(startW + dx * multiplier))));
       } else if (edge === 'bottom') {
         setCustomPrompterHeight(Math.min(maxH, Math.max(220, Math.round(startH + dy))));
+      } else if (edge === 'top') {
+        setPrompterDragOffset(prev => ({
+          ...prev,
+          y: Math.max(-48, Math.min(360, Math.round(startOffsetY + dy))),
+        }));
       }
     };
 
     const onUp = () => {
+      setIsPrompterInteracting(false);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
 
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
-  }, [prompterWidth, prompterHeight, prompterLayout, isTableReadActive]);
+  }, [prompterWidth, prompterHeight, prompterLayout, isTableReadActive, prompterDragOffset.y]);
+
+  const handlePrompterDragStart = useCallback((e: React.PointerEvent) => {
+    if (isTheaterExpanded) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, input, a, select, textarea, [role="slider"], [data-testid^="prompter-resize-"]')) {
+      return;
+    }
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startOffsetX = prompterDragOffset.x;
+    const startOffsetY = prompterDragOffset.y;
+    let hasMoved = false;
+
+    const onMove = (moveEvt: PointerEvent) => {
+      const dx = moveEvt.clientX - startX;
+      const dy = moveEvt.clientY - startY;
+      if (!hasMoved && Math.hypot(dx, dy) < 4) return;
+      if (!hasMoved) {
+        hasMoved = true;
+        setIsPrompterInteracting(true);
+      }
+      setPrompterDragOffset({
+        x: Math.max(-720, Math.min(480, Math.round(startOffsetX + dx))),
+        y: Math.max(-48, Math.min(360, Math.round(startOffsetY + dy))),
+      });
+    };
+
+    const onUp = () => {
+      setIsPrompterInteracting(false);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }, [isTheaterExpanded, prompterDragOffset.x, prompterDragOffset.y]);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -2672,12 +2718,12 @@ export default function SoloStage({
     </div>
   );
   const renderRecording = () => (
-    <div className={cn("w-full h-full flex flex-col items-center justify-center relative pb-8 transition-colors duration-1000", (isTableReadActive || captureModality === 'raw') ? "bg-[#030303]" : "")}>
+    <div className={cn("w-full min-h-full flex flex-col items-center justify-start my-auto relative pb-2 transition-colors duration-1000", (isTableReadActive || captureModality === 'raw') ? "bg-[#030303]" : "")}>
        <div 
          ref={videoContainerRef}
          className={cn(
            "w-full max-w-[96vw] 2xl:max-w-[1720px] relative overflow-hidden transition-all duration-1000",
-           !(isTableReadActive || captureModality === 'raw') ? "aspect-video min-h-[580px] md:min-h-[660px]" : "h-[calc(100vh-240px)] min-h-[480px] max-h-[720px]",
+           !(isTableReadActive || captureModality === 'raw') ? "h-[calc(100vh-176px)] min-h-[540px] max-h-[820px]" : "h-[calc(100vh-220px)] min-h-[480px] max-h-[720px]",
            isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl',
            (isTableReadActive || captureModality === 'raw') ? "bg-[#030303] border-sky-500/20" : "bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)]",
            isRehearsing && "ring-2 ring-amber-500/50 border-amber-500/30"
@@ -3699,10 +3745,7 @@ export default function SoloStage({
           {/* Cinematic Teleprompter Overlay */}
           <motion.div 
              key="cinematic-teleprompter"
-             drag={!isTheaterExpanded && !isTableReadActive && (prompterLayout as string) === 'overlay'}
-             dragConstraints={videoContainerRef}
-             dragElastic={0.05}
-             dragMomentum={false}
+             onPointerDown={handlePrompterDragStart}
              animate={isTheaterExpanded ? {
                opacity: 1,
                scale: 1,
@@ -3722,8 +3765,8 @@ export default function SoloStage({
                   scale: 1,
                   left: customPrompterWidth ? `calc(50% - ${Math.round(customPrompterWidth / 2)}px)` : "22.5%",
                   top: "15%",
-                  x: 0,
-                  y: 0,
+                  x: prompterDragOffset.x,
+                  y: prompterDragOffset.y,
                   width: customPrompterWidth ?? "55%",
                   height: customPrompterHeight ?? "55%",
                 } : prompterSize === 'md' ? {
@@ -3731,37 +3774,37 @@ export default function SoloStage({
                   scale: 1,
                   left: customPrompterWidth ? `calc(50% - ${Math.round(customPrompterWidth / 2)}px)` : "12.5%",
                   top: "10%",
-                  x: 0,
-                  y: 0,
+                  x: prompterDragOffset.x,
+                  y: prompterDragOffset.y,
                   width: customPrompterWidth ?? "75%",
                   height: customPrompterHeight ?? "70%",
                 } : {
                   opacity: 1,
                   scale: 1,
                   left: customPrompterWidth ? `calc(50% - ${Math.round(customPrompterWidth / 2)}px)` : "3%",
-                  top: "40px",
-                  x: 0,
-                  y: 0,
+                  top: "64px",
+                  x: prompterDragOffset.x,
+                  y: prompterDragOffset.y,
                   width: customPrompterWidth ?? "94%",
-                  height: customPrompterHeight ?? "80%",
+                  height: customPrompterHeight ?? "76%",
                 }
               ) : prompterLayout === 'center' ? (
                isInterviewMode ? {
                  opacity: 1,
                  scale: 1,
                  left: `calc(50% - ${Math.round((customPrompterWidth ?? 680) / 2)}px)`,
-                 x: 0,
-                 top: isInterviewerMinimised ? 90 : 170,
-                 y: 0,
+                 x: prompterDragOffset.x,
+                 top: isInterviewerMinimised ? 104 : 180,
+                 y: prompterDragOffset.y,
                  width: customPrompterWidth ?? 680,
-                 height: customPrompterHeight ?? (isInterviewerMinimised ? 440 : 340),
+                 height: customPrompterHeight ?? (isInterviewerMinimised ? 420 : 340),
                } : {
                  opacity: 1,
                  scale: 1,
                  left: customPrompterWidth ? `calc(50% - ${Math.round(customPrompterWidth / 2)}px)` : "12.5%",
-                 top: "17.5%",
-                 x: 0,
-                 y: 0,
+                 top: "15%",
+                 x: prompterDragOffset.x,
+                 y: prompterDragOffset.y,
                  width: customPrompterWidth ?? "75%",
                  height: customPrompterHeight ?? "65%",
                }
@@ -3769,21 +3812,21 @@ export default function SoloStage({
                opacity: 1,
                scale: 1,
                left: `calc(100% - ${prompterWidth}px - 40px)`,
-               top: "40px",
-               x: 0,
-               y: 0,
+               top: "64px",
+               x: prompterDragOffset.x,
+               y: prompterDragOffset.y,
                width: prompterWidth,
                height: prompterHeight
              }}
-             transition={{ type: "spring", stiffness: 120, damping: 22 }}
+             transition={isPrompterInteracting ? { duration: 0 } : { type: "spring", stiffness: 120, damping: 22 }}
              style={{
                touchAction: 'none',
-               ...(prompterLayout === 'center' || isTheaterExpanded ? { x: 0, y: 0 } : {})
+               ...(isTheaterExpanded ? { x: 0, y: 0 } : {})
              }}
              className={cn(
                "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col select-none relative",
-               isTheaterExpanded ? "fixed top-[76px] bottom-[100px] left-6 right-6 z-40 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-2xl transition-all duration-300 ease-in-out cursor-default p-8" : (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "p-8",
-               !isTheaterExpanded && !isTableReadActive ? "cursor-grab active:cursor-grabbing" : "",
+               isTheaterExpanded ? "fixed top-[76px] bottom-[100px] left-6 right-6 z-40 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-2xl transition-all duration-300 ease-in-out cursor-default p-8" : (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "px-8 pt-6 pb-8",
+               !isTheaterExpanded ? "cursor-grab active:cursor-grabbing" : "",
                (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
                isAlchemySaving || reviewTake || captureModality === 'raw' ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
                isTheaterExpanded 
@@ -3797,6 +3840,15 @@ export default function SoloStage({
            >
             {!isTheaterExpanded && (
               <>
+                <div
+                  data-testid="prompter-resize-top"
+                  onPointerDown={(e) => handlePrompterResizeStart(e, 'top')}
+                  onDoubleClick={(e) => { e.stopPropagation(); setPrompterDragOffset({ x: 0, y: 0 }); }}
+                  title="Drag top bar to pull Teleprompter down or up (double-click to reset position)"
+                  className="absolute top-0 left-12 right-12 h-5 cursor-ns-resize z-50 flex items-center justify-center group/resize-t hover:bg-emerald-500/10 transition-colors rounded-b-lg"
+                >
+                  <div className="h-1 w-14 rounded-full bg-white/20 group-hover/resize-t:bg-emerald-400 group-hover/resize-t:w-20 group-hover/resize-t:shadow-[0_0_10px_rgba(52,211,153,0.8)] transition-all" />
+                </div>
                 <div
                   data-testid="prompter-resize-left"
                   onPointerDown={(e) => handlePrompterResizeStart(e, 'left')}
@@ -3826,7 +3878,6 @@ export default function SoloStage({
                 </div>
               </>
             )}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/10 rounded-full opacity-50" />
             {/* Header Top Line: Title & Size Actions */}
             <div 
               className={cn(
@@ -3846,7 +3897,7 @@ export default function SoloStage({
               </div>
               <div className="flex items-center gap-2">
                 <TooltipProvider delayDuration={200}>
-                  {/* Theater View Tooltip */}
+                  {/* Theatre View Tooltip */}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button 
@@ -3855,12 +3906,12 @@ export default function SoloStage({
                         className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.2)] active:scale-95"
                       >
                         <ExternalLink className="w-3 h-3 text-emerald-400" />
-                        <span className="text-[9px] font-black uppercase tracking-wider">{isTheaterExpanded ? 'Exit Theater' : 'Theater View'}</span>
+                        <span className="text-[9px] font-black uppercase tracking-wider">{isTheaterExpanded ? 'Exit Theatre' : 'Theatre View'}</span>
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="bg-neutral-950 border-white/10 max-w-[240px] p-3 text-xs leading-relaxed text-zinc-300 shadow-2xl z-[10002]">
                       <div className="space-y-1">
-                        <p className="font-bold text-[9px] uppercase tracking-widest text-emerald-400">Theater View</p>
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-emerald-400">Theatre View</p>
                         <p className="text-[10px] text-zinc-400 leading-normal">Expand teleprompter to full-screen view for maximum visual focus.</p>
                         <p className="text-[9px] text-zinc-500 font-mono pt-1 border-t border-white/5"><strong className="text-zinc-300">Shortcut:</strong> Press T or Esc</p>
                       </div>
@@ -3875,6 +3926,7 @@ export default function SoloStage({
                         onClick={() => {
                           setCustomPrompterWidth(null);
                           setCustomPrompterHeight(null);
+                          setPrompterDragOffset({ x: 0, y: 0 });
                           setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm');
                         }}
                         className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
@@ -4013,10 +4065,10 @@ export default function SoloStage({
             </div>
           )}
 
-             <div className="absolute inset-0 z-40 flex flex-col justify-between p-10 w-full mx-auto pointer-events-none">
+             <div className="absolute inset-0 z-40 flex flex-col justify-between px-8 pt-4 pb-6 w-full mx-auto pointer-events-none">
                 {!isTableReadActive ? (
-                  <div className="flex justify-between items-start w-full pointer-events-auto">
-                  <div className="flex items-center gap-3">
+                  <div className="flex justify-between items-start w-full pointer-events-none">
+                  <div className="flex items-center gap-3 pointer-events-auto">
                     <AnimatePresence mode="wait">
                       {isRecording ? (
                         <motion.div 

@@ -350,11 +350,19 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     const soloStagePath = path.resolve(__dirname, '../components/studio/SoloStage.tsx');
     const soloStageContent = fs.readFileSync(soloStagePath, 'utf8');
 
-    // Draggable resize sidebars on Teleprompter performance view
+    // Draggable resize sidebars + top pull bar + free drag on Teleprompter performance view
+    expect(soloStageContent).toContain('data-testid="prompter-resize-top"');
     expect(soloStageContent).toContain('data-testid="prompter-resize-left"');
     expect(soloStageContent).toContain('data-testid="prompter-resize-right"');
     expect(soloStageContent).toContain('data-testid="prompter-resize-bottom"');
     expect(soloStageContent).toContain('handlePrompterResizeStart');
+    expect(soloStageContent).toContain('handlePrompterDragStart');
+    expect(soloStageContent).toContain('prompterDragOffset');
+    expect(soloStageContent).toContain("isTheaterExpanded ? 'Exit Theatre' : 'Theatre View'");
+
+    // Prevent negative top flex overflow so buttons above "SYNCING REMOTE" are always visible
+    expect(soloStageContent).toContain('w-full min-h-full flex flex-col items-center justify-start my-auto relative pb-2');
+    expect(soloStageContent).toContain('top: "64px"');
 
     // AI Director Interview Active panel Minimise/Expand controls
     expect(soloStageContent).toContain('data-testid="minimise-interviewer-card-btn"');
