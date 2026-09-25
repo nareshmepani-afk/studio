@@ -18,7 +18,7 @@
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 490 / 490 Vitest Tests Passing (43 Test Files)
+- **Current Invariant Test Baseline:** 621 / 621 Vitest Tests Passing (53 Test Files)
 
 
 
@@ -357,19 +357,25 @@
 
 ---
 
-### [2026-09-24 20:00 BST] • Checkpoint #015 — Test 1 Remediation: Compact Story Hook Sensory Palette Key & Persistent Luminous Jump Beacon
+### [2026-09-25 17:00 BST] • Checkpoint #016 — Twilio SMS & WhatsApp Messaging Subsystem Architecture & Scaffolding (Zero Localhost)
 - **Partner Disciplines:**
-  - 👤 **Creative Director**: Reported Test 1 failure on `d452e8d` (`/studio/production/first_flight_rehearsal`, Steps 5 & 6: Sensory Palette Key pushed off-screen by 500px gap / static header dots, and Director's Ink tooltip + `ring-4` halo wiped on click/scroll).
+  - 👤 **Creative Director**: Approved the zero-localhost architectural specification and audit plan for Twilio SMS & WhatsApp messaging subsystem.
+  - 🧠 **Gemini Strategic Brain**: Codified the lazy-initialised client singleton, E.164 sanitisation, automatic `whatsapp:` prefixing, hardcoded edge status callback routing (`https://dev.memoryweaver.studio`), and carrier delivery state tracking.
   - ⚡ **Antigravity Execution**:
-    1. **Step 5 Fix (`MemoryForm.tsx`)**: Replaced `min-h-[500px]` on `data-block-id="story-hook"` with `min-h-[180px] flex flex-col justify-between gap-6`, embedded `data-testid="sensory-palette-key"` (`• [ 🎧 Soundscape (1) ] • [ 👁️ Visual (1) ] • [ ☕ Aroma (1) ]`) directly inside the bottom of the Story Hook editor right beneath the rehearsal prose, and upgraded the top Story Hook header legend from static 7px dots to interactive Golden Trio counter pills.
-    2. **Step 6 Fix (`SentenceWrapper.tsx` & `Scriptorium.tsx`)**: Added `isPulsingAnchorRef` and React state `pulsedWord` in `SentenceWrapper.tsx` so clicking any Sensory Palette Key button keeps the `ring-4` glowing halo in React state (preventing React re-renders from stripping DOM classes), locks `hoveredAnchorInfo` for 2.8 seconds across `scrollIntoView` and `mouseleave`/`blur`, re-syncs the bounding rect at `0ms`/`120ms`/`300ms`/`520ms`, and decouples the fixed `translate(-50%, -100%)` wrapper (`data-testid="director-ink-tooltip"`) from Framer Motion's `animate` transform.
-  - 🛡️ **QA Gatekeeper**: Verified `tsc --noEmit` (exit 0), Vitest suite (152/152 tests passing in modified suites), and full Next.js production build `npm.cmd run build` (45/45 routes compiled cleanly, exit 0).
+    1. **Dependency Installation**: Installed `twilio` (^6.1.1).
+    2. **Environment Template (`.env.local.example`)**: Added `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`, `TWILIO_WHATSAPP_NUMBER`, and `NEXT_PUBLIC_APP_URL=https://dev.memoryweaver.studio`.
+    3. **Client Singleton (`src/lib/twilio/client.ts`)**: Built lazy-initialised client avoiding runtime crashes when credentials are unset in local/build environments.
+    4. **Unified Messaging Abstraction (`src/lib/twilio/messaging.ts`)**: Built `sendTwilioMessage`, `sanitiseE164Number`, `formatWhatsAppHandle`, `resolveStatusCallbackUrl`, and detailed Twilio REST API error unpacking (`code`, `status`, `message`, `moreInfo`).
+    5. **Edge Webhook Status Receiver (`src/app/api/twilio/status-callback/route.ts`)**: Built Next.js route handler verifying `X-Twilio-Signature`, parsing terminal carrier delivery states (`delivered`, `undelivered`, `failed`), and implementing Rule 32 (Self-Documenting GET) and Rule 33 (OPTIONS CORS preflight).
+  - 🛡️ **QA Gatekeeper**: Authored `src/test/twilio_dispatch.test.ts` with 19/19 passing hermetic invariants (now 621/621 passing across 53 test files). Verified `tsc --noEmit` (exit 0) and Next.js production build `npm.cmd run build` (all 45 routes compiled cleanly with exit code 0).
 - **Target Files Impacted:**
-  - `C:\Users\home\studio\src\components\studio\MemoryForm.tsx`
-  - `C:\Users\home\studio\src\components\studio\Scriptorium\SentenceWrapper.tsx`
-  - `C:\Users\home\studio\src\components\studio\Scriptorium\Scriptorium.tsx`
-  - `C:\Users\home\studio\src\test\flight_simulator_isolation.test.ts`
+  - `C:\Users\home\studio\.env.local.example`
+  - `C:\Users\home\studio\src\lib\twilio\client.ts`
+  - `C:\Users\home\studio\src\lib\twilio\messaging.ts`
+  - `C:\Users\home\studio\src\app\api\twilio\status-callback\route.ts`
+  - `C:\Users\home\studio\src\test\twilio_dispatch.test.ts`
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
 

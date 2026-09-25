@@ -228,6 +228,10 @@ export function HardwarePrivacyProvider({ children }: { children: React.ReactNod
           Boolean((window as any)?.__MW_IS_RECORDING__) ||
           Boolean(document.querySelector('[data-recording="true"]'));
 
+        const hasActiveFeeds =
+          trackedTracksRef.current.size > 0 ||
+          trackedStreamsRef.current.size > 0;
+
         if (isRecordingActive) {
           console.log('[HardwarePrivacy] Active recording in progress. Gracefully stopping before severance.');
           window.dispatchEvent(new CustomEvent('mw:emergency-stop-recording'));
@@ -235,7 +239,7 @@ export function HardwarePrivacyProvider({ children }: { children: React.ReactNod
           setTimeout(() => {
             killAllHardwareFeeds();
           }, 300);
-        } else {
+        } else if (hasActiveFeeds) {
           console.log('[HardwarePrivacy] Idle camera preview detected on hidden tab. Immediately severing hardware.');
           killAllHardwareFeeds();
         }

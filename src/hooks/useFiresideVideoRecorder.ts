@@ -7,6 +7,7 @@ import {
   FIRESIDE_HAPTIC_PATTERNS,
 } from '@/types/fireside';
 import { formatDurationMMSS } from '@/hooks/useFiresideAudioRecorder';
+import { useHardwarePrivacy } from '@/context/HardwarePrivacyContext';
 
 export interface UseFiresideVideoRecorderOptions {
   onRecordingComplete?: (videoBlob: Blob, durationSeconds: number) => void;
@@ -67,6 +68,7 @@ export function useFiresideVideoRecorder(
   options: UseFiresideVideoRecorderOptions = {}
 ): UseFiresideVideoRecorderReturn {
   const { onRecordingComplete, onReset, maxDurationSeconds = 1800 } = options;
+  const { rearmHardware } = useHardwarePrivacy();
 
   const [status, setStatus] = useState<RecordingLifecycleStatus>('idle');
   const [cameraPermissionState, setCameraPermissionState] = useState<CameraPermissionState>('prompt');
@@ -160,6 +162,7 @@ export function useFiresideVideoRecorder(
   // ---------------------------------------------------------------------------
   const startRecording = useCallback(async (): Promise<boolean> => {
     cleanupStream();
+    rearmHardware();
     setErrorMessage(null);
     setVideoUrl((prev) => {
       if (prev) {
@@ -170,7 +173,7 @@ export function useFiresideVideoRecorder(
     setVideoBlob(null);
 
     try {
-      // 1. Request Front-Facing Camera & Audio Stream (with mobile constraint fallback)
+      // 1. Request Front-Facing Camera & Audio Stream (with mobile & desktop constraint fallbacks)
       let mediaStream: MediaStream;
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -193,10 +196,17 @@ export function useFiresideVideoRecorder(
           constraintErr?.name === 'ConstraintNotSatisfiedError' ||
           constraintErr?.name === 'TypeError'
         ) {
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user' },
-            audio: true,
-          });
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user' },
+              audio: true,
+            });
+          } catch {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: true,
+            });
+          }
         } else {
           throw constraintErr;
         }
@@ -272,7 +282,7 @@ export function useFiresideVideoRecorder(
       setStatus('error');
       return false;
     }
-  }, [cleanupStream, acquireWakeLock, triggerHaptic, maxDurationSeconds]);
+  }, [cleanupStream, rearmHardware, acquireWakeLock, triggerHaptic, maxDurationSeconds]);
 
   // ---------------------------------------------------------------------------
   // Pause Video Memo Recording
@@ -436,6 +446,7 @@ export function useFiresideVideoRecorder(
   // 1-Tap Camera & Microphone Preview Activation
   // ---------------------------------------------------------------------------
   const enableCameraPreview = useCallback(async (): Promise<boolean> => {
+    rearmHardware();
     setErrorMessage(null);
     setCameraPermissionState('prompt');
     try {
@@ -471,7 +482,7 @@ export function useFiresideVideoRecorder(
       setStatus('error');
       return false;
     }
-  }, [cleanupStream]);
+  }, [cleanupStream, rearmHardware]);
 
   // ---------------------------------------------------------------------------
   // 1-Tap Native Mobile Video Capture Import
@@ -499,10 +510,25 @@ export function useFiresideVideoRecorder(
   // Retry Permission
   // ---------------------------------------------------------------------------
   const retryPermission = useCallback(async () => {
+    rearmHardware();
     setErrorMessage(null);
     setCameraPermissionState('prompt');
     await startRecording();
-  }, [startRecording]);
+  }, [rearmHardware, startRecording]);
+
+  // Synchronise idle preview state when Hardware Privacy Shield severs feeds on hidden tab
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleHardwareSevered = () => {
+      if (statusRef.current === 'idle') {
+        cleanupStream();
+      }
+    };
+    window.addEventListener('mw:hardware-severed', handleHardwareSevered);
+    return () => {
+      window.removeEventListener('mw:hardware-severed', handleHardwareSevered);
+    };
+  }, [cleanupStream]);
 
   // Cleanup on unmount
   useEffect(() => {

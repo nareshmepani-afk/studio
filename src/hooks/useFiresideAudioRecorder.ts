@@ -5,6 +5,7 @@ import {
   FiresideAudioMetrics,
   FIRESIDE_HAPTIC_PATTERNS,
 } from '@/types/fireside';
+import { useHardwarePrivacy } from '@/context/HardwarePrivacyContext';
 
 export interface UseFiresideAudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob, durationSeconds: number) => void;
@@ -79,6 +80,7 @@ export function useFiresideAudioRecorder(
   options: UseFiresideAudioRecorderOptions = {}
 ): UseFiresideAudioRecorderReturn {
   const { onRecordingComplete, onReset, maxDurationSeconds = 1800 } = options;
+  const { rearmHardware } = useHardwarePrivacy();
 
   const [status, setStatus] = useState<RecordingLifecycleStatus>('idle');
   const [permissionState, setPermissionState] = useState<MicrophonePermissionState>('prompt');
@@ -215,6 +217,7 @@ export function useFiresideAudioRecorder(
   // ---------------------------------------------------------------------------
   const startRecording = useCallback(async (): Promise<boolean> => {
     cleanupAudioPipeline();
+    rearmHardware();
     setErrorMessage(null);
     setAudioUrl((prev) => {
       if (prev) {
@@ -383,7 +386,7 @@ export function useFiresideAudioRecorder(
       setStatus('error');
       return false;
     }
-  }, [cleanupAudioPipeline, acquireWakeLock, triggerHaptic, maxDurationSeconds]);
+  }, [cleanupAudioPipeline, rearmHardware, acquireWakeLock, triggerHaptic, maxDurationSeconds]);
 
   // ---------------------------------------------------------------------------
   // Pause Voice Recording

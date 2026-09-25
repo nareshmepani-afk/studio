@@ -240,6 +240,49 @@ export default function FiresideStudioClient() {
     }
   }, [initialLangParam]);
 
+  // Auto-dismiss toast when viewport reaches #fireside-active-studio hyperlink position
+  useEffect(() => {
+    if (!notification || typeof window === 'undefined') return;
+
+    const isStudioAtTargetPosition = () => {
+      const studioEl = document.getElementById('fireside-active-studio');
+      if (!studioEl) return false;
+      const rect = studioEl.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      return rect.height > 0 && rect.top <= vh * 0.65 && rect.bottom >= vh * 0.2;
+    };
+
+    let canDismissOnScroll = false;
+    const scrollArmTimer = setTimeout(() => {
+      canDismissOnScroll = true;
+    }, 250);
+
+    // If #fireside-active-studio is already at the target position after smooth scroll settles, auto-dismiss
+    const settledPositionTimer = setTimeout(() => {
+      if (isStudioAtTargetPosition()) {
+        setNotification(null);
+      }
+    }, 1500);
+
+    const fallbackTimer = setTimeout(() => {
+      setNotification(null);
+    }, 4000);
+
+    const handleScroll = () => {
+      if (canDismissOnScroll && isStudioAtTargetPosition()) {
+        setNotification(null);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      clearTimeout(scrollArmTimer);
+      clearTimeout(settledPositionTimer);
+      clearTimeout(fallbackTimer);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [notification]);
+
   const handleActivePromptChange = useCallback((spark: FiresidePromptSpark) => {
     setActivePromptSpark((prev) => {
       if (prev && prev.id !== spark.id) {
@@ -677,6 +720,7 @@ export default function FiresideStudioClient() {
               onClick={(e) => {
                 e.preventDefault();
                 setForceRecordMode(true);
+                setNotification(null);
                 setTimeout(() => {
                   if (mediaMode === 'video' && videoRecorderRef.current) {
                     videoRecorderRef.current.scrollIntoView();

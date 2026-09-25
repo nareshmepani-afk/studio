@@ -21,6 +21,7 @@ import {
   FIRESIDE_HAPTIC_PATTERNS,
   FIRESIDE_TOUCH_TARGETS,
 } from '@/types/fireside';
+import { HardwarePrivacyProvider } from '@/context/HardwarePrivacyContext';
 
 describe('MW-249: Fireside Video Memo & Master Curriculum Invariants', () => {
   let mockMediaRecorder: any;
@@ -429,6 +430,52 @@ describe('MW-249: Fireside Video Memo & Master Curriculum Invariants', () => {
         />
       );
       expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('automatically re-arms HardwarePrivacyProvider when Enable Camera & Microphone or Record is clicked after privacy shield severance', async () => {
+      window.localStorage.setItem('privacy_optics_muted', 'true');
+
+      render(
+        <HardwarePrivacyProvider>
+          <FiresideVideoRecorder promptSpark={FIRESIDE_PROMPT_SPARKS[0]} />
+        </HardwarePrivacyProvider>
+      );
+
+      const enableBtn = screen.getByTestId('enable-camera-preview-btn');
+      await act(async () => {
+        fireEvent.click(enableBtn);
+      });
+
+      expect(window.localStorage.getItem('privacy_optics_muted')).toBeNull();
+      expect(mockGetUserMedia).toHaveBeenCalled();
+    });
+
+    it('does not engage HardwarePrivacy kill switch on hidden tab when zero hardware feeds are active', () => {
+      window.localStorage.removeItem('privacy_optics_muted');
+
+      render(
+        <HardwarePrivacyProvider>
+          <FiresideVideoRecorder promptSpark={FIRESIDE_PROMPT_SPARKS[0]} />
+        </HardwarePrivacyProvider>
+      );
+
+      Object.defineProperty(document, 'hidden', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+
+      expect(window.localStorage.getItem('privacy_optics_muted')).toBeNull();
+
+      Object.defineProperty(document, 'hidden', {
+        value: false,
+        writable: true,
+        configurable: true,
+      });
     });
   });
 
