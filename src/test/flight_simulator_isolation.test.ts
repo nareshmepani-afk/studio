@@ -417,5 +417,32 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     const masterDominant = filterDominantSensoryAnchors(detectAnchors(masterWeaveSample));
     expect(masterDominant.map(a => a.type).sort()).toEqual(['aroma', 'soundscape', 'visual']);
   });
+
+  it('13. Teleprompter & PopoutTeleprompter Cadence Cue Tooltips (/ and //) & Free-Drag Viewport Invariants', () => {
+    const teleprompterPath = path.resolve(__dirname, '../components/studio/Teleprompter.tsx');
+    const teleprompterContent = fs.readFileSync(teleprompterPath, 'utf8');
+    const popoutPath = path.resolve(__dirname, '../components/studio/PopoutTeleprompter.tsx');
+    const popoutContent = fs.readFileSync(popoutPath, 'utf8');
+    const soloStagePath = path.resolve(__dirname, '../components/studio/SoloStage.tsx');
+    const soloStageContent = fs.readFileSync(soloStagePath, 'utf8');
+
+    // Verify single (/) and double (//) slash cadence cue attributes and floating portal tooltip in both components
+    for (const content of [teleprompterContent, popoutContent]) {
+      expect(content).toContain('data-slash-cue="double"');
+      expect(content).toContain('data-slash-cue="single"');
+      expect(content).toContain('data-prompter-tooltip-title="CADENCE CUE • DEEP BREATH ( // )"');
+      expect(content).toContain('data-prompter-tooltip-title="CADENCE CUE • SHORT BREATH ( / )"');
+      expect(content).toContain('Full sentence brake (~0.5s). Pause, breathe deeply, and reconnect eye contact with the camera lens.');
+      expect(content).toContain('Clause micro-pause (~0.2s). Take a gentle half-breath and let the phrase settle before continuing.');
+      expect(content).toContain('data-testid="teleprompter-cue-tooltip"');
+      expect(content).toContain('onMouseOver={handleScriptCueInspect}');
+      expect(content).toContain('onMouseLeave={handleScriptPointerLeave}');
+    }
+
+    // Verify SoloStage Teleprompter free-drag header and top-edge pull handle
+    expect(soloStageContent).toContain('data-testid="prompter-resize-top"');
+    expect(soloStageContent).toContain('handlePrompterDragStart');
+    expect(soloStageContent).toContain('Drag top bar to pull Teleprompter down or up (double-click to reset position)');
+  });
 });
 

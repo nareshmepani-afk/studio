@@ -296,4 +296,42 @@ describe('Teleprompter Component', () => {
     fireEvent.click(highlightBtn);
     expect(mockActions.setIsolateSentenceHighlight).toHaveBeenCalledWith(true);
   });
+
+  it('displays floating cadence cue tooltips when hovering over / and // breathing marks', () => {
+    mockUseStudioState.mockReturnValueOnce({
+      selectedTake: 'First clause, second clause. Next sentence.',
+      script: '',
+      isScrolling: false,
+      scrollSpeed: 1.0,
+      fontSize: 22,
+      isMirrored: false,
+      showBreathingMarks: true,
+      enablePunctuationBraking: true,
+      isolateSentenceHighlight: false,
+      actions: mockActions
+    });
+
+    const { container } = render(<Teleprompter />);
+
+    const singleSlashEl = container.querySelector('[data-slash-cue="single"]') as HTMLElement;
+    const doubleSlashEl = container.querySelector('[data-slash-cue="double"]') as HTMLElement;
+
+    expect(singleSlashEl).toBeTruthy();
+    expect(doubleSlashEl).toBeTruthy();
+    expect(singleSlashEl.getAttribute('title')).toContain('Short Breath');
+    expect(doubleSlashEl.getAttribute('title')).toContain('Deep Breath');
+
+    // Hover over single slash (/)
+    fireEvent.mouseOver(singleSlashEl);
+    const singleTooltip = screen.getByTestId('teleprompter-cue-tooltip');
+    expect(singleTooltip).toBeInTheDocument();
+    expect(singleTooltip).toHaveTextContent('CADENCE CUE • SHORT BREATH ( / )');
+    expect(singleTooltip).toHaveTextContent('Clause micro-pause (~0.2s)');
+
+    // Hover over double slash (//)
+    fireEvent.mouseOver(doubleSlashEl);
+    const doubleTooltip = screen.getByTestId('teleprompter-cue-tooltip');
+    expect(doubleTooltip).toHaveTextContent('CADENCE CUE • DEEP BREATH ( // )');
+    expect(doubleTooltip).toHaveTextContent('Full sentence brake (~0.5s)');
+  });
 });

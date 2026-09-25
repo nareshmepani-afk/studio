@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
@@ -29,35 +30,35 @@ const highlightSensoryAnchors = (text: string): string => {
   const soundRegex = new RegExp(`(<[^>]*>)|\\b(${soundPattern})\\b`, 'gi');
   processed = processed.replace(soundRegex, (match, tag, word) => {
     if (tag) return tag;
-    return `<span class="px-0.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold transition-all hover:bg-emerald-500/20" title="Sound Anchor">${word}</span>`;
+    return `<span data-sensory-cue="sound" data-prompter-tooltip-title="SENSORY ANCHOR • SOUND" data-prompter-tooltip-desc="Let this acoustic memory resonate in your vocal tone and pacing." data-prompter-tooltip-tone="emerald" class="px-0.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold transition-all hover:bg-emerald-500/20 cursor-help" title="Sound Anchor: Let this acoustic memory resonate in your vocal tone and pacing.">${word}</span>`;
   });
 
   // Aroma Anchors (Exclude matching inside HTML tags/attributes)
   const aromaRegex = new RegExp(`(<[^>]*>)|\\b(${aromaPattern})\\b`, 'gi');
   processed = processed.replace(aromaRegex, (match, tag, word) => {
     if (tag) return tag;
-    return `<span class="px-0.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold transition-all hover:bg-amber-500/20" title="Scent Anchor">${word}</span>`;
+    return `<span data-sensory-cue="aroma" data-prompter-tooltip-title="SENSORY ANCHOR • AROMA" data-prompter-tooltip-desc="Slow your cadence and breathe in gently as you evoke this scent." data-prompter-tooltip-tone="amber" class="px-0.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold transition-all hover:bg-amber-500/20 cursor-help" title="Scent Anchor: Slow your cadence and breathe in gently as you evoke this scent.">${word}</span>`;
   });
 
   // Visual/Texture Anchors (Exclude matching inside HTML tags/attributes)
   const visualRegex = new RegExp(`(<[^>]*>)|\\b(${visualPattern})\\b`, 'gi');
   processed = processed.replace(visualRegex, (match, tag, word) => {
     if (tag) return tag;
-    return `<span class="px-0.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20" title="Visual/Texture Anchor">${word}</span>`;
+    return `<span data-sensory-cue="visual" data-prompter-tooltip-title="SENSORY ANCHOR • VISUAL &amp; TEXTURE" data-prompter-tooltip-desc="Hold steady eye contact with the lens as you paint this visual detail." data-prompter-tooltip-tone="purple" class="px-0.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20 cursor-help" title="Visual/Texture Anchor: Hold steady eye contact with the lens as you paint this visual detail.">${word}</span>`;
   });
 
   // Double Slashes (//) with pulsing dot under it
   const doubleSlashRegex = new RegExp(`(<[^>]*>)|(\\s+//|//)`, 'g');
   processed = processed.replace(doubleSlashRegex, (match, tag) => {
     if (tag) return tag;
-    return ` <span class="relative inline-flex flex-col items-center justify-center mx-1.5 group select-none"><span class="text-sky-400 font-bold select-none cursor-help hover:text-sky-300 leading-none">//</span><span class="absolute -bottom-2.5 flex gap-1 items-center justify-center"><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s; animation-delay: 0.3s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span></span></span>`;
+    return ` <span data-slash-cue="double" data-prompter-tooltip-title="CADENCE CUE • DEEP BREATH ( // )" data-prompter-tooltip-desc="Full sentence brake (~0.5s). Pause, breathe deeply, and reconnect eye contact with the camera lens." data-prompter-tooltip-tone="sky" title="Cadence Cue ( // ): Deep Breath &amp; Full Sentence Pause (~0.5s) — Pause, breathe deeply, and reconnect eye contact with the lens." class="relative inline-flex flex-col items-center justify-center mx-1.5 px-1 py-0.5 rounded hover:bg-sky-500/15 group select-none cursor-help after:content-[''] after:absolute after:-inset-x-1 after:-top-1 after:-bottom-3"><span class="text-sky-400 font-bold select-none cursor-help group-hover:text-sky-300 leading-none">//</span><span class="absolute -bottom-2.5 flex gap-1 items-center justify-center cursor-help"><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s; animation-delay: 0.3s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span></span></span>`;
   });
 
   // Single Slashes (/) with pulsing dot under it
   const singleSlashRegex = new RegExp(`(<[^>]*>)|(\\s+/(?!/)|(?<!/)/(?!/))`, 'g');
   processed = processed.replace(singleSlashRegex, (match, tag) => {
     if (tag) return tag;
-    return ` <span class="relative inline-flex flex-col items-center justify-center mx-1 group select-none"><span class="text-emerald-400 font-bold select-none cursor-help hover:text-emerald-300 leading-none">/</span><span class="absolute -bottom-2.5 flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-emerald-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span></span></span>`;
+    return ` <span data-slash-cue="single" data-prompter-tooltip-title="CADENCE CUE • SHORT BREATH ( / )" data-prompter-tooltip-desc="Clause micro-pause (~0.2s). Take a gentle half-breath and let the phrase settle before continuing." data-prompter-tooltip-tone="emerald" title="Cadence Cue ( / ): Short Breath &amp; Clause Micro-Pause (~0.2s) — Take a gentle half-breath and let the phrase settle." class="relative inline-flex flex-col items-center justify-center mx-1 px-1 py-0.5 rounded hover:bg-emerald-500/15 group select-none cursor-help after:content-[''] after:absolute after:-inset-x-1 after:-top-1 after:-bottom-3"><span class="text-emerald-400 font-bold select-none cursor-help group-hover:text-emerald-300 leading-none">/</span><span class="absolute -bottom-2.5 flex items-center justify-center cursor-help"><span class="absolute w-2 h-2 rounded-full bg-emerald-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span></span></span>`;
   });
 
   return processed;
@@ -892,6 +893,49 @@ export const PopoutTeleprompter: React.FC = () => {
     return res;
   }, [paragraphs, showBreathingMarks]);
 
+  const [hoveredCueTooltip, setHoveredCueTooltip] = useState<{
+    title: string;
+    desc: string;
+    tone: 'emerald' | 'sky' | 'amber' | 'purple';
+    x: number;
+    y: number;
+    placeBelow: boolean;
+  } | null>(null);
+
+  const handleScriptCueInspect = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rawTarget = e.target as HTMLElement | null;
+    const cueEl = rawTarget?.closest?.('[data-prompter-tooltip-title]') as HTMLElement | null;
+    if (!cueEl) {
+      setHoveredCueTooltip((prev) => (prev ? null : prev));
+      return;
+    }
+
+    const title = cueEl.getAttribute('data-prompter-tooltip-title') || '';
+    const desc = cueEl.getAttribute('data-prompter-tooltip-desc') || '';
+    const tone = (cueEl.getAttribute('data-prompter-tooltip-tone') || 'emerald') as 'emerald' | 'sky' | 'amber' | 'purple';
+    const rect = cueEl.getBoundingClientRect();
+    const viewportW = typeof window !== 'undefined' ? (window.innerWidth || 1280) : 1280;
+    const rawCenterX = rect.width > 0 ? rect.left + rect.width / 2 : (e.clientX || 240);
+    const clampedX = Math.max(170, Math.min(viewportW - 170, rawCenterX));
+    const placeBelow = rect.top > 0 && rect.top < 110;
+    const anchorY = rect.height > 0
+      ? (placeBelow ? rect.bottom + 12 : rect.top - 10)
+      : Math.max(80, (e.clientY || 160) - 12);
+
+    setHoveredCueTooltip({
+      title,
+      desc,
+      tone,
+      x: clampedX,
+      y: anchorY,
+      placeBelow,
+    });
+  };
+
+  const handleScriptPointerLeave = () => {
+    setHoveredCueTooltip(null);
+  };
+
   return (
     <div 
       onClick={traceInteraction}
@@ -1157,6 +1201,9 @@ export const PopoutTeleprompter: React.FC = () => {
       <div 
         ref={containerRef}
         onScroll={handleScroll}
+        onMouseOver={handleScriptCueInspect}
+        onMouseLeave={handleScriptPointerLeave}
+        onClick={handleScriptCueInspect}
         onWheel={(e) => {
           if (isScrolling && e.deltaY < 0) {
             isDamped.current = true;
@@ -1342,6 +1389,52 @@ export const PopoutTeleprompter: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {typeof document !== 'undefined' && hoveredCueTooltip && createPortal(
+        <div
+          data-testid="teleprompter-cue-tooltip"
+          role="tooltip"
+          style={{
+            left: `${hoveredCueTooltip.x}px`,
+            top: `${hoveredCueTooltip.y}px`,
+            transform: hoveredCueTooltip.placeBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+          }}
+          className={cn(
+            "fixed z-[10050] pointer-events-none w-[310px] max-w-[90vw] rounded-xl border px-3.5 py-2.5 shadow-[0_16px_40px_rgba(0,0,0,0.92)] backdrop-blur-xl transition-opacity duration-150 select-none font-sans not-italic",
+            hoveredCueTooltip.tone === 'emerald' && "bg-slate-950/95 border-emerald-500/45 text-zinc-100",
+            hoveredCueTooltip.tone === 'sky' && "bg-slate-950/95 border-sky-500/45 text-zinc-100",
+            hoveredCueTooltip.tone === 'amber' && "bg-slate-950/95 border-amber-500/45 text-zinc-100",
+            hoveredCueTooltip.tone === 'purple' && "bg-slate-950/95 border-purple-500/45 text-zinc-100"
+          )}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className={cn(
+                "w-2 h-2 rounded-full shrink-0 animate-pulse",
+                hoveredCueTooltip.tone === 'emerald' && "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]",
+                hoveredCueTooltip.tone === 'sky' && "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.9)]",
+                hoveredCueTooltip.tone === 'amber' && "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]",
+                hoveredCueTooltip.tone === 'purple' && "bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.9)]"
+              )}
+            />
+            <span
+              className={cn(
+                "text-[10px] font-black uppercase tracking-widest",
+                hoveredCueTooltip.tone === 'emerald' && "text-emerald-400",
+                hoveredCueTooltip.tone === 'sky' && "text-sky-400",
+                hoveredCueTooltip.tone === 'amber' && "text-amber-400",
+                hoveredCueTooltip.tone === 'purple' && "text-purple-300"
+              )}
+            >
+              {hoveredCueTooltip.title}
+            </span>
+          </div>
+          <p className="text-[11px] font-sans not-italic leading-relaxed text-zinc-300">
+            {hoveredCueTooltip.desc}
+          </p>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
