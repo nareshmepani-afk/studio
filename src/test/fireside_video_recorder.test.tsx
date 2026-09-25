@@ -352,6 +352,33 @@ describe('MW-249: Fireside Video Memo & Master Curriculum Invariants', () => {
       expect(curriculumBadge).toBeInTheDocument();
     });
 
+    it('displays WhatsApp/FaceTime style subtext when Video Memo mode is active', () => {
+      const onModeChange = vi.fn();
+      render(<FiresideModeSwitch mode="video" onModeChange={onModeChange} />);
+      expect(screen.getByText(/WhatsApp\/FaceTime style:/i)).toBeInTheDocument();
+    });
+
+    it('renders 1-tap Enable Camera & Microphone button in viewfinder when idle and falls back on OverconstrainedError', async () => {
+      const overconstrained = new Error('Constraint not satisfied');
+      overconstrained.name = 'OverconstrainedError';
+      mockGetUserMedia.mockRejectedValueOnce(overconstrained);
+
+      render(<FiresideVideoRecorder promptSpark={FIRESIDE_PROMPT_SPARKS[0]} />);
+      const enableBtn = screen.getByTestId('enable-camera-preview-btn');
+      expect(enableBtn).toBeInTheDocument();
+
+      const recordButton = screen.getByRole('button', { name: /start video recording/i });
+      await act(async () => {
+        fireEvent.click(recordButton);
+      });
+
+      // Should have retried with relaxed mobile constraints and succeeded
+      expect(mockGetUserMedia).toHaveBeenCalledWith({
+        video: { facingMode: 'user' },
+        audio: true,
+      });
+    });
+
     it('synchronously invokes onActivePromptChange upon navigation in SingleCardPromptCarousel', () => {
       const onActivePromptChange = vi.fn();
       render(

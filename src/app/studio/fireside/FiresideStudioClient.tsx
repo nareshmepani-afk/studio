@@ -268,7 +268,23 @@ export default function FiresideStudioClient() {
 
   const handleModeChange = (newMode: FiresideMediaMode) => {
     setMediaMode(newMode);
+    setForceRecordMode(true);
+    if (!selectedSpark && activePromptSpark) {
+      setSelectedSpark(activePromptSpark);
+    }
     logEvent('FIRESIDE_MODE_SWITCHED', { mode: newMode });
+    setNotification(
+      newMode === 'video'
+        ? 'WhatsApp / FaceTime Video Memo Studio ready below.'
+        : 'Voice & Photos Studio ready below.'
+    );
+    setTimeout(() => {
+      if (newMode === 'video') {
+        videoRecorderRef.current?.scrollIntoView();
+      } else {
+        recorderRef.current?.scrollIntoView();
+      }
+    }, 80);
   };
 
   const handleResetAudioRecording = useCallback(() => {
@@ -558,7 +574,7 @@ export default function FiresideStudioClient() {
           <div className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
             <div className="text-center mb-4">
               <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
-                FaceTime Video Memo
+                WhatsApp / FaceTime Video Memo
               </p>
               <h2 className="text-lg sm:text-xl font-serif text-stone-200">
                 {selectedSpark ? `Record: ${selectedSpark.title}` : 'Record Your Video Memo'}

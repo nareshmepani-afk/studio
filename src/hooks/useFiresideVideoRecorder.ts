@@ -31,6 +31,8 @@ export interface UseFiresideVideoRecorderReturn {
   stopRecording: () => Promise<Blob | null>;
   resetRecording: () => void;
   retryPermission: () => Promise<void>;
+  enableCameraPreview: () => Promise<boolean>;
+  importVideoFile: (file: File) => void;
 }
 
 /**
@@ -168,21 +170,37 @@ export function useFiresideVideoRecorder(
     setVideoBlob(null);
 
     try {
-      // 1. Request Front-Facing Camera & Audio Stream
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: FIRESIDE_VIDEO_DEFAULTS.FACING_MODE,
-          width: { ideal: FIRESIDE_VIDEO_DEFAULTS.WIDTH, max: FIRESIDE_VIDEO_DEFAULTS.WIDTH },
-          height: { ideal: FIRESIDE_VIDEO_DEFAULTS.HEIGHT, max: FIRESIDE_VIDEO_DEFAULTS.HEIGHT },
-          frameRate: { ideal: FIRESIDE_VIDEO_DEFAULTS.FRAME_RATE, max: 30 },
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,
-        },
-      });
+      // 1. Request Front-Facing Camera & Audio Stream (with mobile constraint fallback)
+      let mediaStream: MediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: FIRESIDE_VIDEO_DEFAULTS.FACING_MODE,
+            width: { ideal: FIRESIDE_VIDEO_DEFAULTS.WIDTH, max: FIRESIDE_VIDEO_DEFAULTS.WIDTH },
+            height: { ideal: FIRESIDE_VIDEO_DEFAULTS.HEIGHT, max: FIRESIDE_VIDEO_DEFAULTS.HEIGHT },
+            frameRate: { ideal: FIRESIDE_VIDEO_DEFAULTS.FRAME_RATE, max: 30 },
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+          },
+        });
+      } catch (constraintErr: any) {
+        if (
+          constraintErr?.name === 'OverconstrainedError' ||
+          constraintErr?.name === 'ConstraintNotSatisfiedError' ||
+          constraintErr?.name === 'TypeError'
+        ) {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: true,
+          });
+        } else {
+          throw constraintErr;
+        }
+      }
 
       streamRef.current = mediaStream;
       setStream(mediaStream);
@@ -415,6 +433,69 @@ export function useFiresideVideoRecorder(
   }, [cleanupStream, releaseWakeLock, onReset]);
 
   // ---------------------------------------------------------------------------
+  // 1-Tap Camera & Microphone Preview Activation
+  // ---------------------------------------------------------------------------
+  const enableCameraPreview = useCallback(async (): Promise<boolean> => {
+    setErrorMessage(null);
+    setCameraPermissionState('prompt');
+    try {
+      let mediaStream: MediaStream;
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: FIRESIDE_VIDEO_DEFAULTS.FACING_MODE },
+          audio: true,
+        });
+      } catch {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+      }
+      streamRef.current = mediaStream;
+      setStream(mediaStream);
+      setCameraPermissionState('granted');
+      setStatus('idle');
+      return true;
+    } catch (err: any) {
+      cleanupStream();
+      if (
+        err?.name === 'NotAllowedError' ||
+        err?.name === 'PermissionDeniedError' ||
+        err?.message?.includes('Permission denied')
+      ) {
+        setCameraPermissionState('denied');
+        setErrorMessage('Camera or microphone access was denied. Tap "Use Phone Camera Directly" below to record immediately.');
+      } else {
+        setErrorMessage(err?.message || 'Unable to access camera.');
+      }
+      setStatus('error');
+      return false;
+    }
+  }, [cleanupStream]);
+
+  // ---------------------------------------------------------------------------
+  // 1-Tap Native Mobile Video Capture Import
+  // ---------------------------------------------------------------------------
+  const importVideoFile = useCallback(
+    (file: File) => {
+      cleanupStream();
+      setErrorMessage(null);
+      setCameraPermissionState('granted');
+      const finalUrl = URL.createObjectURL(file);
+      setVideoUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return finalUrl;
+      });
+      setVideoBlob(file);
+      const estDuration = durationSeconds > 0 ? durationSeconds : 15;
+      setDurationSeconds(estDuration);
+      setStatus('saved');
+      onRecordingComplete?.(file, estDuration);
+    },
+    [cleanupStream, durationSeconds, onRecordingComplete]
+  );
+
+  // ---------------------------------------------------------------------------
   // Retry Permission
   // ---------------------------------------------------------------------------
   const retryPermission = useCallback(async () => {
@@ -451,5 +532,7 @@ export function useFiresideVideoRecorder(
     stopRecording,
     resetRecording,
     retryPermission,
+    enableCameraPreview,
+    importVideoFile,
   };
 }

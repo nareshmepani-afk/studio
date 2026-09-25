@@ -30,6 +30,7 @@ export interface UseFiresideAudioRecorderReturn {
   stopRecording: () => Promise<Blob | null>;
   resetRecording: () => void;
   retryPermission: () => Promise<void>;
+  importAudioFile: (file: File) => void;
 }
 
 /**
@@ -224,15 +225,28 @@ export function useFiresideAudioRecorder(
     setAudioBlob(null);
 
     try {
-      // 1. Request Microphone Stream
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,
-        },
-      });
+      // 1. Request Microphone Stream (with mobile constraint fallback)
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+          },
+        });
+      } catch (constraintErr: any) {
+        if (
+          constraintErr?.name === 'OverconstrainedError' ||
+          constraintErr?.name === 'ConstraintNotSatisfiedError' ||
+          constraintErr?.name === 'TypeError'
+        ) {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } else {
+          throw constraintErr;
+        }
+      }
       streamRef.current = stream;
       setPermissionState('granted');
 
@@ -536,6 +550,28 @@ export function useFiresideAudioRecorder(
   }, [cleanupAudioPipeline, releaseWakeLock, audioUrl, onReset]);
 
   // ---------------------------------------------------------------------------
+  // 1-Tap Native Mobile Audio Capture Import
+  // ---------------------------------------------------------------------------
+  const importAudioFile = useCallback(
+    (file: File) => {
+      cleanupAudioPipeline();
+      setErrorMessage(null);
+      setPermissionState('granted');
+      const finalUrl = URL.createObjectURL(file);
+      setAudioUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return finalUrl;
+      });
+      setAudioBlob(file);
+      const estDuration = durationSeconds > 0 ? durationSeconds : 15;
+      setDurationSeconds(estDuration);
+      setStatus('saved');
+      onRecordingComplete?.(file, estDuration);
+    },
+    [cleanupAudioPipeline, durationSeconds, onRecordingComplete]
+  );
+
+  // ---------------------------------------------------------------------------
   // Retry Permission
   // ---------------------------------------------------------------------------
   const retryPermission = useCallback(async () => {
@@ -578,5 +614,6 @@ export function useFiresideAudioRecorder(
     stopRecording,
     resetRecording,
     retryPermission,
+    importAudioFile,
   };
 }

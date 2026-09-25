@@ -479,7 +479,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   const { isCleanView } = useStudioState();
   const effectiveHideAnchors = hideAnchors || isCleanView;
   const isSensoryViewActive = !isCleanView;
-  const anchors = useMemo(() => hideAnchors ? [] : detectAnchors(block.text), [block.text, hideAnchors]);
+  const anchors = useMemo(() => effectiveHideAnchors ? [] : filterDominantSensoryAnchors(detectAnchors(block.text)), [block.text, effectiveHideAnchors]);
 
   // 1. REFINED TOKENIZATION ENGINE (V4.6 - CODE RED STABILIZATION)
   const tokens = useMemo(() => {
@@ -742,107 +742,14 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     };
   }, [anchors]);
 
-  // Floating circular sparkle badges above inline words are hidden to preserve clean prose reading flow (Test 4 UX)
+  // Floating circular sparkle badges above inline words are hidden to preserve clean prose reading flow (Test 4 & Test 7 UX)
   const portalContent = useMemo(() => {
     return null;
   }, []);
 
   const pivotPortalContent = useMemo(() => {
-    if (effectiveHideAnchors || readOnly) return null;
-    return tokens.map((token: string, idx: number) => {
-      const clean = token.toLowerCase().trim().replace(/[^\w]/g, '');
-      const pivotInfo = getActivePivotInfo(clean);
-      if (!pivotInfo || clean === pivotInfo.root) return null;
-
-      const { root, tone } = pivotInfo;
-      const tokenId = `${block.id}-${idx}`;
-      const rect = rects[tokenId];
-      if (!rect || rect.width === 0) return null;
-
-      const toneStyles = {
-        poetic: {
-          border: 'border-sky-400',
-          text: 'text-sky-400',
-          hoverText: 'hover:text-slate-950',
-          hoverBg: 'hover:bg-sky-400',
-          shadow: 'shadow-[0_0_15px_rgba(56,189,248,0.5)]',
-          headerColor: 'text-sky-400',
-        },
-        grit: {
-          border: 'border-amber-400',
-          text: 'text-amber-400',
-          hoverText: 'hover:text-slate-950',
-          hoverBg: 'hover:bg-amber-400',
-          shadow: 'shadow-[0_0_15px_rgba(245,158,11,0.5)]',
-          headerColor: 'text-amber-400',
-        },
-        heritage: {
-          border: 'border-emerald-400',
-          text: 'text-emerald-400',
-          hoverText: 'hover:text-slate-950',
-          hoverBg: 'hover:bg-emerald-400',
-          shadow: 'shadow-[0_0_15px_rgba(16,185,129,0.5)]',
-          headerColor: 'text-emerald-400',
-        },
-      };
-
-      const styleConfig = toneStyles[tone];
-
-      return (
-        <Tooltip key={`pivot-${tokenId}`}>
-          <TooltipTrigger asChild>
-            <motion.button
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              style={{
-                position: 'fixed',
-                left: rect.left + (rect.width / 2),
-                top: rect.top - 24,
-                pointerEvents: 'auto'
-              }}
-              className={cn(
-                "w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 flex items-center justify-center border transition-all cursor-pointer",
-                styleConfig.border,
-                styleConfig.text,
-                styleConfig.shadow,
-                styleConfig.hoverBg,
-                styleConfig.hoverText
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                let startOffset = 0;
-                for (let i = 0; i < idx; i++) {
-                  startOffset += tokens[i].length;
-                }
-                const endOffset = startOffset + token.length;
-
-                setGhostWordInfo({
-                  word: token,
-                  start: startOffset,
-                  end: endOffset,
-                  tokenIndex: idx,
-                  rect: rect
-                });
-                setSuggestionsOpen(true);
-              }}
-            >
-              <Sparkles className="w-3 h-3" />
-            </motion.button>
-          </TooltipTrigger>
-          <TooltipContent className="bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md px-3 py-1.5 rounded-lg z-[10000]">
-            <div className="flex flex-col gap-0.5">
-              <span className={cn("text-[10px] font-black uppercase tracking-widest", styleConfig.headerColor)}>
-                Linguistic Pivot ({tone})
-              </span>
-              <span className="text-xs font-mono text-white">
-                "{token}" (pivoted from "{root}")
-              </span>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      );
-    });
-  }, [tokens, rects, block.id, readOnly]);
+    return null;
+  }, []);
 
   // Selection ghosting trigger button floating above the highlighted word
   const sparkleTriggerPortal = useMemo(() => {
@@ -1198,7 +1105,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
             let charOffset = 0;
             return tokens.map((token: string, idx: number) => {
               const clean = token.toLowerCase();
-              const isAnchor = !hideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
+              const isAnchor = !effectiveHideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
               
               const cleanCleaned = clean.trim().replace(/[^\w]/g, '');
               const pivotInfo = getActivePivotInfo(cleanCleaned);

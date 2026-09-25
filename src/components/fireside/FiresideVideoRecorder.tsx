@@ -75,6 +75,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const liveVideoRef = useRef<HTMLVideoElement>(null);
+    const nativeVideoInputRef = useRef<HTMLInputElement>(null);
 
     const {
       status,
@@ -92,6 +93,8 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       stopRecording,
       resetRecording,
       retryPermission,
+      enableCameraPreview,
+      importVideoFile,
     } = useFiresideVideoRecorder({
       onRecordingComplete,
       onReset,
@@ -131,6 +134,14 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
     const isSaved = status === 'saved';
     const isError = status === 'error' || cameraPermissionState === 'denied';
 
+    const handleNativeVideoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        importVideoFile(file);
+      }
+      e.target.value = '';
+    };
+
     return (
       <div
         ref={containerRef}
@@ -138,6 +149,17 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
         role="region"
         aria-label="Fireside Video Memo Studio"
       >
+        {/* Hidden 1-Tap Mobile Camera Capture Input (Bypasses Browser Site Permission Locks) */}
+        <input
+          ref={nativeVideoInputRef}
+          type="file"
+          accept="video/*"
+          capture="user"
+          onChange={handleNativeVideoCapture}
+          className="hidden"
+          aria-label="Capture video directly with phone camera"
+        />
+
         {/* Main Card Surface */}
         <div className="w-full bg-[#141414] border border-stone-800/80 rounded-3xl p-4 sm:p-6 shadow-2xl backdrop-blur-md flex flex-col items-center relative overflow-hidden">
           {/* Ambient Background Warmth */}
@@ -158,19 +180,31 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                 </h3>
                 <p className="text-xs sm:text-sm text-stone-400 mt-1.5 max-w-md leading-relaxed">
                   {errorMessage ||
-                    'To capture your video memo, your browser needs permission to access your front camera and microphone.'}
+                    'Tap a button below to enable your camera and microphone, or record directly with your phone camera in one tap.'}
                 </p>
               </div>
-              <button
-                type="button"
-                data-hotspot-id="HS_FIRESIDE_CAMERA_RETRY_BTN"
-                onClick={retryPermission}
-                style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-                className="w-full max-w-xs px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>Try Again</span>
-              </button>
+              <div className="w-full max-w-xs flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  data-hotspot-id="HS_FIRESIDE_CAMERA_RETRY_BTN"
+                  onClick={retryPermission}
+                  style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+                  className="w-full px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Tap to Enable Camera & Mic</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid="native-phone-video-capture-btn"
+                  onClick={() => nativeVideoInputRef.current?.click()}
+                  style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+                  className="w-full px-6 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
+                >
+                  <Video className="w-4 h-4 text-emerald-400" />
+                  <span>Use Phone Camera Directly (1-Tap)</span>
+                </button>
+              </div>
             </div>
           ) : isSaved && videoUrl ? (
             /* ================================================================= */
@@ -249,11 +283,20 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-500 space-y-2 p-6 text-center">
-                    <Video className="w-12 h-12 text-stone-600 animate-pulse" />
-                    <p className="text-xs text-stone-400 max-w-xs">
-                      Front camera will activate when you tap Record. Pinned prompt ensures natural eye line.
+                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-500 space-y-3 p-6 pt-20 text-center z-10">
+                    <Video className="w-10 h-10 text-amber-500/70 animate-pulse" />
+                    <p className="text-xs text-stone-300 max-w-xs">
+                      Tap below to enable your front camera & microphone, or tap Record to start immediately.
                     </p>
+                    <button
+                      type="button"
+                      data-testid="enable-camera-preview-btn"
+                      onClick={enableCameraPreview}
+                      className="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-sm"
+                    >
+                      <Video className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Enable Camera & Microphone</span>
+                    </button>
                   </div>
                 )}
 

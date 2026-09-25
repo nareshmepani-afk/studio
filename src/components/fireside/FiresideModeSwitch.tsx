@@ -129,7 +129,7 @@ export function FiresideModeSwitch({
       <p className="text-xs text-stone-400 text-center mt-2.5 px-2">
         {mode === 'audio'
           ? 'Armchair comfort: Record high-fidelity voice and digitise vintage family album prints.'
-          : 'FaceTime style: Intimate selfie video memo with the prompt pinned near the front camera.'}
+          : 'WhatsApp/FaceTime style: Intimate selfie video memo with the prompt pinned near the front camera.'}
       </p>
     </div>
   );

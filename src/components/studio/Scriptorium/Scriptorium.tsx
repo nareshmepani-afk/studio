@@ -30,7 +30,7 @@ import { StoryMoodTag } from '@/types/curriculum';
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
 import { StoryMoodDropdown } from '@/components/studio/StoryMoodDropdown';
-import { History, Lock, Unlock, BookOpen, RotateCcw, Eye, Headphones, Coffee, Sparkles } from 'lucide-react';
+import { History, Lock, Unlock, BookOpen, RotateCcw, Eye, EyeOff, Headphones, Coffee, Sparkles } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
   AlertDialog,
@@ -111,7 +111,7 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
   onRestorePreviousTake,
   onMoodChange,
 }, ref) => {
-  const { actions, detectedAnchors, activeDrawer } = useStudioState();
+  const { actions, detectedAnchors, activeDrawer, isCleanView } = useStudioState();
 
   // 1. THE HYDRATION-SAFE MIGRATION ENGINE
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -579,6 +579,23 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
             >
               <Coffee className="w-3.5 h-3.5 text-amber-400" />
               <span>Aroma ({sensoryCounts.aroma.count})</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="toggle-sensory-highlights-btn"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => actions.toggleCleanView()}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all cursor-pointer active:scale-95",
+                isCleanView
+                  ? "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                  : "bg-indigo-500/10 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20"
+              )}
+              title={isCleanView ? "Show inline sensory highlights in script" : "Hide inline sensory highlights for distraction-free reading"}
+            >
+              {isCleanView ? <Eye className="w-3.5 h-3.5 text-slate-400" /> : <EyeOff className="w-3.5 h-3.5 text-indigo-400" />}
+              <span>{isCleanView ? 'Show Highlights' : 'Hide Highlights'}</span>
             </button>
           </div>
         </div>

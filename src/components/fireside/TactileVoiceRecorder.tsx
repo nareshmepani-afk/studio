@@ -91,12 +91,22 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
     stopRecording,
     resetRecording,
     retryPermission,
+    importAudioFile,
   } = useFiresideAudioRecorder({
     onRecordingComplete,
     onReset,
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const nativeAudioInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNativeAudioCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      importAudioFile(file);
+    }
+    e.target.value = '';
+  };
 
   // Expose imperative handle for prompt-to-record autoscroll & execution handshake
   useImperativeHandle(ref, () => ({
@@ -240,6 +250,17 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
         </div>
       )}
 
+      {/* Hidden 1-Tap Mobile Audio Capture Input (Bypasses Browser Site Permission Locks) */}
+      <input
+        ref={nativeAudioInputRef}
+        type="file"
+        accept="audio/*"
+        capture
+        onChange={handleNativeAudioCapture}
+        className="hidden"
+        aria-label="Capture audio directly with phone microphone"
+      />
+
       {/* 2. Permission Denial Recovery Slate */}
       {permissionState === 'denied' && (
         <div className="w-full bg-amber-950/40 border border-amber-500/40 rounded-2xl p-5 text-center flex flex-col items-center gap-3 my-auto">
@@ -250,8 +271,29 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
             Microphone Access Blocked
           </h3>
           <p className="text-sm text-stone-300 leading-relaxed max-w-md">
-            Your device browser has blocked microphone permissions. To record your spoken memoir, please allow microphone access:
+            Tap a button below to enable your microphone or record directly with your phone in one tap:
           </p>
+          <div className="w-full max-w-xs flex flex-col gap-2.5 my-1">
+            <button
+              type="button"
+              onClick={retryPermission}
+              data-hotspot-id="HS_FIRESIDE_VOICE_RETRY_BTN"
+              className="w-full min-h-[56px] px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg hover:scale-102 active:scale-98 cursor-pointer"
+              aria-label="Retry microphone permissions"
+            >
+              <RefreshCw className="w-5 h-5" />
+              <span>Tap to Enable Microphone</span>
+            </button>
+            <button
+              type="button"
+              data-testid="native-phone-audio-capture-btn"
+              onClick={() => nativeAudioInputRef.current?.click()}
+              className="w-full min-h-[56px] px-6 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-200 font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-md active:scale-98 cursor-pointer"
+            >
+              <Mic className="w-5 h-5 text-emerald-400" />
+              <span>Record with Phone Mic Directly (1-Tap)</span>
+            </button>
+          </div>
           <div className="w-full bg-stone-900/80 rounded-xl p-3 text-left text-xs text-stone-300 space-y-2 border border-stone-800">
             <p className="flex items-center gap-1.5 font-medium text-amber-400">
               <Info className="w-3.5 h-3.5 shrink-0" />
@@ -260,16 +302,6 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
             <p>• <strong>iPhone / iPad (Safari):</strong> Tap the <code>aA</code> icon in the address bar ➔ Website Settings ➔ Set Microphone to <strong>Allow</strong>.</p>
             <p>• <strong>Android (Chrome):</strong> Tap the Lock icon beside the web address ➔ Permissions ➔ Turn Microphone <strong>On</strong>.</p>
           </div>
-          <button
-            type="button"
-            onClick={retryPermission}
-            data-hotspot-id="HS_FIRESIDE_VOICE_RETRY_BTN"
-            className="w-full max-w-xs mt-2 min-h-[56px] px-6 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-base transition-all flex items-center justify-center gap-2 shadow-lg hover:scale-102 active:scale-98"
-            aria-label="Retry microphone permissions"
-          >
-            <RefreshCw className="w-5 h-5" />
-            <span>I've Enabled It — Try Again</span>
-          </button>
         </div>
       )}
 
