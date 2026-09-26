@@ -67,10 +67,12 @@ export const FIRESIDE_VIDEO_DEFAULTS = {
   FRAME_RATE: 24,
   /** Front-facing camera for intimate selfie memo orientation */
   FACING_MODE: 'user' as const,
-  /** Bitrate cap at 2.0 Mbps to guarantee resilient mobile uploads */
-  MAX_BITRATE_BPS: 2_000_000,
-  /** 5-second chunk time-slicing for resilient IndexedDB ring buffering */
-  CHUNK_TIMESLICE_MS: 5000,
+  /** Fast-sync WhatsApp/FaceTime bitrate cap (900 kbps) for rapid cloud vault uploads */
+  MAX_BITRATE_BPS: 900_000,
+  /** 1-second chunk time-slicing for instant stop flushing and resilient IndexedDB buffering */
+  CHUNK_TIMESLICE_MS: 1000,
+  /** Minimum valid recording duration in seconds before saving to vault */
+  MIN_RECORDING_SECONDS: 3,
   /** Preferred modern container format */
   CONTAINER_MIME: 'video/webm;codecs=vp8,opus',
   /** Universal iOS/macOS Safari fallback container */

@@ -477,6 +477,79 @@ describe('MW-249: Fireside Video Memo & Master Curriculum Invariants', () => {
         configurable: true,
       });
     });
+
+    it('enforces the minimum 3-second recording rule (< 3s) by resetting to idle and showing a warning message without saving', async () => {
+      const onComplete = vi.fn();
+      let hookRef: any;
+      function MinDurationHarness() {
+        const recorder = useFiresideVideoRecorder({
+          minDurationSeconds: 3,
+          onRecordingComplete: onComplete,
+        });
+        hookRef = recorder;
+        return null;
+      }
+
+      render(<MinDurationHarness />);
+
+      await act(async () => {
+        await hookRef.startRecording();
+      });
+      expect(hookRef.status).toBe('recording');
+
+      // Stop immediately (< 3 seconds)
+      await act(async () => {
+        hookRef.stopRecording();
+      });
+
+      expect(hookRef.status).toBe('idle');
+      expect(hookRef.errorMessage).toMatch(/Recording too short to be saved/i);
+      expect(onComplete).not.toHaveBeenCalled();
+    });
+
+    it('stops recording on tab switch (mw:hardware-severed) and automatically restores camera preview on return', async () => {
+      let hookRef: any;
+      function TabSwitchHarness() {
+        const recorder = useFiresideVideoRecorder({ minDurationSeconds: 3 });
+        hookRef = recorder;
+        return null;
+      }
+
+      render(<TabSwitchHarness />);
+
+      await act(async () => {
+        await hookRef.startRecording();
+      });
+      expect(hookRef.status).toBe('recording');
+
+      // Simulate tab hidden & hardware severed
+      Object.defineProperty(document, 'hidden', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'));
+        window.dispatchEvent(new CustomEvent('mw:hardware-severed'));
+      });
+
+      expect(hookRef.status).toBe('idle');
+      expect(hookRef.stream).toBeNull();
+
+      // Simulate returning to tab
+      mockGetUserMedia.mockClear();
+      Object.defineProperty(document, 'hidden', {
+        value: false,
+        writable: true,
+        configurable: true,
+      });
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+
+      expect(mockGetUserMedia).toHaveBeenCalled();
+      expect(hookRef.stream).not.toBeNull();
+    });
   });
 
   // ---------------------------------------------------------------------------

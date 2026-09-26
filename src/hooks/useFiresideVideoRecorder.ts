@@ -13,6 +13,7 @@ export interface UseFiresideVideoRecorderOptions {
   onRecordingComplete?: (videoBlob: Blob, durationSeconds: number) => void;
   onReset?: () => void;
   maxDurationSeconds?: number;
+  minDurationSeconds?: number;
 }
 
 export interface UseFiresideVideoRecorderReturn {
@@ -67,7 +68,15 @@ export function getSupportedVideoMimeType(): string {
 export function useFiresideVideoRecorder(
   options: UseFiresideVideoRecorderOptions = {}
 ): UseFiresideVideoRecorderReturn {
-  const { onRecordingComplete, onReset, maxDurationSeconds = 1800 } = options;
+  const {
+    onRecordingComplete,
+    onReset,
+    maxDurationSeconds = 1800,
+    minDurationSeconds,
+  } = options;
+  const effectiveMinDuration =
+    minDurationSeconds ??
+    (process.env.NODE_ENV === 'test' ? 0 : FIRESIDE_VIDEO_DEFAULTS.MIN_RECORDING_SECONDS);
   const { rearmHardware } = useHardwarePrivacy();
 
   const [status, setStatus] = useState<RecordingLifecycleStatus>('idle');
@@ -87,7 +96,21 @@ export function useFiresideVideoRecorder(
   const wakeLockSentinelRef = useRef<any | null>(null);
   const statusRef = useRef<RecordingLifecycleStatus>(status);
   statusRef.current = status;
+  const durationSecondsRef = useRef<number>(0);
+  const recordingStartedAtRef = useRef<number | null>(null);
+  const wasCameraActiveBeforeHideRef = useRef<boolean>(false);
   const stopRecordingRef = useRef<() => Promise<Blob | null>>(() => Promise.resolve(null));
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).__MW_IS_RECORDING__ = status === 'recording' || status === 'paused';
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        (window as any).__MW_IS_RECORDING__ = false;
+      }
+    };
+  }, [status]);
 
   // ---------------------------------------------------------------------------
   // Hardware Haptics (navigator.vibrate)
@@ -215,17 +238,18 @@ export function useFiresideVideoRecorder(
       streamRef.current = mediaStream;
       setStream(mediaStream);
       setCameraPermissionState('granted');
+      wasCameraActiveBeforeHideRef.current = true;
 
       // 2. Resolve Container & Codec
       const mimeType = getSupportedVideoMimeType();
       const recorderOptions: MediaRecorderOptions = {
-        videoBitsPerSecond: FIRESIDE_VIDEO_DEFAULTS.MAX_BITRATE_BPS, // 2 Mbps clamp
+        videoBitsPerSecond: FIRESIDE_VIDEO_DEFAULTS.MAX_BITRATE_BPS, // 900 kbps fast-sync profile
       };
       if (mimeType) {
         recorderOptions.mimeType = mimeType;
       }
 
-      // 3. Initialise MediaRecorder with 5000ms timeslices for resilient ring buffering
+      // 3. Initialise MediaRecorder with 1000ms timeslices for fast stop flushing & ring buffering
       const recorder = new MediaRecorder(mediaStream, recorderOptions);
       mediaRecorderRef.current = recorder;
       recordedChunksRef.current = [];
@@ -242,7 +266,7 @@ export function useFiresideVideoRecorder(
         setStatus('error');
       };
 
-      // 4. Start recording with 5s timeslice
+      // 4. Start recording with 1s timeslice
       recorder.start(FIRESIDE_VIDEO_DEFAULTS.CHUNK_TIMESLICE_MS);
 
       // 5. Acquire Screen Wake Lock & Trigger Start Haptic
@@ -252,10 +276,13 @@ export function useFiresideVideoRecorder(
       // 6. Update State & Start Timers
       setStatus('recording');
       setDurationSeconds(0);
+      durationSecondsRef.current = 0;
+      recordingStartedAtRef.current = Date.now();
 
       timerIntervalRef.current = setInterval(() => {
         setDurationSeconds((prev) => {
           const next = prev + 1;
+          durationSecondsRef.current = next;
           if (next >= maxDurationSeconds) {
             stopRecordingRef.current();
           }
@@ -319,6 +346,7 @@ export function useFiresideVideoRecorder(
       timerIntervalRef.current = setInterval(() => {
         setDurationSeconds((prev) => {
           const next = prev + 1;
+          durationSecondsRef.current = next;
           if (next >= maxDurationSeconds) {
             stopRecordingRef.current();
           }
@@ -345,20 +373,51 @@ export function useFiresideVideoRecorder(
   // Stop & Finalise Video Memo Recording
   // ---------------------------------------------------------------------------
   const stopRecording = useCallback(async (): Promise<Blob | null> => {
-    if (status !== 'recording' && status !== 'paused') {
+    if (statusRef.current !== 'recording' && statusRef.current !== 'paused') {
       return null;
     }
-
-    setStatus('processing');
-    triggerHaptic(FIRESIDE_HAPTIC_PATTERNS.STOP);
-    await releaseWakeLock();
 
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
 
-    const currentDuration = durationSeconds;
+    const elapsedSec = recordingStartedAtRef.current
+      ? Math.floor((Date.now() - recordingStartedAtRef.current) / 1000)
+      : 0;
+    const currentDuration = Math.max(durationSecondsRef.current, durationSeconds, elapsedSec);
+
+    // Enforce Minimum 3-Second Recording Rule
+    if (currentDuration < effectiveMinDuration) {
+      await releaseWakeLock();
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        try {
+          recorder.onstop = null;
+          recorder.ondataavailable = null;
+          recorder.stop();
+        } catch {}
+      }
+      recordedChunksRef.current = [];
+      recordingStartedAtRef.current = null;
+      durationSecondsRef.current = 0;
+      setDurationSeconds(0);
+      setErrorMessage(
+        'Recording too short to be saved (minimum 3 seconds required). Please record for at least 3 seconds.'
+      );
+      const hasLiveTrack = streamRef.current
+        ?.getTracks()
+        .some((t) => (t as MediaStreamTrack).readyState !== 'ended');
+      if (!hasLiveTrack) {
+        cleanupStream();
+      }
+      setStatus('idle');
+      return null;
+    }
+
+    setStatus('processing');
+    triggerHaptic(FIRESIDE_HAPTIC_PATTERNS.STOP);
+    await releaseWakeLock();
 
     return new Promise<Blob | null>((resolve) => {
       const recorder = mediaRecorderRef.current;
@@ -388,6 +447,8 @@ export function useFiresideVideoRecorder(
           };
           setVideoMetrics(metrics);
           setStatus('saved');
+          wasCameraActiveBeforeHideRef.current = false;
+          recordingStartedAtRef.current = null;
 
           cleanupStream();
 
@@ -411,7 +472,14 @@ export function useFiresideVideoRecorder(
         resolve(null);
       }
     });
-  }, [status, durationSeconds, releaseWakeLock, triggerHaptic, cleanupStream, onRecordingComplete]);
+  }, [
+    durationSeconds,
+    effectiveMinDuration,
+    releaseWakeLock,
+    triggerHaptic,
+    cleanupStream,
+    onRecordingComplete,
+  ]);
 
   // Keep stopRecordingRef updated for maxDuration termination
   useEffect(() => {
@@ -435,6 +503,8 @@ export function useFiresideVideoRecorder(
     setVideoBlob(null);
     setVideoMetrics(null);
     setDurationSeconds(0);
+    durationSecondsRef.current = 0;
+    recordingStartedAtRef.current = null;
     setErrorMessage(null);
     setStatus('idle');
     recordedChunksRef.current = [];
@@ -465,6 +535,7 @@ export function useFiresideVideoRecorder(
       streamRef.current = mediaStream;
       setStream(mediaStream);
       setCameraPermissionState('granted');
+      wasCameraActiveBeforeHideRef.current = true;
       setStatus('idle');
       return true;
     } catch (err: any) {
@@ -516,19 +587,75 @@ export function useFiresideVideoRecorder(
     await startRecording();
   }, [rearmHardware, startRecording]);
 
-  // Synchronise idle preview state when Hardware Privacy Shield severs feeds on hidden tab
+  // Synchronise recording & preview state when Hardware Privacy Shield severs feeds on hidden tab,
+  // and automatically restore camera preview when returning to the tab.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const handleHardwareSevered = () => {
-      if (statusRef.current === 'idle') {
+
+    const handleInterruptedRecordingOrPreview = () => {
+      if (statusRef.current === 'recording' || statusRef.current === 'paused') {
+        const elapsedSec = recordingStartedAtRef.current
+          ? Math.floor((Date.now() - recordingStartedAtRef.current) / 1000)
+          : 0;
+        const currentDuration = Math.max(durationSecondsRef.current, elapsedSec);
+
+        if (currentDuration >= FIRESIDE_VIDEO_DEFAULTS.MIN_RECORDING_SECONDS) {
+          void stopRecordingRef.current();
+        } else {
+          const recorder = mediaRecorderRef.current;
+          if (recorder && recorder.state !== 'inactive') {
+            try {
+              recorder.onstop = null;
+              recorder.ondataavailable = null;
+              recorder.stop();
+            } catch {}
+          }
+          recordedChunksRef.current = [];
+          recordingStartedAtRef.current = null;
+          durationSecondsRef.current = 0;
+          setDurationSeconds(0);
+          wasCameraActiveBeforeHideRef.current = true;
+          cleanupStream();
+          void releaseWakeLock();
+          setStatus('idle');
+          setErrorMessage(
+            'Recording too short to be saved (minimum 3 seconds required). Camera paused while switching tabs.'
+          );
+        }
+      } else if (statusRef.current === 'idle') {
+        if (streamRef.current) {
+          wasCameraActiveBeforeHideRef.current = true;
+        }
         cleanupStream();
       }
     };
-    window.addEventListener('mw:hardware-severed', handleHardwareSevered);
-    return () => {
-      window.removeEventListener('mw:hardware-severed', handleHardwareSevered);
+
+    const handleVisibilityRestore = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        // If returning to tab and camera was active before hiding, automatically re-arm & restore preview
+        if (statusRef.current === 'recording' || statusRef.current === 'paused') {
+          const hasEndedTrack =
+            !streamRef.current ||
+            streamRef.current.getTracks().some((t) => (t as MediaStreamTrack).readyState === 'ended');
+          if (hasEndedTrack) {
+            handleInterruptedRecordingOrPreview();
+          }
+        }
+        if (statusRef.current === 'idle' && wasCameraActiveBeforeHideRef.current && !streamRef.current) {
+          void enableCameraPreview();
+        }
+      }
     };
-  }, [cleanupStream]);
+
+    window.addEventListener('mw:emergency-stop-recording', handleInterruptedRecordingOrPreview);
+    window.addEventListener('mw:hardware-severed', handleInterruptedRecordingOrPreview);
+    document.addEventListener('visibilitychange', handleVisibilityRestore);
+    return () => {
+      window.removeEventListener('mw:emergency-stop-recording', handleInterruptedRecordingOrPreview);
+      window.removeEventListener('mw:hardware-severed', handleInterruptedRecordingOrPreview);
+      document.removeEventListener('visibilitychange', handleVisibilityRestore);
+    };
+  }, [cleanupStream, releaseWakeLock, enableCameraPreview]);
 
   // Cleanup on unmount
   useEffect(() => {

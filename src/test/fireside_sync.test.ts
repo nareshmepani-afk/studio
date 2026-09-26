@@ -316,6 +316,43 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(savedPayload.sceneId).toBeNull();
       expect(Object.values(savedPayload).some((v) => v === undefined)).toBe(false);
     });
+
+    it('does not re-trigger executeSync in a 92% loop when onSyncSuccess is an inline callback that mutates parent state', async () => {
+      const { setDoc } = await import('firebase/firestore');
+      vi.mocked(setDoc).mockClear();
+      const fakeAudio = new Blob(['mock-audio-loop-guard'], { type: 'audio/webm' });
+      const syncSuccessSpy = vi.fn();
+
+      const { result, rerender } = renderHook(
+        ({ tick }) =>
+          useFiresideSync({
+            userId: 'test_user_loop_guard',
+            initialDraftId: 'draft_loop_guard',
+            activeLanguage: 'en',
+            audioBlob: fakeAudio,
+            audioDurationSeconds: 5,
+            onSyncSuccess: (id) => {
+              syncSuccessSpy(id, tick);
+            },
+          }),
+        { initialProps: { tick: 1 } }
+      );
+
+      await waitFor(() => {
+        expect(result.current.syncState).toBe('synced');
+      });
+
+      expect(result.current.progressPercent).toBe(100);
+      expect(syncSuccessSpy).toHaveBeenCalledTimes(1);
+
+      // Re-render with a fresh inline onSyncSuccess callback (simulating parent state update)
+      rerender({ tick: 2 });
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(result.current.syncState).toBe('synced');
+      expect(result.current.progressPercent).toBe(100);
+      expect(syncSuccessSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   // ---------------------------------------------------------------------------

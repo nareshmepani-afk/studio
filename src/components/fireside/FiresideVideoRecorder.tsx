@@ -145,6 +145,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
     return (
       <div
         ref={containerRef}
+        data-recording={isRecording || isPaused ? 'true' : 'false'}
         className={`w-full max-w-xl mx-auto flex flex-col items-center select-none ${className}`}
         role="region"
         aria-label="Fireside Video Memo Studio"
@@ -342,6 +343,18 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
 
               {/* RECORDING CONTROLS CONTAINER */}
               <div className="w-full flex flex-col items-center space-y-4 pt-1">
+                {/* Warning Banner for < 3s Short Recordings or Tab-Switch Pause */}
+                {errorMessage && (
+                  <div
+                    data-testid="video-recorder-warning-banner"
+                    role="alert"
+                    className="w-full px-4 py-2.5 rounded-xl bg-amber-950/70 border border-amber-500/60 text-amber-200 text-xs sm:text-sm font-medium text-center flex items-center justify-center gap-2 animate-in fade-in duration-200 shadow-md"
+                  >
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
+
                 {/* Story Resonance Mood Selector (Ticket #263 / Rule 26 & 39) */}
                 {onMoodChange && (
                   <div className="w-full mb-1 flex flex-col items-center">

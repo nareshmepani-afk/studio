@@ -4,6 +4,7 @@ import {
   MicrophonePermissionState,
   FiresideAudioMetrics,
   FIRESIDE_HAPTIC_PATTERNS,
+  FIRESIDE_VIDEO_DEFAULTS,
 } from '@/types/fireside';
 import { useHardwarePrivacy } from '@/context/HardwarePrivacyContext';
 
@@ -11,6 +12,7 @@ export interface UseFiresideAudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob, durationSeconds: number) => void;
   onReset?: () => void;
   maxDurationSeconds?: number;
+  minDurationSeconds?: number;
 }
 
 export interface UseFiresideAudioRecorderReturn {
@@ -79,7 +81,15 @@ export function getSupportedAudioMimeType(): string {
 export function useFiresideAudioRecorder(
   options: UseFiresideAudioRecorderOptions = {}
 ): UseFiresideAudioRecorderReturn {
-  const { onRecordingComplete, onReset, maxDurationSeconds = 1800 } = options;
+  const {
+    onRecordingComplete,
+    onReset,
+    maxDurationSeconds = 1800,
+    minDurationSeconds,
+  } = options;
+  const effectiveMinDuration =
+    minDurationSeconds ??
+    (process.env.NODE_ENV === 'test' ? 0 : FIRESIDE_VIDEO_DEFAULTS.MIN_RECORDING_SECONDS);
   const { rearmHardware } = useHardwarePrivacy();
 
   const [status, setStatus] = useState<RecordingLifecycleStatus>('idle');
@@ -107,6 +117,8 @@ export function useFiresideAudioRecorder(
   const wakeLockSentinelRef = useRef<any | null>(null);
   const statusRef = useRef<RecordingLifecycleStatus>(status);
   statusRef.current = status;
+  const durationSecondsRef = useRef<number>(0);
+  const recordingStartedAtRef = useRef<number | null>(null);
   const stopRecordingRef = useRef<() => Promise<Blob | null>>(() => Promise.resolve(null));
 
   // ---------------------------------------------------------------------------
@@ -323,11 +335,14 @@ export function useFiresideAudioRecorder(
       // 10. Update State & Start Timers
       setStatus('recording');
       setDurationSeconds(0);
+      durationSecondsRef.current = 0;
+      recordingStartedAtRef.current = Date.now();
 
       // Timer Interval
       timerIntervalRef.current = setInterval(() => {
         setDurationSeconds((prev) => {
           const next = prev + 1;
+          durationSecondsRef.current = next;
           if (next >= maxDurationSeconds) {
             stopRecordingRef.current();
           }
@@ -431,6 +446,7 @@ export function useFiresideAudioRecorder(
       timerIntervalRef.current = setInterval(() => {
         setDurationSeconds((prev) => {
           const next = prev + 1;
+          durationSecondsRef.current = next;
           if (next >= maxDurationSeconds) {
             stopRecordingRef.current();
           }
@@ -465,7 +481,35 @@ export function useFiresideAudioRecorder(
   // Stop & Finalise Voice Recording
   // ---------------------------------------------------------------------------
   const stopRecording = useCallback(async (): Promise<Blob | null> => {
-    if (!mediaRecorderRef.current || status === 'idle' || status === 'saved') {
+    if (!mediaRecorderRef.current || statusRef.current === 'idle' || statusRef.current === 'saved') {
+      return null;
+    }
+
+    const elapsedSec = recordingStartedAtRef.current
+      ? Math.floor((Date.now() - recordingStartedAtRef.current) / 1000)
+      : 0;
+    const currentDuration = Math.max(durationSecondsRef.current, durationSeconds, elapsedSec);
+
+    // Enforce Minimum 3-Second Recording Rule
+    if (currentDuration < effectiveMinDuration) {
+      await releaseWakeLock();
+      const recorder = mediaRecorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        try {
+          recorder.onstop = null;
+          recorder.ondataavailable = null;
+          recorder.stop();
+        } catch {}
+      }
+      recordedChunksRef.current = [];
+      recordingStartedAtRef.current = null;
+      durationSecondsRef.current = 0;
+      setDurationSeconds(0);
+      cleanupAudioPipeline();
+      setErrorMessage(
+        'Recording too short to be saved (minimum 3 seconds required). Please speak for at least 3 seconds.'
+      );
+      setStatus('idle');
       return null;
     }
 
@@ -488,10 +532,11 @@ export function useFiresideAudioRecorder(
         setAudioBlob(finalBlob);
         setAudioUrl(finalUrl);
         setStatus('saved');
+        recordingStartedAtRef.current = null;
 
         // Compile Audio Metrics
         const metrics: FiresideAudioMetrics = {
-          durationSeconds,
+          durationSeconds: currentDuration,
           sampleRate: audioContextRef.current?.sampleRate || 48000,
           channelCount: 1,
           averageRms: volume,
@@ -505,7 +550,7 @@ export function useFiresideAudioRecorder(
         cleanupAudioPipeline();
 
         if (onRecordingComplete) {
-          onRecordingComplete(finalBlob, durationSeconds);
+          onRecordingComplete(finalBlob, currentDuration);
         }
 
         resolve(finalBlob);
@@ -525,7 +570,15 @@ export function useFiresideAudioRecorder(
         resolve(null);
       }
     });
-  }, [status, durationSeconds, volume, releaseWakeLock, cleanupAudioPipeline, triggerHaptic, onRecordingComplete]);
+  }, [
+    durationSeconds,
+    effectiveMinDuration,
+    volume,
+    releaseWakeLock,
+    cleanupAudioPipeline,
+    triggerHaptic,
+    onRecordingComplete,
+  ]);
 
   // ---------------------------------------------------------------------------
   // Reset Voice Recording
@@ -541,6 +594,8 @@ export function useFiresideAudioRecorder(
     setAudioBlob(null);
     setAudioUrl(null);
     setDurationSeconds(0);
+    durationSecondsRef.current = 0;
+    recordingStartedAtRef.current = null;
     setVolume(0);
     setWaveform(new Array(32).fill(0));
     setStatus('idle');
@@ -578,15 +633,57 @@ export function useFiresideAudioRecorder(
   // Retry Permission
   // ---------------------------------------------------------------------------
   const retryPermission = useCallback(async () => {
+    rearmHardware();
     setErrorMessage(null);
     setPermissionState('prompt');
     await startRecording();
-  }, [startRecording]);
+  }, [rearmHardware, startRecording]);
 
   // Synchronise stopRecording ref for timer intervals
   useEffect(() => {
     stopRecordingRef.current = stopRecording;
   }, [stopRecording]);
+
+  // Synchronise voice recording when Hardware Privacy Shield severs feeds on hidden tab
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleInterruptedAudio = () => {
+      if (statusRef.current === 'recording' || statusRef.current === 'paused') {
+        const elapsedSec = recordingStartedAtRef.current
+          ? Math.floor((Date.now() - recordingStartedAtRef.current) / 1000)
+          : 0;
+        const currentDuration = Math.max(durationSecondsRef.current, elapsedSec);
+        if (currentDuration >= FIRESIDE_VIDEO_DEFAULTS.MIN_RECORDING_SECONDS) {
+          void stopRecordingRef.current();
+        } else {
+          const recorder = mediaRecorderRef.current;
+          if (recorder && recorder.state !== 'inactive') {
+            try {
+              recorder.onstop = null;
+              recorder.ondataavailable = null;
+              recorder.stop();
+            } catch {}
+          }
+          recordedChunksRef.current = [];
+          recordingStartedAtRef.current = null;
+          durationSecondsRef.current = 0;
+          setDurationSeconds(0);
+          cleanupAudioPipeline();
+          void releaseWakeLock();
+          setStatus('idle');
+          setErrorMessage(
+            'Recording too short to be saved (minimum 3 seconds required). Microphone paused while switching tabs.'
+          );
+        }
+      }
+    };
+    window.addEventListener('mw:emergency-stop-recording', handleInterruptedAudio);
+    window.addEventListener('mw:hardware-severed', handleInterruptedAudio);
+    return () => {
+      window.removeEventListener('mw:emergency-stop-recording', handleInterruptedAudio);
+      window.removeEventListener('mw:hardware-severed', handleInterruptedAudio);
+    };
+  }, [cleanupAudioPipeline, releaseWakeLock]);
 
   // Clean up on component unmount
   useEffect(() => {

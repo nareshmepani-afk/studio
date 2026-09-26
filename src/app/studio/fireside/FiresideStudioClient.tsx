@@ -240,12 +240,13 @@ export default function FiresideStudioClient() {
     }
   }, [initialLangParam]);
 
-  // Auto-dismiss toast when viewport reaches #fireside-active-studio hyperlink position
+  // Auto-dismiss toast when viewport reaches active studio / Heirloom Photo Digitisation hyperlink position
   useEffect(() => {
     if (!notification || typeof window === 'undefined') return;
 
     const isStudioAtTargetPosition = () => {
-      const studioEl = document.getElementById('fireside-active-studio');
+      const targetId = mediaMode === 'audio' ? 'album-photo-capture-tray' : 'fireside-active-studio';
+      const studioEl = document.getElementById(targetId) || document.getElementById('fireside-active-studio');
       if (!studioEl) return false;
       const rect = studioEl.getBoundingClientRect();
       const vh = window.innerHeight || 800;
@@ -257,7 +258,7 @@ export default function FiresideStudioClient() {
       canDismissOnScroll = true;
     }, 250);
 
-    // If #fireside-active-studio is already at the target position after smooth scroll settles, auto-dismiss
+    // If target studio anchor is already at the target position after smooth scroll settles, auto-dismiss
     const settledPositionTimer = setTimeout(() => {
       if (isStudioAtTargetPosition()) {
         setNotification(null);
@@ -281,7 +282,7 @@ export default function FiresideStudioClient() {
       clearTimeout(fallbackTimer);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [notification]);
+  }, [notification, mediaMode]);
 
   const handleActivePromptChange = useCallback((spark: FiresidePromptSpark) => {
     setActivePromptSpark((prev) => {
@@ -353,13 +354,15 @@ export default function FiresideStudioClient() {
     setNotification(
       newMode === 'video'
         ? 'WhatsApp / FaceTime Video Memo Studio ready below.'
-        : 'Voice & Photos Studio ready below.'
+        : 'Heirloom Photo Digitisation & Voice Studio ready below.'
     );
     setTimeout(() => {
       if (newMode === 'video' && videoRecorderRef.current) {
         videoRecorderRef.current.scrollIntoView();
-      } else if (newMode === 'audio' && recorderRef.current) {
-        recorderRef.current.scrollIntoView();
+      } else if (newMode === 'audio' && photoTrayRef.current) {
+        photoTrayRef.current.scrollIntoView();
+      } else if (newMode === 'audio') {
+        document.getElementById('album-photo-capture-tray')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -715,7 +718,7 @@ export default function FiresideStudioClient() {
               </p>
             </div>
             <a
-              href="#fireside-active-studio"
+              href={mediaMode === 'audio' ? '#album-photo-capture-tray' : '#fireside-active-studio'}
               data-testid="toast-studio-jump-link"
               onClick={(e) => {
                 e.preventDefault();
@@ -724,8 +727,10 @@ export default function FiresideStudioClient() {
                 setTimeout(() => {
                   if (mediaMode === 'video' && videoRecorderRef.current) {
                     videoRecorderRef.current.scrollIntoView();
-                  } else if (mediaMode === 'audio' && recorderRef.current) {
-                    recorderRef.current.scrollIntoView();
+                  } else if (mediaMode === 'audio' && photoTrayRef.current) {
+                    photoTrayRef.current.scrollIntoView();
+                  } else if (mediaMode === 'audio') {
+                    document.getElementById('album-photo-capture-tray')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   } else {
                     document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }

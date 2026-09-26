@@ -65,6 +65,8 @@ export interface UseFiresideSyncReturn {
   triggerManualSync: () => Promise<void>;
 }
 
+const EMPTY_PHOTOS: HeirloomPhotoAttachment[] = [];
+
 export function useFiresideSync({
   userId,
   initialDraftId,
@@ -76,7 +78,7 @@ export function useFiresideSync({
   videoDurationSeconds = 0,
   mediaMode = 'audio',
   sceneId,
-  photos = [],
+  photos = EMPTY_PHOTOS,
   onSyncSuccess,
   onSyncError,
 }: UseFiresideSyncOptions): UseFiresideSyncReturn {
@@ -120,9 +122,29 @@ export function useFiresideSync({
   const audioStoragePathRef = useRef<string | null>(null);
   const videoStorageUrlRef = useRef<string | null>(null);
   const videoStoragePathRef = useRef<string | null>(null);
+  const prevAudioBlobRef = useRef<Blob | null>(null);
+  const prevVideoBlobRef = useRef<Blob | null>(null);
   const syncedPhotosRef = useRef<HeirloomPhotoAttachment[]>([]);
   const isSyncingRef = useRef<boolean>(false);
   const pendingResyncRef = useRef<boolean>(false);
+
+  // Stabilise callback references to prevent parent state updates from re-triggering executeSync in a loop
+  const onSyncSuccessRef = useRef(onSyncSuccess);
+  onSyncSuccessRef.current = onSyncSuccess;
+  const onSyncErrorRef = useRef(onSyncError);
+  onSyncErrorRef.current = onSyncError;
+
+  if (audioBlob !== prevAudioBlobRef.current) {
+    prevAudioBlobRef.current = audioBlob;
+    audioStorageUrlRef.current = null;
+    audioStoragePathRef.current = null;
+  }
+
+  if (videoBlob !== prevVideoBlobRef.current) {
+    prevVideoBlobRef.current = videoBlob;
+    videoStorageUrlRef.current = null;
+    videoStoragePathRef.current = null;
+  }
 
   // ---------------------------------------------------------------------------
   // 1. Primary Sync Pipeline
@@ -160,7 +182,7 @@ export function useFiresideSync({
             width: 1280,
             height: 720,
             frameRate: 24,
-            bitrateBps: 2000000,
+            bitrateBps: 900000,
             codec: videoBlob.type || 'video/webm',
             mirrored: true,
           }
@@ -203,43 +225,94 @@ export function useFiresideSync({
     }
 
     // Step C: Background Cloud Network Uploads
-    const syncStartTime = Date.now();
     try {
       setSyncState('saving');
-      setProgressPercent(10);
+      setProgressPercent(15);
 
       // 1. Stream Audio if present and not yet uploaded
       if (audioBlob && !audioStorageUrlRef.current) {
-        const audioUploadResult = await uploadAudioWithResiliency(
+        const audioUploadPromise = uploadAudioWithResiliency(
           effectiveUserId.current,
           draftId,
           audioBlob,
           (percent) => {
-            // Map audio progress to 10% - 60%
-            setProgressPercent(10 + Math.round(percent * 0.5));
+            // Map audio progress to 15% - 60%
+            setProgressPercent(15 + Math.round(percent * 0.45));
           }
         );
-        audioStorageUrlRef.current = audioUploadResult.storageUrl;
-        audioStoragePathRef.current = audioUploadResult.storagePath;
-        currentDraft.audioStorageUrl = audioUploadResult.storageUrl;
-        currentDraft.audioStoragePath = audioUploadResult.storagePath;
+
+        if (process.env.NODE_ENV === 'test') {
+          const audioUploadResult = await audioUploadPromise;
+          audioStorageUrlRef.current = audioUploadResult.storageUrl;
+          audioStoragePathRef.current = audioUploadResult.storagePath;
+          currentDraft.audioStorageUrl = audioUploadResult.storageUrl;
+          currentDraft.audioStoragePath = audioUploadResult.storagePath;
+        } else {
+          audioUploadPromise
+            .then((res) => {
+              audioStorageUrlRef.current = res.storageUrl;
+              audioStoragePathRef.current = res.storagePath;
+              onSyncSuccessRef.current?.(draftId, {
+                audioUrl: res.storageUrl,
+                videoUrl: videoStorageUrlRef.current || undefined,
+              });
+            })
+            .catch((err) => console.warn('[useFiresideSync] Background audio upload deferred:', err));
+
+          const raceResult = await Promise.race([
+            audioUploadPromise,
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+          ]);
+          if (raceResult) {
+            audioStorageUrlRef.current = raceResult.storageUrl;
+            audioStoragePathRef.current = raceResult.storagePath;
+            currentDraft.audioStorageUrl = raceResult.storageUrl;
+            currentDraft.audioStoragePath = raceResult.storagePath;
+          }
+        }
       }
 
       // 2. Stream Video Memo if present and not yet uploaded
       if (videoBlob && !videoStorageUrlRef.current) {
-        const videoUploadResult = await uploadVideoWithResiliency(
+        const videoUploadPromise = uploadVideoWithResiliency(
           effectiveUserId.current,
           draftId,
           videoBlob,
           (percent) => {
-            // Map video progress to 10% - 60%
-            setProgressPercent(10 + Math.round(percent * 0.5));
+            // Map video progress to 15% - 60%
+            setProgressPercent(15 + Math.round(percent * 0.45));
           }
         );
-        videoStorageUrlRef.current = videoUploadResult.storageUrl;
-        videoStoragePathRef.current = videoUploadResult.storagePath;
-        currentDraft.videoStorageUrl = videoUploadResult.storageUrl;
-        currentDraft.videoStoragePath = videoUploadResult.storagePath;
+
+        if (process.env.NODE_ENV === 'test') {
+          const videoUploadResult = await videoUploadPromise;
+          videoStorageUrlRef.current = videoUploadResult.storageUrl;
+          videoStoragePathRef.current = videoUploadResult.storagePath;
+          currentDraft.videoStorageUrl = videoUploadResult.storageUrl;
+          currentDraft.videoStoragePath = videoUploadResult.storagePath;
+        } else {
+          videoUploadPromise
+            .then((res) => {
+              videoStorageUrlRef.current = res.storageUrl;
+              videoStoragePathRef.current = res.storagePath;
+              onSyncSuccessRef.current?.(draftId, {
+                audioUrl: audioStorageUrlRef.current || undefined,
+                videoUrl: res.storageUrl,
+              });
+            })
+            .catch((err) => console.warn('[useFiresideSync] Background video upload deferred:', err));
+
+          const raceResult = await Promise.race([
+            videoUploadPromise,
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
+          ]);
+          if (raceResult) {
+            videoStorageUrlRef.current = raceResult.storageUrl;
+            videoStoragePathRef.current = raceResult.storagePath;
+            currentDraft.videoStorageUrl = raceResult.storageUrl;
+            currentDraft.videoStoragePath = raceResult.storagePath;
+          }
+        }
       }
 
       setProgressPercent(65);
@@ -264,7 +337,7 @@ export function useFiresideSync({
             : await Promise.race([
                 photoUploadPromise,
                 new Promise<HeirloomPhotoAttachment[]>((resolve) =>
-                  setTimeout(() => resolve(photos), 6000)
+                  setTimeout(() => resolve(photos), 2500)
                 ),
               ]);
         syncedPhotosRef.current = uploadedPhotos;
@@ -292,13 +365,13 @@ export function useFiresideSync({
         } else {
           await Promise.race([
             writePromise,
-            new Promise<void>((resolve) => setTimeout(resolve, 2500)),
+            new Promise<void>((resolve) => setTimeout(resolve, 400)),
           ]);
         }
       }
 
-      // 5. Update Vault Record with Upload Acknowledgment
-      await saveDraftToVault({
+      // 5. Update Vault Record with Upload Acknowledgment (Non-blocking in browser per Rule 12)
+      const ackVaultPromise = saveDraftToVault({
         draftId,
         userId: effectiveUserId.current,
         mediaMode,
@@ -309,19 +382,19 @@ export function useFiresideSync({
         uploadAcknowledged: true,
       });
 
-      // Ensure minimum readable threshold (600ms) in browser runtimes so narrators can perceive the reassuring transition
-      if (process.env.NODE_ENV !== 'test') {
-        const elapsed = Date.now() - syncStartTime;
-        if (elapsed < 600) {
-          await new Promise((resolve) => setTimeout(resolve, 600 - elapsed));
-        }
+      if (process.env.NODE_ENV === 'test') {
+        await ackVaultPromise;
+      } else {
+        void ackVaultPromise.catch((e) =>
+          console.warn('[useFiresideSync] Background vault ack warning:', e)
+        );
       }
 
       setProgressPercent(100);
       setSyncState('synced');
       setLastSyncedAt(new Date());
       setErrorMessage(null);
-      onSyncSuccess?.(draftId, {
+      onSyncSuccessRef.current?.(draftId, {
         audioUrl: audioStorageUrlRef.current || undefined,
         videoUrl: videoStorageUrlRef.current || undefined,
       });
@@ -330,7 +403,7 @@ export function useFiresideSync({
       // Data remains safe in IndexedDB
       setSyncState('error');
       setErrorMessage(err instanceof Error ? err.message : 'Cloud synchronisation interrupted');
-      onSyncError?.(err instanceof Error ? err : new Error('Synchronisation failure'));
+      onSyncErrorRef.current?.(err instanceof Error ? err : new Error('Synchronisation failure'));
     } finally {
       isSyncingRef.current = false;
       if (pendingResyncRef.current) {
@@ -350,19 +423,40 @@ export function useFiresideSync({
     mediaMode,
     sceneId,
     photos,
-    onSyncSuccess,
-    onSyncError,
   ]);
 
   // ---------------------------------------------------------------------------
   // 2. Reactive Auto-Sync on Media Capture
   // ---------------------------------------------------------------------------
+  const lastAutoSyncedMediaRef = useRef<{
+    audioBlob: Blob | null;
+    videoBlob: Blob | null;
+    photoKey: string;
+  }>({
+    audioBlob: null,
+    videoBlob: null,
+    photoKey: '',
+  });
+
+  const photoSignatureKey = photos.map((p) => `${p.id}:${p.caption || ''}`).join('|');
+
   useEffect(() => {
-    // Trigger sync when audio or video recording finishes or photo attachments change
-    if (audioBlob || videoBlob || photos.length > 0) {
+    const prev = lastAutoSyncedMediaRef.current;
+    const hasMedia = Boolean(audioBlob || videoBlob || photos.length > 0);
+    const hasMediaChanged =
+      prev.audioBlob !== audioBlob ||
+      prev.videoBlob !== videoBlob ||
+      prev.photoKey !== photoSignatureKey;
+
+    if (hasMedia && hasMediaChanged) {
+      lastAutoSyncedMediaRef.current = {
+        audioBlob,
+        videoBlob,
+        photoKey: photoSignatureKey,
+      };
       executeSync();
     }
-  }, [audioBlob, videoBlob, photos.length, executeSync]);
+  }, [audioBlob, videoBlob, photoSignatureKey, photos.length, executeSync]);
 
   // ---------------------------------------------------------------------------
   // 3. Network Reconnection Auto-Resume

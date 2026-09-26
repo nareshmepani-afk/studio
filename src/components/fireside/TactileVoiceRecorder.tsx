@@ -218,6 +218,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
     <div
       ref={containerRef}
       id="fireside-voice-recorder"
+      data-recording={status === 'recording' || status === 'paused' ? 'true' : 'false'}
       className={`w-full max-w-xl mx-auto rounded-3xl bg-[#171717] border border-stone-800 shadow-2xl p-5 sm:p-7 flex flex-col items-center select-none ${className}`}
       style={{ minHeight: '340px' }}
     >
