@@ -19,7 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
-import { useCurriculumVault, StoryMoodTag, isSceneCompleted } from '@/hooks/useCurriculumVault';
+import { useCurriculumVault, StoryMoodTag, isSceneCompleted, resolveEditingAuthority, EditingAuthority } from '@/hooks/useCurriculumVault';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
 import { FiresideModeSwitch, FIRESIDE_MODE_STORAGE_KEY } from '@/components/fireside/FiresideModeSwitch';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
@@ -155,8 +155,18 @@ export default function FiresideStudioClient() {
 
   const activeSceneMemory = getSceneMemory(effectiveSceneId);
   const activeMood = activeSceneMemory?.moodTag;
-  const hasCompletedReel = isSceneCompleted(activeSceneMemory);
-  const isCompleted = hasCompletedReel && !forceRecordMode && !isReviewingTake;
+  const activeEditingAuthority: EditingAuthority = resolveEditingAuthority(activeSceneMemory);
+  const isDesktopLocked = activeEditingAuthority === 'desktop_locked';
+  const hasCompletedReel = isSceneCompleted(activeSceneMemory) || isDesktopLocked;
+  const isCompleted = hasCompletedReel && (!forceRecordMode || isDesktopLocked) && !isReviewingTake;
+
+  const resolveSceneAuthority = useCallback(
+    (sceneId?: string): EditingAuthority => {
+      if (!sceneId) return 'fireside_flexible';
+      return resolveEditingAuthority(getSceneMemory(sceneId));
+    },
+    [getSceneMemory]
+  );
 
   // Background Offline-First Synchronisation Hook (MW-247 & MW-248)
   const {
@@ -308,6 +318,22 @@ export default function FiresideStudioClient() {
 
   const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
     setSelectedSpark(spark);
+    const sparkAuthority = resolveSceneAuthority(spark.linkedSceneId);
+    if (sparkAuthority === 'desktop_locked') {
+      setForceRecordMode(false);
+      logEvent('FIRESIDE_STUDIO_MASTER_SELECTED', {
+        promptId: spark.id,
+        sceneId: spark.linkedSceneId,
+      });
+      setNotification(
+        `"${spark.title}" is a Studio Master. Watch your Theatrical Reel or add an archival footnote below.`
+      );
+      setTimeout(() => {
+        document.getElementById('fireside-completed-reel-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 80);
+      return;
+    }
+
     setForceRecordMode(true);
     const targetMode: FiresideMediaMode = mediaMode || spark.suggestedMediaMode || 'audio';
     logEvent('FIRESIDE_PROMPT_SELECTED', {
@@ -666,6 +692,7 @@ export default function FiresideStudioClient() {
             initialPromptId={autoSparkId}
             activeLanguage={activeLanguage}
             mediaMode={mediaMode}
+            resolveSceneAuthority={resolveSceneAuthority}
             onSelectPrompt={handleSelectPrompt}
             onActivePromptChange={handleActivePromptChange}
             onLanguageChange={handleLanguageChange}
@@ -754,6 +781,7 @@ export default function FiresideStudioClient() {
               sceneId={effectiveSceneId}
               sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
               sceneMemory={activeSceneMemory}
+              editingAuthority={activeEditingAuthority}
               sessionPhotos={photos}
               overrideDurationSeconds={
                 mediaMode === 'video' && recordedVideoDuration > 0
@@ -766,6 +794,7 @@ export default function FiresideStudioClient() {
               onWatchTheatricalReel={() => setIsLightboxOpen(true)}
               onAddBonusNote={() => setIsBonusDrawerOpen(true)}
               onReRecordRequest={() => {
+                if (isDesktopLocked) return;
                 setIsReviewingTake(false);
                 setForceRecordMode(true);
               }}

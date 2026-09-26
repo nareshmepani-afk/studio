@@ -44,12 +44,15 @@ import type {
 import { FIRESIDE_LANGUAGE_LABELS, FIRESIDE_TOUCH_TARGETS } from '@/types/fireside';
 import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
 import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
+import type { EditingAuthority } from '@/types/curriculum';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
   initialPromptId?: string;
   activeLanguage?: FiresideLanguage;
   mediaMode?: FiresideMediaMode;
+  editingAuthority?: EditingAuthority;
+  resolveSceneAuthority?: (sceneId?: string) => EditingAuthority;
   onSelectPrompt?: (spark: FiresidePromptSpark, language: FiresideLanguage) => void;
   onActivePromptChange?: (spark: FiresidePromptSpark) => void;
   onLanguageChange?: (language: FiresideLanguage) => void;
@@ -78,6 +81,8 @@ export function SingleCardPromptCarousel({
   initialPromptId,
   activeLanguage: controlledLanguage,
   mediaMode,
+  editingAuthority,
+  resolveSceneAuthority,
   onSelectPrompt,
   onActivePromptChange,
   onLanguageChange,
@@ -112,6 +117,8 @@ export function SingleCardPromptCarousel({
 
   const effectiveMediaMode: FiresideMediaMode = mediaMode || currentSpark.suggestedMediaMode || 'audio';
   const linkedScene = currentSpark.linkedSceneId ? getSceneById(currentSpark.linkedSceneId) : undefined;
+  const cardEditingAuthority: EditingAuthority =
+    editingAuthority ?? (resolveSceneAuthority ? resolveSceneAuthority(currentSpark.linkedSceneId) : 'fireside_flexible');
 
   const handleLanguageSelect = (lang: FiresideLanguage) => {
     setInternalLanguage(lang);
@@ -230,6 +237,15 @@ export function SingleCardPromptCarousel({
                   {linkedScene && (
                     <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold">
                       {linkedScene.partTitle.split(':')[0]} • Scene {linkedScene.sceneNumber}
+                    </span>
+                  )}
+
+                  {cardEditingAuthority === 'desktop_locked' && (
+                    <span
+                      data-testid="carousel-studio-master-badge"
+                      className="text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm"
+                    >
+                      🔒 Studio Master
                     </span>
                   )}
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import React from 'react';
 import fs from 'fs';
 import {
   saveDraftToVault,
@@ -13,8 +14,10 @@ import {
   uploadPhotosSequential,
 } from '@/lib/media/chunkedAudioUpload';
 import { FiresideLocalVaultRecord, HeirloomPhotoAttachment } from '@/types/fireside';
-import { renderHook, waitFor } from '@testing-library/react';
+import { render, fireEvent, renderHook, waitFor, act } from '@testing-library/react';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
+import { useCurriculumVault, resolveEditingAuthority } from '@/hooks/useCurriculumVault';
+import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
 
 // Mock localforage memory store
 const memoryStore = new Map<string, unknown>();
@@ -61,6 +64,8 @@ vi.mock('firebase/storage', () => ({
 
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
+  collection: vi.fn(),
+  onSnapshot: vi.fn(() => vi.fn()),
   setDoc: vi.fn().mockResolvedValue(undefined),
   getFirestore: vi.fn(),
 }));
@@ -369,6 +374,133 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // Assert British English synchronisation
       expect(syncHookSource).toContain('synchronisation');
       expect(firesideIdbSource).not.toContain('color');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 5. MW-88-T2: The Studio Elevation Ratchet & Cross-Surface Editing Authority
+  // ---------------------------------------------------------------------------
+  describe('MW-88-T2: Studio Elevation Ratchet Invariants', () => {
+    it('resolveEditingAuthority resolves missing, legacy, and explicit fields accurately', () => {
+      // Missing / empty -> fireside_flexible
+      expect(resolveEditingAuthority(undefined)).toBe('fireside_flexible');
+      expect(resolveEditingAuthority(null)).toBe('fireside_flexible');
+      expect(resolveEditingAuthority({})).toBe('fireside_flexible');
+
+      // Explicit fields
+      expect(resolveEditingAuthority({ editingAuthority: 'fireside_flexible' })).toBe('fireside_flexible');
+      expect(resolveEditingAuthority({ editingAuthority: 'desktop_locked' })).toBe('desktop_locked');
+
+      // Legacy & lifecycle indicators -> desktop_locked
+      expect(resolveEditingAuthority({ elevatedAt: 1700000000000 })).toBe('desktop_locked');
+      expect(resolveEditingAuthority({ currentStatus: 'mastered' })).toBe('desktop_locked');
+      expect(resolveEditingAuthority({ status: 'published' } as any)).toBe('desktop_locked');
+      expect(resolveEditingAuthority({ isProductionLocked: true } as any)).toBe('desktop_locked');
+      expect(resolveEditingAuthority({ actsCompleted: ['act1', 'act3'] })).toBe('desktop_locked');
+      expect(resolveEditingAuthority({ surfaceOrigin: 'desktop_soundstage' })).toBe('desktop_locked');
+      expect(resolveEditingAuthority({ originSurface: 'soundstage_desktop' })).toBe('desktop_locked');
+      expect(
+        resolveEditingAuthority({
+          takes: [{ id: 't1', takeNumber: 1, source: 'soundstage_desktop' } as any],
+        })
+      ).toBe('desktop_locked');
+    });
+
+    it('elevateToStudioMaster performs 0ms optimistic state promotion and persists Firestore payload', async () => {
+      const { setDoc } = await import('firebase/firestore');
+      vi.mocked(setDoc).mockClear();
+
+      // 1. Test useFiresideSync.elevateToStudioMaster
+      const { result: syncResult } = renderHook(() =>
+        useFiresideSync({
+          userId: 'user_elevate_test',
+          initialDraftId: 'draft_elevate_test',
+          sceneId: 'part-1-scene-1',
+          activeLanguage: 'en',
+        })
+      );
+
+      expect(syncResult.current.editingAuthority).toBe('fireside_flexible');
+
+      await act(async () => {
+        await syncResult.current.elevateToStudioMaster('part-1-scene-1');
+      });
+
+      expect(syncResult.current.editingAuthority).toBe('desktop_locked');
+      expect(setDoc).toHaveBeenCalled();
+      const syncCalls = vi.mocked(setDoc).mock.calls.map((c) => c[1] as Record<string, unknown>);
+      expect(
+        syncCalls.some(
+          (payload) =>
+            payload?.editingAuthority === 'desktop_locked' &&
+            typeof payload?.elevatedAt === 'number'
+        )
+      ).toBe(true);
+
+      // 2. Test useCurriculumVault.elevateToStudioMaster
+      vi.mocked(setDoc).mockClear();
+      const { result: vaultResult } = renderHook(() =>
+        useCurriculumVault({
+          userId: 'user_elevate_test',
+          initialSceneId: 'part-1-scene-2',
+        })
+      );
+
+      await act(async () => {
+        await vaultResult.current.elevateToStudioMaster('part-1-scene-2');
+      });
+
+      const updatedScene = vaultResult.current.getSceneMemory('part-1-scene-2');
+      expect(updatedScene?.editingAuthority).toBe('desktop_locked');
+      expect(typeof updatedScene?.elevatedAt).toBe('number');
+
+      const vaultCalls = vi.mocked(setDoc).mock.calls.map((c) => c[1] as Record<string, unknown>);
+      expect(
+        vaultCalls.some(
+          (payload) =>
+            payload?.editingAuthority === 'desktop_locked' &&
+            typeof payload?.elevatedAt === 'number'
+        )
+      ).toBe(true);
+    });
+
+    it('FiresideCompletedReelCard suppresses retake triggers when desktop_locked and opens reassurance drawer', () => {
+      const onReRecordSpy = vi.fn();
+      const onAddBonusSpy = vi.fn();
+
+      const { unmount } = render(
+        React.createElement(FiresideCompletedReelCard, {
+          sceneId: 'part-1-scene-1',
+          sceneTitle: 'Ancestral Village',
+          editingAuthority: 'desktop_locked',
+          onWatchTheatricalReel: vi.fn(),
+          onAddBonusNote: onAddBonusSpy,
+          onReRecordRequest: onReRecordSpy,
+        })
+      );
+
+      // 1. Retake button must be suppressed when desktop_locked
+      const retakeBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"]');
+      expect(retakeBtn).toBeNull();
+
+      // 2. Luminous gold pill [ 🔒 Studio Master ] must be rendered
+      const masterBadge = document.querySelector('[data-testid="studio-master-badge"]');
+      expect(masterBadge).toBeTruthy();
+      expect(masterBadge?.textContent).toContain('Studio Master');
+
+      // 3. Tapping [ 🔒 Studio Master ] opens the serene reassurance drawer
+      fireEvent.click(masterBadge!);
+      const drawer = document.querySelector('[data-testid="studio-master-reassurance-drawer"]');
+      expect(drawer).toBeTruthy();
+      expect(drawer?.textContent).toContain('synchronised');
+
+      // 4. Bonus archival footnote / photo button remains accessible
+      const bonusBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_COMPLETED_BONUS_BTN"]');
+      expect(bonusBtn).toBeTruthy();
+      fireEvent.click(bonusBtn!);
+      expect(onAddBonusSpy).toHaveBeenCalledTimes(1);
+
+      unmount();
     });
   });
 });

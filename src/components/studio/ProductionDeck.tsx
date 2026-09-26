@@ -45,6 +45,8 @@ import { firebaseConfig } from '@/lib/config-schema';
 import { OnboardingOverlay } from './overlays/OnboardingOverlay';
 const SNAP_THRESHOLD = 20; // Magnetic snap range
 import localforage from 'localforage';
+import { resolveEditingAuthority, EditingAuthority } from '@/types/curriculum';
+import { useCurriculumVault } from '@/hooks/useCurriculumVault';
 
 // Define a placeholder for the memory data type
 type MemoryData = any;
@@ -689,9 +691,68 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         }
     };
 
+    const resolvedSceneId = memoryData?.sceneId || memoryData?.linkedSceneId || memoryData?.id;
+    const { elevateToStudioMaster: elevateVaultScene, getSceneMemory } = useCurriculumVault({
+        userId: user?.uid,
+        initialSceneId: resolvedSceneId,
+    });
+    const vaultSceneMemory = resolvedSceneId ? getSceneMemory(resolvedSceneId) : undefined;
+
+    const [isElevatedLocally, setIsElevatedLocally] = useState<boolean>(false);
+    const isElevatedLocallyRef = useRef<boolean>(false);
+    const [isElevationModalOpen, setIsElevationModalOpen] = useState<boolean>(false);
+    const pendingNextActRef = useRef<boolean>(false);
+    const pendingElevationUpdateRef = useRef<any>(null);
+
+    const effectiveEditingAuthority: EditingAuthority = useMemo(() => {
+        if (isElevatedLocally) return 'desktop_locked';
+        if (memoryData?.editingAuthority === 'desktop_locked' || vaultSceneMemory?.editingAuthority === 'desktop_locked') {
+            return 'desktop_locked';
+        }
+        if (memoryData?.editingAuthority === 'fireside_flexible' || vaultSceneMemory?.editingAuthority === 'fireside_flexible') {
+            return 'fireside_flexible';
+        }
+        return resolveEditingAuthority(memoryData || vaultSceneMemory);
+    }, [isElevatedLocally, memoryData, vaultSceneMemory]);
+
+    const isMobileFlexibleOrigin = Boolean(
+        memoryData?.editingAuthority === 'fireside_flexible' ||
+        vaultSceneMemory?.editingAuthority === 'fireside_flexible' ||
+        memoryData?.originSurface === 'fireside_mobile' ||
+        memoryData?.surfaceOrigin === 'fireside_mobile' ||
+        vaultSceneMemory?.originSurface === 'fireside_mobile' ||
+        vaultSceneMemory?.surfaceOrigin === 'fireside_mobile' ||
+        (Array.isArray(memoryData?.takes) && memoryData.takes.some((t: any) => t?.source === 'fireside_mobile')) ||
+        (Array.isArray(vaultSceneMemory?.takes) && vaultSceneMemory.takes.some((t: any) => t?.source === 'fireside_mobile'))
+    );
+
+    const isFiresideFlexible =
+        !isElevatedLocally &&
+        !isRehearsalFlight &&
+        !isDemoMode &&
+        effectiveEditingAuthority === 'fireside_flexible';
+
     const handleUpdate = useCallback((updatedData: MemoryData) => {
+        if (
+            isFiresideFlexible &&
+            !isElevatedLocallyRef.current &&
+            updatedData &&
+            typeof updatedData === 'object' &&
+            !('editingAuthority' in updatedData)
+        ) {
+            const nextProse = updatedData.prose;
+            const nextDesc = updatedData.description;
+            const hasProseModification =
+                (typeof nextProse === 'string' && nextProse !== (memoryData?.prose || '')) ||
+                (typeof nextDesc === 'string' && nextDesc !== (memoryData?.description || ''));
+            if (hasProseModification) {
+                pendingElevationUpdateRef.current = updatedData;
+                setIsElevationModalOpen(true);
+                return;
+            }
+        }
         return onUpdate(updatedData);
-    }, [onUpdate]);
+    }, [onUpdate, isFiresideFlexible, memoryData?.prose, memoryData?.description]);
 
     // DRAG LOGIC
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -815,6 +876,13 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         }
 
         const isAct1 = currentStage === 0;
+
+        // MW-88-T2: Studio Elevation Ratchet — Intercept Act I -> Act II ("ENTER THE WEAVE") when story is in flexible status
+        if (isAct1 && isFiresideFlexible && !isElevatedLocallyRef.current) {
+            pendingNextActRef.current = true;
+            setIsElevationModalOpen(true);
+            return;
+        }
 
         // Validation Shield: If transitioning from Act I (stage 0), rigorously validate all required catalysts
         if (isAct1) {
@@ -1054,8 +1122,38 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         currentStage, isReviewing, memoryData?.description, memoryData?.productionStage, isProductionLocked,
         selectedVision, isLowClarity, showPreFlight, isActComplete, handleUpdate,
         timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, memoryData?.dateComponents?.year,
-        user, setIsUpsellOpen
+        user, setIsUpsellOpen, isFiresideFlexible
     ]);
+
+    const handleConfirmStudioElevation = useCallback(() => {
+        // Rule 12 Optimistic UI: Synchronous 0ms state transition
+        isElevatedLocallyRef.current = true;
+        setIsElevatedLocally(true);
+        setIsElevationModalOpen(false);
+
+        const elevatedTimestamp = Date.now();
+        if (resolvedSceneId) {
+            void elevateVaultScene(resolvedSceneId);
+        }
+
+        const pendingPayload = pendingElevationUpdateRef.current || {};
+        pendingElevationUpdateRef.current = null;
+
+        onUpdate({
+            ...pendingPayload,
+            editingAuthority: 'desktop_locked',
+            elevatedAt: elevatedTimestamp,
+        });
+
+        toast.success("Elevated to Studio Master", {
+            description: "Desktop Soundstage authority is now active and synchronised across all devices.",
+        });
+
+        if (pendingNextActRef.current) {
+            pendingNextActRef.current = false;
+            void handleNextAct();
+        }
+    }, [resolvedSceneId, elevateVaultScene, onUpdate, handleNextAct]);
 
     const handleExit = useCallback(async () => {
         synthesisAbortRef.current = true;
@@ -1346,6 +1444,40 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                           {badgeLabel}
                                       </span>
                                   )}
+
+                                  {/* MW-88-T2: Studio Elevation Ratchet — Cross-Surface Editing Authority Chrome */}
+                                  {!isRehearsalFlight && !isDemoMode && (
+                                      isFiresideFlexible ? (
+                                          <>
+                                              <span
+                                                  data-testid="mobile-flexible-badge"
+                                                  data-hotspot-id="HS_STUDIO_MOBILE_FLEXIBLE_BADGE"
+                                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-teal-500/15 border border-teal-500/40 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)] whitespace-nowrap select-none shrink-0 min-h-[36px]"
+                                              >
+                                                  📱 Mobile Recording • Flexible
+                                              </span>
+                                              <button
+                                                  type="button"
+                                                  data-testid="elevate-studio-master-btn"
+                                                  data-hotspot-id="HS_STUDIO_ELEVATE_MASTER_BTN"
+                                                  onClick={() => {
+                                                      pendingNextActRef.current = false;
+                                                      setIsElevationModalOpen(true);
+                                                  }}
+                                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.2)] transition-all whitespace-nowrap cursor-pointer shrink-0 min-h-[36px]"
+                                              >
+                                                  ✨ Elevate to Studio Master &rarr;
+                                              </button>
+                                          </>
+                                      ) : (
+                                          <span
+                                              data-testid="desktop-studio-master-badge"
+                                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/15 border border-amber-400/40 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.15)] whitespace-nowrap select-none shrink-0 min-h-[36px]"
+                                          >
+                                              🔒 Studio Master
+                                          </span>
+                                      )
+                                  )}
                                 </div>
 
                                 {/* Right Cluster: Hardware Privacy Shield & Studio Utilities */}
@@ -1616,6 +1748,86 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 onClose={() => setIsUpsellOpen(false)}
                 requiredFeature={upsellFeature}
             />
+
+            {/* STUDIO ELEVATION RATCHET CONFIRMATION MODAL (MW-88-T2) */}
+            <AnimatePresence>
+                {isElevationModalOpen && (
+                    <div
+                        data-testid="studio-elevation-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="studio-elevation-modal-title"
+                        className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                            className="w-full max-w-lg rounded-3xl bg-[#121214] border border-amber-500/40 p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.85)] text-left"
+                        >
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-mono font-bold">
+                                    <span>🔒 One-Way Studio Elevation</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        pendingNextActRef.current = false;
+                                        pendingElevationUpdateRef.current = null;
+                                        setIsElevationModalOpen(false);
+                                    }}
+                                    className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-colors cursor-pointer"
+                                    aria-label="Close elevation confirmation modal"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <h3
+                                id="studio-elevation-modal-title"
+                                className="text-xl sm:text-2xl font-serif text-white mb-3"
+                            >
+                                Elevate to Studio Master
+                            </h3>
+
+                            <p className="text-sm text-stone-300 leading-relaxed mb-4">
+                                Elevating this Mobile Fireside recording promotes it to a permanent{' '}
+                                <span className="text-amber-300 font-semibold">Studio Master</span> on the Desktop Soundstage.
+                                Once elevated, your master reel is synchronised across all devices, and primary retakes are locked on mobile so your theatrical cut and Scriptorium prose are never accidentally overwritten.
+                            </p>
+
+                            <div className="p-3.5 rounded-2xl bg-teal-500/10 border border-teal-500/25 text-xs text-teal-200 leading-relaxed mb-6">
+                                ✨ <strong className="font-semibold">Universal Playback &amp; Archival Notes Preserved:</strong> You can still watch your theatrical reel and attach new archival footnotes or heirloom photos from your phone at any time.
+                            </div>
+
+                            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
+                                <button
+                                    type="button"
+                                    data-testid="cancel-elevate-studio-master-btn"
+                                    onClick={() => {
+                                        pendingNextActRef.current = false;
+                                        pendingElevationUpdateRef.current = null;
+                                        setIsElevationModalOpen(false);
+                                    }}
+                                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-stone-300 hover:text-white text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                                >
+                                    Keep Mobile Flexible
+                                </button>
+                                <button
+                                    type="button"
+                                    data-testid="confirm-elevate-studio-master-btn"
+                                    data-hotspot-id="HS_STUDIO_CONFIRM_ELEVATE_BTN"
+                                    onClick={handleConfirmStudioElevation}
+                                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 text-xs font-mono font-bold uppercase tracking-wider shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
+                                >
+                                    ✨ Confirm &amp; Elevate to Studio Master
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 });

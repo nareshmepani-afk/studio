@@ -378,4 +378,25 @@
 
 ---
 
+### [2026-09-26 17:50 BST] • Checkpoint #017 — The Studio Elevation Ratchet & Cross-Surface Editing Authority (MW-88-T2)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Certified 10/11 staging QA pass on commit `37b7f1bb` and directed the implementation of "The Studio Elevation Ratchet" (MW-88-T2) cross-surface editing protocol.
+  - 🧠 **Gemini Strategic Brain**: Formulated the cross-surface authority contract (`EditingAuthority = 'fireside_flexible' | 'desktop_locked'`, `SurfaceOrigin = 'fireside_mobile' | 'desktop_soundstage'`) ensuring universal playback on all devices, flexible mobile capture, one-way elevation on Desktop Soundstage, and non-destructive mobile archival footnotes.
+  - ⚡ **Antigravity Execution**:
+    1. **Data Contract & Resolution Helper (`src/types/curriculum.ts`)**: Defined `EditingAuthority`, `SurfaceOrigin`, and `MemoirReel`, and implemented `resolveEditingAuthority(memory)` handling missing, explicit, and legacy lifecycle fields.
+    2. **Vault Persistence & Elevation Action (`src/hooks/useCurriculumVault.ts` & `src/hooks/useFiresideSync.ts`)**: Added `elevateToStudioMaster(sceneId)` with Rule 12 synchronous 0ms optimistic state promotion to `'desktop_locked'` and Firestore persistence (`{ editingAuthority: 'desktop_locked', elevatedAt: Date.now() }`).
+    3. **Mobile Surface Guardrails (`src/app/studio/fireside/FiresideStudioClient.tsx`, `src/components/fireside/SingleCardPromptCarousel.tsx`, `src/components/fireside/FiresideCompletedReelCard.tsx`)**: Passed resolved editing authority to carousel and completed reel cards; suppressed primary retake triggers (`HS_FIRESIDE_COMPLETED_RETAKE_BTN`) when `'desktop_locked'`; rendered luminous gold `[ 🔒 Studio Master ]` badge (`data-testid="studio-master-badge"`) opening the serene reassurance drawer (`data-testid="studio-master-reassurance-drawer"`); preserved `[ 📎 Add Archival Footnote / Photo ]` (`HS_FIRESIDE_COMPLETED_BONUS_BTN`).
+    4. **Desktop Soundstage Elevation Trigger (`src/components/studio/ProductionDeck.tsx`)**: Rendered `[ 📱 Mobile Recording • Flexible ]` teal badge and `[ ✨ Elevate to Studio Master → ]` trigger button in Row 1 Top Chrome when flexible, wired with the one-way Studio Elevation Confirmation Modal (`data-testid="studio-elevation-modal"`) triggered on button click, Scriptorium prose save, or `"ENTER THE WEAVE"`. Zero modifications to `SoloStage.tsx` (Rule 7) and strict British English orthography (Rule 20).
+  - 🛡️ **QA Gatekeeper**: Expanded `src/test/fireside_sync.test.ts` with MW-88-T2 hermetic invariants (15/15 passing in `fireside_sync.test.ts`; 633/633 passing across all 53 test files). Verified `tsc --noEmit` (exit 0) and `npm.cmd run build` (exit 0).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\types\curriculum.ts`
+  - `C:\Users\home\studio\src\hooks\useCurriculumVault.ts`
+  - `C:\Users\home\studio\src\hooks\useFiresideSync.ts`
+  - `C:\Users\home\studio\src\components\fireside\FiresideCompletedReelCard.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\components\studio\ProductionDeck.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\MISSION_LOG.md`
 
+---

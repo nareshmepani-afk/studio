@@ -32,9 +32,14 @@ import {
   DEFAULT_DIRECTORIAL_POLISH,
   ActIdentifier,
   StoryMoodTag,
+  EditingAuthority,
+  SurfaceOrigin,
+  MemoirReel,
+  resolveEditingAuthority,
 } from '@/types/curriculum';
 
-export type { StoryMoodTag } from '@/types/curriculum';
+export { resolveEditingAuthority } from '@/types/curriculum';
+export type { StoryMoodTag, EditingAuthority, SurfaceOrigin, MemoirReel } from '@/types/curriculum';
 
 export interface UseCurriculumVaultOptions {
   userId?: string | null;
@@ -80,6 +85,8 @@ export interface UseCurriculumVaultReturn {
   ) => Promise<void>;
   /** Sets emotional mood resonance tag ('joyful' | 'reflective' | 'nostalgic') */
   setStoryMoodTag: (sceneId: string, mood: StoryMoodTag) => Promise<void>;
+  /** Permanently promotes a scene's cross-surface editing authority to 'desktop_locked' (Rule 12 Optimistic UI) */
+  elevateToStudioMaster: (sceneId: string) => Promise<void>;
 }
 
 /**
@@ -233,6 +240,11 @@ export function useCurriculumVault({
               bonusNotes: Array.isArray(data.bonusNotes) ? data.bonusNotes : [],
               moodTag: data.moodTag,
               originSurface: data.originSurface || 'desktop_soundstage',
+              surfaceOrigin:
+                data.surfaceOrigin ||
+                (data.originSurface === 'fireside_mobile' ? 'fireside_mobile' : 'desktop_soundstage'),
+              editingAuthority: resolveEditingAuthority(data),
+              elevatedAt: typeof data.elevatedAt === 'number' ? data.elevatedAt : undefined,
               lastModified: data.updatedAt || data.lastModified || data.createdAt || new Date().toISOString(),
               createdAt: data.createdAt || new Date().toISOString(),
             };
@@ -444,6 +456,9 @@ export function useCurriculumVault({
           : current.photos || [];
       const mergedProse = options?.prose || current.prose || '';
 
+      const resolvedAuthority: EditingAuthority =
+        current.editingAuthority === 'desktop_locked' ? 'desktop_locked' : 'fireside_flexible';
+
       const updatedMemory: UnifiedCurriculumMemory = {
         ...current,
         prose: mergedProse,
@@ -451,6 +466,8 @@ export function useCurriculumVault({
         takes: updatedTakes,
         activeTakeId: shouldBePreferred ? take.id : current.activeTakeId || take.id,
         currentStatus: current.currentStatus === 'mastered' ? 'mastered' : 'captured',
+        editingAuthority: resolvedAuthority,
+        surfaceOrigin: current.surfaceOrigin || 'fireside_mobile',
         actsCompleted: updatedActs,
         lastModified: nowIso,
         createdAt: current.createdAt || take.createdAt || nowIso,
@@ -515,6 +532,8 @@ export function useCurriculumVault({
             bonusNotes: memToPersist.bonusNotes || [],
             moodTag: memToPersist.moodTag || null,
             originSurface: 'fireside_mobile',
+            surfaceOrigin: memToPersist.surfaceOrigin || 'fireside_mobile',
+            editingAuthority: resolvedAuthority,
             currentStatus: memToPersist.currentStatus,
             status: memToPersist.currentStatus === 'mastered' ? 'pre-release' : 'draft',
             createdAt: memToPersist.createdAt || nowIso,
@@ -793,6 +812,86 @@ export function useCurriculumVault({
     [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
   );
 
+  const elevateToStudioMaster = useCallback(
+    async (sceneId: string): Promise<void> => {
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = sceneDef?.id || sceneId;
+      const mappedPromptId = sceneDef?.promptId;
+
+      const elevatedTimestamp = Date.now();
+      const nowIso = new Date(elevatedTimestamp).toISOString();
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+
+      // Rule 12 Optimistic UI: Immediately update local state to 'desktop_locked'
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        editingAuthority: 'desktop_locked',
+        elevatedAt: elevatedTimestamp,
+        lastModified: nowIso,
+      };
+
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
+        const next = { ...prev, [canonicalSceneId]: updatedMemory };
+        if (mappedPromptId) next[mappedPromptId] = updatedMemory;
+        return next;
+      });
+
+      const memToPersist = updatedMemory;
+      if (db && userId && !userId.startsWith('guest') && memToPersist) {
+        try {
+          const targetDocId = resolveDocIdForScene(canonicalSceneId);
+          const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+
+          await setDoc(
+            memoryDocRef,
+            {
+              editingAuthority: 'desktop_locked',
+              elevatedAt: elevatedTimestamp,
+              updatedAt: nowIso,
+              lastModified: nowIso,
+            },
+            { merge: true }
+          );
+
+          if (memoirId) {
+            const legacyDocRef = doc(
+              db,
+              'users',
+              userId,
+              'memoirs',
+              memoirId,
+              'scenes',
+              canonicalSceneId
+            );
+            await setDoc(
+              legacyDocRef,
+              {
+                editingAuthority: 'desktop_locked',
+                elevatedAt: elevatedTimestamp,
+                lastModified: nowIso,
+              },
+              { merge: true }
+            );
+          }
+        } catch (cloudErr) {
+          console.error('[useCurriculumVault] Failed to persist studio elevation to Firestore:', cloudErr);
+        }
+      }
+    },
+    [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
+  );
+
   const activeSceneMemory = useMemo(() => {
     return getSceneMemory(activeSceneId);
   }, [getSceneMemory, activeSceneId]);
@@ -822,6 +921,7 @@ export function useCurriculumVault({
     promotePreferredTake,
     addBonusMemoryNote,
     setStoryMoodTag,
+    elevateToStudioMaster,
   };
 }
 

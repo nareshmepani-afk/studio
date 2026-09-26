@@ -14,7 +14,11 @@ import { SceneCaptureStatus } from '@/lib/curriculum/masterStoryStructure';
 // 1. Origin Surfaces & Take Sources
 // ---------------------------------------------------------------------------
 
-export type OriginSurface = 'fireside_mobile' | 'soundstage_desktop';
+export type EditingAuthority = 'fireside_flexible' | 'desktop_locked';
+
+export type SurfaceOrigin = 'fireside_mobile' | 'desktop_soundstage';
+
+export type OriginSurface = 'fireside_mobile' | 'soundstage_desktop' | 'desktop_soundstage';
 
 export type MemoirTakeSource = 'fireside_mobile' | 'soundstage_desktop';
 
@@ -119,6 +123,12 @@ export interface UnifiedCurriculumMemory {
   sceneTitle: string;
   /** Primary origin surface where initial capture occurred */
   originSurface: OriginSurface;
+  /** Canonical surface origin ('fireside_mobile' | 'desktop_soundstage') */
+  surfaceOrigin?: SurfaceOrigin;
+  /** Cross-surface editing authority ratchet ('fireside_flexible' | 'desktop_locked') */
+  editingAuthority?: EditingAuthority;
+  /** Epoch ms timestamp when promoted to Studio Master on Desktop Soundstage */
+  elevatedAt?: number;
   /** Current state machine status in the curriculum */
   currentStatus: SceneCaptureStatus;
   /** List of soundstage acts that have been visited or completed */
@@ -151,6 +161,8 @@ export interface UnifiedCurriculumMemory {
   lastModified: string;
 }
 
+export type MemoirReel = UnifiedCurriculumMemory;
+
 // ---------------------------------------------------------------------------
 // 6. Default Fallback Constructors & Helpers
 // ---------------------------------------------------------------------------
@@ -163,6 +175,68 @@ export const DEFAULT_DIRECTORIAL_POLISH: DirectorialPolishMetadata = {
   audioNoiseReductionEnabled: true,
   vocalClarityLevel: 'studio_boost',
 };
+
+/**
+ * Resolves the cross-surface EditingAuthority for a curriculum memory or legacy record.
+ * - Fireside captures start as 'fireside_flexible'.
+ * - Desktop editing or mastered status promotes authority to 'desktop_locked'.
+ */
+export function resolveEditingAuthority(
+  memory?: Partial<UnifiedCurriculumMemory> | Record<string, any> | null
+): EditingAuthority {
+  if (!memory) {
+    return 'fireside_flexible';
+  }
+
+  const rec = memory as Record<string, any>;
+
+  // 1. Explicit editingAuthority takes highest precedence
+  if (rec.editingAuthority === 'desktop_locked') {
+    return 'desktop_locked';
+  }
+  if (rec.editingAuthority === 'fireside_flexible') {
+    return 'fireside_flexible';
+  }
+
+  // 2. Explicit elevation timestamp or mastered/published/locked lifecycle flags
+  if (
+    typeof rec.elevatedAt === 'number' ||
+    Boolean(rec.elevatedAt) ||
+    rec.currentStatus === 'mastered' ||
+    rec.status === 'published' ||
+    rec.status === 'pre-release' ||
+    rec.isProductionLocked === true ||
+    Boolean(rec.directorialPolish?.masterReelUrl)
+  ) {
+    return 'desktop_locked';
+  }
+
+  // 3. Soundstage Act III / Act IV completion milestones
+  if (
+    Array.isArray(memory.actsCompleted) &&
+    (memory.actsCompleted.includes('act3') || memory.actsCompleted.includes('act4'))
+  ) {
+    return 'desktop_locked';
+  }
+
+  // 4. Legacy surfaceOrigin / originSurface / desktop take source checks
+  if (
+    memory.surfaceOrigin === 'desktop_soundstage' ||
+    memory.originSurface === 'soundstage_desktop' ||
+    memory.originSurface === 'desktop_soundstage'
+  ) {
+    return 'desktop_locked';
+  }
+
+  if (
+    Array.isArray(memory.takes) &&
+    memory.takes.some((t: any) => t?.source === 'soundstage_desktop')
+  ) {
+    return 'desktop_locked';
+  }
+
+  return 'fireside_flexible';
+}
 
 /**
  * Creates an empty initial UnifiedCurriculumMemory skeleton
@@ -178,6 +252,7 @@ export function createEmptyCurriculumMemory(params: {
   moodTag?: StoryMoodTag;
 }): UnifiedCurriculumMemory {
   const now = new Date().toISOString();
+  const isFireside = params.originSurface === 'fireside_mobile';
   return {
     id: params.id,
     userId: params.userId,
@@ -186,6 +261,8 @@ export function createEmptyCurriculumMemory(params: {
     sceneNumber: params.sceneNumber,
     sceneTitle: params.sceneTitle,
     originSurface: params.originSurface,
+    surfaceOrigin: isFireside ? 'fireside_mobile' : 'desktop_soundstage',
+    editingAuthority: isFireside ? 'fireside_flexible' : 'desktop_locked',
     currentStatus: 'ready_for_action',
     actsCompleted: [],
     smartLandingTarget: 'act1',

@@ -28,14 +28,23 @@ import {
   FileText,
   AlertTriangle,
   Award,
+  Lock,
+  Paperclip,
+  X,
 } from 'lucide-react';
-import { UnifiedCurriculumMemory, StoryMoodTag } from '@/types/curriculum';
+import {
+  UnifiedCurriculumMemory,
+  StoryMoodTag,
+  EditingAuthority,
+  resolveEditingAuthority,
+} from '@/types/curriculum';
 import { FiresideLanguage } from '@/types/fireside';
 
 export interface FiresideCompletedReelCardProps {
   sceneId: string;
   sceneTitle: string;
   sceneMemory?: UnifiedCurriculumMemory;
+  editingAuthority?: EditingAuthority;
   sessionPhotos?: any[];
   overrideDurationSeconds?: number;
   activeLanguage?: FiresideLanguage;
@@ -56,6 +65,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   sceneId,
   sceneTitle,
   sceneMemory,
+  editingAuthority,
   sessionPhotos = [],
   overrideDurationSeconds,
   activeLanguage = 'en',
@@ -65,6 +75,19 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   className = '',
 }) => {
   const [showRetakeConfirm, setShowRetakeConfirm] = useState(false);
+  const [isStudioMasterDrawerOpen, setIsStudioMasterDrawerOpen] = useState(false);
+
+  const resolvedAuthority: EditingAuthority = useMemo(() => {
+    if (editingAuthority === 'desktop_locked' || editingAuthority === 'fireside_flexible') {
+      return editingAuthority;
+    }
+    if (sceneMemory?.editingAuthority) {
+      return sceneMemory.editingAuthority;
+    }
+    return resolveEditingAuthority(sceneMemory);
+  }, [editingAuthority, sceneMemory]);
+
+  const isDesktopLocked = resolvedAuthority === 'desktop_locked';
 
   // Determine preferred take and metrics
   const preferredTake = useMemo(() => {
@@ -188,11 +211,29 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 text-xs sm:text-sm font-semibold tracking-wide shadow-sm mb-3">
           <CheckCircle2 className="w-4 h-4 text-amber-300" />
           <span>
-            {isMastered
+            {isMastered || isDesktopLocked
               ? 'Theatrical Master Reel Completed in Soundstage ✓'
               : 'Spoken Memory Secured in Generational Vault ✓'}
           </span>
         </div>
+
+        {/* Studio Elevation Ratchet Pill: [ 🔒 Studio Master ] (MW-88-T2) */}
+        {isDesktopLocked && (
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic();
+              setIsStudioMasterDrawerOpen(true);
+            }}
+            data-testid="studio-master-badge"
+            data-hotspot-id="HS_FIRESIDE_STUDIO_MASTER_BADGE"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 via-yellow-500/25 to-amber-500/25 border border-amber-400/80 text-amber-200 text-xs sm:text-sm font-bold tracking-wide shadow-[0_0_20px_rgba(245,158,11,0.35)] hover:shadow-[0_0_28px_rgba(245,158,11,0.55)] hover:scale-[1.02] active:scale-98 transition-all cursor-pointer mb-3"
+            aria-label="Studio Master reassurance drawer"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-300" />
+            <span>[ 🔒 Studio Master ]</span>
+          </button>
+        )}
 
         <h3 className="text-xl sm:text-2xl font-serif font-normal text-white mb-2 leading-tight">
           {sceneTitle}
@@ -340,7 +381,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           <span>Watch Theatrical Reel</span>
         </button>
 
-        {/* Secondary CTA: Open Bonus Memory Drawer (+ Add Note / Photo) */}
+        {/* Secondary CTA: Add Archival Footnote / Photo (Bonus Memory Drawer) */}
         <button
           type="button"
           onClick={handleBonusClick}
@@ -348,51 +389,126 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           className="w-full min-h-[56px] px-6 py-3.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-400 text-amber-200 hover:text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98 select-none"
         >
           <PlusCircle className="w-5 h-5 text-amber-400" />
-          <span>Open Bonus Memory Drawer (+ Add Note / Photo)</span>
+          <span>
+            {isDesktopLocked
+              ? '📎 Add Archival Footnote / Photo (Open Bonus Memory Drawer)'
+              : 'Open Bonus Memory Drawer (+ Add Archival Footnote / Photo)'}
+          </span>
         </button>
       </div>
 
-      {/* Safety Guarded Retake Link (Rule 7 & 26: Prevent Accidental Overwrite) */}
-      <div className="mt-5 relative z-10 text-center">
-        {!showRetakeConfirm ? (
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic();
-              setShowRetakeConfirm(true);
-            }}
-            data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"
-            className="text-xs text-stone-500 hover:text-amber-400 underline underline-offset-4 transition-colors cursor-pointer py-1.5 px-3 rounded-lg"
-          >
-            Record an additional take for this scene
-          </button>
-        ) : (
-          <div className="p-4 rounded-2xl bg-stone-900/95 border border-amber-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-start gap-2.5 mb-3">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-stone-300 leading-relaxed">
-                Your existing master performance is safely preserved. Recording again will save an additional take to your multi-take stack.
-              </p>
+      {/* Safety Guarded Retake Link (Rule 7 & 26: Suppressed when Studio Master desktop_locked) */}
+      {!isDesktopLocked && (
+        <div className="mt-5 relative z-10 text-center">
+          {!showRetakeConfirm ? (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic();
+                setShowRetakeConfirm(true);
+              }}
+              data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"
+              className="text-xs text-stone-500 hover:text-amber-400 underline underline-offset-4 transition-colors cursor-pointer py-1.5 px-3 rounded-lg"
+            >
+              Record an additional take for this scene
+            </button>
+          ) : (
+            <div className="p-4 rounded-2xl bg-stone-900/95 border border-amber-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-start gap-2.5 mb-3">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-stone-300 leading-relaxed">
+                  Your existing master performance is safely preserved. Recording again will save an additional take to your multi-take stack.
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRetakeConfirm(false)}
+                  className="px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmRetake}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-stone-950 text-xs font-bold hover:bg-amber-400 transition"
+                >
+                  Proceed to Record
+                </button>
+              </div>
             </div>
-            <div className="flex items-center justify-end gap-2">
+          )}
+        </div>
+      )}
+
+      {/* Serene Studio Master Reassurance Bottom Drawer (MW-88-T2 / Rule 26 & 39) */}
+      {isStudioMasterDrawerOpen && (
+        <div
+          data-testid="studio-master-reassurance-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Studio Master Reassurance"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 backdrop-blur-md p-3 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => setIsStudioMasterDrawerOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-3xl border border-amber-500/50 bg-stone-950/95 p-6 sm:p-8 text-left shadow-[0_0_50px_rgba(245,158,11,0.25)] space-y-4 animate-in slide-in-from-bottom-4 duration-200"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 block">
+                    Studio Elevation Ratchet • Cross-Surface Protection
+                  </span>
+                  <h4 className="text-base sm:text-lg font-serif text-white">
+                    Protected Desktop Studio Master
+                  </h4>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowRetakeConfirm(false)}
-                className="px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition"
+                onClick={() => setIsStudioMasterDrawerOpen(false)}
+                className="p-2 rounded-xl bg-stone-900 text-stone-400 hover:text-white border border-stone-800 cursor-pointer"
+                aria-label="Close Studio Master drawer"
               >
-                Cancel
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
+              This memory has been elevated and synchronised as a Studio Master on the Desktop Soundstage. To safeguard your prioritised narrative weave, colour grading, and acoustic score from accidental overwriting, mobile retakes are gently locked.
+            </p>
+            <p className="text-xs sm:text-sm text-amber-200/90 leading-relaxed">
+              Universal playback remains active across all your devices, and you can freely add non-destructive archival footnotes or heirloom photographs at any time.
+            </p>
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsStudioMasterDrawerOpen(false);
+                  handleBonusClick();
+                }}
+                className="flex-1 min-h-[52px] px-4 py-3 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-amber-500/40 text-amber-200 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition"
+              >
+                <Paperclip className="w-4 h-4 text-amber-400" />
+                <span>📎 Add Archival Footnote / Photo</span>
               </button>
               <button
                 type="button"
-                onClick={handleConfirmRetake}
-                className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-stone-950 text-xs font-bold hover:bg-amber-400 transition"
+                onClick={() => setIsStudioMasterDrawerOpen(false)}
+                className="min-h-[52px] px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs sm:text-sm cursor-pointer transition"
               >
-                Proceed to Record
+                Understood ✓
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 };

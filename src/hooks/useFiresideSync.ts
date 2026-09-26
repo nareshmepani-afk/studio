@@ -34,6 +34,10 @@ import {
   uploadVideoWithResiliency,
   uploadPhotosSequential,
 } from '@/lib/media/chunkedAudioUpload';
+import { EditingAuthority, resolveEditingAuthority } from '@/types/curriculum';
+
+export { resolveEditingAuthority } from '@/types/curriculum';
+export type { EditingAuthority } from '@/types/curriculum';
 
 export type FiresideSyncState = 'idle' | 'saving' | 'synced' | 'offline_cached' | 'error';
 
@@ -49,6 +53,7 @@ export interface UseFiresideSyncOptions {
   mediaMode?: FiresideMediaMode;
   sceneId?: string;
   photos?: HeirloomPhotoAttachment[];
+  initialEditingAuthority?: EditingAuthority;
   onSyncSuccess?: (draftId: string, cloudUrls?: { audioUrl?: string; videoUrl?: string }) => void;
   onSyncError?: (error: Error) => void;
 }
@@ -56,6 +61,7 @@ export interface UseFiresideSyncOptions {
 export interface UseFiresideSyncReturn {
   syncState: FiresideSyncState;
   draftId: string;
+  editingAuthority: EditingAuthority;
   isSaving: boolean;
   isSynced: boolean;
   isOffline: boolean;
@@ -63,6 +69,7 @@ export interface UseFiresideSyncReturn {
   lastSyncedAt: Date | null;
   errorMessage: string | null;
   triggerManualSync: () => Promise<void>;
+  elevateToStudioMaster: (targetSceneId?: string) => Promise<void>;
 }
 
 const EMPTY_PHOTOS: HeirloomPhotoAttachment[] = [];
@@ -79,6 +86,7 @@ export function useFiresideSync({
   mediaMode = 'audio',
   sceneId,
   photos = EMPTY_PHOTOS,
+  initialEditingAuthority = 'fireside_flexible',
   onSyncSuccess,
   onSyncError,
 }: UseFiresideSyncOptions): UseFiresideSyncReturn {
@@ -113,6 +121,8 @@ export function useFiresideSync({
   }
 
   const [syncState, setSyncState] = useState<FiresideSyncState>('idle');
+  const [editingAuthority, setEditingAuthority] = useState<EditingAuthority>(initialEditingAuthority);
+  const editingAuthorityRef = useRef<EditingAuthority>(initialEditingAuthority);
   const [progressPercent, setProgressPercent] = useState<number>(0);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -354,6 +364,8 @@ export function useFiresideSync({
             ...currentDraft,
             sceneId: currentDraft.sceneId || null,
             videoMetrics: currentDraft.videoMetrics || null,
+            editingAuthority: editingAuthorityRef.current,
+            surfaceOrigin: 'fireside_mobile',
             syncState: 'synced',
             lastModified: new Date().toISOString(),
           })
@@ -483,9 +495,41 @@ export function useFiresideSync({
     };
   }, [executeSync]);
 
+  // ---------------------------------------------------------------------------
+  // 4. Studio Elevation Ratchet (MW-88-T2: Rule 12 Optimistic UI)
+  // ---------------------------------------------------------------------------
+  const elevateToStudioMaster = useCallback(
+    async (targetSceneId?: string): Promise<void> => {
+      // Rule 12: Synchronous 0ms optimistic state promotion
+      editingAuthorityRef.current = 'desktop_locked';
+      setEditingAuthority('desktop_locked');
+
+      const elevatedTimestamp = Date.now();
+      const targetId = targetSceneId || sceneId || draftId;
+
+      if (db && !effectiveUserId.current.startsWith('guest_')) {
+        try {
+          const memoryDocRef = doc(db, 'users', effectiveUserId.current, 'memories', targetId);
+          await setDoc(
+            memoryDocRef,
+            {
+              editingAuthority: 'desktop_locked',
+              elevatedAt: elevatedTimestamp,
+            },
+            { merge: true }
+          );
+        } catch (err) {
+          console.error('[useFiresideSync] Failed to persist studio elevation to Firestore:', err);
+        }
+      }
+    },
+    [sceneId, draftId]
+  );
+
   return {
     syncState,
     draftId,
+    editingAuthority,
     isSaving: syncState === 'saving',
     isSynced: syncState === 'synced',
     isOffline: syncState === 'offline_cached',
@@ -493,5 +537,6 @@ export function useFiresideSync({
     lastSyncedAt,
     errorMessage,
     triggerManualSync: executeSync,
+    elevateToStudioMaster,
   };
 }
