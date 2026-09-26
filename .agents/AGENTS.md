@@ -177,8 +177,10 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
      - Every single parameter card MUST render an inline `[ 📋 Copy ]` button calling `copyToClipboard(...)` providing 0ms clipboard copy and visual `✅ Copied!` confirmation.
   4. **Zone 4: 🛡️ Status Attribution & Rationale Banner**:
      - Dedicated banner showing **Status Attribution** (e.g. `Naresh Mepani / Antigravity Lead`) and **Status Rationale** explaining technical justification and test evidence.
-  5. **Zone 5: Tri-State Evaluation Button Triplet**:
-     - `[ ✅ PASS ]`, `[ ❌ FAIL ]`, and `[ ⚠️ BACKLOG ]` buttons calling `setStatus(N, 'PASS')` with active glow states and live HUD updating.
+  5. **Zone 5: Evaluation Strip with Toggle-Off & Per-Card Reset**:
+     - `[ ✅ PASS ]`, `[ ❌ FAIL ]`, `[ ⚠️ BACKLOG ]`, and `[ ↺ Reset ]` buttons calling `setStatus(N, 'PASS')` / `setVerdict(N, 'pass')` with active glow states and live HUD updating.
+     - **Toggle-Off / Unclick Support**: Clicking an already active verdict button (e.g. clicking PASS when already marked PASS) immediately deselects / unclicks it, reverting the card back to PENDING.
+     - **Per-Card Reset Button**: Clicking `[ ↺ Reset ]` immediately clears the card's verdict back to PENDING without requiring a full suite reset. All actions update the live HUD ring, tally strip, and storage in 0ms.
   6. **Zone 6: Observations & Telemetry Vector Ingestion (2-Column Grid)**:
      - Left: `Feedback & Observations` textarea (`#notes-N`) with `oninput="saveNotes(N)"`.
      - Right: `Per-Test Telemetry Vector Ingestion` textarea (`#telemetry-N`) with `oninput="parseTelemetry(N)"` auto-generating live visual chips (`🏷️ Trace`, `👤 Email`, `🆔 UID`, `📍 Path`, `🔖 Ver`) with 0ms targeted DOM updating without losing textarea focus.

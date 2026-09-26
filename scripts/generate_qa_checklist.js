@@ -353,6 +353,9 @@ function generateQAChecklistHtml(config) {
           <button onclick="setStatus(${num}, 'BACKLOG')" id="btn-${num}-BACKLOG" class="btn-backlog flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-amber-400 hover:border-amber-500/50 transition cursor-pointer">
             ⚠️ BACKLOG
           </button>
+          <button onclick="resetStatus(${num})" id="btn-${num}-RESET" title="Clear / unclick verdict for Test ${num}" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-gray-200 hover:border-gray-700 transition cursor-pointer">
+            ↺ Reset
+          </button>
         </div>
         <button onclick="copySingleTestReport(${num})" id="copy-test-btn-sub-${num}" class="px-3 py-1.5 rounded-lg bg-gray-900/80 hover:bg-amber-500/20 text-[11px] font-mono font-medium text-amber-300 border border-gray-800 hover:border-amber-500/40 flex items-center gap-1.5 transition cursor-pointer">
           <span>📋 Copy Test ${num} Report</span>
@@ -558,6 +561,12 @@ function generateQAChecklistHtml(config) {
         state.statuses[testNum] = status;
       }
       renderStatus(testNum, state.statuses[testNum]);
+      saveState();
+    }
+
+    function resetStatus(testNum) {
+      delete state.statuses[testNum];
+      renderStatus(testNum, undefined);
       saveState();
     }
 

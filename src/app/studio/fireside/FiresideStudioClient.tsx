@@ -383,9 +383,55 @@ export default function FiresideStudioClient() {
     }
   };
 
+  const scrollToActiveStudio = useCallback(
+    (targetMode?: FiresideMediaMode, dismissNotification = true) => {
+      const mode = targetMode || mediaMode;
+      if (!isDesktopLocked) {
+        setForceRecordMode(true);
+        setIsReviewingTake(false);
+      }
+      if (dismissNotification) {
+        setNotification(null);
+      }
+
+      const attemptScroll = (retryCount = 0) => {
+        if (isDesktopLocked) {
+          const lockedCard = document.getElementById('fireside-completed-reel-card');
+          if (lockedCard) {
+            lockedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+        }
+
+        let targetEl: HTMLElement | null = null;
+        if (mode === 'audio') {
+          targetEl =
+            document.getElementById('album-photo-capture-tray') ||
+            document.getElementById('fireside-active-studio');
+        } else {
+          targetEl =
+            document.getElementById('fireside-active-studio') ||
+            document.getElementById('album-photo-capture-tray');
+        }
+
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (retryCount < 6) {
+          setTimeout(() => attemptScroll(retryCount + 1), 50 * (retryCount + 1));
+        }
+      };
+
+      setTimeout(() => attemptScroll(0), 40);
+    },
+    [mediaMode, isDesktopLocked]
+  );
+
   const handleModeChange = (newMode: FiresideMediaMode) => {
     setMediaMode(newMode);
-    setForceRecordMode(true);
+    if (!isDesktopLocked) {
+      setForceRecordMode(true);
+      setIsReviewingTake(false);
+    }
     if (!selectedSpark && activePromptSpark) {
       setSelectedSpark(activePromptSpark);
     }
@@ -395,17 +441,7 @@ export default function FiresideStudioClient() {
         ? 'WhatsApp / FaceTime Video Memo Studio ready below.'
         : 'Heirloom Photo Digitisation & Voice Studio ready below.'
     );
-    setTimeout(() => {
-      if (newMode === 'video' && videoRecorderRef.current) {
-        videoRecorderRef.current.scrollIntoView();
-      } else if (newMode === 'audio' && photoTrayRef.current) {
-        photoTrayRef.current.scrollIntoView();
-      } else if (newMode === 'audio') {
-        document.getElementById('album-photo-capture-tray')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 80);
+    scrollToActiveStudio(newMode, false);
   };
 
   const handleResetAudioRecording = useCallback(() => {
@@ -439,13 +475,27 @@ export default function FiresideStudioClient() {
 
   const handlePhotoPromptClick = (photoText: string) => {
     if (mediaMode === 'video') {
-      handleModeChange('audio');
+      setMediaMode('audio');
+    }
+    if (!isDesktopLocked) {
+      setForceRecordMode(true);
+      setIsReviewingTake(false);
     }
     setNotification(`Physical photo cue: "${photoText}". Opening heirloom photo digitiser...`);
-    photoTrayRef.current?.scrollIntoView();
-    setTimeout(() => {
-      photoTrayRef.current?.triggerCamera();
-    }, 350);
+    const triggerCameraWithRetry = (retryCount = 0) => {
+      const tray = document.getElementById('album-photo-capture-tray');
+      if (tray) {
+        tray.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      if (photoTrayRef.current) {
+        setTimeout(() => {
+          photoTrayRef.current?.triggerCamera();
+        }, 150);
+      } else if (retryCount < 5) {
+        setTimeout(() => triggerCameraWithRetry(retryCount + 1), 60 * (retryCount + 1));
+      }
+    };
+    setTimeout(() => triggerCameraWithRetry(0), 50);
     setTimeout(() => {
       setNotification(null);
     }, 4500);
@@ -816,23 +866,7 @@ export default function FiresideStudioClient() {
               data-testid="toast-studio-jump-link"
               onClick={(e) => {
                 e.preventDefault();
-                if (!hasCompletedReel) {
-                  setForceRecordMode(true);
-                }
-                setNotification(null);
-                setTimeout(() => {
-                  if (hasCompletedReel && !forceRecordMode && !isReviewingTake) {
-                    document.getElementById('fireside-completed-reel-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  } else if (mediaMode === 'video' && videoRecorderRef.current) {
-                    videoRecorderRef.current.scrollIntoView();
-                  } else if (mediaMode === 'audio' && photoTrayRef.current) {
-                    photoTrayRef.current.scrollIntoView();
-                  } else if (mediaMode === 'audio') {
-                    document.getElementById('album-photo-capture-tray')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  } else {
-                    document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }
-                }, 40);
+                scrollToActiveStudio();
               }}
               className="shrink-0 text-xs font-bold text-amber-300 hover:text-amber-100 underline underline-offset-2 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 transition-all cursor-pointer"
             >

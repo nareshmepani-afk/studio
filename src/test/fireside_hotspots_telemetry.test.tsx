@@ -191,5 +191,30 @@ describe('Fireside Hotspots & Telemetry Regression Shield (Ticket #261)', () => 
       expect(onOpenBonus).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('8. Voice & Photos Toast Studio Jump Link & Scroll Resilience (MW-287)', () => {
+    it('verifies FiresideStudioClient contains scrollToActiveStudio callback unlocking record mode and targeting album-photo-capture-tray', async () => {
+      const fs = await import('fs');
+      const clientSource = fs.readFileSync(
+        'src/app/studio/fireside/FiresideStudioClient.tsx',
+        'utf8'
+      );
+
+      // Verify scrollToActiveStudio is defined with forceRecordMode unlock
+      expect(clientSource).toContain('const scrollToActiveStudio = useCallback');
+      expect(clientSource).toContain('setForceRecordMode(true)');
+      expect(clientSource).toContain('setIsReviewingTake(false)');
+      expect(clientSource).toContain('album-photo-capture-tray');
+      expect(clientSource).toContain('fireside-active-studio');
+
+      // Verify toast anchor invokes scrollToActiveStudio directly
+      expect(clientSource).toContain('data-testid="toast-studio-jump-link"');
+      expect(clientSource).toContain('scrollToActiveStudio()');
+
+      // Verify handlePhotoPromptClick unlocks forceRecordMode and targets photo tray
+      expect(clientSource).toContain('triggerCameraWithRetry');
+    });
+  });
 });
+
 

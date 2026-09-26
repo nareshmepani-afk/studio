@@ -400,3 +400,20 @@
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
+### [2026-09-26 22:10 BST] • Checkpoint #018 — Fireside Voice & Photos Toast Studio Jump Link & Unclick QA Reset Standard (MW-287)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Certified Test 10 PASS on `/studio/fireside` (`cb18c1c`) with the feedback: *"Voice & Photos the toast anchor does not work"* and requested template enhancement to unclick/toggle test verdicts and provide a per-card Reset button.
+  - 🧠 **Gemini Strategic Brain**: Identified the root cause of the broken toast jump link (`data-testid="toast-studio-jump-link"`): `setForceRecordMode(true)` was gated on `!hasCompletedReel`, causing completed reels to leave the active recording and photo surface unmounted (`isCompleted === true`), prematurely scrolling to `#fireside-completed-reel-card` instead of mounting and navigating to the Heirloom Photo Tray (`#album-photo-capture-tray`) or Voice Studio (`#fireside-active-studio`).
+  - ⚡ **Antigravity Execution**:
+    1. **Fireside Voice & Photos Toast Anchor (`src/app/studio/fireside/FiresideStudioClient.tsx`)**: Implemented `scrollToActiveStudio(targetMode, dismissNotification)` with multi-frame scroll retry. If the reel is not desktop locked, it calls `setForceRecordMode(true)` and `setIsReviewingTake(false)` synchronously, dismisses the notification, and smoothly scrolls to `#album-photo-capture-tray` in audio mode and `#fireside-active-studio` in video mode. Updated `handleModeChange` and `handlePhotoPromptClick` to ensure active surfaces mount reliably.
+    2. **Interactive QA Checklist Standard Template (`qa_checklist_interactive.html`, `scripts/generate_qa_checklist.js`, `.agents/AGENTS.md`)**: Updated `setVerdict` to allow toggling off / unclicking active verdicts (`PASS`, `FAIL`, `BACKLOG`), and added a dedicated `[ ↺ Reset ]` action button per test card in Zone 5.
+  - 🛡️ **QA Gatekeeper**: Authored Section 8 in `src/test/fireside_hotspots_telemetry.test.tsx` verifying `scrollToActiveStudio`, `setForceRecordMode(true)`, and photo tray jump targets (8/8 passing). Verified all 74 Fireside unit tests pass hermetically, `tsc --noEmit` exits with 0, and `npm.cmd run build` compiles all 45 routes with exit code 0.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\test\fireside_hotspots_telemetry.test.tsx`
+  - `C:\Users\home\studio\scripts\generate_qa_checklist.js`
+  - `C:\Users\home\studio\.agents\AGENTS.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
