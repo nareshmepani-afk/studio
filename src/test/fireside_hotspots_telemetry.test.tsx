@@ -93,12 +93,24 @@ describe('Fireside Hotspots & Telemetry Regression Shield (Ticket #261)', () => 
     });
   });
 
-  describe('5. AlbumPhotoCaptureTray Hotspot Attributes', () => {
-    it('renders canonical hotspot IDs for photo camera and gallery ingress', () => {
+  describe('5. AlbumPhotoCaptureTray Hotspot Attributes & Device-Aware Ergonomics', () => {
+    it('renders canonical hotspot IDs for photo camera, gallery, and selfie ingress plus device-aware helper notes', async () => {
       render(<AlbumPhotoCaptureTray photos={[]} onPhotosChange={vi.fn()} />);
       
       expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_PHOTO_CAMERA_BTN"]')).toBeTruthy();
       expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_PHOTO_GALLERY_BTN"]')).toBeTruthy();
+      
+      const selfieBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_PHOTO_SELFIE_BTN"]');
+      expect(selfieBtn).toBeTruthy();
+      expect(selfieBtn?.textContent).toContain('Take a Selfie');
+
+      // Device-aware helper notes: mobile (sm:hidden) vs desktop (hidden sm:inline)
+      const mobileHelper = screen.getByTestId('photo-tray-helper-mobile');
+      const desktopHelper = screen.getByTestId('photo-tray-helper-desktop');
+      expect(mobileHelper.className).toContain('sm:hidden');
+      expect(mobileHelper.textContent).toContain('Hold your phone flat over the vintage album photo on your lap');
+      expect(desktopHelper.className).toContain('hidden sm:inline');
+      expect(desktopHelper.textContent).toContain('Upload a high-resolution photograph from your computer or take a live webcam selfie');
     });
   });
 });

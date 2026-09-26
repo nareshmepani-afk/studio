@@ -277,6 +277,45 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
 
       Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true });
     });
+
+    it('completes photo-only sync past 92% to 100% and sanitises undefined fields before Firestore setDoc', async () => {
+      const { setDoc } = await import('firebase/firestore');
+      const mockPhoto: HeirloomPhotoAttachment = {
+        id: 'photo_92_test',
+        localUri: 'blob:mock-photo-92',
+        storageUrl: 'https://firebasestorage.googleapis.com/v0/b/test/photo_92.jpg',
+        caption: 'Heirloom test photo',
+        capturedAt: '2026-09-25T12:00:00.000Z',
+        originalFilename: 'heirloom.jpg',
+        fileSizeBytes: 98000,
+        width: 1200,
+        height: 900,
+        aspectRatio: 1.33,
+        rotation: 0,
+        uploadStatus: 'synced',
+      };
+
+      const { result } = renderHook(() =>
+        useFiresideSync({
+          userId: 'test_user_92',
+          initialDraftId: 'draft_photo_92_test',
+          activeLanguage: 'en',
+          photos: [mockPhoto],
+          sceneId: undefined,
+        })
+      );
+
+      await waitFor(() => {
+        expect(result.current.syncState).toBe('synced');
+      });
+
+      expect(result.current.progressPercent).toBe(100);
+      expect(setDoc).toHaveBeenCalled();
+      const savedPayload = vi.mocked(setDoc).mock.calls.at(-1)?.[1] as Record<string, unknown>;
+      expect(savedPayload).toBeDefined();
+      expect(savedPayload.sceneId).toBeNull();
+      expect(Object.values(savedPayload).some((v) => v === undefined)).toBe(false);
+    });
   });
 
   // ---------------------------------------------------------------------------

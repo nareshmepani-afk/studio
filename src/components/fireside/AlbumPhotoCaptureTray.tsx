@@ -1,12 +1,14 @@
 'use client';
-import React, { useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { Camera, Image as ImageIcon, RotateCcw, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { Camera, Image as ImageIcon, User, RotateCcw, Trash2, Sparkles, Loader2, X } from 'lucide-react';
 import { HeirloomPhotoAttachment, FIRESIDE_HAPTIC_PATTERNS } from '@/types/fireside';
 import { compressHeirloomPhoto, formatFileSize } from '@/lib/media/clientImageCompressor';
+import { useHardwarePrivacy } from '@/context/HardwarePrivacyContext';
 
 export interface AlbumPhotoCaptureTrayRef {
   triggerCamera: () => void;
   triggerGallery: () => void;
+  triggerSelfie?: () => void;
   scrollIntoView: () => void;
 }
 
@@ -25,8 +27,8 @@ export interface AlbumPhotoCaptureTrayProps {
  * Target Route: /studio/fireside
  * Governing Rules: Rule 7 Non-Degradation, Rule 20 British English Orthography, Rule 26 Elder Ergonomics
  *
- * Enables elderly narrators to digitise vintage heirloom prints and album spreads
- * resting on their lap with one-tap camera ingress and client-side canvas compression.
+ * Enables elderly narrators to digitise vintage heirloom prints, upload high-resolution
+ * gallery photographs, or capture a live portrait selfie with client-side canvas compression.
  */
 export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumPhotoCaptureTrayProps>(
   (
@@ -39,13 +41,18 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
     },
     ref
   ) => {
+    const { rearmHardware } = useHardwarePrivacy();
     const containerRef = useRef<HTMLDivElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const galleryInputRef = useRef<HTMLInputElement>(null);
+    const selfieInputRef = useRef<HTMLInputElement>(null);
+    const selfieVideoRef = useRef<HTMLVideoElement | null>(null);
+    const selfieStreamRef = useRef<MediaStream | null>(null);
     const replaceIndexRef = useRef<number | null>(null);
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [isSelfieCameraOpen, setIsSelfieCameraOpen] = useState(false);
 
     // Haptic feedback trigger
     const triggerHaptic = (pattern: readonly number[]) => {
@@ -58,37 +65,48 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
       }
     };
 
-    // Expose imperative triggers for parent components (e.g. Spark carousel cues)
-    useImperativeHandle(ref, () => ({
-      triggerCamera: () => {
-        if (photos.length >= maxPhotos) {
-          setStatusMessage(`Photo limit reached (maximum ${maxPhotos} photos).`);
-          return;
+    const stopSelfieCamera = useCallback(() => {
+      if (selfieStreamRef.current) {
+        selfieStreamRef.current.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // Ignore already stopped track
+          }
+        });
+        selfieStreamRef.current = null;
+      }
+      if (selfieVideoRef.current) {
+        selfieVideoRef.current.srcObject = null;
+      }
+      setIsSelfieCameraOpen(false);
+    }, []);
+
+    useEffect(() => {
+      return () => {
+        if (selfieStreamRef.current) {
+          selfieStreamRef.current.getTracks().forEach((t) => {
+            try {
+              t.stop();
+            } catch {
+              // Ignore
+            }
+          });
+          selfieStreamRef.current = null;
         }
-        replaceIndexRef.current = null;
-        cameraInputRef.current?.click();
-      },
-      triggerGallery: () => {
-        if (photos.length >= maxPhotos) {
-          setStatusMessage(`Photo limit reached (maximum ${maxPhotos} photos).`);
-          return;
-        }
-        replaceIndexRef.current = null;
-        galleryInputRef.current?.click();
-      },
-      scrollIntoView: () => {
-        containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      },
-    }));
+      };
+    }, []);
 
-    const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
+    useEffect(() => {
+      if (isSelfieCameraOpen && selfieVideoRef.current && selfieStreamRef.current) {
+        selfieVideoRef.current.srcObject = selfieStreamRef.current;
+        selfieVideoRef.current.play().catch(() => {
+          // Autoplay handled by user gesture
+        });
+      }
+    }, [isSelfieCameraOpen]);
 
-      const file = files[0];
-      // Reset input value so re-selecting identical file fires onChange
-      e.target.value = '';
-
+    const processPhotoFile = async (file: File) => {
       if (!file.type.startsWith('image/')) {
         setStatusMessage('Please select a valid photograph file (JPEG, PNG, HEIC).');
         return;
@@ -149,6 +167,113 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
       }
     };
 
+    const handleStartSelfie = async () => {
+      if (photos.length >= maxPhotos) {
+        setStatusMessage(`Photo limit reached (maximum ${maxPhotos} photos).`);
+        return;
+      }
+      replaceIndexRef.current = null;
+      rearmHardware();
+
+      if (
+        typeof window !== 'undefined' &&
+        typeof navigator !== 'undefined' &&
+        navigator.mediaDevices &&
+        typeof navigator.mediaDevices.getUserMedia === 'function'
+      ) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: 'user',
+              width: { ideal: 1280 },
+              height: { ideal: 960 },
+            },
+            audio: false,
+          });
+          selfieStreamRef.current = stream;
+          setIsSelfieCameraOpen(true);
+          setStatusMessage('Selfie camera active — position yourself and tap Capture Selfie.');
+          return;
+        } catch (err) {
+          console.warn('[AlbumPhotoCaptureTray] Live selfie camera unavailable, falling back to file input:', err);
+        }
+      }
+
+      selfieInputRef.current?.click();
+    };
+
+    const handleCaptureSelfieShutter = async () => {
+      const videoEl = selfieVideoRef.current;
+      if (!videoEl) return;
+
+      const width = videoEl.videoWidth || 1280;
+      const height = videoEl.videoHeight || 960;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        stopSelfieCamera();
+        return;
+      }
+
+      // Mirror horizontally to match the natural selfie preview
+      ctx.translate(width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoEl, 0, 0, width, height);
+
+      stopSelfieCamera();
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92)
+      );
+
+      if (!blob) {
+        setStatusMessage('Unable to capture selfie frame. Please try again.');
+        return;
+      }
+
+      const selfieFile = new File([blob], `selfie_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      await processPhotoFile(selfieFile);
+    };
+
+    // Expose imperative triggers for parent components (e.g. Spark carousel cues)
+    useImperativeHandle(ref, () => ({
+      triggerCamera: () => {
+        if (photos.length >= maxPhotos) {
+          setStatusMessage(`Photo limit reached (maximum ${maxPhotos} photos).`);
+          return;
+        }
+        replaceIndexRef.current = null;
+        cameraInputRef.current?.click();
+      },
+      triggerGallery: () => {
+        if (photos.length >= maxPhotos) {
+          setStatusMessage(`Photo limit reached (maximum ${maxPhotos} photos).`);
+          return;
+        }
+        replaceIndexRef.current = null;
+        galleryInputRef.current?.click();
+      },
+      triggerSelfie: () => {
+        void handleStartSelfie();
+      },
+      scrollIntoView: () => {
+        containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      },
+    }));
+
+    const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      const file = files[0];
+      // Reset input value so re-selecting identical file fires onChange
+      e.target.value = '';
+
+      await processPhotoFile(file);
+    };
+
     const handleRemovePhoto = (index: number) => {
       const target = photos[index];
       if (target && target.localUri.startsWith('blob:')) {
@@ -199,6 +324,15 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
           className="hidden"
           onChange={handleFileSelected}
           aria-label="Upload photograph from gallery"
+        />
+        <input
+          ref={selfieInputRef}
+          type="file"
+          accept="image/*"
+          capture="user"
+          className="hidden"
+          onChange={handleFileSelected}
+          aria-label="Capture selfie photograph with front camera"
         />
 
         {/* Section Header with Photo Count */}
@@ -286,6 +420,50 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
           </div>
         )}
 
+        {/* Inline Live Selfie Viewfinder (when active) */}
+        {isSelfieCameraOpen && (
+          <div
+            data-testid="selfie-camera-viewfinder"
+            className="mb-4 p-4 rounded-2xl bg-stone-950 border border-amber-500/50 shadow-xl flex flex-col items-center space-y-3"
+          >
+            <div className="relative w-full max-w-md aspect-[4/3] rounded-xl overflow-hidden bg-black border border-stone-800">
+              <video
+                ref={selfieVideoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ transform: 'scaleX(-1)' }}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-stone-950/80 border border-amber-500/40 text-[11px] font-medium text-amber-300 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>Live Portrait Selfie Mirror</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-3 w-full max-w-md">
+              <button
+                type="button"
+                onClick={handleCaptureSelfieShutter}
+                data-testid="capture-selfie-shutter-btn"
+                data-hotspot-id="HS_FIRESIDE_PHOTO_SELFIE_SHUTTER_BTN"
+                className="flex-1 min-h-[48px] px-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98"
+              >
+                <Camera className="w-4 h-4 text-stone-950" />
+                <span>Capture Selfie</span>
+              </button>
+              <button
+                type="button"
+                onClick={stopSelfieCamera}
+                data-testid="cancel-selfie-camera-btn"
+                className="min-h-[48px] px-4 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
+              >
+                <X className="w-4 h-4" />
+                <span>Cancel</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Primary & Secondary Ingress Buttons */}
         {canAddMore ? (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -327,6 +505,21 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
               <ImageIcon className="w-4 h-4 text-stone-400" />
               <span>Choose from Device Gallery</span>
             </button>
+
+            {/* Tertiary Selfie Button (≥48px touch target) */}
+            <button
+              type="button"
+              onClick={() => {
+                void handleStartSelfie();
+              }}
+              disabled={isProcessing}
+              data-testid="take-selfie-photo-btn"
+              data-hotspot-id="HS_FIRESIDE_PHOTO_SELFIE_BTN"
+              className="sm:w-auto min-h-[48px] px-4 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-amber-500/40 text-amber-200 font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all active:scale-98 disabled:opacity-60"
+            >
+              <User className="w-4 h-4 text-amber-400" />
+              <span>Take a Selfie</span>
+            </button>
           </div>
         ) : (
           <div className="p-3 rounded-xl bg-stone-900/60 border border-stone-800 text-center text-xs text-stone-400">
@@ -341,9 +534,14 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
           </p>
         )}
 
-        {/* Helper Note for Elderly Storytellers */}
-        <p className="text-[11px] text-stone-400 text-center mt-3">
-          Hold your phone flat over the vintage album photo on your lap. We automatically compress and preserve the heirloom grain.
+        {/* Device-Aware Helper Note for Storytellers (Mobile vs Desktop) */}
+        <p data-testid="photo-tray-helper-note" className="text-[11px] text-stone-400 text-center mt-3">
+          <span className="sm:hidden" data-testid="photo-tray-helper-mobile">
+            Hold your phone flat over the vintage album photo on your lap, or take a selfie. We automatically compress and preserve the heirloom grain.
+          </span>
+          <span className="hidden sm:inline" data-testid="photo-tray-helper-desktop">
+            Upload a high-resolution photograph from your computer or take a live webcam selfie. We automatically compress and preserve the heirloom grain.
+          </span>
         </p>
       </div>
     );

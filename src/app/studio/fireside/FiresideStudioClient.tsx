@@ -164,14 +164,14 @@ export default function FiresideStudioClient() {
     triggerManualSync,
   } = useFiresideSync({
     userId: user?.uid,
-    promptSpark: selectedSpark,
+    promptSpark: selectedSpark || activePromptSpark,
     activeLanguage,
     audioBlob: recordedAudioBlob,
     audioDurationSeconds: recordedAudioDuration,
     videoBlob: recordedVideoBlob,
     videoDurationSeconds: recordedVideoDuration,
     mediaMode,
-    sceneId: selectedSpark?.linkedSceneId,
+    sceneId: effectiveSceneId,
     photos,
     onSyncSuccess: async (_syncedDraftId, cloudUrls) => {
       const cloudMediaUrl =
