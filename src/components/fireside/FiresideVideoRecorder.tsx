@@ -54,8 +54,10 @@ export interface FiresideVideoRecorderProps {
   promptSpark?: FiresidePromptSpark | null;
   activeLanguage?: FiresideLanguage;
   activeMood?: StoryMoodTag;
+  takeNumber?: number;
   onMoodChange?: (mood: StoryMoodTag) => void;
   onRecordingComplete?: (videoBlob: Blob, durationSeconds: number) => void;
+  onKeepRecording?: (videoBlob: Blob, durationSeconds: number) => void;
   onReset?: () => void;
   className?: string;
 }
@@ -66,8 +68,10 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       promptSpark,
       activeLanguage = 'en',
       activeMood,
+      takeNumber = 1,
       onMoodChange,
       onRecordingComplete,
+      onKeepRecording,
       onReset,
       className = '',
     },
@@ -217,11 +221,49 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                   src={videoUrl}
                   controls
                   playsInline
+                  preload="metadata"
+                  onLoadedMetadata={(e) => {
+                    const vid = e.currentTarget;
+                    if (!Number.isFinite(vid.duration) || vid.duration === Infinity) {
+                      vid.currentTime = 1e101;
+                      const resolveWebmDuration = () => {
+                        vid.removeEventListener('timeupdate', resolveWebmDuration);
+                        vid.currentTime = 0;
+                      };
+                      vid.addEventListener('timeupdate', resolveWebmDuration);
+                    }
+                  }}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-3 left-3 bg-stone-950/80 backdrop-blur-md border border-emerald-500/40 text-emerald-300 text-xs font-mono px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Video Memo Recorded ({formattedDuration})</span>
+                </div>
+              </div>
+
+              {/* Recorded Reel Details Summary Bar (Title, Duration, Timestamp, Take #) */}
+              <div
+                data-testid="video-review-metadata-bar"
+                className="w-full rounded-2xl bg-stone-900/90 border border-stone-800 px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-stone-300"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold">
+                    Take #{takeNumber}
+                  </span>
+                  <span className="font-serif text-sm text-white truncate">{promptTitle}</span>
+                </div>
+                <div className="flex items-center gap-3 text-stone-400">
+                  <span>
+                    Duration: <strong className="text-emerald-300">{formattedDuration}</strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {new Date().toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
                 </div>
               </div>
 
@@ -245,7 +287,11 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                     data-hotspot-id="HS_FIRESIDE_VIDEO_KEEP_BTN"
                     onClick={() => {
                       if (videoBlob) {
-                        onRecordingComplete?.(videoBlob, durationSeconds);
+                        if (onKeepRecording) {
+                          onKeepRecording(videoBlob, durationSeconds);
+                        } else {
+                          onRecordingComplete?.(videoBlob, durationSeconds);
+                        }
                       }
                     }}
                     style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}

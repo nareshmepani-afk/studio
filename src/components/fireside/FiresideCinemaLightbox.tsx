@@ -31,6 +31,7 @@ import {
   Music,
   Film,
   Camera,
+  PlusCircle,
 } from 'lucide-react';
 import { HeirloomPhotoAttachment } from '@/types/fireside';
 import { StoryMoodTag } from '@/types/curriculum';
@@ -38,6 +39,7 @@ import { StoryMoodTag } from '@/types/curriculum';
 export interface FiresideCinemaLightboxProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenBonusDrawer?: () => void;
   sceneTitle: string;
   mediaUrl?: string | null;
   mediaMode?: 'audio' | 'video';
@@ -50,6 +52,7 @@ export interface FiresideCinemaLightboxProps {
 export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   isOpen,
   onClose,
+  onOpenBonusDrawer,
   sceneTitle,
   mediaUrl,
   mediaMode = 'video',
@@ -60,7 +63,9 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(durationSeconds || 0);
+  const [duration, setDuration] = useState(
+    Number.isFinite(durationSeconds) && durationSeconds > 0 ? durationSeconds : 0
+  );
   const [isMuted, setIsMuted] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
 
@@ -69,12 +74,22 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   const soundtrackAudioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // Sync finite duration from prop whenever it updates
+  useEffect(() => {
+    if (Number.isFinite(durationSeconds) && durationSeconds > 0) {
+      setDuration(durationSeconds);
+    }
+  }, [durationSeconds]);
+
   // Auto-play when opened
   useEffect(() => {
     if (isOpen) {
       setIsPlaying(true);
       setCurrentTime(0);
       setPhotoIndex(0);
+      if (Number.isFinite(durationSeconds) && durationSeconds > 0) {
+        setDuration(durationSeconds);
+      }
 
       // Play media on open
       setTimeout(() => {
@@ -92,7 +107,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
       if (audioRef.current) audioRef.current.pause();
       if (soundtrackAudioRef.current) soundtrackAudioRef.current.pause();
     }
-  }, [isOpen, mediaMode]);
+  }, [isOpen, mediaMode, durationSeconds]);
 
   // Slideshow timer for audio mode with photos
   useEffect(() => {
@@ -154,15 +169,32 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
     });
   }, []);
 
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) => {
+    const el = e.currentTarget;
+    if (Number.isFinite(el.duration) && el.duration > 0) {
+      setDuration(el.duration);
+    } else if (el.duration === Infinity) {
+      el.currentTime = 1e101;
+      const resolveWebmDuration = () => {
+        el.removeEventListener('timeupdate', resolveWebmDuration);
+        if (Number.isFinite(el.duration) && el.duration > 0) {
+          setDuration(el.duration);
+        }
+        el.currentTime = 0;
+      };
+      el.addEventListener('timeupdate', resolveWebmDuration);
+    }
+  };
+
   const handleTimeUpdate = () => {
     if (mediaMode === 'video' && videoRef.current) {
       setCurrentTime(videoRef.current.currentTime);
-      if (videoRef.current.duration && !isNaN(videoRef.current.duration)) {
+      if (Number.isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
         setDuration(videoRef.current.duration);
       }
     } else if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
-      if (audioRef.current.duration && !isNaN(audioRef.current.duration)) {
+      if (Number.isFinite(audioRef.current.duration) && audioRef.current.duration > 0) {
         setDuration(audioRef.current.duration);
       }
     }
@@ -170,6 +202,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = parseFloat(e.target.value);
+    if (!Number.isFinite(target)) return;
     setCurrentTime(target);
     if (mediaMode === 'video' && videoRef.current) {
       videoRef.current.currentTime = target;
@@ -179,7 +212,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   };
 
   const formatMMSS = (secs: number) => {
-    if (isNaN(secs) || secs < 0) return '00:00';
+    if (!Number.isFinite(secs) || isNaN(secs) || secs < 0) return '00:00';
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
@@ -187,12 +220,23 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
 
   if (!isOpen) return null;
 
-  const currentPhoto = photos[photoIndex];
+  const currentPhoto = photos[photoIndex] || photos[0];
   const photoUrl = currentPhoto
     ? typeof currentPhoto === 'string'
       ? currentPhoto
-      : (currentPhoto as any).previewUrl || (currentPhoto as any).storageUrl || (currentPhoto as any).url || null
+      : (currentPhoto as any).localUri ||
+        (currentPhoto as any).storageUrl ||
+        (currentPhoto as any).previewUrl ||
+        (currentPhoto as any).url ||
+        null
     : null;
+
+  const effectiveDuration =
+    Number.isFinite(duration) && duration > 0
+      ? duration
+      : Number.isFinite(durationSeconds) && durationSeconds > 0
+      ? durationSeconds
+      : 0;
 
   return (
     <div
@@ -243,25 +287,56 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
           className="w-full aspect-[16/9] sm:aspect-[2.39/1] max-h-[70vh] bg-stone-950 rounded-2xl sm:rounded-3xl border border-stone-800/80 shadow-2xl relative overflow-hidden flex items-center justify-center"
         >
           {mediaMode === 'video' && mediaUrl ? (
-            <video
-              ref={videoRef}
-              src={mediaUrl}
-              playsInline
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={() => setIsPlaying(false)}
-              className="w-full h-full object-cover sm:object-contain bg-black"
-            />
+            <div className="w-full h-full relative flex items-center justify-center bg-black">
+              <video
+                ref={videoRef}
+                src={mediaUrl}
+                playsInline
+                preload="metadata"
+                onLoadedMetadata={handleLoadedMetadata}
+                onTimeUpdate={handleTimeUpdate}
+                onEnded={() => setIsPlaying(false)}
+                className="w-full h-full object-cover sm:object-contain bg-black"
+              />
+              {photoUrl && (
+                <div
+                  data-testid="lightbox-video-photo-inset"
+                  className="absolute bottom-4 left-4 z-20 w-24 sm:w-32 aspect-[4/3] rounded-xl overflow-hidden border-2 border-amber-400/70 shadow-2xl bg-stone-950"
+                >
+                  <img
+                    src={photoUrl}
+                    alt="Attached heirloom photo"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
           ) : (
             /* Audio Performance + Scanned Heirloom Photo Slideshow */
             <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-b from-stone-900 to-black">
               {photoUrl ? (
                 <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+                  {/* Ambient blurred background fill */}
+                  <img
+                    src={photoUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110"
+                  />
+                  {/* Foreground Heirloom Photo with Ken Burns subtle zoom */}
                   <img
                     src={photoUrl}
                     alt="Heirloom photo memory"
-                    className="w-full h-full object-cover transition-transform duration-10000 ease-out transform scale-105"
+                    data-testid="lightbox-heirloom-photo"
+                    className="relative z-10 w-full h-full object-contain sm:object-cover transition-transform duration-10000 ease-out transform scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 z-10 pointer-events-none" />
+                  <div className="absolute bottom-3 left-4 z-20 bg-stone-950/80 border border-amber-500/40 px-3 py-1 rounded-full text-xs font-mono text-amber-200 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-amber-400" />
+                    <span>
+                      Vintage Photo {photoIndex + 1} of {photos.length} • Spoken Voice Memoir
+                    </span>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-6 z-10">
@@ -278,6 +353,8 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                 <audio
                   ref={audioRef}
                   src={mediaUrl}
+                  preload="metadata"
+                  onLoadedMetadata={handleLoadedMetadata}
                   onTimeUpdate={handleTimeUpdate}
                   onEnded={() => setIsPlaying(false)}
                 />
@@ -295,7 +372,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
             type="button"
             onClick={togglePlayPause}
             data-hotspot-id="HS_FIRESIDE_LIGHTBOX_PLAY"
-            className="absolute inset-0 w-full h-full flex items-center justify-center bg-black/10 hover:bg-black/20 transition-all cursor-pointer group"
+            className="absolute inset-0 w-full h-full flex items-center justify-center bg-black/10 hover:bg-black/20 transition-all cursor-pointer group z-20"
             aria-label={isPlaying ? 'Pause master reel' : 'Play master reel'}
           >
             {!isPlaying && (
@@ -317,7 +394,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
           <input
             type="range"
             min="0"
-            max={duration || 100}
+            max={effectiveDuration > 0 ? effectiveDuration : 100}
             step="0.1"
             value={currentTime}
             onChange={handleSeek}
@@ -325,12 +402,12 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
             className="w-full h-2 bg-stone-800 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-amber-400"
           />
           <span className="text-xs font-mono text-stone-400 shrink-0 w-12">
-            {formatMMSS(duration)}
+            {formatMMSS(effectiveDuration)}
           </span>
         </div>
 
         {/* Buttons Row */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -353,13 +430,29 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
             >
               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
             </button>
+
+            {onOpenBonusDrawer && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenBonusDrawer();
+                }}
+                data-hotspot-id="HS_FIRESIDE_LIGHTBOX_BONUS_BTN"
+                className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-xs font-semibold flex items-center gap-2 transition cursor-pointer active:scale-95"
+                title="Open Bonus Memory Drawer to add a recollection note or photo"
+              >
+                <PlusCircle className="w-4 h-4 text-amber-400" />
+                <span>Open Bonus Memory Drawer</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-3 text-xs font-mono text-stone-400">
             {photos.length > 0 && (
-              <span className="flex items-center gap-1.5 hidden sm:inline-flex">
+              <span className="flex items-center gap-1.5">
                 <Camera className="w-3.5 h-3.5 text-amber-400" />
-                <span>{photos.length} Vintage Photos</span>
+                <span>{photos.length} Vintage {photos.length === 1 ? 'Photo' : 'Photos'}</span>
               </span>
             )}
             <span className="px-2.5 py-1 rounded bg-stone-900 border border-stone-800 text-stone-300">

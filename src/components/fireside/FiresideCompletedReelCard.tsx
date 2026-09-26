@@ -36,6 +36,8 @@ export interface FiresideCompletedReelCardProps {
   sceneId: string;
   sceneTitle: string;
   sceneMemory?: UnifiedCurriculumMemory;
+  sessionPhotos?: any[];
+  overrideDurationSeconds?: number;
   activeLanguage?: FiresideLanguage;
   onWatchTheatricalReel: () => void;
   onAddBonusNote: () => void;
@@ -44,7 +46,7 @@ export interface FiresideCompletedReelCardProps {
 }
 
 function formatDurationSeconds(totalSeconds: number): string {
-  if (!totalSeconds || totalSeconds <= 0) return '0m 00s';
+  if (!totalSeconds || !Number.isFinite(totalSeconds) || totalSeconds <= 0) return '0m 00s';
   const mins = Math.floor(totalSeconds / 60);
   const secs = Math.floor(totalSeconds % 60);
   return `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
@@ -54,6 +56,8 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   sceneId,
   sceneTitle,
   sceneMemory,
+  sessionPhotos = [],
+  overrideDurationSeconds,
   activeLanguage = 'en',
   onWatchTheatricalReel,
   onAddBonusNote,
@@ -65,18 +69,70 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   // Determine preferred take and metrics
   const preferredTake = useMemo(() => {
     if (!sceneMemory || !sceneMemory.takes || sceneMemory.takes.length === 0) return null;
-    return sceneMemory.takes.find((t) => t.isPreferred) || sceneMemory.takes[0];
+    return (
+      sceneMemory.takes.find((t) => t.isPreferred) ||
+      sceneMemory.takes[sceneMemory.takes.length - 1] ||
+      sceneMemory.takes[0]
+    );
   }, [sceneMemory]);
 
-  const durationText = useMemo(() => {
-    if (preferredTake?.durationSeconds) {
-      return formatDurationSeconds(preferredTake.durationSeconds);
+  const effectiveDurationSeconds = useMemo(() => {
+    if (
+      typeof overrideDurationSeconds === 'number' &&
+      Number.isFinite(overrideDurationSeconds) &&
+      overrideDurationSeconds > 0
+    ) {
+      return overrideDurationSeconds;
     }
-    return '2m 45s';
-  }, [preferredTake]);
+    if (
+      preferredTake?.durationSeconds &&
+      Number.isFinite(preferredTake.durationSeconds) &&
+      preferredTake.durationSeconds > 0
+    ) {
+      return preferredTake.durationSeconds;
+    }
+    return 0;
+  }, [overrideDurationSeconds, preferredTake]);
 
-  const photosCount = sceneMemory?.photos?.length || 0;
-  const bonusNotesCount = sceneMemory?.bonusNotes?.length || 0;
+  const durationText = useMemo(() => {
+    if (effectiveDurationSeconds > 0) {
+      return formatDurationSeconds(effectiveDurationSeconds);
+    }
+    return '0m 05s';
+  }, [effectiveDurationSeconds]);
+
+  const takeNumber = useMemo(() => {
+    if (preferredTake?.takeNumber && preferredTake.takeNumber > 0) {
+      return preferredTake.takeNumber;
+    }
+    if (sceneMemory?.takes && sceneMemory.takes.length > 0) {
+      return sceneMemory.takes.length;
+    }
+    return 1;
+  }, [preferredTake, sceneMemory?.takes]);
+
+  const recordedTimestampText = useMemo(() => {
+    const rawDate =
+      preferredTake?.createdAt || sceneMemory?.lastModified || sceneMemory?.createdAt;
+    const parsed = rawDate ? new Date(rawDate) : new Date();
+    const validDate = isNaN(parsed.getTime()) ? new Date() : parsed;
+    return validDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }, [preferredTake?.createdAt, sceneMemory?.lastModified, sceneMemory?.createdAt]);
+
+  const mergedPhotos = useMemo(() => {
+    const vaultPhotos = Array.isArray(sceneMemory?.photos) ? sceneMemory.photos : [];
+    const localPhotos = Array.isArray(sessionPhotos) ? sessionPhotos : [];
+    if (localPhotos.length > 0) return localPhotos;
+    return vaultPhotos;
+  }, [sceneMemory?.photos, sessionPhotos]);
+
+  const photosCount = mergedPhotos.length;
+  const bonusNotes = Array.isArray(sceneMemory?.bonusNotes) ? sceneMemory.bonusNotes : [];
+  const bonusNotesCount = bonusNotes.length;
   const isMastered = sceneMemory?.currentStatus === 'mastered';
 
   const moodTagDisplay = useMemo(() => {
@@ -113,6 +169,8 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
 
   return (
     <section
+      id="fireside-completed-reel-card"
+      data-testid="fireside-completed-reel-card"
       aria-label={`Completed memory scene: ${sceneTitle}`}
       className={`w-full max-w-xl mx-auto rounded-3xl border border-amber-500/40 bg-stone-950/90 shadow-[0_0_50px_rgba(245,158,11,0.15)] backdrop-blur-xl p-6 sm:p-8 flex flex-col items-center text-center relative overflow-hidden transition-all ${className}`}
     >
@@ -139,13 +197,26 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         <h3 className="text-xl sm:text-2xl font-serif font-normal text-white mb-2 leading-tight">
           {sceneTitle}
         </h3>
-        <p className="text-xs text-stone-400 max-w-md mb-6 leading-relaxed">
+
+        {/* Explicit Take Number & Date Timestamp Pill (Test 11 Step 1) */}
+        <div
+          data-testid="completed-reel-take-timestamp"
+          className="inline-flex flex-wrap items-center justify-center gap-2 px-3.5 py-1 rounded-full bg-stone-900/90 border border-stone-700/80 text-xs font-mono text-stone-300 mb-3"
+        >
+          <span className="text-amber-300 font-bold">Take #{takeNumber}</span>
+          <span className="text-stone-500">•</span>
+          <span>Recorded {recordedTimestampText}</span>
+          <span className="text-stone-500">•</span>
+          <span className="text-emerald-300 font-semibold">{durationText}</span>
+        </div>
+
+        <p className="text-xs text-stone-400 max-w-md mb-5 leading-relaxed">
           Your storytelling performance has been captured, preserved, and woven into your master family archive.
         </p>
       </div>
 
       {/* Directorial Metrics HUD Box */}
-      <div className="w-full relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-stone-900/80 border border-stone-800 text-left mb-6">
+      <div className="w-full relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-stone-900/80 border border-stone-800 text-left mb-5">
         <div className="p-2.5 rounded-xl bg-stone-950/60 border border-stone-800/80 flex flex-col justify-center">
           <div className="flex items-center gap-1.5 text-[10px] uppercase font-mono tracking-wider text-amber-400/90 mb-1">
             <Clock className="w-3 h-3" />
@@ -153,6 +224,9 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           </div>
           <span className="text-xs sm:text-sm font-semibold text-stone-200 font-mono">
             {durationText}
+          </span>
+          <span className="text-[10px] text-stone-400 font-mono mt-0.5">
+            Take #{takeNumber} • {recordedTimestampText}
           </span>
         </div>
 
@@ -187,6 +261,72 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         </div>
       </div>
 
+      {/* Attached Vintage Photos Preview Strip (Test 10: Immediate Visual Confirmation of Uploaded Photo) */}
+      {mergedPhotos.length > 0 && (
+        <div
+          data-testid="completed-reel-photos-strip"
+          className="w-full relative z-10 mb-5 p-3.5 rounded-2xl bg-stone-900/90 border border-amber-500/30 text-left"
+        >
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-xs font-mono uppercase tracking-wider text-amber-300 font-semibold flex items-center gap-1.5">
+              <Camera className="w-3.5 h-3.5 text-amber-400" />
+              <span>Attached Vintage Heirloom {mergedPhotos.length === 1 ? 'Photograph' : 'Photographs'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleWatchClick}
+              className="text-[11px] font-mono text-amber-400 hover:text-amber-200 underline cursor-pointer"
+            >
+              View in Cinema ↗
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {mergedPhotos.map((p: any, idx: number) => {
+              const src =
+                typeof p === 'string'
+                  ? p
+                  : p.localUri || p.storageUrl || p.previewUrl || p.url || '';
+              return (
+                <div
+                  key={p.id || idx}
+                  onClick={handleWatchClick}
+                  className="relative aspect-[4/3] rounded-xl overflow-hidden border border-stone-700 hover:border-amber-400 cursor-pointer group bg-black"
+                >
+                  <img
+                    src={src}
+                    alt={p.caption || `Heirloom photo ${idx + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Added Bonus Memory Notes List (Test 11 Step 3 Confirmation) */}
+      {bonusNotes.length > 0 && (
+        <div
+          data-testid="completed-reel-bonus-notes-list"
+          className="w-full relative z-10 mb-5 p-3.5 rounded-2xl bg-stone-900/90 border border-stone-800 text-left space-y-2"
+        >
+          <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold block">
+            Saved Bonus Memory Recollections ({bonusNotes.length})
+          </span>
+          {bonusNotes.map((note) => (
+            <div
+              key={note.id}
+              className="p-2.5 rounded-xl bg-stone-950/80 border border-stone-800/90 text-xs text-stone-200"
+            >
+              <p className="leading-relaxed">{note.text}</p>
+              <span className="text-[10px] font-mono text-stone-400 mt-1 block">
+                — {note.authorName}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Celebratory Action CTAs (Rule 26: 56px Minimum Touch Envelopes) */}
       <div className="w-full relative z-10 flex flex-col gap-3">
         {/* Primary CTA: Watch Theatrical Reel */}
@@ -200,15 +340,15 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           <span>Watch Theatrical Reel</span>
         </button>
 
-        {/* Secondary CTA: Add Bonus Memory Note / Photo */}
+        {/* Secondary CTA: Open Bonus Memory Drawer (+ Add Note / Photo) */}
         <button
           type="button"
           onClick={handleBonusClick}
           data-hotspot-id="HS_FIRESIDE_COMPLETED_BONUS_BTN"
-          className="w-full min-h-[56px] px-6 py-3.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800/90 border border-stone-700 hover:border-amber-500/40 text-stone-200 hover:text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98 select-none"
+          className="w-full min-h-[56px] px-6 py-3.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-400 text-amber-200 hover:text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98 select-none"
         >
           <PlusCircle className="w-5 h-5 text-amber-400" />
-          <span>Add Bonus Memory Note / Photo</span>
+          <span>Open Bonus Memory Drawer (+ Add Note / Photo)</span>
         </button>
       </div>
 

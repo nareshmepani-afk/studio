@@ -6,6 +6,8 @@ import { FiresideModeSwitch } from '@/components/fireside/FiresideModeSwitch';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { TactileVoiceRecorder } from '@/components/fireside/TactileVoiceRecorder';
 import { AlbumPhotoCaptureTray } from '@/components/fireside/AlbumPhotoCaptureTray';
+import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
+import { FiresideCinemaLightbox } from '@/components/fireside/FiresideCinemaLightbox';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 
 // Mock useAuth
@@ -113,4 +115,81 @@ describe('Fireside Hotspots & Telemetry Regression Shield (Ticket #261)', () => 
       expect(desktopHelper.textContent).toContain('Upload a high-resolution photograph from your computer or take a live webcam selfie');
     });
   });
+
+  describe('6. FiresideCompletedReelCard Metadata & Bonus Memory Drawer CTA', () => {
+    it('renders Take #, recorded date timestamp, duration, vintage photo strip, and Open Bonus Memory Drawer button', () => {
+      const onWatch = vi.fn();
+      const onBonus = vi.fn();
+
+      render(
+        <FiresideCompletedReelCard
+          sceneId="part-1-scene-1"
+          sceneTitle="Child of Two Worlds"
+          sessionPhotos={[
+            {
+              id: 'p1',
+              localUri: 'blob:https://dev.memoryweaver.studio/vintage-photo-1',
+              caption: 'Mombasa 1962',
+              capturedAt: '2026-09-26T16:00:00.000Z',
+            } as any,
+          ]}
+          overrideDurationSeconds={14}
+          onWatchTheatricalReel={onWatch}
+          onAddBonusNote={onBonus}
+        />
+      );
+
+      const takeTimestamp = screen.getByTestId('completed-reel-take-timestamp');
+      expect(takeTimestamp.textContent).toContain('Take #1');
+      expect(takeTimestamp.textContent).toContain('0m 14s');
+
+      const photosStrip = screen.getByTestId('completed-reel-photos-strip');
+      expect(photosStrip).toBeTruthy();
+
+      const bonusBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_COMPLETED_BONUS_BTN"]');
+      expect(bonusBtn?.textContent).toContain('Open Bonus Memory Drawer');
+      fireEvent.click(bonusBtn!);
+      expect(onBonus).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('7. FiresideCinemaLightbox Vintage Photo localUri & Finite Duration Guard', () => {
+    it('renders HeirloomPhotoAttachment via localUri in audio mode and exposes Open Bonus Memory Drawer button', () => {
+      const onClose = vi.fn();
+      const onOpenBonus = vi.fn();
+
+      render(
+        <FiresideCinemaLightbox
+          isOpen={true}
+          onClose={onClose}
+          onOpenBonusDrawer={onOpenBonus}
+          sceneTitle="Child of Two Worlds"
+          mediaMode="audio"
+          mediaUrl="blob:https://dev.memoryweaver.studio/voice-1"
+          durationSeconds={Infinity}
+          photos={[
+            {
+              id: 'photo_vintage_1',
+              localUri: 'blob:https://dev.memoryweaver.studio/vintage-1.jpg',
+              caption: 'Ancestral Home',
+            } as any,
+          ]}
+        />
+      );
+
+      const photoImg = screen.getByTestId('lightbox-heirloom-photo') as HTMLImageElement;
+      expect(photoImg).toBeTruthy();
+      expect(photoImg.getAttribute('src')).toBe('blob:https://dev.memoryweaver.studio/vintage-1.jpg');
+
+      // Ensure Infinity duration never renders 'Infinity' or 'NaN' in the timecode display
+      expect(document.body.textContent).not.toContain('Infinity');
+      expect(document.body.textContent).not.toContain('NaN');
+
+      const bonusBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_LIGHTBOX_BONUS_BTN"]');
+      expect(bonusBtn?.textContent).toContain('Open Bonus Memory Drawer');
+      fireEvent.click(bonusBtn!);
+      expect(onOpenBonus).toHaveBeenCalledTimes(1);
+    });
+  });
 });
+

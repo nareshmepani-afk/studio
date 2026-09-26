@@ -86,6 +86,7 @@ export default function FiresideStudioClient() {
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const [isBonusDrawerOpen, setIsBonusDrawerOpen] = useState<boolean>(false);
   const [forceRecordMode, setForceRecordMode] = useState<boolean>(false);
+  const [isReviewingTake, setIsReviewingTake] = useState<boolean>(false);
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
@@ -132,6 +133,8 @@ export default function FiresideStudioClient() {
   }, []);
 
   const activeTakeIdRef = useRef<string | null>(null);
+  const activeTakeNumberRef = useRef<number>(1);
+  const lastSavedBlobRef = useRef<Blob | null>(null);
 
   const effectiveSceneId = selectedSpark?.linkedSceneId || activePromptSpark?.linkedSceneId || 'part-1-scene-1';
 
@@ -152,7 +155,8 @@ export default function FiresideStudioClient() {
 
   const activeSceneMemory = getSceneMemory(effectiveSceneId);
   const activeMood = activeSceneMemory?.moodTag;
-  const isCompleted = isSceneCompleted(activeSceneMemory) && !forceRecordMode;
+  const hasCompletedReel = isSceneCompleted(activeSceneMemory);
+  const isCompleted = hasCompletedReel && !forceRecordMode && !isReviewingTake;
 
   // Background Offline-First Synchronisation Hook (MW-247 & MW-248)
   const {
@@ -180,24 +184,33 @@ export default function FiresideStudioClient() {
         cloudUrls?.audioUrl;
       if (cloudMediaUrl) {
         const takeId = activeTakeIdRef.current || `take_${Date.now()}`;
-        await saveSceneTake(effectiveSceneId, {
-          id: takeId,
-          takeNumber: activeSceneMemory?.takes?.length || 1,
-          source: 'fireside_mobile',
-          mediaMode,
-          mediaUrl: cloudMediaUrl,
-          durationSeconds: mediaMode === 'video' ? recordedVideoDuration : recordedAudioDuration,
-          createdAt: new Date().toISOString(),
-          label: `Take ${activeSceneMemory?.takes?.length || 1} (${mediaMode === 'video' ? 'Fireside Video' : 'Fireside Voice'})`,
-          isPreferred: true,
-        });
+        const takeNumber = activeTakeNumberRef.current || activeSceneMemory?.takes?.length || 1;
+        await saveSceneTake(
+          effectiveSceneId,
+          {
+            id: takeId,
+            takeNumber,
+            source: 'fireside_mobile',
+            mediaMode,
+            mediaUrl: cloudMediaUrl,
+            durationSeconds: mediaMode === 'video' ? recordedVideoDuration : recordedAudioDuration,
+            createdAt: new Date().toISOString(),
+            label: `Take ${takeNumber} (${mediaMode === 'video' ? 'Fireside Video' : 'Fireside Voice'})`,
+            isPreferred: true,
+          },
+          { photos }
+        );
       }
     },
   });
 
   const preferredTake = useMemo(() => {
     if (!activeSceneMemory?.takes || activeSceneMemory.takes.length === 0) return null;
-    return activeSceneMemory.takes.find((t) => t.isPreferred) || activeSceneMemory.takes[0];
+    return (
+      activeSceneMemory.takes.find((t) => t.isPreferred) ||
+      activeSceneMemory.takes[activeSceneMemory.takes.length - 1] ||
+      activeSceneMemory.takes[0]
+    );
   }, [activeSceneMemory]);
 
   const autoSparkId = useMemo(() => {
@@ -372,11 +385,25 @@ export default function FiresideStudioClient() {
   const handleResetAudioRecording = useCallback(() => {
     setRecordedAudioBlob(null);
     setRecordedAudioDuration(0);
+    setIsReviewingTake(false);
+    lastSavedBlobRef.current = null;
   }, []);
 
   const handleResetVideoRecording = useCallback(() => {
     setRecordedVideoBlob(null);
     setRecordedVideoDuration(0);
+    setIsReviewingTake(false);
+    lastSavedBlobRef.current = null;
+  }, []);
+
+  const handleKeepRecording = useCallback(() => {
+    setIsReviewingTake(false);
+    setForceRecordMode(false);
+    setTimeout(() => {
+      document
+        .getElementById('fireside-completed-reel-card')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 60);
   }, []);
 
   const handleLanguageChange = (lang: FiresideLanguage) => {
@@ -401,24 +428,31 @@ export default function FiresideStudioClient() {
   const handleAudioRecordingComplete = async (audioBlob: Blob, durationSeconds: number) => {
     setRecordedAudioBlob(audioBlob);
     setRecordedAudioDuration(durationSeconds);
+    setIsReviewingTake(true);
     logEvent('FIRESIDE_AUDIO_RECORDING_COMPLETED', {
       durationSeconds,
       sceneId: effectiveSceneId,
     });
     const blobUrl = typeof window !== 'undefined' ? URL.createObjectURL(audioBlob) : '';
-    const takeId = `take_${Date.now()}`;
+    const isSameBlob = lastSavedBlobRef.current === audioBlob && !!activeTakeIdRef.current;
+    const takeId = isSameBlob ? activeTakeIdRef.current! : `take_${Date.now()}`;
+    const takeNumber = isSameBlob
+      ? activeTakeNumberRef.current
+      : (activeSceneMemory?.takes?.length || 0) + 1;
     activeTakeIdRef.current = takeId;
+    activeTakeNumberRef.current = takeNumber;
+    lastSavedBlobRef.current = audioBlob;
     await saveSceneTake(effectiveSceneId, {
       id: takeId,
-      takeNumber: (activeSceneMemory?.takes?.length || 0) + 1,
+      takeNumber,
       source: 'fireside_mobile',
       mediaMode: 'audio',
       mediaUrl: blobUrl,
       durationSeconds,
       createdAt: new Date().toISOString(),
-      label: `Take ${(activeSceneMemory?.takes?.length || 0) + 1} (Fireside Voice)`,
+      label: `Take ${takeNumber} (Fireside Voice)`,
       isPreferred: true,
-    });
+    }, { photos });
     setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
@@ -435,24 +469,31 @@ export default function FiresideStudioClient() {
   const handleVideoRecordingComplete = async (videoBlob: Blob, durationSeconds: number) => {
     setRecordedVideoBlob(videoBlob);
     setRecordedVideoDuration(durationSeconds);
+    setIsReviewingTake(true);
     logEvent('FIRESIDE_VIDEO_RECORDING_COMPLETED', {
       durationSeconds,
       sceneId: effectiveSceneId,
     });
     const blobUrl = typeof window !== 'undefined' ? URL.createObjectURL(videoBlob) : '';
-    const takeId = `take_${Date.now()}`;
+    const isSameBlob = lastSavedBlobRef.current === videoBlob && !!activeTakeIdRef.current;
+    const takeId = isSameBlob ? activeTakeIdRef.current! : `take_${Date.now()}`;
+    const takeNumber = isSameBlob
+      ? activeTakeNumberRef.current
+      : (activeSceneMemory?.takes?.length || 0) + 1;
     activeTakeIdRef.current = takeId;
+    activeTakeNumberRef.current = takeNumber;
+    lastSavedBlobRef.current = videoBlob;
     await saveSceneTake(effectiveSceneId, {
       id: takeId,
-      takeNumber: (activeSceneMemory?.takes?.length || 0) + 1,
+      takeNumber,
       source: 'fireside_mobile',
       mediaMode: 'video',
       mediaUrl: blobUrl,
       durationSeconds,
       createdAt: new Date().toISOString(),
-      label: `Take ${(activeSceneMemory?.takes?.length || 0) + 1} (Fireside Video)`,
+      label: `Take ${takeNumber} (Fireside Video)`,
       isPreferred: true,
-    });
+    }, { photos });
     setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
@@ -632,80 +673,104 @@ export default function FiresideStudioClient() {
           />
         </div>
 
-        {/* Conditional Media Surface: Completed Reel Card vs Active Recorders */}
-        {isCompleted ? (
-          <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+        {/* Active Recording Surface (Visible when uncompleted, reviewing a take, or recording an additional take) */}
+        {!isCompleted && (
+          mediaMode === 'video' ? (
+            /* Video Memo Recording Surface */
+            <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+              <div className="text-center mb-4">
+                <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
+                  WhatsApp / FaceTime Video Memo
+                </p>
+                <h2 className="text-lg sm:text-xl font-serif text-stone-200">
+                  {selectedSpark ? `Record: ${selectedSpark.title}` : 'Record Your Video Memo'}
+                </h2>
+              </div>
+
+              <FiresideVideoRecorder
+                ref={videoRecorderRef}
+                promptSpark={selectedSpark || activePromptSpark}
+                activeLanguage={activeLanguage}
+                activeMood={activeMood}
+                takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
+                onMoodChange={handleMoodChange}
+                onRecordingComplete={handleVideoRecordingComplete}
+                onKeepRecording={handleKeepRecording}
+                onReset={handleResetVideoRecording}
+                className="w-full"
+              />
+            </div>
+          ) : (
+            /* Voice Recording & Heirloom Photo Tray Surface */
+            <>
+              {/* Physical Album Photo Capture Tray (MW-247) */}
+              <div className="w-full">
+                <AlbumPhotoCaptureTray
+                  ref={photoTrayRef}
+                  photos={photos}
+                  onPhotosChange={setPhotos}
+                  maxPhotos={6}
+                  suggestedPhotoPrompt={selectedSpark ? selectedSpark.recommendedPhotoPrompt[activeLanguage] : null}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Tactile Web Audio Voice Recorder (MW-246) */}
+              <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+                <div className="text-center mb-4">
+                  <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
+                    Fireside Voice Recording
+                  </p>
+                  <h2 className="text-lg sm:text-xl font-serif text-stone-200">
+                    {selectedSpark ? `Speak: ${selectedSpark.title}` : 'Speak Your Spoken Memoir'}
+                  </h2>
+                </div>
+
+                <TactileVoiceRecorder
+                  ref={recorderRef}
+                  promptSpark={selectedSpark || activePromptSpark}
+                  activeLanguage={activeLanguage}
+                  activeMood={activeMood}
+                  photos={photos.length > 0 ? photos : activeSceneMemory?.photos || []}
+                  takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
+                  onMoodChange={handleMoodChange}
+                  onRecordingComplete={handleAudioRecordingComplete}
+                  onKeepRecording={handleKeepRecording}
+                  onReset={handleResetAudioRecording}
+                  className="w-full"
+                />
+              </div>
+            </>
+          )
+        )}
+
+        {/* Celebratory Completed Reel Card (Always visible whenever scene has a recorded take) */}
+        {hasCompletedReel && (
+          <div
+            id={isCompleted ? 'fireside-active-studio' : 'fireside-completed-reel-section'}
+            className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center"
+          >
             <FiresideCompletedReelCard
               sceneId={effectiveSceneId}
               sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
               sceneMemory={activeSceneMemory}
+              sessionPhotos={photos}
+              overrideDurationSeconds={
+                mediaMode === 'video' && recordedVideoDuration > 0
+                  ? recordedVideoDuration
+                  : recordedAudioDuration > 0
+                  ? recordedAudioDuration
+                  : undefined
+              }
               activeLanguage={activeLanguage}
               onWatchTheatricalReel={() => setIsLightboxOpen(true)}
               onAddBonusNote={() => setIsBonusDrawerOpen(true)}
-              onReRecordRequest={() => setForceRecordMode(true)}
+              onReRecordRequest={() => {
+                setIsReviewingTake(false);
+                setForceRecordMode(true);
+              }}
             />
           </div>
-        ) : mediaMode === 'video' ? (
-          /* Video Memo Recording Surface */
-          <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
-            <div className="text-center mb-4">
-              <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
-                WhatsApp / FaceTime Video Memo
-              </p>
-              <h2 className="text-lg sm:text-xl font-serif text-stone-200">
-                {selectedSpark ? `Record: ${selectedSpark.title}` : 'Record Your Video Memo'}
-              </h2>
-            </div>
-
-            <FiresideVideoRecorder
-              ref={videoRecorderRef}
-              promptSpark={selectedSpark}
-              activeLanguage={activeLanguage}
-              activeMood={activeMood}
-              onMoodChange={handleMoodChange}
-              onRecordingComplete={handleVideoRecordingComplete}
-              onReset={handleResetVideoRecording}
-              className="w-full"
-            />
-          </div>
-        ) : (
-          /* Voice Recording & Heirloom Photo Tray Surface */
-          <>
-            {/* Physical Album Photo Capture Tray (MW-247) */}
-            <div className="w-full">
-              <AlbumPhotoCaptureTray
-                ref={photoTrayRef}
-                photos={photos}
-                onPhotosChange={setPhotos}
-                maxPhotos={6}
-                suggestedPhotoPrompt={selectedSpark ? selectedSpark.recommendedPhotoPrompt[activeLanguage] : null}
-                className="w-full"
-              />
-            </div>
-
-            {/* Tactile Web Audio Voice Recorder (MW-246) */}
-            <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
-              <div className="text-center mb-4">
-                <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
-                  Fireside Voice Recording
-                </p>
-                <h2 className="text-lg sm:text-xl font-serif text-stone-200">
-                  {selectedSpark ? `Speak: ${selectedSpark.title}` : 'Speak Your Spoken Memoir'}
-                </h2>
-              </div>
-
-              <TactileVoiceRecorder
-                ref={recorderRef}
-                promptSpark={selectedSpark}
-                activeLanguage={activeLanguage}
-                activeMood={activeMood}
-                onMoodChange={handleMoodChange}
-                onRecordingComplete={handleAudioRecordingComplete}
-                onReset={handleResetAudioRecording}
-                className="w-full"
-              />
-            </div>
-          </>
         )}
 
         {/* Selected Spark / Recording Confirmation Toast */}
@@ -722,10 +787,14 @@ export default function FiresideStudioClient() {
               data-testid="toast-studio-jump-link"
               onClick={(e) => {
                 e.preventDefault();
-                setForceRecordMode(true);
+                if (!hasCompletedReel) {
+                  setForceRecordMode(true);
+                }
                 setNotification(null);
                 setTimeout(() => {
-                  if (mediaMode === 'video' && videoRecorderRef.current) {
+                  if (hasCompletedReel && !forceRecordMode && !isReviewingTake) {
+                    document.getElementById('fireside-completed-reel-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else if (mediaMode === 'video' && videoRecorderRef.current) {
                     videoRecorderRef.current.scrollIntoView();
                   } else if (mediaMode === 'audio' && photoTrayRef.current) {
                     photoTrayRef.current.scrollIntoView();
@@ -748,6 +817,7 @@ export default function FiresideStudioClient() {
       <FiresideCinemaLightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
+        onOpenBonusDrawer={() => setIsBonusDrawerOpen(true)}
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
         mediaUrl={
           preferredTake?.mediaUrl ||
@@ -759,9 +829,11 @@ export default function FiresideStudioClient() {
         }
         mediaMode={preferredTake?.mediaMode || mediaMode}
         photos={
-          activeSceneMemory?.photos && activeSceneMemory.photos.length > 0
+          photos.length > 0
+            ? photos
+            : activeSceneMemory?.photos && activeSceneMemory.photos.length > 0
             ? activeSceneMemory.photos
-            : photos
+            : []
         }
         durationSeconds={preferredTake?.durationSeconds || recordedVideoDuration || recordedAudioDuration}
         moodTag={activeMood}

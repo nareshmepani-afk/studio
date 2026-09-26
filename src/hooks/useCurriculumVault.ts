@@ -66,7 +66,11 @@ export interface UseCurriculumVaultReturn {
   /** Resolves existing memory or initialises a zero-latency fallback skeleton */
   getSceneMemory: (sceneId: string) => UnifiedCurriculumMemory;
   /** Appends a new video or audio take non-destructively to the scene's multi-take stack */
-  saveSceneTake: (sceneId: string, take: MemoirTake) => Promise<void>;
+  saveSceneTake: (
+    sceneId: string,
+    take: MemoirTake,
+    options?: { photos?: any[]; prose?: string }
+  ) => Promise<void>;
   /** Designates a target take as preferred master reel stream */
   promotePreferredTake: (sceneId: string, takeId: string) => Promise<void>;
   /** Adds a non-destructive additive note or photo without mutating the master reel */
@@ -125,6 +129,7 @@ export function useCurriculumVault({
   initialSceneId,
 }: UseCurriculumVaultOptions = {}): UseCurriculumVaultReturn {
   const [scenes, setScenes] = useState<Record<string, UnifiedCurriculumMemory>>({});
+  const scenesRef = useRef<Record<string, UnifiedCurriculumMemory>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeSceneId, setActiveSceneId] = useState<string>(
     initialSceneId || ALL_CURRICULUM_SCENES[0].id
@@ -145,6 +150,7 @@ export function useCurriculumVault({
   useEffect(() => {
     // If unauthenticated or running in local guest mode, fallback gracefully
     if (!userId || userId.startsWith('guest') || !db) {
+      scenesRef.current = {};
       setScenes({});
       setIsLoading(false);
       return;
@@ -196,7 +202,8 @@ export function useCurriculumVault({
               });
             }
             const takes = rawTakes;
-            const preferredTake = takes.find((t) => t.isPreferred) || takes[0];
+            const preferredTake =
+              takes.find((t) => t.isPreferred) || takes[takes.length - 1] || takes[0];
 
             const normalized: UnifiedCurriculumMemory = {
               id: docSnap.id,
@@ -204,7 +211,7 @@ export function useCurriculumVault({
               sceneId: canonicalSceneId,
               partNumber: data.partNumber || sceneDef?.partNumber || 1,
               sceneNumber: data.sceneNumber || sceneDef?.sceneNumber || 1,
-              sceneTitle: data.title || sceneDef?.title || canonicalSceneId,
+              sceneTitle: data.title || data.sceneTitle || sceneDef?.title || canonicalSceneId,
               prose: data.prose || data.description || '',
               currentStatus:
                 data.currentStatus ||
@@ -230,6 +237,43 @@ export function useCurriculumVault({
               createdAt: data.createdAt || new Date().toISOString(),
             };
 
+            // Candidate Resolution Shield: if multiple docs exist for the same scene, retain the completed/newest one
+            const existing = loadedScenes[canonicalSceneId];
+            if (existing) {
+              const existingCompleted = isSceneCompleted(existing) ? 1 : 0;
+              const newCompleted = isSceneCompleted(normalized) ? 1 : 0;
+              if (newCompleted < existingCompleted) return;
+              if (newCompleted === existingCompleted) {
+                const existingTime = Date.parse(existing.lastModified || existing.createdAt || '') || 0;
+                const newTime = Date.parse(normalized.lastModified || normalized.createdAt || '') || 0;
+                if (newTime < existingTime) return;
+              }
+            }
+
+            // Preserve any active local blob URLs or photos from in-flight session takes
+            const localCurrent = scenesRef.current[canonicalSceneId];
+            if (localCurrent && localCurrent.takes && localCurrent.takes.length > 0) {
+              const localPreferred = localCurrent.takes.find((t) => t.isPreferred);
+              if (
+                localPreferred &&
+                localPreferred.mediaUrl?.startsWith('blob:') &&
+                !normalized.takes.some((t) => t.id === localPreferred.id)
+              ) {
+                normalized.takes = [
+                  ...normalized.takes.map((t) => ({ ...t, isPreferred: false })),
+                  localPreferred,
+                ];
+                normalized.activeTakeId = localPreferred.id;
+              }
+              if (
+                (!normalized.photos || normalized.photos.length === 0) &&
+                localCurrent.photos &&
+                localCurrent.photos.length > 0
+              ) {
+                normalized.photos = localCurrent.photos;
+              }
+            }
+
             // Index by canonical scene ID (e.g. "part-1-scene-1")
             loadedScenes[canonicalSceneId] = normalized;
 
@@ -244,6 +288,7 @@ export function useCurriculumVault({
             }
           });
 
+          scenesRef.current = loadedScenes;
           setScenes(loadedScenes);
           setIsLoading(false);
         },
@@ -291,15 +336,16 @@ export function useCurriculumVault({
   // ---------------------------------------------------------------------------
   const getSceneMemory = useCallback(
     (sceneIdOrPromptId: string): UnifiedCurriculumMemory => {
-      if (scenes[sceneIdOrPromptId]) {
-        return scenes[sceneIdOrPromptId];
+      const activeMap = Object.keys(scenes).length > 0 ? scenes : scenesRef.current;
+      if (activeMap[sceneIdOrPromptId]) {
+        return activeMap[sceneIdOrPromptId];
       }
 
       const sceneDef = resolveSceneFromPromptId(sceneIdOrPromptId) || getSceneById(sceneIdOrPromptId);
       const canonicalSceneId = sceneDef?.id || sceneIdOrPromptId;
 
-      if (scenes[canonicalSceneId]) {
-        return scenes[canonicalSceneId];
+      if (activeMap[canonicalSceneId]) {
+        return activeMap[canonicalSceneId];
       }
 
       return createEmptyCurriculumMemory({
@@ -317,13 +363,18 @@ export function useCurriculumVault({
 
   const resolveDocIdForScene = useCallback(
     (sceneId: string): string => {
-      const mem = scenes[sceneId];
+      const activeMap = Object.keys(scenesRef.current).length > 0 ? scenesRef.current : scenes;
+      const mem = activeMap[sceneId];
       if (mem && mem.id && !mem.id.startsWith('memoir_')) {
         return mem.id;
       }
-      const sceneDef = resolveSceneFromPromptId(sceneId);
-      if (sceneDef?.promptId && scenes[sceneDef.promptId]?.id && !scenes[sceneDef.promptId].id.startsWith('memoir_')) {
-        return scenes[sceneDef.promptId].id;
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      if (
+        sceneDef?.promptId &&
+        activeMap[sceneDef.promptId]?.id &&
+        !activeMap[sceneDef.promptId].id.startsWith('memoir_')
+      ) {
+        return activeMap[sceneDef.promptId].id;
       }
       return sceneId;
     },
@@ -331,93 +382,149 @@ export function useCurriculumVault({
   );
 
   const saveSceneTake = useCallback(
-    async (sceneId: string, take: MemoirTake): Promise<void> => {
+    async (
+      sceneId: string,
+      take: MemoirTake,
+      options?: { photos?: any[]; prose?: string }
+    ): Promise<void> => {
       const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
       const canonicalSceneId = sceneDef?.id || sceneId;
       const mappedPromptId = sceneDef?.promptId;
 
       // ZERO-CONTAMINATION SHIELD: Ignore rehearsal takes
-      if (sceneId === 'first_flight_rehearsal' || sceneId === 'prologue-flight-simulator' || canonicalSceneId === 'prologue-flight-simulator') {
+      if (
+        sceneId === 'first_flight_rehearsal' ||
+        sceneId === 'prologue-flight-simulator' ||
+        canonicalSceneId === 'prologue-flight-simulator'
+      ) {
         return;
       }
 
-      let updatedTakesToPersist: MemoirTake[] = [];
-      let updatedActsToPersist: ActIdentifier[] = [];
+      const nowIso = new Date().toISOString();
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+      const existingTakes = current.takes || [];
+
+      const isFirstTake = existingTakes.length === 0;
+      const shouldBePreferred = take.isPreferred !== undefined ? take.isPreferred : isFirstTake;
+
+      const takeWithLabel: MemoirTake = {
+        ...take,
+        label:
+          take.label ||
+          `Take ${take.takeNumber} (${take.mediaMode === 'video' ? 'Fireside Video' : 'Fireside Voice'})`,
+        isPreferred: shouldBePreferred,
+      };
+
+      const takeExists = existingTakes.some((t) => t.id === take.id);
+      const updatedTakes = takeExists
+        ? existingTakes.map((t) =>
+            t.id === take.id
+              ? { ...t, ...takeWithLabel }
+              : shouldBePreferred
+              ? { ...t, isPreferred: false }
+              : t
+          )
+        : existingTakes
+            .map((t) => (shouldBePreferred ? { ...t, isPreferred: false } : t))
+            .concat(takeWithLabel);
+
+      const existingActs: ActIdentifier[] = Array.isArray(current.actsCompleted)
+        ? current.actsCompleted
+        : [];
+      const updatedActs: ActIdentifier[] = existingActs.includes('act2')
+        ? existingActs
+        : [...existingActs, 'act2'];
+
+      const mergedPhotos =
+        options?.photos && options.photos.length > 0
+          ? options.photos
+          : current.photos || [];
+      const mergedProse = options?.prose || current.prose || '';
+
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        prose: mergedProse,
+        photos: mergedPhotos,
+        takes: updatedTakes,
+        activeTakeId: shouldBePreferred ? take.id : current.activeTakeId || take.id,
+        currentStatus: current.currentStatus === 'mastered' ? 'mastered' : 'captured',
+        actsCompleted: updatedActs,
+        lastModified: nowIso,
+        createdAt: current.createdAt || take.createdAt || nowIso,
+      };
+
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) {
+        nextScenes[mappedPromptId] = updatedMemory;
+      }
+      scenesRef.current = nextScenes;
 
       setScenes((prev) => {
-        const current = prev[canonicalSceneId] || getSceneMemory(canonicalSceneId);
-        const existingTakes = current.takes || [];
-
-        const isFirstTake = existingTakes.length === 0;
-        const shouldBePreferred = take.isPreferred || isFirstTake;
-
-        const takeWithLabel: MemoirTake = {
-          ...take,
-          label:
-            take.label ||
-            `Take ${take.takeNumber} (${take.mediaMode === 'video' ? 'Fireside Video' : 'Fireside Voice'})`,
-          isPreferred: shouldBePreferred,
-        };
-
-        const takeExists = existingTakes.some((t) => t.id === take.id);
-        const updatedTakes = takeExists
-          ? existingTakes.map((t) =>
-              t.id === take.id
-                ? { ...t, ...takeWithLabel }
-                : shouldBePreferred
-                ? { ...t, isPreferred: false }
-                : t
-            )
-          : existingTakes
-              .map((t) => (shouldBePreferred ? { ...t, isPreferred: false } : t))
-              .concat(takeWithLabel);
-
-        const existingActs: ActIdentifier[] = Array.isArray(current.actsCompleted)
-          ? current.actsCompleted
-          : [];
-        const updatedActs: ActIdentifier[] = existingActs.includes('act2')
-          ? existingActs
-          : [...existingActs, 'act2'];
-
-        const updatedMemory: UnifiedCurriculumMemory = {
-          ...current,
-          takes: updatedTakes,
-          activeTakeId: shouldBePreferred ? take.id : current.activeTakeId || take.id,
-          currentStatus: current.currentStatus === 'mastered' ? 'mastered' : 'captured',
-          actsCompleted: updatedActs,
-          lastModified: new Date().toISOString(),
-        };
-
-        lastMutatedMemoryRef.current = updatedMemory;
-        updatedTakesToPersist = updatedTakes;
-        updatedActsToPersist = updatedActs;
-
         const next = { ...prev, [canonicalSceneId]: updatedMemory };
         if (mappedPromptId) next[mappedPromptId] = updatedMemory;
         return next;
       });
 
       // Cloud persistence directly to /users/{userId}/memories
-      const memToPersist = lastMutatedMemoryRef.current;
+      const memToPersist = updatedMemory;
       if (db && userId && !userId.startsWith('guest') && memToPersist) {
         try {
           const targetDocId = resolveDocIdForScene(canonicalSceneId);
           const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+
+          // Ensure Firestore-safe serialisable photos (strip any transient File/Blob objects if present)
+          const safePhotos = (memToPersist.photos || []).map((p: any) => ({
+            id: p.id || `photo_${Date.now()}`,
+            localUri: p.localUri || p.previewUrl || p.storageUrl || p.url || '',
+            storageUrl: p.storageUrl || p.url || null,
+            storagePath: p.storagePath || null,
+            caption: p.caption || '',
+            capturedAt: p.capturedAt || nowIso,
+          }));
+
+          const primaryPhotoUrl =
+            safePhotos[0]?.storageUrl || safePhotos[0]?.localUri || null;
+
+          const narrativeText =
+            memToPersist.prose ||
+            `Spoken memoir recorded in Fireside Studio (${memToPersist.sceneTitle}).`;
 
           const payload: Record<string, any> = {
             sceneId: canonicalSceneId,
             promptId: mappedPromptId || canonicalSceneId,
             chapterId: sceneDef ? `part-${sceneDef.partNumber}` : 'part-i',
             partNumber: sceneDef?.partNumber || 1,
+            sceneNumber: sceneDef?.sceneNumber || 1,
             title: memToPersist.sceneTitle,
-            actsCompleted: updatedActsToPersist,
-            productionStage: mapActsCompletedToProductionStage(updatedActsToPersist),
-            takes: updatedTakesToPersist,
+            sceneTitle: memToPersist.sceneTitle,
+            prose: narrativeText,
+            description: narrativeText,
+            actsCompleted: updatedActs,
+            productionStage: Math.max(2, mapActsCompletedToProductionStage(updatedActs)),
+            takes: updatedTakes,
+            activeTakeId: updatedMemory.activeTakeId,
+            duration: take.durationSeconds,
+            photos: safePhotos,
             bonusNotes: memToPersist.bonusNotes || [],
             moodTag: memToPersist.moodTag || null,
+            originSurface: 'fireside_mobile',
+            currentStatus: memToPersist.currentStatus,
             status: memToPersist.currentStatus === 'mastered' ? 'pre-release' : 'draft',
-            updatedAt: new Date().toISOString(),
+            createdAt: memToPersist.createdAt || nowIso,
+            updatedAt: nowIso,
+            lastModified: nowIso,
           };
+
+          if (primaryPhotoUrl) {
+            payload.imageUrl = primaryPhotoUrl;
+          }
 
           if (take.mediaUrl) {
             if (take.mediaMode === 'video') {
@@ -430,7 +537,15 @@ export function useCurriculumVault({
           await setDoc(memoryDocRef, payload, { merge: true });
 
           if (memoirId) {
-            const legacyDocRef = doc(db, 'users', userId, 'memoirs', memoirId, 'scenes', canonicalSceneId);
+            const legacyDocRef = doc(
+              db,
+              'users',
+              userId,
+              'memoirs',
+              memoirId,
+              'scenes',
+              canonicalSceneId
+            );
             await setDoc(legacyDocRef, memToPersist, { merge: true });
           }
         } catch (cloudErr) {
@@ -438,7 +553,7 @@ export function useCurriculumVault({
         }
       }
     },
-    [getSceneMemory, userId, memoirId, resolveDocIdForScene]
+    [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
   );
 
   const promotePreferredTake = useCallback(
@@ -447,43 +562,56 @@ export function useCurriculumVault({
       const canonicalSceneId = sceneDef?.id || sceneId;
       const mappedPromptId = sceneDef?.promptId;
 
-      let updatedTakesToPersist: MemoirTake[] = [];
+      const nowIso = new Date().toISOString();
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+      const updatedTakes = (current.takes || []).map((t) => ({
+        ...t,
+        isPreferred: t.id === takeId,
+      }));
+
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        takes: updatedTakes,
+        activeTakeId: takeId,
+        lastModified: nowIso,
+      };
+
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
 
       setScenes((prev) => {
-        const current = prev[canonicalSceneId] || getSceneMemory(canonicalSceneId);
-        const updatedTakes = (current.takes || []).map((t) => ({
-          ...t,
-          isPreferred: t.id === takeId,
-        }));
-        updatedTakesToPersist = updatedTakes;
-
-        const updatedMemory: UnifiedCurriculumMemory = {
-          ...current,
-          takes: updatedTakes,
-          activeTakeId: takeId,
-          lastModified: new Date().toISOString(),
-        };
-
-        lastMutatedMemoryRef.current = updatedMemory;
         const next = { ...prev, [canonicalSceneId]: updatedMemory };
         if (mappedPromptId) next[mappedPromptId] = updatedMemory;
         return next;
       });
 
-      const memToPersist = lastMutatedMemoryRef.current;
+      const memToPersist = updatedMemory;
       if (db && userId && !userId.startsWith('guest') && memToPersist) {
         try {
           const targetDocId = resolveDocIdForScene(canonicalSceneId);
           const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
 
-          const preferredTake = updatedTakesToPersist.find((t) => t.id === takeId);
+          const preferredTake = updatedTakes.find((t) => t.id === takeId);
           const payload: Record<string, any> = {
             sceneId: canonicalSceneId,
             promptId: mappedPromptId || canonicalSceneId,
-            takes: updatedTakesToPersist,
+            takes: updatedTakes,
             preferredTakeId: takeId,
-            updatedAt: new Date().toISOString(),
+            activeTakeId: takeId,
+            updatedAt: nowIso,
           };
+
+          if (preferredTake?.durationSeconds) {
+            payload.duration = preferredTake.durationSeconds;
+          }
 
           if (preferredTake?.mediaUrl) {
             if (preferredTake.mediaMode === 'video') {
@@ -496,7 +624,15 @@ export function useCurriculumVault({
           await setDoc(memoryDocRef, payload, { merge: true });
 
           if (memoirId) {
-            const legacyDocRef = doc(db, 'users', userId, 'memoirs', memoirId, 'scenes', canonicalSceneId);
+            const legacyDocRef = doc(
+              db,
+              'users',
+              userId,
+              'memoirs',
+              memoirId,
+              'scenes',
+              canonicalSceneId
+            );
             await setDoc(legacyDocRef, payload, { merge: true });
           }
         } catch (cloudErr) {
@@ -504,7 +640,7 @@ export function useCurriculumVault({
         }
       }
     },
-    [getSceneMemory, userId, memoirId, resolveDocIdForScene]
+    [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
   );
 
   const addBonusMemoryNote = useCallback(
@@ -516,28 +652,39 @@ export function useCurriculumVault({
       const canonicalSceneId = sceneDef?.id || sceneId;
       const mappedPromptId = sceneDef?.promptId;
 
+      const nowIso = new Date().toISOString();
       const newNote: BonusMemoryNote = {
         id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         ...note,
-        createdAt: new Date().toISOString(),
+        createdAt: nowIso,
       };
 
-      setScenes((prev) => {
-        const current = prev[canonicalSceneId] || getSceneMemory(canonicalSceneId);
-        const updatedBonusNotes = [...(current.bonusNotes || []), newNote];
-        const updatedMemory: UnifiedCurriculumMemory = {
-          ...current,
-          bonusNotes: updatedBonusNotes,
-          lastModified: new Date().toISOString(),
-        };
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+      const updatedBonusNotes = [...(current.bonusNotes || []), newNote];
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        bonusNotes: updatedBonusNotes,
+        lastModified: nowIso,
+      };
 
-        lastMutatedMemoryRef.current = updatedMemory;
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
         const next = { ...prev, [canonicalSceneId]: updatedMemory };
         if (mappedPromptId) next[mappedPromptId] = updatedMemory;
         return next;
       });
 
-      const memToPersist = lastMutatedMemoryRef.current;
+      const memToPersist = updatedMemory;
       if (db && userId && !userId.startsWith('guest') && memToPersist) {
         try {
           const targetDocId = resolveDocIdForScene(canonicalSceneId);
@@ -549,13 +696,21 @@ export function useCurriculumVault({
               sceneId: canonicalSceneId,
               promptId: mappedPromptId || canonicalSceneId,
               bonusNotes: memToPersist.bonusNotes,
-              updatedAt: new Date().toISOString(),
+              updatedAt: nowIso,
             },
             { merge: true }
           );
 
           if (memoirId) {
-            const legacyDocRef = doc(db, 'users', userId, 'memoirs', memoirId, 'scenes', canonicalSceneId);
+            const legacyDocRef = doc(
+              db,
+              'users',
+              userId,
+              'memoirs',
+              memoirId,
+              'scenes',
+              canonicalSceneId
+            );
             await setDoc(legacyDocRef, memToPersist, { merge: true });
           }
         } catch (cloudErr) {
@@ -563,7 +718,7 @@ export function useCurriculumVault({
         }
       }
     },
-    [getSceneMemory, userId, memoirId, resolveDocIdForScene]
+    [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
   );
 
   const setStoryMoodTag = useCallback(
@@ -572,21 +727,32 @@ export function useCurriculumVault({
       const canonicalSceneId = sceneDef?.id || sceneId;
       const mappedPromptId = sceneDef?.promptId;
 
-      setScenes((prev) => {
-        const current = prev[canonicalSceneId] || getSceneMemory(canonicalSceneId);
-        const updatedMemory: UnifiedCurriculumMemory = {
-          ...current,
-          moodTag: mood,
-          lastModified: new Date().toISOString(),
-        };
+      const nowIso = new Date().toISOString();
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        moodTag: mood,
+        lastModified: nowIso,
+      };
 
-        lastMutatedMemoryRef.current = updatedMemory;
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
         const next = { ...prev, [canonicalSceneId]: updatedMemory };
         if (mappedPromptId) next[mappedPromptId] = updatedMemory;
         return next;
       });
 
-      const memToPersist = lastMutatedMemoryRef.current;
+      const memToPersist = updatedMemory;
       if (db && userId && !userId.startsWith('guest') && memToPersist) {
         try {
           const targetDocId = resolveDocIdForScene(canonicalSceneId);
@@ -598,16 +764,24 @@ export function useCurriculumVault({
               sceneId: canonicalSceneId,
               promptId: mappedPromptId || canonicalSceneId,
               moodTag: mood,
-              updatedAt: new Date().toISOString(),
+              updatedAt: nowIso,
             },
             { merge: true }
           );
 
           if (memoirId) {
-            const legacyDocRef = doc(db, 'users', userId, 'memoirs', memoirId, 'scenes', canonicalSceneId);
+            const legacyDocRef = doc(
+              db,
+              'users',
+              userId,
+              'memoirs',
+              memoirId,
+              'scenes',
+              canonicalSceneId
+            );
             await setDoc(
               legacyDocRef,
-              { moodTag: mood, lastModified: new Date().toISOString() },
+              { moodTag: mood, lastModified: nowIso },
               { merge: true }
             );
           }
@@ -616,7 +790,7 @@ export function useCurriculumVault({
         }
       }
     },
-    [getSceneMemory, userId, memoirId, resolveDocIdForScene]
+    [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
   );
 
   const activeSceneMemory = useMemo(() => {

@@ -600,4 +600,59 @@ describe('MW-88-T1: useCurriculumVault & Bi-Directional Bridge Suite', () => {
     expect(clientSource).toContain('handleVideoRecordingComplete');
     expect(clientSource).toContain('activeTakeIdRef');
   });
+
+  it('16. Synchronously persists createdAt, duration, prose, description, and photos to Firestore on first saveSceneTake call for /studio visibility', async () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    const firstTake: MemoirTake = {
+      id: 'take_first_sync',
+      takeNumber: 1,
+      source: 'fireside_mobile',
+      mediaMode: 'audio',
+      mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/app/voice_1.webm',
+      durationSeconds: 12,
+      createdAt: '2026-09-26T16:40:00.000Z',
+      label: 'Take 1 (Fireside Voice)',
+      isPreferred: true,
+    };
+
+    await act(async () => {
+      await result.current.saveSceneTake('part-1-scene-1', firstTake, {
+        photos: [
+          {
+            id: 'photo_1',
+            localUri: 'blob:https://dev.memoryweaver.studio/photo-1',
+            storageUrl: 'https://firebasestorage.googleapis.com/v0/b/app/photo_1.jpg',
+            caption: 'Grandmother in Mombasa',
+            capturedAt: '2026-09-26T16:39:00.000Z',
+          },
+        ],
+      });
+    });
+
+    expect(mockSetDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        sceneId: 'part-1-scene-1',
+        promptId: 'p1',
+        duration: 12,
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+        prose: expect.any(String),
+        description: expect.any(String),
+        imageUrl: 'https://firebasestorage.googleapis.com/v0/b/app/photo_1.jpg',
+        takes: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'take_first_sync',
+            durationSeconds: 12,
+            isPreferred: true,
+          }),
+        ]),
+      }),
+      { merge: true }
+    );
+  });
 });
+

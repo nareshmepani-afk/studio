@@ -35,6 +35,7 @@ import {
   FiresideLanguage,
   FIRESIDE_TOUCH_TARGETS,
   RecordingLifecycleStatus,
+  HeirloomPhotoAttachment,
 } from '@/types/fireside';
 import { StoryMoodTag } from '@/types/curriculum';
 import { FiresideMoodChips } from '@/components/fireside/FiresideMoodChips';
@@ -55,8 +56,11 @@ export interface TactileVoiceRecorderProps {
   promptSpark?: FiresidePromptSpark | null;
   activeLanguage?: FiresideLanguage;
   activeMood?: StoryMoodTag;
+  photos?: HeirloomPhotoAttachment[];
+  takeNumber?: number;
   onMoodChange?: (mood: StoryMoodTag) => void;
   onRecordingComplete?: (audioBlob: Blob, durationSeconds: number) => void;
+  onKeepRecording?: (audioBlob: Blob, durationSeconds: number) => void;
   onReset?: () => void;
   className?: string;
 }
@@ -67,8 +71,11 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
       promptSpark,
       activeLanguage = 'en',
       activeMood,
+      photos = [],
+      takeNumber = 1,
       onMoodChange,
       onRecordingComplete,
+      onKeepRecording,
       onReset,
       className = '',
     },
@@ -158,12 +165,24 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
   };
 
   const handleLoadedMetadata = () => {
-    if (audioPlayerRef.current) {
-      const dur = audioPlayerRef.current.duration;
+    const el = audioPlayerRef.current;
+    if (el) {
+      const dur = el.duration;
       if (typeof dur === 'number' && Number.isFinite(dur) && dur > 0) {
         setPreviewDuration(dur);
       } else {
         setPreviewDuration(durationSeconds);
+        if (dur === Infinity) {
+          el.currentTime = 1e101;
+          const resolveAudioDuration = () => {
+            el.removeEventListener('timeupdate', resolveAudioDuration);
+            if (Number.isFinite(el.duration) && el.duration > 0) {
+              setPreviewDuration(el.duration);
+            }
+            el.currentTime = 0;
+          };
+          el.addEventListener('timeupdate', resolveAudioDuration);
+        }
       }
     }
   };
@@ -567,9 +586,92 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
             </div>
           </div>
 
+          {/* Uploaded Vintage Photo + Voice Preview Frame (Test 10: Visible Photo During Voice Playback) */}
+          {status === 'saved' && photos && photos.length > 0 && (
+            <div
+              data-testid="voice-photo-preview-frame"
+              className="w-full mt-4 rounded-2xl overflow-hidden border border-amber-500/40 bg-stone-950/90 shadow-lg"
+            >
+              <div className="relative aspect-[16/9] w-full bg-black overflow-hidden">
+                <img
+                  src={
+                    (photos[0] as any).localUri ||
+                    (photos[0] as any).storageUrl ||
+                    (photos[0] as any).previewUrl ||
+                    (photos[0] as any).url ||
+                    ''
+                  }
+                  alt={photos[0].caption || 'Attached vintage heirloom photo'}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
+                <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-xs font-mono text-amber-200">
+                  <span className="bg-stone-950/80 border border-amber-500/40 px-2.5 py-1 rounded-full">
+                    📸 {photos.length} Vintage {photos.length === 1 ? 'Photo' : 'Photos'} Paired with Voice
+                  </span>
+                  {isPlayingPreview && (
+                    <span className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 rounded-full animate-pulse">
+                      🔊 Playing Voice Memoir...
+                    </span>
+                  )}
+                </div>
+              </div>
+              {photos.length > 1 && (
+                <div className="p-2 bg-stone-900/90 border-t border-stone-800 flex items-center gap-2 overflow-x-auto">
+                  {photos.map((p, idx) => {
+                    const thumbSrc =
+                      (p as any).localUri ||
+                      (p as any).storageUrl ||
+                      (p as any).previewUrl ||
+                      (p as any).url ||
+                      '';
+                    return (
+                      <img
+                        key={p.id || idx}
+                        src={thumbSrc}
+                        alt={p.caption || `Heirloom photo ${idx + 1}`}
+                        className="w-12 h-12 rounded-lg object-cover border border-amber-500/40 shrink-0"
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Recorded Take Details Summary Bar (Title, Duration, Timestamp, Take #) */}
+          {status === 'saved' && (
+            <div
+              data-testid="voice-review-metadata-bar"
+              className="w-full mt-4 rounded-2xl bg-stone-900/90 border border-stone-800 px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-stone-300"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold">
+                  Take #{takeNumber}
+                </span>
+                <span className="font-serif text-sm text-white truncate">
+                  {sparkTitle || 'Fireside Spoken Memoir'}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-stone-400">
+                <span>
+                  Duration: <strong className="text-emerald-300">{formatDurationMMSS(effectiveTotalDuration)}</strong>
+                </span>
+                <span>•</span>
+                <span>
+                  {new Date().toLocaleDateString('en-GB', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Saved State Elder Action Bar (Explicit Discard & Retake / Keep Memoir) */}
           {status === 'saved' && (
-            <div className="w-full mt-6 pt-5 border-t border-stone-800/80 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="w-full mt-4 pt-4 border-t border-stone-800/80 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={resetRecording}
@@ -583,8 +685,12 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
               <button
                 type="button"
                 onClick={() => {
-                  if (audioBlob && onRecordingComplete) {
-                    onRecordingComplete(audioBlob, effectiveTotalDuration);
+                  if (audioBlob) {
+                    if (onKeepRecording) {
+                      onKeepRecording(audioBlob, effectiveTotalDuration);
+                    } else if (onRecordingComplete) {
+                      onRecordingComplete(audioBlob, effectiveTotalDuration);
+                    }
                   }
                 }}
                 data-hotspot-id="HS_FIRESIDE_VOICE_KEEP_BTN"
