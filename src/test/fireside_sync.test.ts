@@ -537,13 +537,45 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         prose: 'The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me.',
       };
 
+      // 1. Assert target document ID and scene identifier
+      expect(mockMemory.id).toBe('ey96djU6qR1BrDGnvZwp');
+      expect(mockMemory.sceneId).toBe('part-1-scene-1');
+
       const { unmount } = render(React.createElement(SingleCardPromptCarousel, { activeSceneMemory: mockMemory }));
-      expect(document.querySelector('[data-testid="fireside-active-script-body"]')?.textContent).toContain(
+      
+      // 2. Assert Rule 14 resolution prioritises activeSceneMemory.prose over static prompt questions
+      const scriptBody = document.querySelector('[data-testid="fireside-active-script-body"]');
+      expect(scriptBody).toBeTruthy();
+      expect(scriptBody?.textContent).toContain(
         'The history I carry is an epic journey across oceans and generations'
       );
       expect(document.querySelector('[data-testid="fireside-sensory-counters"]')).toBeTruthy();
-      expect(document.querySelector('[data-testid="fireside-script-toggle-btn"]')).toBeTruthy();
+
+      // 3. Assert toggle cleanly switches display state between active script and original prompt
+      const toggleBtn = document.querySelector('[data-testid="fireside-script-toggle-btn"]') as HTMLElement;
+      expect(toggleBtn).toBeTruthy();
+      expect(toggleBtn.textContent).toContain('View Original Spark');
+
+      // Click to switch to original spark
+      fireEvent.click(toggleBtn);
+      expect(document.querySelector('[data-testid="fireside-prompt-spark-body"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="fireside-active-script-body"]')).toBeNull();
+      expect(toggleBtn.textContent).toContain('View Woven Script');
+
+      // Click again to toggle back to active woven script
+      fireEvent.click(toggleBtn);
+      expect(document.querySelector('[data-testid="fireside-active-script-body"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="fireside-prompt-spark-body"]')).toBeNull();
+
       unmount();
+
+      // 4. Assert fallback when activeSceneMemory has empty prose
+      const { unmount: unmountFallback } = render(
+        React.createElement(SingleCardPromptCarousel, { activeSceneMemory: { id: 'ey96djU6qR1BrDGnvZwp', prose: '' } })
+      );
+      expect(document.querySelector('[data-testid="fireside-prompt-spark-body"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="fireside-active-script-body"]')).toBeNull();
+      unmountFallback();
     });
 
     it('executes the 3-step FiresideWarmupModal flow with visual waveform, reassurance feedback, and strict zero-contamination shield (zero Firestore writes)', async () => {
