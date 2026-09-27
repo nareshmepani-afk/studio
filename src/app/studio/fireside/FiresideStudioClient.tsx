@@ -44,7 +44,7 @@ import {
   AlertCircle,
   Monitor,
 } from 'lucide-react';
-import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
+import { getSceneById, getPartForScene } from '@/lib/curriculum/masterStoryStructure';
 
 export default function FiresideStudioClient() {
   const searchParams = useSearchParams();
@@ -583,10 +583,23 @@ export default function FiresideStudioClient() {
     }, 5000);
   };
 
-  // Active Curriculum Part Context (MW-249)
-  const activePartTitle = selectedSpark?.linkedSceneId
-    ? getSceneById(selectedSpark.linkedSceneId)?.partTitle
-    : undefined;
+  // Active Curriculum Part Context & Golden Thread Bilingual Hierarchy (MW-249 / MW-88-T3)
+  const activePart = useMemo(
+    () => getPartForScene((selectedSpark || activePromptSpark)?.linkedSceneId),
+    [selectedSpark, activePromptSpark]
+  );
+  const activePartTitle = activePart.title;
+  const englishPartHeading = activePart.localizedTitles?.en || activePart.title;
+  const motherTonguePartLang: FiresideLanguage = activeLanguage === 'en' ? 'gu' : activeLanguage;
+  const motherTonguePartHeading =
+    activePart.localizedTitles?.[motherTonguePartLang] ||
+    activePart.localizedTitles?.gu ||
+    'ભાગ I: મૂળ અને પાયા';
+
+  const primaryPartHeading =
+    activeLanguage === 'en' ? englishPartHeading : motherTonguePartHeading;
+  const secondaryPartHeading =
+    activeLanguage === 'en' ? motherTonguePartHeading : englishPartHeading;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-stone-100 flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-200">
@@ -708,20 +721,32 @@ export default function FiresideStudioClient() {
           </div>
         )}
 
-        {/* Intro Subhead & Real-Time Vault Progress Indicator */}
-        <div className="text-center max-w-md">
+        {/* Unified Chapter Typography ("The Golden Thread" — MW-88-T3) */}
+        <div className="text-center max-w-md" data-testid="fireside-golden-thread-header">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold mb-3 shadow-sm">
             <span>🌟 Vault Progress: {completedScenes} of {totalScenes} Stories Woven</span>
             <span className="text-stone-500">•</span>
             <span>{vaultProgressPercent}%</span>
           </div>
-          <p className="text-xs uppercase tracking-widest text-amber-400/80 font-medium mb-1">
-            Armchair Storytelling Surface
+          <p
+            data-testid="fireside-production-stage-label"
+            className="text-xs uppercase tracking-widest text-amber-400/90 font-semibold mb-1"
+          >
+            PRODUCTION STAGE
           </p>
-          <h1 className="text-xl sm:text-2xl font-serif text-white font-normal">
-            Choose a Memory Spark
+          <h1
+            data-testid="fireside-chapter-primary-title"
+            className="text-xl sm:text-2xl font-serif text-white font-normal leading-snug"
+          >
+            {primaryPartHeading}
           </h1>
-          <p className="text-xs text-stone-400 mt-1">
+          <p
+            data-testid="fireside-chapter-secondary-title"
+            className="text-sm sm:text-base font-serif text-amber-200/85 mt-0.5 leading-snug"
+          >
+            {secondaryPartHeading}
+          </p>
+          <p className="text-xs text-stone-400 mt-1.5">
             One memory at a time. Select your mother tongue or swipe to browse.
           </p>
         </div>
@@ -747,6 +772,15 @@ export default function FiresideStudioClient() {
             onActivePromptChange={handleActivePromptChange}
             onLanguageChange={handleLanguageChange}
             onPhotoPromptClick={handlePhotoPromptClick}
+            onWarmupComplete={() => {
+              logEvent('FIRESIDE_WARMUP_COMPLETED' as any, {
+                language: activeLanguage,
+              });
+              setNotification('Soundcheck complete. Entering Part I: Roots and Foundations.');
+              setTimeout(() => {
+                setNotification(null);
+              }, 5000);
+            }}
           />
         </div>
 

@@ -417,3 +417,26 @@
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
+### [2026-09-27 09:20 BST] • Checkpoint #019 — Dual-Surface Curriculum Synchronisation & Fireside Rehearsal Warmup (MW-88-T3)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved Sprint Integration Memorandum **MW-88-T3** to eliminate cognitive friction between Desktop Soundstage (`/studio`) and Fireside Mobile (`/studio/fireside`) via the "Golden Thread" bilingual production hierarchy, identical story sequence & Scene IDs, and the 3-step "Fireside Warmup & Soundcheck" rehearsal sandbox.
+  - 🧠 **Gemini Strategic Brain**: Designed the shared curriculum title & sequence alignment across `masterStoryStructure.ts`, `firesidePrompts.ts`, `FiresideStudioClient.tsx`, `SingleCardPromptCarousel.tsx`, and `PromptCard.tsx`, plus the ephemeral `FiresideWarmupSandbox.tsx` with strict vault contamination isolation.
+  - ⚡ **Antigravity Execution**:
+    1. **Unified Chapter Typography ("The Golden Thread") (`src/app/studio/fireside/FiresideStudioClient.tsx`, `src/lib/curriculum/masterStoryStructure.ts`)**: Replaced the generic `"Armchair Storytelling Surface • Choose a Memory Spark"` header with the canonical bilingual production hierarchy (`PRODUCTION STAGE` / `Part I: Roots and Foundations` / `ભાગ I: મૂળ અને પાયા`), dynamically prioritising the mother tongue script when switching language pills (`en` / `gu` / `pa` / `hi`) without altering layout bounds.
+    2. **Identical Story Sequence & Scene IDs (`src/lib/firesidePrompts.ts`, `src/components/fireside/SingleCardPromptCarousel.tsx`, `src/components/prompts/PromptCard.tsx`, `src/components/studio/StudioDashboard.tsx`)**: Synchronised the Fireside card carousel with the canonical Desktop seed sequence (`A Child of Two Worlds` / `બે દુનિયાનું બાળક`, `The House I Grew Up In` / `હું જે ઘરમાં મોટો થયો`, `Innocence and Curiosity` / `નિર્દોષતા અને જિજ્ઞાસા`, etc.) and added matching Scene numbering badges (`Part I • Scene 1`, `Part I • Scene 2`, etc.) on both surfaces.
+    3. **3-Step Fireside Warmup & Soundcheck (`src/components/fireside/FiresideWarmupSandbox.tsx`, `src/components/fireside/SingleCardPromptCarousel.tsx`)**: Built the `[ 🎙️ 30-Second Warmup & Soundcheck ]` trigger at index 0 of the carousel (`min-h-[56px]`) guiding elderly narrators through Step 1 (Phone Mic Test Phrase), Step 2 (Instant Playback with Ambient Web Audio Warmth), and Step 3 (Optional Photo Print Digitiser Preview), exiting with `"Soundcheck complete. Entering Part I: Roots and Foundations."` and enforcing a strict Contamination Shield (zero mock data written to Firestore or IndexedDB). Zero edits to `SoloStage.tsx` (Rule 7).
+  - 🛡️ **QA Gatekeeper**: Expanded `src/test/fireside_prompt_carousel.test.tsx` with MW-88-T3 hermetic unit tests (12/12 passing in `fireside_prompt_carousel.test.tsx`; 636/636 passing across all 53 test files). Verified `tsc --noEmit` (exit 0) and `npm.cmd run build` (exit 0).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\types\fireside.ts`
+  - `C:\Users\home\studio\src\lib\curriculum\masterStoryStructure.ts`
+  - `C:\Users\home\studio\src\lib\firesidePrompts.ts`
+  - `C:\Users\home\studio\src\components\fireside\FiresideWarmupSandbox.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\components\prompts\PromptCard.tsx`
+  - `C:\Users\home\studio\src\components\studio\StudioDashboard.tsx`
+  - `C:\Users\home\studio\src\test\fireside_prompt_carousel.test.tsx`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---

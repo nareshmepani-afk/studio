@@ -45,6 +45,7 @@ import { FIRESIDE_LANGUAGE_LABELS, FIRESIDE_TOUCH_TARGETS } from '@/types/firesi
 import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
 import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import type { EditingAuthority } from '@/types/curriculum';
+import { FiresideWarmupSandbox } from '@/components/fireside/FiresideWarmupSandbox';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
@@ -57,6 +58,7 @@ export interface SingleCardPromptCarouselProps {
   onActivePromptChange?: (spark: FiresidePromptSpark) => void;
   onLanguageChange?: (language: FiresideLanguage) => void;
   onPhotoPromptClick?: (photoPrompt: string) => void;
+  onWarmupComplete?: () => void;
   className?: string;
 }
 
@@ -87,6 +89,7 @@ export function SingleCardPromptCarousel({
   onActivePromptChange,
   onLanguageChange,
   onPhotoPromptClick,
+  onWarmupComplete,
   className = '',
 }: SingleCardPromptCarouselProps) {
   const sparkDeck = useMemo(() => {
@@ -103,6 +106,8 @@ export function SingleCardPromptCarousel({
   const [internalLanguage, setInternalLanguage] = useState<FiresideLanguage>('en');
   const [direction, setDirection] = useState<number>(0);
   const [showFollowUps, setShowFollowUps] = useState<boolean>(false);
+  const [isWarmupOpen, setIsWarmupOpen] = useState<boolean>(false);
+  const [warmupCompleted, setWarmupCompleted] = useState<boolean>(false);
 
   const currentLanguage = controlledLanguage || internalLanguage;
   const currentSpark = sparkDeck[currentIndex] || sparkDeck[0];
@@ -119,6 +124,21 @@ export function SingleCardPromptCarousel({
   const linkedScene = currentSpark.linkedSceneId ? getSceneById(currentSpark.linkedSceneId) : undefined;
   const cardEditingAuthority: EditingAuthority =
     editingAuthority ?? (resolveSceneAuthority ? resolveSceneAuthority(currentSpark.linkedSceneId) : 'fireside_flexible');
+
+  // Resolve bilingual card titles (Golden Thread: dynamically prioritise mother tongue when selected)
+  const englishTitle = currentSpark.localizedTitles?.en || linkedScene?.localizedTitles?.en || currentSpark.title;
+  const motherTongueLang: FiresideLanguage = currentLanguage === 'en' ? 'gu' : currentLanguage;
+  const motherTongueTitle =
+    currentSpark.localizedTitles?.[motherTongueLang] ||
+    linkedScene?.localizedTitles?.[motherTongueLang] ||
+    currentSpark.localizedTitles?.gu ||
+    linkedScene?.localizedTitles?.gu ||
+    '';
+
+  const primaryCardTitle =
+    currentLanguage === 'en' ? englishTitle : motherTongueTitle || englishTitle;
+  const secondaryCardTitle =
+    currentLanguage === 'en' ? motherTongueTitle : englishTitle;
 
   const handleLanguageSelect = (lang: FiresideLanguage) => {
     setInternalLanguage(lang);
@@ -169,7 +189,7 @@ export function SingleCardPromptCarousel({
       className={`w-full max-w-xl mx-auto flex flex-col items-center select-none ${className}`}
       style={{ touchAction: 'pan-y' }}
     >
-      {/* 1. Language Toggle Pills (Armchair 1-Tap Switching) */}
+      {/* 1. Language Toggle Pills (Armchair 1-Tap Switching, Rule 26: 56px touch targets) */}
       <div className="w-full flex items-center justify-center gap-1.5 sm:gap-2 mb-4 px-1 overflow-x-auto no-scrollbar">
         {LANGUAGES.map((lang) => {
           const isActive = currentLanguage === lang;
@@ -179,7 +199,8 @@ export function SingleCardPromptCarousel({
               type="button"
               data-hotspot-id={`HS_FIRESIDE_LANG_${lang.toUpperCase()}`}
               onClick={() => handleLanguageSelect(lang)}
-              className={`min-h-[44px] sm:min-h-[48px] px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
+              style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+              className={`min-h-[56px] px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
                 isActive
                   ? 'bg-amber-500/20 text-amber-200 border-amber-500/50 shadow-sm shadow-amber-500/10 scale-102'
                   : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/20 hover:text-neutral-200'
@@ -193,6 +214,54 @@ export function SingleCardPromptCarousel({
           );
         })}
       </div>
+
+      {/* 1b. Fireside Warmup & Soundcheck Trigger (Index 0 of Carousel — MW-88-T3) */}
+      {currentIndex === 0 && (
+        <div className="w-full mb-4 flex flex-col gap-2">
+          {!isWarmupOpen && (
+            <button
+              type="button"
+              data-testid="fireside-warmup-trigger"
+              data-hotspot-id="HS_FIRESIDE_WARMUP_TRIGGER_BTN"
+              onClick={() => setIsWarmupOpen(true)}
+              style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+              className="w-full min-h-[56px] px-5 py-3 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 border border-amber-400/40 text-amber-200 font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-md shadow-amber-500/10"
+              aria-label="30-Second Warmup and Soundcheck"
+            >
+              <span aria-hidden="true">🎙️</span>
+              <span>30-Second Warmup &amp; Soundcheck</span>
+              {warmupCompleted && (
+                <span className="ml-1 text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
+                  ✓ Ready
+                </span>
+              )}
+            </button>
+          )}
+
+          {warmupCompleted && !isWarmupOpen && (
+            <div
+              data-testid="warmup-exit-banner"
+              className="w-full px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-200 text-xs sm:text-sm font-medium text-center"
+              role="status"
+            >
+              Soundcheck complete. Entering Part I: Roots and Foundations.
+            </div>
+          )}
+
+          {isWarmupOpen && (
+            <FiresideWarmupSandbox
+              isOpen={isWarmupOpen}
+              activeLanguage={currentLanguage}
+              onClose={() => setIsWarmupOpen(false)}
+              onComplete={() => {
+                setWarmupCompleted(true);
+                setIsWarmupOpen(false);
+                onWarmupComplete?.();
+              }}
+            />
+          )}
+        </div>
+      )}
 
       {/* 2. The Single Interactive Story Spark Card */}
       <div className="w-full relative min-h-[360px] sm:min-h-[400px]">
@@ -235,7 +304,10 @@ export function SingleCardPromptCarousel({
                   </div>
 
                   {linkedScene && (
-                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold">
+                    <span
+                      data-testid="carousel-scene-number-badge"
+                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold"
+                    >
                       {linkedScene.partTitle.split(':')[0]} • Scene {linkedScene.sceneNumber}
                     </span>
                   )}
@@ -259,7 +331,7 @@ export function SingleCardPromptCarousel({
                       ) : (
                         <>
                           <Mic className="w-3 h-3 text-amber-400" />
-                          <span>Voice & Photos • Curriculum</span>
+                          <span>Voice &amp; Photos • Curriculum</span>
                         </>
                       )}
                     </span>
@@ -283,11 +355,23 @@ export function SingleCardPromptCarousel({
                 </div>
               </div>
 
-
-              {/* Memory Prompt Heading & Spark Prose */}
-              <h3 className="text-sm sm:text-base font-semibold text-amber-400/90 tracking-wide mb-3 flex items-center gap-2">
-                <span>{currentSpark.title}</span>
-              </h3>
+              {/* Memory Prompt Heading (Bilingual Hierarchy — MW-88-T3) & Spark Prose */}
+              <div className="mb-3">
+                <h3
+                  data-testid="carousel-card-primary-title"
+                  className="text-base sm:text-lg font-semibold text-amber-400/95 tracking-wide flex items-center gap-2 leading-snug"
+                >
+                  <span>{primaryCardTitle}</span>
+                </h3>
+                {secondaryCardTitle && secondaryCardTitle !== primaryCardTitle && (
+                  <p
+                    data-testid="carousel-card-secondary-title"
+                    className="text-xs sm:text-sm font-medium text-amber-200/75 tracking-wide mt-0.5 leading-snug"
+                  >
+                    {secondaryCardTitle}
+                  </p>
+                )}
+              </div>
 
               <p className="text-xl sm:text-2xl font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200">
                 "{currentText}"
@@ -300,7 +384,8 @@ export function SingleCardPromptCarousel({
                 type="button"
                 data-hotspot-id="HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN"
                 onClick={() => setShowFollowUps((prev) => !prev)}
-                className="w-full flex items-center justify-between text-xs sm:text-sm font-semibold text-amber-300 hover:text-amber-200 transition-colors py-2 px-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 cursor-pointer"
+                style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+                className="w-full min-h-[56px] flex items-center justify-between text-xs sm:text-sm font-semibold text-amber-300 hover:text-amber-200 transition-colors py-2 px-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/25 cursor-pointer"
                 aria-expanded={showFollowUps}
                 aria-label="Deepen this memory (Follow-up questions)"
               >
@@ -360,7 +445,8 @@ export function SingleCardPromptCarousel({
                         alert(`Archival photo digitisation selected: "${photoPrompt}"`);
                       }
                     }}
-                    className="self-start sm:self-center shrink-0 px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 active:scale-98 text-amber-200 text-xs font-semibold border border-amber-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+                    className="self-start sm:self-center shrink-0 min-h-[56px] px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 active:scale-98 text-amber-200 text-xs font-semibold border border-amber-500/40 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                     aria-label="Digitise physical album photo"
                   >
                     <Camera className="w-3.5 h-3.5 text-amber-300" />

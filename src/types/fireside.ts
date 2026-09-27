@@ -177,6 +177,8 @@ export interface FiresidePromptSpark {
   id: string;
   category: PromptCategory;
   title: string;
+  /** Canonical bilingual/multilingual scene titles synchronised with Desktop ProductionDeck (MW-88-T3) */
+  localizedTitles?: Record<FiresideLanguage, string>;
   sparks: Record<FiresideLanguage, string>;
   followUpQuestions: Record<FiresideLanguage, string[]>;
   recommendedPhotoPrompt: Record<FiresideLanguage, string>;

@@ -335,7 +335,7 @@ export function StudioDashboard({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {chapter.prompts.map((cp) => {
+                    {chapter.prompts.map((cp, promptIdx) => {
                       const isCompleted = !!cp.memory;
                       const isPremium = premiumPromptIds.has(cp.id);
                       const canAccess = !isPremium || directorPassStatus === 'paid_host_pass_active';
@@ -363,6 +363,8 @@ export function StudioDashboard({
                             onStartChapter={effectiveOnStartChapter}
                             onToggleFlagPrompt={handleToggleFlagPrompt}
                             canAccess={canAccess}
+                            sceneNumber={promptIdx + 1}
+                            partLabel={chapter.title.split(':')[0]}
                             memoryDescription={(() => {
                               const isTemplate = (t?: string) => {
                                 if (!t) return true;

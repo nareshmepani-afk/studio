@@ -34,6 +34,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Prompt } from '@/types';
 import StudioChapterContent from '../studio/StudioChapterContent';
+import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
 type PromptCardProps = {
   promptId: string;
@@ -52,6 +53,8 @@ type PromptCardProps = {
   prompt?: Prompt;
   parentPrompt?: Prompt;
   isRecommended?: boolean;
+  sceneNumber?: number;
+  partLabel?: string;
 };
 
 export function PromptCard(props: PromptCardProps) {
@@ -98,8 +101,19 @@ export function PromptCard(props: PromptCardProps) {
     canAccess,
     memoryDescription,
     status,
-    isRecommended
+    isRecommended,
+    sceneNumber,
+    partLabel
   } = props;
+
+  const matchedScene = resolveSceneFromPromptId(promptId);
+  const resolvedSceneNumber = sceneNumber ?? matchedScene?.sceneNumber;
+  const resolvedPartLabel = partLabel ?? (matchedScene ? matchedScene.partTitle.split(':')[0] : undefined);
+  const sceneBadgeText = resolvedSceneNumber
+    ? resolvedPartLabel
+      ? `${resolvedPartLabel} • Scene ${resolvedSceneNumber}`
+      : `Scene ${resolvedSceneNumber}`
+    : null;
 
   const handleAction = (e: React.MouseEvent) => {
     if (props.isLoading) {
@@ -195,9 +209,9 @@ export function PromptCard(props: PromptCardProps) {
 
         <div className="flex flex-col h-full p-6">
             <header className="mb-4">
-              <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                 {isCompleted ? (
-                   <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex items-center bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
                           <CheckCircle className="h-2.5 w-2.5 mr-1" />
                           Captured
@@ -223,11 +237,21 @@ export function PromptCard(props: PromptCardProps) {
                   </div>
                 )}
                 
-                {!canAccess && (
-                  <div className="flex items-center bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
-                      <Lock className="h-2.5 w-2.5 mr-1" /> Premium
-                  </div>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {sceneBadgeText && (
+                    <span
+                      data-testid={`prompt-card-scene-badge-${promptId}`}
+                      className="text-[9px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold"
+                    >
+                      {sceneBadgeText}
+                    </span>
+                  )}
+                  {!canAccess && (
+                    <div className="flex items-center bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
+                        <Lock className="h-2.5 w-2.5 mr-1" /> Premium
+                    </div>
+                  )}
+                </div>
               </div>
               
               <h3 className={cardTitleClasses}>

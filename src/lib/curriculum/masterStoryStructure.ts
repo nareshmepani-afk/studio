@@ -24,6 +24,12 @@ export interface MasterStoryScene {
   partTitle: string;
   sceneNumber: number;
   title: string;
+  localizedTitles?: {
+    en: string;
+    gu: string;
+    pa: string;
+    hi: string;
+  };
   subtitle: string;
   promptId: string;
   suggestedMediaMode: SuggestedMediaMode;
@@ -39,6 +45,12 @@ export interface MasterStoryScene {
 export interface MasterStoryPart {
   partNumber: number;
   title: string;
+  localizedTitles: {
+    en: string;
+    gu: string;
+    pa: string;
+    hi: string;
+  };
   subtitle: string;
   description: string;
   scenes: MasterStoryScene[];
@@ -52,6 +64,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
   {
     partNumber: 1,
     title: 'Part I: Roots and Foundations',
+    localizedTitles: {
+      en: 'Part I: Roots and Foundations',
+      gu: 'ભાગ I: મૂળ અને પાયા',
+      pa: 'ਭਾਗ I: ਜੜ੍ਹਾਂ ਅਤੇ ਬੁਨਿਆਦ',
+      hi: 'भाग I: जड़ें और नींव',
+    },
     subtitle: 'Where the River Began',
     description: 'Ancestral roots, birthplace memories, and the sensory landscape of early childhood.',
     scenes: [
@@ -60,7 +78,13 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partNumber: 1,
         partTitle: 'Part I: Roots and Foundations',
         sceneNumber: 1,
-        title: 'Child of Two Worlds',
+        title: 'A Child of Two Worlds',
+        localizedTitles: {
+          en: 'A Child of Two Worlds',
+          gu: 'બે દુનિયાનું બાળક',
+          pa: 'ਦੋ ਦੁਨੀਆ ਦਾ ਬੱਚਾ',
+          hi: 'दो दुनिया का बच्चा',
+        },
         subtitle: 'Birthplace, family roots, and the soil that nurtured you',
         promptId: 'p1',
         suggestedMediaMode: 'video',
@@ -90,6 +114,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part I: Roots and Foundations',
         sceneNumber: 2,
         title: 'The House I Grew Up In',
+        localizedTitles: {
+          en: 'The House I Grew Up In',
+          gu: 'હું જે ઘરમાં મોટો થયો',
+          pa: 'ਉਹ ਘਰ ਜਿੱਥੇ ਮੈਂ ਵੱਡਾ ਹੋਇਆ',
+          hi: 'वह घर जहाँ मैं बड़ा हुआ',
+        },
         subtitle: 'The walls, rooms, courtyard, and daily rhythms of the family home',
         promptId: 'p2',
         suggestedMediaMode: 'audio',
@@ -119,6 +149,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part I: Roots and Foundations',
         sceneNumber: 3,
         title: 'School Days & Early Wonder',
+        localizedTitles: {
+          en: 'Innocence and Curiosity',
+          gu: 'નિર્દોષતા અને જિજ્ઞાસા',
+          pa: 'ਮਾਸੂਮੀਅਤ ਅਤੇ ਉਤਸੁਕਤਾ',
+          hi: 'मासूमियत और जिज्ञासा',
+        },
         subtitle: 'Innocence, childhood friendships, and the first spark of curiosity',
         promptId: 'p3',
         suggestedMediaMode: 'audio',
@@ -138,6 +174,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
   {
     partNumber: 2,
     title: 'Part II: Formative Years & Early Echoes',
+    localizedTitles: {
+      en: 'Part II: Crossroads and Identity',
+      gu: 'ભાગ II: આંતરછેદ અને ઓળખ',
+      pa: 'ਭਾਗ II: ਚੌਰਾਹੇ ਅਤੇ ਪਛਾਣ',
+      hi: 'भाग II: मोड़ और पहचान',
+    },
     subtitle: 'Mentors, Friendships & The First Hardships',
     description: 'Kinship, significant early bonds, and the first encounters with life’s vulnerability.',
     scenes: [
@@ -147,6 +189,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part II: Formative Years & Early Echoes',
         sceneNumber: 1,
         title: 'Early Mentors & Kinship',
+        localizedTitles: {
+          en: 'Formative Friendships',
+          gu: 'રચનાત્મક મિત્રતા',
+          pa: 'ਬਚਪਨ ਦੀ ਦੋਸਤੀ',
+          hi: 'बचपन की दोस्ती',
+        },
         subtitle: 'The elders and companions who guided your early steps',
         promptId: 'p4_1',
         suggestedMediaMode: 'audio',
@@ -164,6 +212,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part II: Formative Years & Early Echoes',
         sceneNumber: 2,
         title: 'The First Hardships & The Shape of Loss',
+        localizedTitles: {
+          en: 'First Encounters with Hardship',
+          gu: 'મુશ્કેલી સાથે પ્રથમ મુલાકાત',
+          pa: 'ਮੁਸ਼ਕਿਲਾਂ ਨਾਲ ਪਹਿਲਾ ਸਾਹਮਣਾ',
+          hi: 'मुश्किलों से पहला सामना',
+        },
         subtitle: 'Early grief, disappointment, and the discovery of inner resilience',
         promptId: 'p5_1',
         suggestedMediaMode: 'audio',
@@ -180,6 +234,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
   {
     partNumber: 3,
     title: 'Part III: Crossroads, Choices & Becoming',
+    localizedTitles: {
+      en: 'Part III: Love and Commitment',
+      gu: 'ભાગ III: પ્રેમ અને પ્રતિબદ્ધતા',
+      pa: 'ਭਾગ III: ਪਿਆਰ ਅਤੇ ਵਚਨਬੱਧਤਾ',
+      hi: 'भाग III: प्रेम और प्रतिबद्धता',
+    },
     subtitle: 'Stepping Into the World',
     description: 'Independence, hard-learned lessons, and pivotal life crossroads.',
     scenes: [
@@ -189,6 +249,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part III: Crossroads, Choices & Becoming',
         sceneNumber: 1,
         title: 'Crossroads of Youth',
+        localizedTitles: {
+          en: 'Crossroads and Choices',
+          gu: 'આંતરછેદ અને પસંદગીઓ',
+          pa: 'ਚੌਰਾਹੇ ਅਤੇ ਫੈਸਲੇ',
+          hi: 'मोड़ और फैसले',
+        },
         subtitle: 'Pivotal choices that shaped the trajectory of your adult life',
         promptId: 'p6_1',
         suggestedMediaMode: 'video',
@@ -206,6 +272,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part III: Crossroads, Choices & Becoming',
         sceneNumber: 2,
         title: 'Lessons Learned the Hard Way',
+        localizedTitles: {
+          en: 'Learning the Hard Way',
+          gu: 'અઘરી રીતે શીખવું',
+          pa: 'ਮੁਸ਼ਕਿਲ ਰਾਹਾਂ ਤੋਂ ਸਿੱਖਿਆ',
+          hi: 'कठिन राहों से सीख',
+        },
         subtitle: 'Missteps that forged character, humility, and deeper understanding',
         promptId: 'p7_1',
         suggestedMediaMode: 'audio',
@@ -222,6 +294,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
   {
     partNumber: 4,
     title: 'Part IV: Journeys, Love & Milestones',
+    localizedTitles: {
+      en: 'Part IV: Trials and Resilience',
+      gu: 'ભાગ IV: પરીક્ષણો અને સ્થિતિસ્થાપકતા',
+      pa: 'ਭਾਗ IV: ਇਮਤਿਹਾਨ ਅਤੇ ਹੌਸਲਾ',
+      hi: 'भाग IV: परीक्षाएं और धैर्य',
+    },
     subtitle: 'Companionship, Family & Lifelong Bonds',
     description: 'Partnership, marriage, the arrival of children, and building a home of one’s own.',
     scenes: [
@@ -231,6 +309,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part IV: Journeys, Love & Milestones',
         sceneNumber: 1,
         title: 'Love, Partnership & Companionship',
+        localizedTitles: {
+          en: 'Falling in Love',
+          gu: 'પ્રેમમાં પડવું',
+          pa: 'ਪਿਆਰ ਵਿੱਚ ਪੈਣਾ',
+          hi: 'प्यार में पड़ना',
+        },
         subtitle: 'How you met your life partner and the early years of building together',
         promptId: 'p10_1',
         suggestedMediaMode: 'video',
@@ -248,6 +332,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part IV: Journeys, Love & Milestones',
         sceneNumber: 2,
         title: 'The Arrival of Children',
+        localizedTitles: {
+          en: 'The Birth of Children',
+          gu: 'બાળકોનો જન્મ',
+          pa: 'ਬੱਚਿਆਂ ਦਾ ਜਨਮ',
+          hi: 'बच्चों का जन्म',
+        },
         subtitle: 'The overwhelming transformation of stepping into the role of parent',
         promptId: 'p11_1',
         suggestedMediaMode: 'audio',
@@ -264,6 +354,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
   {
     partNumber: 5,
     title: 'Part V: Wisdom, Hard-Won Truths & Values',
+    localizedTitles: {
+      en: 'Part V: Wisdom and Reflection',
+      gu: 'ભાગ V: જ્ઞાન અને પ્રતિબિંબ',
+      pa: 'ਭਾગ V: ਸਿਆਣਪ ਅਤੇ ਵਿਚਾਰ',
+      hi: 'भाग V: ज्ञान और चिंतन',
+    },
     subtitle: 'The Principles That Endure',
     description: 'Spiritual roots, core moral compass, and ancestral values.',
     scenes: [
@@ -273,6 +369,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part V: Wisdom, Hard-Won Truths & Values',
         sceneNumber: 1,
         title: 'Guiding Beliefs & Core Values',
+        localizedTitles: {
+          en: 'Holding On and Letting Go',
+          gu: 'પકડી રાખવું અને છોડી દેવું',
+          pa: 'ਸੰਭਾਲਣਾ ਅਤੇ ਛੱਡਣਾ',
+          hi: 'थामे रखना और जाने देना',
+        },
         subtitle: 'The convictions that guided your choices through life’s storms',
         promptId: 'p12_1',
         suggestedMediaMode: 'audio',
@@ -289,6 +391,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
   {
     partNumber: 6,
     title: 'Part VI: The Continuing Story & Heirloom Legacy',
+    localizedTitles: {
+      en: 'Part VI: The Continuing Story',
+      gu: 'ભાગ VI: ચાલુ વાર્તા',
+      pa: 'ਭਾਗ VI: ਚੱਲਦੀ ਕਹਾਣੀ',
+      hi: 'भाग VI: चलती कहानी',
+    },
     subtitle: 'Words for Tomorrow',
     description: 'A blessings blessing, hopes for the great-grandchildren, and words to live by.',
     scenes: [
@@ -298,6 +406,12 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         partTitle: 'Part VI: The Continuing Story & Heirloom Legacy',
         sceneNumber: 1,
         title: 'Words to Remember Me By',
+        localizedTitles: {
+          en: 'The Story Continuing',
+          gu: 'વાર્તા ચાલુ છે',
+          pa: 'ਚੱਲਦੀ ਕਹਾਣੀ',
+          hi: 'चलती कहानी',
+        },
         subtitle: 'An enduring message of love and blessing for the generations yet to come',
         promptId: 'p13_1',
         suggestedMediaMode: 'video',
@@ -325,12 +439,32 @@ export function getSceneById(sceneId: string): MasterStoryScene | undefined {
 }
 
 /**
- * Resolves a canonical MasterStoryScene from a Desktop promptId (e.g. "p1") or sceneId
+ * Helper to resolve the parent MasterStoryPart for a given sceneId (defaults to Part I)
+ */
+export function getPartForScene(sceneId?: string): MasterStoryPart {
+  if (sceneId) {
+    for (const part of MASTER_STORY_STRUCTURE) {
+      if (part.scenes.some((s) => s.id === sceneId)) {
+        return part;
+      }
+    }
+  }
+  return MASTER_STORY_STRUCTURE[0];
+}
+
+/**
+ * Resolves a canonical MasterStoryScene from a Desktop promptId (e.g. "p1", "p4") or sceneId
  */
 export function resolveSceneFromPromptId(promptId: string): MasterStoryScene | undefined {
   if (!promptId) return undefined;
+  const basePromptId = promptId.split('_')[0];
   for (const part of MASTER_STORY_STRUCTURE) {
-    const matched = part.scenes.find((s) => s.promptId === promptId || s.id === promptId);
+    const matched = part.scenes.find(
+      (s) =>
+        s.promptId === promptId ||
+        s.id === promptId ||
+        s.promptId.split('_')[0] === basePromptId
+    );
     if (matched) return matched;
   }
   return undefined;
