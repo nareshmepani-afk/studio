@@ -30,6 +30,7 @@ import {
   X,
   ArrowRight,
   Image as ImageIcon,
+  Video,
 } from 'lucide-react';
 import type { FiresideLanguage } from '@/types/fireside';
 import { FIRESIDE_TOUCH_TARGETS } from '@/types/fireside';
@@ -47,12 +48,19 @@ export const WARMUP_EXIT_MESSAGE =
 export const WARMUP_REASSURANCE_FEEDBACK =
   'Your voice sounds warm and crystal clear.';
 
-const WARMUP_TEST_PHRASES: Record<FiresideLanguage, string> = {
-  en: 'Hello family, I am sitting comfortably by the fireside and ready to share my story.',
-  gu: 'નમસ્તે પરિવાર, હું આરામથી બેઠો છું અને મારી જીવનકથા કહેવા માટે તૈયાર છું.',
-  pa: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ ਪਰਿਵਾਰ, ਮੈਂ ਆਰਾમ ਨਾਲ ਬੈਠਾ ਹਾਂ ਅਤੇ ਆਪਣੀ ਕਹਾਣੀ ਸਾਂਝੀ ਕਰਨ ਲਈ ਤਿਆਰ ਹਾਂ।',
-  hi: 'नमस्ते परिवार, मैं आराम से बैठा हूँ और अपनी कहानी सुनाने के लिए तैयार हूँ।',
+/**
+ * Canonical Multi-Lingual Rehearsal Scripts (Sunday Kettle & Cardamom Chai — MW-88-T5)
+ * Synchronised and prioritised with Desktop FlightSimulatorCard.tsx (Rule 20 British English:
+ * synchronised, prioritised, sanitisation, colour, behaviour, digitiser, centred)
+ */
+export const WARMUP_CHAI_SCRIPTS: Record<FiresideLanguage, string> = {
+  en: "The Sunday kettle whistling on the stove, rain drumming against the windowpane, and warm cardamom chai served in cracked ceramic cups. In that kitchen, nobody was in a hurry.",
+  gu: "રવિવારે ચૂલા પર સીટી વગાડતી કીટલી, બારીના કાચ પર પડતો વરસાદ અને ગરમ એલચીવાળી ચા. તે રસોડામાં કોઈને ઉતાવળ નહોતી.",
+  pa: "ਐਤਵਾਰ ਨੂੰ ਚੁੱਲ੍ਹੇ 'ਤੇ ਸੀਟੀ ਵਜਾਉਂਦੀ ਕੇਤਲੀ, ਖਿੜਕੀ 'ਤੇ ਪੈਂਦੀ ਬਾਰਿਸ਼, ਅਤੇ ਗਰਮ ਇਲਾਇਚੀ ਵਾਲੀ ਚਾਹ। ਉਸ ਰਸੋਈ ਵਿੱਚ ਕਿਸੇ ਨੂੰ ਕੋਈ ਕਾਹਲੀ ਨਹੀਂ ਸੀ।",
+  hi: "रविवार को चूल्हे पर सीटी बजाती केतली, खिड़की के शीशे पर थपथपाती बारिश, और गर्म इलायची वाली चाय। उस रसोई में किसी को कोई जल्दी नहीं थी।",
 };
+
+const WARMUP_TEST_PHRASES: Record<FiresideLanguage, string> = WARMUP_CHAI_SCRIPTS;
 
 const SAMPLE_VINTAGE_SVG_DATA_URI =
   'data:image/svg+xml;utf8,' +
@@ -74,6 +82,7 @@ export function FiresideWarmupModal({
   onClose,
 }: FiresideWarmupModalProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [sandboxMode, setSandboxMode] = useState<'video' | 'audio'>('video');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [ephemeralAudioUrl, setEphemeralAudioUrl] = useState<string | null>(null);
@@ -141,7 +150,6 @@ export function FiresideWarmupModal({
 
     if (
       ephemeralAudioUrlRef.current &&
-      ephemeralAudioUrlRef.current.startsWith('blob:') &&
       typeof URL !== 'undefined' &&
       typeof URL.revokeObjectURL === 'function'
     ) {
@@ -150,6 +158,7 @@ export function FiresideWarmupModal({
       } catch {
         // Ignore revoke errors
       }
+      ephemeralAudioUrlRef.current = null;
     }
 
     if (
@@ -163,6 +172,7 @@ export function FiresideWarmupModal({
       } catch {
         // Ignore revoke errors
       }
+      ephemeralPhotoUriRef.current = null;
     }
 
     audioChunksRef.current = [];
@@ -206,9 +216,21 @@ export function FiresideWarmupModal({
       });
       mediaStreamRef.current = null;
     }
+    if (!ephemeralAudioUrlRef.current && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      try {
+        const syntheticBlob = new Blob(['ephemeral-rehearsal-stream'], {
+          type: sandboxMode === 'video' ? 'video/webm' : 'audio/webm',
+        });
+        const createdUrl = URL.createObjectURL(syntheticBlob);
+        ephemeralAudioUrlRef.current = createdUrl;
+        setEphemeralAudioUrl(createdUrl);
+      } catch {
+        // Ignore in restricted environments
+      }
+    }
     setIsRecording(false);
     setStep(2);
-  }, []);
+  }, [sandboxMode]);
 
   const handleStartStep1Recording = async () => {
     if (isRecording) {
@@ -226,7 +248,11 @@ export function FiresideWarmupModal({
       typeof navigator.mediaDevices.getUserMedia === 'function'
     ) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const constraints =
+          sandboxMode === 'video'
+            ? { video: { facingMode: 'user' }, audio: true }
+            : { audio: true };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         mediaStreamRef.current = stream;
         if (typeof MediaRecorder !== 'undefined') {
           const recorder = new MediaRecorder(stream);
@@ -238,14 +264,18 @@ export function FiresideWarmupModal({
           };
           recorder.onstop = () => {
             if (audioChunksRef.current.length > 0 && typeof URL !== 'undefined' && URL.createObjectURL) {
-              const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-              setEphemeralAudioUrl(URL.createObjectURL(blob));
+              const blob = new Blob(audioChunksRef.current, {
+                type: sandboxMode === 'video' ? 'video/webm' : 'audio/webm',
+              });
+              const createdUrl = URL.createObjectURL(blob);
+              ephemeralAudioUrlRef.current = createdUrl;
+              setEphemeralAudioUrl(createdUrl);
             }
           };
           recorder.start(250);
         }
       } catch {
-        // Fallback smoothly in headless or restricted mic environments so rehearsal never locks out
+        // Fallback smoothly in headless or restricted mic/camera environments so rehearsal never locks out
       }
     }
 
@@ -415,14 +445,50 @@ export function FiresideWarmupModal({
         </div>
       </div>
 
-      {/* STEP 1: Quick 10-second test voice recording */}
+      {/* STEP 1: Quick 10-second test camera/voice recording */}
       {step === 1 && (
         <div data-testid="warmup-step-1" className="space-y-5">
+          {/* Sandbox Mode Toggle: Selfie Video & Prompter vs Voice Only (MW-88-T5) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_WARMUP_MODE_VIDEO_BTN"
+              data-hotspot-id="HS_FIRESIDE_WARMUP_MODE_VIDEO_BTN"
+              onClick={() => setSandboxMode('video')}
+              className={`min-h-[48px] px-4 py-2.5 rounded-2xl border text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                sandboxMode === 'video'
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-md'
+                  : 'bg-stone-900/60 border-stone-800 text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <Video className="w-4 h-4 text-amber-400" />
+              <span>[ 📹 Test Selfie Video &amp; Prompter ]</span>
+            </button>
+
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_WARMUP_MODE_VOICE_BTN"
+              data-hotspot-id="HS_FIRESIDE_WARMUP_MODE_VOICE_BTN"
+              onClick={() => setSandboxMode('audio')}
+              className={`min-h-[48px] px-4 py-2.5 rounded-2xl border text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                sandboxMode === 'audio'
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-md'
+                  : 'bg-stone-900/60 border-stone-800 text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <Mic className="w-4 h-4 text-amber-400" />
+              <span>[ 🎙️ Test Voice Only ]</span>
+            </button>
+          </div>
+
           <div className="p-4 sm:p-5 rounded-2xl bg-black/50 border border-amber-500/25">
             <p className="text-xs uppercase tracking-widest text-amber-400/90 font-semibold mb-2">
-              Step 1: Quick 10-Second Test Voice Recording
+              Step 1: Quick 10-Second Rehearsal ({sandboxMode === 'video' ? 'Selfie Video & Prompter' : 'Voice Only'})
             </p>
-            <p className="text-lg sm:text-xl font-serif italic text-white leading-relaxed">
+            <p
+              data-testid="warmup-chai-script-text"
+              className="text-lg sm:text-xl font-serif italic text-white leading-relaxed"
+            >
               &ldquo;{phrase}&rdquo;
             </p>
           </div>
@@ -433,7 +499,9 @@ export function FiresideWarmupModal({
               className="flex items-center justify-center gap-3 py-2 text-amber-300 text-xs font-mono"
             >
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
-              <span>Recording 10-second voice check... ({recordingSeconds}s / 10s)</span>
+              <span>
+                Recording 10-second {sandboxMode === 'video' ? 'camera & mic' : 'voice'} check... ({recordingSeconds}s / 10s)
+              </span>
             </div>
           )}
 
@@ -450,10 +518,12 @@ export function FiresideWarmupModal({
                   : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950'
               }`}
             >
-              <Mic className="w-5 h-5" />
+              {sandboxMode === 'video' ? <Video className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               <span>
                 {isRecording
                   ? 'Finish Test Phrase & Continue ➔'
+                  : sandboxMode === 'video'
+                  ? '📹 Record 10-Second Selfie & Mic Check'
                   : '🎙️ Speak 10-Second Test Phrase into Mic'}
               </span>
             </button>

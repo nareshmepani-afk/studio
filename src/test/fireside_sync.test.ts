@@ -16,11 +16,13 @@ import {
 import { FiresideLocalVaultRecord, HeirloomPhotoAttachment } from '@/types/fireside';
 import { render, fireEvent, renderHook, waitFor, act } from '@testing-library/react';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
-import { useCurriculumVault, resolveEditingAuthority } from '@/hooks/useCurriculumVault';
+import { useCurriculumVault, resolveEditingAuthority, isSceneCompleted } from '@/hooks/useCurriculumVault';
 import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
+import { FiresideCinemaLightbox } from '@/components/fireside/FiresideCinemaLightbox';
+import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 import { getPartForScene, getSceneById } from '@/lib/curriculum/masterStoryStructure';
-import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
+import { FiresideWarmupModal, WARMUP_CHAI_SCRIPTS } from '@/components/fireside/FiresideWarmupModal';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { setDoc } from 'firebase/firestore';
 
@@ -669,6 +671,382 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // 7. MW-88-T5: Fireside Rehearsal Sandbox & Multi-Take Discard Lifecycle
+  // ---------------------------------------------------------------------------
+  describe('MW-88-T5: Fireside Rehearsal Sandbox & Multi-Take Discard Lifecycle', () => {
+    it('Case A (Single-Take Discard): discardSceneTake deletes target take, reverts scene back to unrecorded capture slate, and strictly preserves Rule 14 prose, title, and sensory tags', async () => {
+      vi.mocked(setDoc).mockClear();
+
+      const { result } = renderHook(() =>
+        useCurriculumVault({
+          userId: 'user_discard_case_a',
+          initialSceneId: 'part-1-scene-1',
+        })
+      );
+
+      // Seed Scene 1 with rich Rule 14 prose, originalHook, sensoryAnchors, and a single video take
+      await act(async () => {
+        await result.current.saveSceneTake(
+          'part-1-scene-1',
+          {
+            id: 'take_single_01',
+            takeNumber: 1,
+            source: 'fireside_mobile',
+            mediaMode: 'video',
+            mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/test/take1.webm',
+            durationSeconds: 30,
+            createdAt: '2026-09-27T12:00:00.000Z',
+            label: 'Take 1 (Fireside Video)',
+            isPreferred: true,
+          },
+          {
+            prose: 'The history I carry is an epic journey across oceans and generations.',
+            title: 'A Child of Two Worlds',
+            originalHook: 'My parents crossed two continents before I was born.',
+            description: 'The history I carry is an epic journey across oceans and generations.',
+            sensoryAnchors: { sound: 5, visual: 7, aroma: 6 },
+            sensorySparks: ['ocean wind', 'monsoon rain', 'cardamom chai'],
+            editingAuthority: 'fireside_flexible',
+          }
+        );
+      });
+
+      const beforeDiscard = result.current.getSceneMemory('part-1-scene-1');
+      expect(beforeDiscard.takes).toHaveLength(1);
+      expect(isSceneCompleted(beforeDiscard)).toBe(true);
+
+      vi.mocked(setDoc).mockClear();
+
+      // Discard the single take
+      await act(async () => {
+        await result.current.discardSceneTake('part-1-scene-1', 'take_single_01');
+      });
+
+      const afterDiscard = result.current.getSceneMemory('part-1-scene-1');
+      // 1. Reverts to unrecorded capture slate
+      expect(afterDiscard.takes).toEqual([]);
+      expect(afterDiscard.activeTakeId).toBeNull();
+      expect(afterDiscard.videoUrl).toBeNull();
+      expect(afterDiscard.audioUrl).toBeNull();
+      expect(afterDiscard.actsCompleted).toEqual(['act1']);
+      expect(afterDiscard.productionStage).toBe(1);
+      expect(afterDiscard.lastEditedSurface).toBe('fireside_mobile');
+      expect(isSceneCompleted(afterDiscard)).toBe(false);
+
+      // 2. Rule 14 Invariants strictly preserved
+      expect(afterDiscard.prose).toBe('The history I carry is an epic journey across oceans and generations.');
+      expect(afterDiscard.title).toBe('A Child of Two Worlds');
+      expect(afterDiscard.originalHook).toBe('My parents crossed two continents before I was born.');
+      expect(afterDiscard.description).toBe('The history I carry is an epic journey across oceans and generations.');
+      expect(afterDiscard.sensoryAnchors).toEqual({ sound: 5, visual: 7, aroma: 6 });
+
+      // 3. Firestore delta payload verified
+      expect(setDoc).toHaveBeenCalledTimes(1);
+      const firestorePayload = vi.mocked(setDoc).mock.calls[0][1] as Record<string, any>;
+      expect(firestorePayload.takes).toEqual([]);
+      expect(firestorePayload.activeTakeId).toBeNull();
+      expect(firestorePayload.videoUrl).toBeNull();
+      expect(firestorePayload.audioUrl).toBeNull();
+      expect(firestorePayload.actsCompleted).toEqual(['act1']);
+      expect(firestorePayload.productionStage).toBe(1);
+      expect(firestorePayload.lastEditedSurface).toBe('fireside_mobile');
+      expect(firestorePayload.prose).toBe('The history I carry is an epic journey across oceans and generations.');
+    });
+
+    it('Case B (Multiple-Take Discard): discardSceneTake removes target take and promotes most recent remaining take to isPreferred: true', async () => {
+      vi.mocked(setDoc).mockClear();
+
+      const { result } = renderHook(() =>
+        useCurriculumVault({
+          userId: 'user_discard_case_b',
+          initialSceneId: 'part-1-scene-2',
+        })
+      );
+
+      // Save Take 1 and Take 2
+      await act(async () => {
+        await result.current.saveSceneTake(
+          'part-1-scene-2',
+          {
+            id: 'take_multi_01',
+            takeNumber: 1,
+            source: 'fireside_mobile',
+            mediaMode: 'video',
+            mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/test/take1.webm',
+            durationSeconds: 25,
+            createdAt: '2026-09-27T12:00:00.000Z',
+            label: 'Take 1 (Fireside Video)',
+            isPreferred: false,
+          },
+          {
+            prose: 'The courtyard walls echoed with laughter.',
+            title: 'The House I Grew Up In',
+          }
+        );
+
+        await result.current.saveSceneTake(
+          'part-1-scene-2',
+          {
+            id: 'take_multi_02',
+            takeNumber: 2,
+            source: 'fireside_mobile',
+            mediaMode: 'video',
+            mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/test/take2.webm',
+            durationSeconds: 40,
+            createdAt: '2026-09-27T12:05:00.000Z',
+            label: 'Take 2 (Fireside Video)',
+            isPreferred: true,
+          }
+        );
+      });
+
+      expect(result.current.getSceneMemory('part-1-scene-2').takes).toHaveLength(2);
+      vi.mocked(setDoc).mockClear();
+
+      // Discard Take 2
+      await act(async () => {
+        await result.current.discardSceneTake('part-1-scene-2', 'take_multi_02');
+      });
+
+      const afterDiscard = result.current.getSceneMemory('part-1-scene-2');
+      expect(afterDiscard.takes).toHaveLength(1);
+      expect(afterDiscard.takes[0].id).toBe('take_multi_01');
+      expect(afterDiscard.takes[0].isPreferred).toBe(true);
+      expect(afterDiscard.activeTakeId).toBe('take_multi_01');
+      expect(afterDiscard.videoUrl).toBe('https://firebasestorage.googleapis.com/v0/b/test/take1.webm');
+      expect(afterDiscard.prose).toBe('The courtyard walls echoed with laughter.');
+      expect(isSceneCompleted(afterDiscard)).toBe(true);
+    });
+
+    it('Ratchet Protection: desktop_locked memories reject discard attempts on mobile in hook and UI', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { result } = renderHook(() =>
+        useCurriculumVault({
+          userId: 'user_discard_locked',
+          initialSceneId: 'part-1-scene-1',
+        })
+      );
+
+      await act(async () => {
+        await result.current.saveSceneTake(
+          'part-1-scene-1',
+          {
+            id: 'take_master_01',
+            takeNumber: 1,
+            source: 'fireside_mobile',
+            mediaMode: 'video',
+            mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/test/master.webm',
+            durationSeconds: 60,
+            createdAt: '2026-09-27T12:00:00.000Z',
+            label: 'Take 1 (Studio Master)',
+            isPreferred: true,
+          },
+          {
+            prose: 'Protected Studio Master prose.',
+            editingAuthority: 'desktop_locked',
+          }
+        );
+      });
+
+      vi.mocked(setDoc).mockClear();
+
+      // Attempt discard on desktop_locked memory
+      await act(async () => {
+        await result.current.discardSceneTake('part-1-scene-1', 'take_master_01');
+      });
+
+      // Must reject mutation & log warning
+      expect(warnSpy).toHaveBeenCalled();
+      expect(setDoc).not.toHaveBeenCalled();
+      expect(result.current.getSceneMemory('part-1-scene-1').takes).toHaveLength(1);
+      warnSpy.mockRestore();
+
+      // Verify UI ratchet lock in Lightbox and Completed Reel Card
+      const onDiscardSpy = vi.fn();
+      const { unmount: unmountCard } = render(
+        React.createElement(FiresideCompletedReelCard, {
+          sceneId: 'part-1-scene-1',
+          sceneTitle: 'A Child of Two Worlds',
+          editingAuthority: 'desktop_locked',
+          onWatchTheatricalReel: vi.fn(),
+          onAddBonusNote: vi.fn(),
+          onDiscardTake: onDiscardSpy,
+        })
+      );
+
+      const cardDiscardBtn = document.querySelector('[data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"]') as HTMLButtonElement;
+      const cardTooltip = document.querySelector('[data-testid="HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP"]');
+      expect(cardDiscardBtn).toBeTruthy();
+      expect(cardDiscardBtn.disabled).toBe(true);
+      expect(cardTooltip?.textContent).toBe('Studio Master protected on desktop.');
+      fireEvent.click(cardDiscardBtn);
+      expect(onDiscardSpy).not.toHaveBeenCalled();
+      unmountCard();
+
+      const { unmount: unmountLightbox } = render(
+        React.createElement(FiresideCinemaLightbox, {
+          isOpen: true,
+          onClose: vi.fn(),
+          onDiscardTake: onDiscardSpy,
+          editingAuthority: 'desktop_locked',
+          sceneTitle: 'A Child of Two Worlds',
+          mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/test/master.webm',
+          mediaMode: 'video',
+        })
+      );
+
+      const lbDiscardBtn = document.querySelector('[data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"]') as HTMLButtonElement;
+      const lbTooltip = document.querySelector('[data-testid="HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP"]');
+      expect(lbDiscardBtn).toBeTruthy();
+      expect(lbDiscardBtn.disabled).toBe(true);
+      expect(lbTooltip?.textContent).toBe('Studio Master protected on desktop.');
+      unmountLightbox();
+    });
+
+    it('2-Step Inline Safety Confirmation works in both FiresideCinemaLightbox and FiresideCompletedReelCard when fireside_flexible', () => {
+      const onLightboxDiscard = vi.fn();
+      const onLightboxClose = vi.fn();
+
+      const { unmount: unmountLb } = render(
+        React.createElement(FiresideCinemaLightbox, {
+          isOpen: true,
+          onClose: onLightboxClose,
+          onDiscardTake: onLightboxDiscard,
+          editingAuthority: 'fireside_flexible',
+          sceneTitle: 'A Child of Two Worlds',
+          mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/test/take.webm',
+          mediaMode: 'video',
+        })
+      );
+
+      const lbTrigger = document.querySelector('[data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"]') as HTMLElement;
+      expect(lbTrigger?.textContent).toContain('[ 🗑️ Discard Take ]');
+      fireEvent.click(lbTrigger);
+
+      // Cancel first
+      const lbCancel = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CANCEL_BTN"]') as HTMLElement;
+      expect(lbCancel?.textContent).toContain('[ Cancel ]');
+      fireEvent.click(lbCancel);
+      expect(onLightboxDiscard).not.toHaveBeenCalled();
+
+      // Re-open & Confirm Discard
+      fireEvent.click(document.querySelector('[data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"]') as HTMLElement);
+      const lbConfirm = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"]') as HTMLElement;
+      expect(lbConfirm?.textContent).toContain('[ Confirm Discard ]');
+      fireEvent.click(lbConfirm);
+      expect(onLightboxDiscard).toHaveBeenCalledTimes(1);
+      unmountLb();
+
+      // Now test FiresideCompletedReelCard 2-step confirmation
+      const onCardDiscard = vi.fn();
+      const { unmount: unmountCard } = render(
+        React.createElement(FiresideCompletedReelCard, {
+          sceneId: 'part-1-scene-1',
+          sceneTitle: 'A Child of Two Worlds',
+          editingAuthority: 'fireside_flexible',
+          onWatchTheatricalReel: vi.fn(),
+          onAddBonusNote: vi.fn(),
+          onDiscardTake: onCardDiscard,
+        })
+      );
+
+      const cardTrigger = document.querySelector('[data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"]') as HTMLElement;
+      expect(cardTrigger?.textContent).toContain('[ 🗑️ Discard Current Take ]');
+      fireEvent.click(cardTrigger);
+
+      const cardConfirm = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"]') as HTMLElement;
+      expect(cardConfirm?.textContent).toContain('[ Confirm Discard ]');
+      fireEvent.click(cardConfirm);
+      expect(onCardDiscard).toHaveBeenCalledTimes(1);
+      unmountCard();
+    });
+
+    it('FiresideWalkthroughCard & FiresideWarmupModal render verbatim copy, 4-language Cardamom Chai scripts, Video/Voice mode toggle, and zero-contamination URL.revokeObjectURL teardown', async () => {
+      sessionStorage.removeItem('mw_dismiss_fireside_walkthrough');
+      const onLaunchSpy = vi.fn();
+
+      const { unmount: unmountCard } = render(
+        React.createElement(FiresideWalkthroughCard, {
+          activeLanguage: 'gu',
+          onLaunchWalkthrough: onLaunchSpy,
+        })
+      );
+
+      // Verify Gujarati Cardamom Chai excerpt & verbatim copy
+      expect(document.body.textContent).toContain(
+        '🧭 🎙️ FIRESIDE WALKTHROUGH // 30S REHEARSAL • ZERO-FRICTION PRACTICE FLIGHT'
+      );
+      expect(document.body.textContent).toContain(
+        'Free Walkthrough — Experience Fireside Capture & Soundcheck Without Saving'
+      );
+      expect(document.querySelector('[data-testid="walkthrough-chai-script-excerpt"]')?.textContent).toContain(
+        WARMUP_CHAI_SCRIPTS.gu
+      );
+
+      // Dismiss collapses to header pill
+      const dismissBtn = document.querySelector('[data-testid="HS_FIRESIDE_WALKTHROUGH_DISMISS_BTN"]') as HTMLElement;
+      fireEvent.click(dismissBtn);
+
+      const collapsedPill = document.querySelector('[data-testid="HS_FIRESIDE_WALKTHROUGH_COLLAPSED_PILL"]') as HTMLElement;
+      expect(collapsedPill).toBeTruthy();
+      expect(collapsedPill.textContent).toContain('[ 🎙️ 📹 Free Walkthrough & 30s Soundcheck ]');
+      fireEvent.click(collapsedPill);
+      expect(onLaunchSpy).toHaveBeenCalledTimes(1);
+      unmountCard();
+
+      // Verify all 4 Cardamom Chai translations & Video/Voice sandbox toggle in FiresideWarmupModal
+      expect(WARMUP_CHAI_SCRIPTS.en).toContain('warm cardamom chai served in cracked ceramic cups');
+      expect(WARMUP_CHAI_SCRIPTS.gu).toContain('ગરમ એલચીવાળી ચા');
+      expect(WARMUP_CHAI_SCRIPTS.pa).toContain('ਗਰਮ ਇਲਾਇਚੀ ਵਾਲੀ ਚਾਹ');
+      expect(WARMUP_CHAI_SCRIPTS.hi).toContain('गर्म इलायची वाली चाय');
+
+      const revokeSpy = vi.spyOn(URL, 'revokeObjectURL');
+      vi.mocked(setDoc).mockClear();
+
+      const onCompleteModal = vi.fn();
+      const { unmount: unmountModal } = render(
+        React.createElement(FiresideWarmupModal, {
+          isOpen: true,
+          activeLanguage: 'pa',
+          onComplete: onCompleteModal,
+          onClose: vi.fn(),
+        })
+      );
+
+      const videoModeBtn = document.querySelector('[data-testid="HS_FIRESIDE_WARMUP_MODE_VIDEO_BTN"]') as HTMLElement;
+      const voiceModeBtn = document.querySelector('[data-testid="HS_FIRESIDE_WARMUP_MODE_VOICE_BTN"]') as HTMLElement;
+      expect(videoModeBtn).toBeTruthy();
+      expect(voiceModeBtn).toBeTruthy();
+      expect(document.querySelector('[data-testid="warmup-chai-script-text"]')?.textContent).toContain(
+        WARMUP_CHAI_SCRIPTS.pa
+      );
+
+      // Switch to Voice Only then back to Selfie Video
+      fireEvent.click(voiceModeBtn);
+      fireEvent.click(videoModeBtn);
+
+      // Record & finish Step 1 -> Step 2 -> Step 3 -> Complete
+      const recBtn = document.querySelector('[data-testid="warmup-record-btn"]') as HTMLElement;
+      fireEvent.click(recBtn);
+      fireEvent.click(recBtn);
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="warmup-step-2"]')).toBeTruthy();
+      });
+
+      fireEvent.click(document.querySelector('[data-testid="warmup-next-to-photo-btn"]') as HTMLElement);
+      fireEvent.click(document.querySelector('[data-testid="warmup-complete-btn"]') as HTMLElement);
+
+      expect(onCompleteModal).toHaveBeenCalledTimes(1);
+      expect(revokeSpy).toHaveBeenCalled();
+      expect(setDoc).not.toHaveBeenCalled();
+      revokeSpy.mockRestore();
+      unmountModal();
+    });
+  });
 });
+
 
 

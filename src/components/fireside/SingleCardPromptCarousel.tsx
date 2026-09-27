@@ -50,6 +50,7 @@ import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import type { EditingAuthority, UnifiedCurriculumMemory } from '@/types/curriculum';
 import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
+import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
@@ -245,27 +246,15 @@ export function SingleCardPromptCarousel({
         })}
       </div>
 
-      {/* 1b. Fireside Warmup & Soundcheck Trigger (Index 0 of Carousel — MW-88-T3) */}
+      {/* 1b. Fireside Free Walkthrough & 30-Second Soundcheck Card (Index 0 of Carousel — MW-88-T3 / MW-88-T5) */}
       {currentIndex === 0 && (
         <div className="w-full mb-4 flex flex-col gap-2">
           {!isWarmupOpen && (
-            <button
-              type="button"
-              data-testid="fireside-warmup-trigger"
-              data-hotspot-id="HS_FIRESIDE_WARMUP_TRIGGER_BTN"
-              onClick={() => setIsWarmupOpen(true)}
-              style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-              className="w-full min-h-[56px] px-5 py-3 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 border border-amber-400/40 text-amber-200 font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-md shadow-amber-500/10"
-              aria-label="30-Second Mic Warmup and Soundcheck"
-            >
-              <span aria-hidden="true">🎙️</span>
-              <span>30-Second Mic Warmup &amp; Soundcheck</span>
-              {warmupCompleted && (
-                <span className="ml-1 text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
-                  ✓ Ready
-                </span>
-              )}
-            </button>
+            <FiresideWalkthroughCard
+              activeLanguage={currentLanguage}
+              warmupCompleted={warmupCompleted}
+              onLaunchWalkthrough={() => setIsWarmupOpen(true)}
+            />
           )}
 
           {warmupCompleted && !isWarmupOpen && (

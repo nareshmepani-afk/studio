@@ -18,7 +18,7 @@
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 642 / 642 Vitest Tests Passing (53 Test Files)
+- **Current Invariant Test Baseline:** 647 / 647 Vitest Tests Passing (53 Test Files)
 
 
 
@@ -479,11 +479,35 @@
   - `C:\Users\home\studio\.agents\AGENTS.md`
   - `C:\Users\home\studio\src\lib\firesidePrompts.ts`
   - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
-  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside/FiresideStudioClient.tsx`
   - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
   - `C:\Users\home\studio\src\test\fireside_prompt_carousel.test.tsx`
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
+### [2026-09-27 14:48 BST] • Checkpoint #022 — Fireside Rehearsal Sandbox & Multi-Take Discard Lifecycle (MW-88-T5)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved directive MW-88-T5 (Plane Sequence #295) to provide an upstream zero-consequence "Free Walkthrough" practice cockpit and downstream 2-step inline "Discard Take" action across `/studio/fireside`.
+  - 🧠 **Gemini Strategic Brain**: Specified the Case A (Single-Take Revert to Act I capture slate) and Case B (Multi-Take fallback promotion) mutation payloads, strict Rule 14 prose/hook/sensory preservation invariants, One-Way Studio Elevation Ratchet (`desktop_locked`) protection, 4-language Cardamom Chai rehearsal script dictionary (`en`, `gu`, `pa`, `hi`), and Selfie Video (`📹`) vs Tactile Voice (`🎙️`) sandbox mode toggle.
+  - ⚡ **Antigravity Execution**:
+    1. **Vault Take Deletion Mutation (`src/hooks/useCurriculumVault.ts`, `src/types/curriculum.ts`)**: Implemented and exported `discardSceneTake(sceneId, takeId)` with 0ms optimistic state updates (Rule 12), `desktop_locked` ratchet guard, Case A revert (`takes: []`, `activeTakeId: null`, `videoUrl: null`, `audioUrl: null`, `actsCompleted: ['act1']`, `productionStage: 1`), Case B fallback take promotion (`isPreferred: true`), and strict preservation of Rule 14 fields (`prose`, `title`, `originalHook`, `description`, `sensoryAnchors`, `bonusNotes`, `editingAuthority`).
+    2. **2-Step Inline Discard Take UI & Ratchet Protection (`src/components/fireside/FiresideCinemaLightbox.tsx`, `src/components/fireside/FiresideCompletedReelCard.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`)**: Mounted `[ 🗑️ Discard Take ]` (`HS_FIRESIDE_LIGHTBOX_DISCARD_BTN`) in the Lightbox footer bar and `[ 🗑️ Discard Current Take ]` (`HS_FIRESIDE_CARD_DISCARD_BTN`) on the Completed Reel Card, expanding into `"Discard this take permanently?"` with `[ Confirm Discard ]` (`HS_FIRESIDE_DISCARD_CONFIRM_BTN`) and `[ Cancel ]` (`HS_FIRESIDE_DISCARD_CANCEL_BTN`), plus `HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP` (`"Studio Master protected on desktop."`) when `editingAuthority === 'desktop_locked'`.
+    3. **Fireside Free Walkthrough & 30-Second Soundcheck (`src/components/fireside/FiresideWalkthroughCard.tsx`, `src/components/fireside/FiresideWarmupModal.tsx`, `src/components/fireside/SingleCardPromptCarousel.tsx`)**: Created `FiresideWalkthroughCard.tsx` with verbatim walkthrough copy, 4-language Cardamom Chai excerpt, and session-persisted collapse pill (`HS_FIRESIDE_WALKTHROUGH_COLLAPSED_PILL`); updated `FiresideWarmupModal.tsx` with 4-language Cardamom Chai scripts (`WARMUP_CHAI_SCRIPTS`), Selfie Video (`HS_FIRESIDE_WARMUP_MODE_VIDEO_BTN`) vs Voice Only (`HS_FIRESIDE_WARMUP_MODE_VOICE_BTN`) mode toggle, and deterministic `URL.revokeObjectURL` ephemeral teardown.
+  - 🛡️ **QA Gatekeeper**: All 53 test suites passing (647/647 tests), including 25/25 in `fireside_sync.test.ts`. `tsc --noEmit` exit 0. Zero modifications to `SoloStage.tsx` (Rule 7).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\types\curriculum.ts`
+  - `C:\Users\home\studio\src\hooks\useCurriculumVault.ts`
+  - `C:\Users\home\studio\src\components\fireside\FiresideCinemaLightbox.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideCompletedReelCard.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideWalkthroughCard.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideWarmupModal.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+
 
 

@@ -32,14 +32,18 @@ import {
   Film,
   Camera,
   PlusCircle,
+  Trash2,
+  Lock,
 } from 'lucide-react';
 import { HeirloomPhotoAttachment } from '@/types/fireside';
-import { StoryMoodTag } from '@/types/curriculum';
+import { StoryMoodTag, EditingAuthority } from '@/types/curriculum';
 
 export interface FiresideCinemaLightboxProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenBonusDrawer?: () => void;
+  onDiscardTake?: () => void;
+  editingAuthority?: EditingAuthority;
   sceneTitle: string;
   mediaUrl?: string | null;
   mediaMode?: 'audio' | 'video';
@@ -53,6 +57,8 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   isOpen,
   onClose,
   onOpenBonusDrawer,
+  onDiscardTake,
+  editingAuthority = 'fireside_flexible',
   sceneTitle,
   mediaUrl,
   mediaMode = 'video',
@@ -68,6 +74,8 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   );
   const [isMuted, setIsMuted] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const isDesktopLocked = editingAuthority === 'desktop_locked';
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -83,6 +91,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
 
   // Auto-play when opened
   useEffect(() => {
+    setShowDiscardConfirm(false);
     if (isOpen) {
       setIsPlaying(true);
       setCurrentTime(0);
@@ -445,6 +454,74 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                 <PlusCircle className="w-4 h-4 text-amber-400" />
                 <span>Open Bonus Memory Drawer</span>
               </button>
+            )}
+
+            {/* Discard Take Trigger & 2-Step Safety Confirmation (MW-88-T5) */}
+            {isDesktopLocked ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
+                  data-hotspot-id="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
+                  title="Studio Master protected on desktop."
+                  className="min-h-[48px] px-3.5 rounded-xl bg-stone-900/60 border border-stone-800 text-stone-500 text-xs font-semibold flex items-center gap-2 opacity-60 cursor-not-allowed"
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-400/70" />
+                  <span>[ 🗑️ Discard Take ]</span>
+                </button>
+                <span
+                  data-testid="HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP"
+                  className="text-[11px] font-mono text-amber-300/90 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30"
+                >
+                  Studio Master protected on desktop.
+                </span>
+              </div>
+            ) : !showDiscardConfirm ? (
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
+                data-hotspot-id="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
+                onClick={() => {
+                  if (videoRef.current) videoRef.current.pause();
+                  if (audioRef.current) audioRef.current.pause();
+                  if (soundtrackAudioRef.current) soundtrackAudioRef.current.pause();
+                  setIsPlaying(false);
+                  setShowDiscardConfirm(true);
+                }}
+                className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition cursor-pointer active:scale-95"
+              >
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                <span>[ 🗑️ Discard Take ]</span>
+              </button>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-xl bg-stone-900/95 border border-rose-500/40 animate-in fade-in duration-150">
+                <span className="text-xs font-medium text-rose-200">
+                  Discard this take permanently?
+                </span>
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
+                  data-hotspot-id="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
+                  onClick={() => {
+                    setShowDiscardConfirm(false);
+                    onDiscardTake?.();
+                    onClose();
+                  }}
+                  className="min-h-[40px] px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
+                >
+                  [ Confirm Discard ]
+                </button>
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_DISCARD_CANCEL_BTN"
+                  data-hotspot-id="HS_FIRESIDE_DISCARD_CANCEL_BTN"
+                  onClick={() => setShowDiscardConfirm(false)}
+                  className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold transition cursor-pointer"
+                >
+                  [ Cancel ]
+                </button>
+              </div>
             )}
           </div>
 

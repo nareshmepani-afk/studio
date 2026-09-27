@@ -139,10 +139,11 @@ export default function FiresideStudioClient() {
 
   const effectiveSceneId = selectedSpark?.linkedSceneId || activePromptSpark?.linkedSceneId || 'part-1-scene-1';
 
-  // Unified Curriculum Vault Hook (MW-88-T1 & MW-88-T2: Bi-Directional Bridge)
+  // Unified Curriculum Vault Hook (MW-88-T1, MW-88-T2 & MW-88-T5: Bi-Directional Bridge)
   const {
     getSceneMemory,
     saveSceneTake,
+    discardSceneTake,
     setStoryMoodTag,
     addBonusMemoryNote,
     completedScenes,
@@ -584,6 +585,47 @@ export default function FiresideStudioClient() {
     }, 5000);
   };
 
+  // Multi-Take Discard Handler (MW-88-T5 — Rule 12 Optimistic UI & Rule 14 Prose Preservation)
+  const handleDiscardActiveTake = useCallback(async () => {
+    if (isDesktopLocked) return;
+
+    const targetTakeId =
+      preferredTake?.id ||
+      activeSceneMemory?.activeTakeId ||
+      activeTakeIdRef.current ||
+      undefined;
+
+    const remainingCount = Math.max(0, (activeSceneMemory?.takes?.length || 0) - 1);
+    if (remainingCount === 0) {
+      setRecordedAudioBlob(null);
+      setRecordedAudioDuration(0);
+      setRecordedVideoBlob(null);
+      setRecordedVideoDuration(0);
+      setIsReviewingTake(false);
+      setForceRecordMode(false);
+      activeTakeIdRef.current = null;
+      lastSavedBlobRef.current = null;
+    }
+
+    setIsLightboxOpen(false);
+    await discardSceneTake(effectiveSceneId, targetTakeId);
+
+    setNotification(
+      remainingCount === 0
+        ? 'Take discarded. Returned to capture slate with your woven script preserved.'
+        : 'Take discarded. Previous take promoted to active reel.'
+    );
+    setTimeout(() => {
+      setNotification(null);
+    }, 4000);
+  }, [
+    isDesktopLocked,
+    preferredTake,
+    activeSceneMemory,
+    discardSceneTake,
+    effectiveSceneId,
+  ]);
+
   // Active Curriculum Part Context & Golden Thread Bilingual Hierarchy (MW-249 / MW-88-T3)
   const activePart = useMemo(
     () => getPartForScene((selectedSpark || activePromptSpark)?.linkedSceneId),
@@ -909,6 +951,7 @@ export default function FiresideStudioClient() {
               activeLanguage={activeLanguage}
               onWatchTheatricalReel={() => setIsLightboxOpen(true)}
               onAddBonusNote={() => setIsBonusDrawerOpen(true)}
+              onDiscardTake={handleDiscardActiveTake}
               onReRecordRequest={() => {
                 if (isDesktopLocked) return;
                 setIsReviewingTake(false);
@@ -942,11 +985,13 @@ export default function FiresideStudioClient() {
         )}
       </main>
 
-      {/* 2.39:1 Cinema Master Reel Lightbox Player (Ticket #259) */}
+      {/* 2.39:1 Cinema Master Reel Lightbox Player (Ticket #259 & MW-88-T5) */}
       <FiresideCinemaLightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
         onOpenBonusDrawer={() => setIsBonusDrawerOpen(true)}
+        onDiscardTake={handleDiscardActiveTake}
+        editingAuthority={activeEditingAuthority}
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
         mediaUrl={
           preferredTake?.mediaUrl ||

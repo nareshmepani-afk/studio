@@ -147,8 +147,24 @@ export interface UnifiedCurriculumMemory {
   transcriptionText?: string;
   /** Stack of all recorded takes across mobile and desktop */
   takes: MemoirTake[];
-  /** Pointer to currently selected active take ID */
-  activeTakeId: string;
+  /** Pointer to currently selected active take ID (null when all takes discarded) */
+  activeTakeId: string | null;
+  /** Optional direct video stream URL synced with active preferred take */
+  videoUrl?: string | null;
+  /** Optional direct audio stream URL synced with active preferred take */
+  audioUrl?: string | null;
+  /** Optional legacy/Firestore title alias */
+  title?: string;
+  /** Optional legacy/Firestore description alias (synchronised with prose per Rule 14) */
+  description?: string;
+  /** Optional sensory anchors metadata */
+  sensoryAnchors?: any;
+  /** Optional production stage integer (1..4) */
+  productionStage?: number;
+  /** Surface that performed the most recent mutation */
+  lastEditedSurface?: string;
+  /** Epoch ms or ISO timestamp of most recent update */
+  updatedAt?: number | string;
   /** Digitised vintage photo attachments from physical album scanner */
   photos: HeirloomPhotoAttachment[];
   /** Cinema-grade directorial finishing parameters */

@@ -31,6 +31,7 @@ import {
   Lock,
   Paperclip,
   X,
+  Trash2,
 } from 'lucide-react';
 import {
   UnifiedCurriculumMemory,
@@ -51,6 +52,7 @@ export interface FiresideCompletedReelCardProps {
   onWatchTheatricalReel: () => void;
   onAddBonusNote: () => void;
   onReRecordRequest?: () => void;
+  onDiscardTake?: () => void;
   className?: string;
 }
 
@@ -72,9 +74,11 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   onWatchTheatricalReel,
   onAddBonusNote,
   onReRecordRequest,
+  onDiscardTake,
   className = '',
 }) => {
   const [showRetakeConfirm, setShowRetakeConfirm] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [isStudioMasterDrawerOpen, setIsStudioMasterDrawerOpen] = useState(false);
 
   const resolvedAuthority: EditingAuthority = useMemo(() => {
@@ -397,23 +401,98 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         </button>
       </div>
 
-      {/* Safety Guarded Retake Link (Rule 7 & 26: Suppressed when Studio Master desktop_locked) */}
-      {!isDesktopLocked && (
-        <div className="mt-5 relative z-10 text-center">
-          {!showRetakeConfirm ? (
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic();
-                setShowRetakeConfirm(true);
-              }}
-              data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"
-              className="text-xs text-stone-500 hover:text-amber-400 underline underline-offset-4 transition-colors cursor-pointer py-1.5 px-3 rounded-lg"
-            >
-              Record an additional take for this scene
-            </button>
+      {/* Safety Guarded Retake & Discard Take Actions (Rule 7, Rule 14 & Rule 26 — MW-88-T5) */}
+      {isDesktopLocked ? (
+        <div className="mt-5 relative z-10 flex flex-col items-center justify-center gap-2 text-center">
+          <button
+            type="button"
+            disabled
+            data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"
+            data-hotspot-id="HS_FIRESIDE_CARD_DISCARD_BTN"
+            title="Studio Master protected on desktop."
+            className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/60 border border-stone-800 text-stone-500 text-xs font-semibold flex items-center gap-2 opacity-60 cursor-not-allowed"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-400/70" />
+            <span>[ 🗑️ Discard Current Take ]</span>
+          </button>
+          <span
+            data-testid="HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP"
+            className="text-[11px] font-mono text-amber-300/90 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30"
+          >
+            Studio Master protected on desktop.
+          </span>
+        </div>
+      ) : (
+        <div className="mt-5 relative z-10 flex flex-col items-center gap-3 text-center">
+          {/* Discard Current Take Trigger & 2-Step Confirmation */}
+          {!showDiscardConfirm ? (
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              {!showRetakeConfirm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    setShowRetakeConfirm(true);
+                  }}
+                  data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"
+                  className="text-xs text-stone-400 hover:text-amber-400 underline underline-offset-4 transition-colors cursor-pointer py-2 px-3 rounded-lg"
+                >
+                  Record an additional take for this scene
+                </button>
+              )}
+
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"
+                data-hotspot-id="HS_FIRESIDE_CARD_DISCARD_BTN"
+                onClick={() => {
+                  triggerHaptic();
+                  setShowRetakeConfirm(false);
+                  setShowDiscardConfirm(true);
+                }}
+                className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
+              >
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                <span>[ 🗑️ Discard Current Take ]</span>
+              </button>
+            </div>
           ) : (
-            <div className="p-4 rounded-2xl bg-stone-900/95 border border-amber-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-rose-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-start gap-2.5 mb-3">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <p className="text-xs sm:text-sm text-rose-200 font-medium leading-relaxed">
+                  Discard this take permanently?
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_DISCARD_CANCEL_BTN"
+                  data-hotspot-id="HS_FIRESIDE_DISCARD_CANCEL_BTN"
+                  onClick={() => setShowDiscardConfirm(false)}
+                  className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition cursor-pointer"
+                >
+                  [ Cancel ]
+                </button>
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
+                  data-hotspot-id="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
+                  onClick={() => {
+                    triggerHaptic();
+                    setShowDiscardConfirm(false);
+                    onDiscardTake?.();
+                  }}
+                  className="min-h-[44px] px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
+                >
+                  [ Confirm Discard ]
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showRetakeConfirm && !showDiscardConfirm && (
+            <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-amber-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-start gap-2.5 mb-3">
                 <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-stone-300 leading-relaxed">
