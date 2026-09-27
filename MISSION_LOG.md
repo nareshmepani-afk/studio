@@ -12,7 +12,7 @@
 
 - **Active Sprint:** Sprint 4 — MW-87 Fireside Voice Studio Suite
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `4aed2f6`, Head: `307d11c5`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `a533c1c`, Head: `a533c1c5`)
 
 - **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 30 Codified)
 
