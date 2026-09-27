@@ -86,22 +86,85 @@ export function FiresideWarmupModal({
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [ephemeralAudioUrl, setEphemeralAudioUrl] = useState<string | null>(null);
+  const [hasRealRecording, setHasRealRecording] = useState(false);
+  const [recordedMimeType, setRecordedMimeType] = useState<string>('audio/webm');
+  const [hasLiveVideoTrack, setHasLiveVideoTrack] = useState(false);
   const [isPlayingWarmth, setIsPlayingWarmth] = useState(false);
   const [ephemeralPhotoUri, setEphemeralPhotoUri] = useState<string | null>(null);
   const [ephemeralPhotoLabel, setEphemeralPhotoLabel] = useState<string | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const playbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const playbackAudioRef = useRef<HTMLAudioElement | null>(null);
+  const liveVideoPreviewRef = useRef<HTMLVideoElement | null>(null);
+  const playbackMediaElRef = useRef<HTMLMediaElement | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const ephemeralAudioUrlRef = useRef<string | null>(null);
   const ephemeralPhotoUriRef = useRef<string | null>(null);
+  const hasRealRecordingRef = useRef<boolean>(false);
 
   ephemeralAudioUrlRef.current = ephemeralAudioUrl;
   ephemeralPhotoUriRef.current = ephemeralPhotoUri;
+
+  const stopStreamTracks = useCallback((stream: MediaStream | null) => {
+    if (!stream) return;
+    stream.getTracks().forEach((track) => {
+      try {
+        track.stop();
+      } catch {
+        // Ignore track stop errors
+      }
+    });
+  }, []);
+
+  const buildRealMediaBlob = useCallback((fallbackMimeType: string) => {
+    if (
+      audioChunksRef.current.length > 0 &&
+      typeof URL !== 'undefined' &&
+      typeof URL.createObjectURL === 'function'
+    ) {
+      try {
+        if (
+          ephemeralAudioUrlRef.current &&
+          typeof URL.revokeObjectURL === 'function'
+        ) {
+          URL.revokeObjectURL(ephemeralAudioUrlRef.current);
+        }
+        const blob = new Blob(audioChunksRef.current, { type: fallbackMimeType });
+        const createdUrl = URL.createObjectURL(blob);
+        ephemeralAudioUrlRef.current = createdUrl;
+        hasRealRecordingRef.current = true;
+        setHasRealRecording(true);
+        setRecordedMimeType(fallbackMimeType);
+        setEphemeralAudioUrl(createdUrl);
+        return true;
+      } catch {
+        // Ignore blob creation failure in restricted environments
+      }
+    }
+    return false;
+  }, []);
+
+  // Attach active camera stream to Step 1 live video viewfinder
+  useEffect(() => {
+    if (
+      isRecording &&
+      hasLiveVideoTrack &&
+      liveVideoPreviewRef.current &&
+      mediaStreamRef.current
+    ) {
+      try {
+        liveVideoPreviewRef.current.srcObject = mediaStreamRef.current;
+        void liveVideoPreviewRef.current.play().catch(() => {});
+      } catch {
+        // Ignore in headless test environments
+      }
+    }
+  }, [isRecording, hasLiveVideoTrack]);
 
   // Contamination Shield: Ephemeral resource teardown & URL.revokeObjectURL cleanup
   const purgeEphemeralResources = useCallback(() => {
@@ -109,8 +172,13 @@ export function FiresideWarmupModal({
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    if (playbackTimeoutRef.current) {
+      clearTimeout(playbackTimeoutRef.current);
+      playbackTimeoutRef.current = null;
+    }
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try {
+        mediaRecorderRef.current.onstop = null;
         mediaRecorderRef.current.stop();
       } catch {
         // Ignore stop errors on inactive recorder
@@ -118,15 +186,16 @@ export function FiresideWarmupModal({
     }
     mediaRecorderRef.current = null;
 
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => {
-        try {
-          track.stop();
-        } catch {
-          // Ignore track stop errors
-        }
-      });
-      mediaStreamRef.current = null;
+    stopStreamTracks(mediaStreamRef.current);
+    mediaStreamRef.current = null;
+    setHasLiveVideoTrack(false);
+
+    if (playbackMediaElRef.current) {
+      try {
+        playbackMediaElRef.current.pause();
+      } catch {
+        // Ignore media pause errors
+      }
     }
 
     if (playbackAudioRef.current) {
@@ -137,6 +206,14 @@ export function FiresideWarmupModal({
         // Ignore audio pause errors
       }
       playbackAudioRef.current = null;
+    }
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // Ignore speechSynthesis cancel errors
+      }
     }
 
     if (audioCtxRef.current) {
@@ -176,13 +253,15 @@ export function FiresideWarmupModal({
     }
 
     audioChunksRef.current = [];
+    hasRealRecordingRef.current = false;
+    setHasRealRecording(false);
     setEphemeralAudioUrl(null);
     setEphemeralPhotoUri(null);
     setEphemeralPhotoLabel(null);
     setIsRecording(false);
     setIsPlayingWarmth(false);
     setRecordingSeconds(0);
-  }, []);
+  }, [stopStreamTracks]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -199,38 +278,60 @@ export function FiresideWarmupModal({
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+
+    const recorder = mediaRecorderRef.current;
+    const activeStream = mediaStreamRef.current;
+    const defaultMime =
+      recorder?.mimeType ||
+      (activeStream && activeStream.getVideoTracks().length > 0 ? 'video/webm' : 'audio/webm');
+
+    if (recorder && recorder.state !== 'inactive') {
       try {
-        mediaRecorderRef.current.stop();
-      } catch {
-        // Ignore
-      }
-    }
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => {
-        try {
-          track.stop();
-        } catch {
-          // Ignore
+        if (typeof recorder.requestData === 'function') {
+          recorder.requestData();
         }
-      });
+      } catch {
+        // Ignore requestData errors
+      }
+      // Assemble any already-collected timeslice chunks immediately for 0ms Step 2 readiness
+      buildRealMediaBlob(defaultMime);
+      try {
+        recorder.stop();
+      } catch {
+        stopStreamTracks(activeStream);
+        mediaStreamRef.current = null;
+      }
+    } else {
+      buildRealMediaBlob(defaultMime);
+      stopStreamTracks(activeStream);
       mediaStreamRef.current = null;
     }
-    if (!ephemeralAudioUrlRef.current && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+
+    // Only create synthetic placeholder blob for URL.revokeObjectURL tracking when no real MediaRecorder was active
+    if (
+      !ephemeralAudioUrlRef.current &&
+      !recorder &&
+      typeof URL !== 'undefined' &&
+      typeof URL.createObjectURL === 'function'
+    ) {
       try {
         const syntheticBlob = new Blob(['ephemeral-rehearsal-stream'], {
           type: sandboxMode === 'video' ? 'video/webm' : 'audio/webm',
         });
         const createdUrl = URL.createObjectURL(syntheticBlob);
         ephemeralAudioUrlRef.current = createdUrl;
+        hasRealRecordingRef.current = false;
+        setHasRealRecording(false);
         setEphemeralAudioUrl(createdUrl);
       } catch {
         // Ignore in restricted environments
       }
     }
+
+    setHasLiveVideoTrack(false);
     setIsRecording(false);
     setStep(2);
-  }, [sandboxMode]);
+  }, [sandboxMode, buildRealMediaBlob, stopStreamTracks]);
 
   const handleStartStep1Recording = async () => {
     if (isRecording) {
@@ -241,41 +342,74 @@ export function FiresideWarmupModal({
     setIsRecording(true);
     setRecordingSeconds(0);
     audioChunksRef.current = [];
+    hasRealRecordingRef.current = false;
+    setHasRealRecording(false);
 
     if (
       typeof navigator !== 'undefined' &&
       navigator.mediaDevices &&
       typeof navigator.mediaDevices.getUserMedia === 'function'
     ) {
-      try {
-        const constraints =
-          sandboxMode === 'video'
-            ? { video: { facingMode: 'user' }, audio: true }
-            : { audio: true };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        mediaStreamRef.current = stream;
-        if (typeof MediaRecorder !== 'undefined') {
-          const recorder = new MediaRecorder(stream);
-          mediaRecorderRef.current = recorder;
-          recorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) {
-              audioChunksRef.current.push(e.data);
+      let stream: MediaStream | null = null;
+      if (sandboxMode === 'video') {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: true,
+          });
+        } catch {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: true,
+            });
+          } catch {
+            try {
+              // Fallback to microphone-only if device has no webcam or camera is busy
+              stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch {
+              stream = null;
             }
-          };
-          recorder.onstop = () => {
-            if (audioChunksRef.current.length > 0 && typeof URL !== 'undefined' && URL.createObjectURL) {
-              const blob = new Blob(audioChunksRef.current, {
-                type: sandboxMode === 'video' ? 'video/webm' : 'audio/webm',
-              });
-              const createdUrl = URL.createObjectURL(blob);
-              ephemeralAudioUrlRef.current = createdUrl;
-              setEphemeralAudioUrl(createdUrl);
-            }
-          };
-          recorder.start(250);
+          }
         }
-      } catch {
-        // Fallback smoothly in headless or restricted mic/camera environments so rehearsal never locks out
+      } else {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch {
+          stream = null;
+        }
+      }
+
+      if (stream) {
+        mediaStreamRef.current = stream;
+        const hasVideo = stream.getVideoTracks().length > 0;
+        setHasLiveVideoTrack(hasVideo);
+
+        if (typeof MediaRecorder !== 'undefined') {
+          try {
+            const recorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = recorder;
+            const resolvedMime =
+              recorder.mimeType || (hasVideo ? 'video/webm' : 'audio/webm');
+            setRecordedMimeType(resolvedMime);
+
+            recorder.ondataavailable = (e) => {
+              if (e.data && e.data.size > 0) {
+                audioChunksRef.current.push(e.data);
+              }
+            };
+            recorder.onstop = () => {
+              buildRealMediaBlob(resolvedMime);
+              stopStreamTracks(stream);
+              if (mediaStreamRef.current === stream) {
+                mediaStreamRef.current = null;
+              }
+            };
+            recorder.start(200);
+          } catch {
+            // Ignore MediaRecorder init errors in headless environments
+          }
+        }
       }
     }
 
@@ -291,47 +425,126 @@ export function FiresideWarmupModal({
   };
 
   const handlePlayWarmthPreview = () => {
-    setIsPlayingWarmth(true);
+    if (playbackTimeoutRef.current) {
+      clearTimeout(playbackTimeoutRef.current);
+      playbackTimeoutRef.current = null;
+    }
 
-    // Play recorded ephemeral voice if available
-    if (ephemeralAudioUrl && typeof Audio !== 'undefined') {
-      try {
-        const audio = new Audio(ephemeralAudioUrl);
-        playbackAudioRef.current = audio;
-        void audio.play().catch(() => {});
-      } catch {
-        // Ignore audio playback exception in test environment
+    setIsPlayingWarmth(true);
+    const playbackDurationSec = Math.max(4, Math.min(10, recordingSeconds || 4));
+    let voiceStarted = false;
+
+    // 1. Play recorded real media via mounted <video>/<audio> element or HTMLAudioElement
+    if (hasRealRecordingRef.current && ephemeralAudioUrlRef.current) {
+      if (playbackMediaElRef.current) {
+        try {
+          playbackMediaElRef.current.currentTime = 0;
+          playbackMediaElRef.current.muted = false;
+          playbackMediaElRef.current.volume = 1.0;
+          voiceStarted = true;
+          void playbackMediaElRef.current.play().catch(() => {});
+        } catch {
+          // Ignore playback error
+        }
+      }
+      if (!voiceStarted && typeof Audio !== 'undefined') {
+        try {
+          if (playbackAudioRef.current) {
+            playbackAudioRef.current.pause();
+          }
+          const audio = new Audio(ephemeralAudioUrlRef.current);
+          audio.volume = 1.0;
+          audio.onended = () => {
+            setIsPlayingWarmth(false);
+          };
+          playbackAudioRef.current = audio;
+          voiceStarted = true;
+          void audio.play().catch(() => {});
+        } catch {
+          // Ignore audio playback exception in test environment
+        }
       }
     }
 
-    // Synthesise gentle ambient background warmth pad via Web Audio API if available
+    // 2. If no hardware microphone stream was captured, provide spoken reassurance fallback via SpeechSynthesis
+    if (
+      !voiceStarted &&
+      typeof window !== 'undefined' &&
+      'speechSynthesis' in window &&
+      typeof SpeechSynthesisUtterance !== 'undefined'
+    ) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(
+          `${WARMUP_REASSURANCE_FEEDBACK} ${WARMUP_TEST_PHRASES[activeLanguage] || WARMUP_TEST_PHRASES.en}`
+        );
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.onend = () => {
+          setIsPlayingWarmth(false);
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch {
+        // Ignore SpeechSynthesis errors
+      }
+    }
+
+    // 3. Synthesise rich, clearly audible fireside ambient acoustic warmth chord via Web Audio API
     if (typeof window !== 'undefined') {
       const AudioCtx =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         try {
+          if (audioCtxRef.current) {
+            void audioCtxRef.current.close().catch(() => {});
+          }
           const ctx = new AudioCtx();
           audioCtxRef.current = ctx;
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(220, ctx.currentTime);
-          gain.gain.setValueAtTime(0.02, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.2);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + 2.2);
+          if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+            void ctx.resume().catch(() => {});
+          }
+
+          const now = ctx.currentTime;
+          const masterGain = ctx.createGain();
+          masterGain.gain.setValueAtTime(0.001, now);
+          masterGain.gain.linearRampToValueAtTime(0.18, now + 0.35);
+          masterGain.gain.setValueAtTime(0.14, now + playbackDurationSec - 0.8);
+          masterGain.gain.exponentialRampToValueAtTime(0.0001, now + playbackDurationSec);
+
+          let destinationNode: AudioNode = masterGain;
+          if (typeof ctx.createBiquadFilter === 'function') {
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(780, now);
+            filter. connect(masterGain);
+            destinationNode = filter;
+          }
+          masterGain.connect(ctx.destination);
+
+          // Warm A-major fireside chord (A2, E3, A3, C#4, E4)
+          const chordFrequencies = [110, 164.81, 220, 277.18, 329.63];
+          chordFrequencies.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const voiceGain = ctx.createGain();
+            osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+            osc.frequency.setValueAtTime(freq, now);
+            voiceGain.gain.setValueAtTime(1 / chordFrequencies.length, now);
+            osc.connect(voiceGain);
+            voiceGain.connect(destinationNode);
+            osc.start(now);
+            osc.stop(now + playbackDurationSec);
+          });
         } catch {
           // Ignore Web Audio errors in headless environments
         }
       }
     }
 
-    setTimeout(() => {
+    playbackTimeoutRef.current = setTimeout(() => {
       setIsPlayingWarmth(false);
-    }, 1800);
+    }, playbackDurationSec * 1000);
   };
 
   const handlePhotoFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -493,6 +706,25 @@ export function FiresideWarmupModal({
             </p>
           </div>
 
+          {isRecording && hasLiveVideoTrack && (
+            <div
+              data-testid="warmup-live-video-preview"
+              className="rounded-2xl overflow-hidden border border-amber-500/40 bg-black relative"
+            >
+              <video
+                ref={liveVideoPreviewRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full max-h-52 object-cover transform -scale-x-100"
+              />
+              <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/70 border border-rose-500/40 text-rose-300 text-[11px] font-mono flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span>LIVE SELFIE PREVIEW</span>
+              </div>
+            </div>
+          )}
+
           {isRecording && (
             <div
               data-testid="warmup-recording-meter"
@@ -546,6 +778,36 @@ export function FiresideWarmupModal({
             >
               &ldquo;{WARMUP_REASSURANCE_FEEDBACK}&rdquo;
             </p>
+
+            {/* Recorded Ephemeral Media Player (Video or Audio) */}
+            {hasRealRecording && ephemeralAudioUrl && (
+              <div className="rounded-xl overflow-hidden bg-black/70 border border-emerald-500/30 p-2">
+                {recordedMimeType.startsWith('video') ? (
+                  <video
+                    ref={(el) => {
+                      playbackMediaElRef.current = el;
+                    }}
+                    src={ephemeralAudioUrl}
+                    controls
+                    playsInline
+                    onEnded={() => setIsPlayingWarmth(false)}
+                    data-testid="warmup-recorded-video-player"
+                    className="w-full max-h-56 object-cover rounded-lg bg-black"
+                  />
+                ) : (
+                  <audio
+                    ref={(el) => {
+                      playbackMediaElRef.current = el;
+                    }}
+                    src={ephemeralAudioUrl}
+                    controls
+                    onEnded={() => setIsPlayingWarmth(false)}
+                    data-testid="warmup-recorded-audio-player"
+                    className="w-full h-10"
+                  />
+                )}
+              </div>
+            )}
 
             {/* Visual Audio Waveform */}
             <div

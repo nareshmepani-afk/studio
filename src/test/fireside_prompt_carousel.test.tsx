@@ -275,5 +275,70 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
         'Soundcheck complete. Entering Part I: Roots and Foundations.'
       );
     });
+
+    it('falls back to audio-only getUserMedia when camera is absent and plays back real MediaRecorder chunks in Step 2 (mw_telemetry_rpik44hsreb regression shield)', async () => {
+      const mockTrackStop = vi.fn();
+      const mockStream = {
+        getTracks: () => [{ stop: mockTrackStop }],
+        getVideoTracks: () => [],
+        getAudioTracks: () => [{ stop: mockTrackStop }],
+      } as unknown as MediaStream;
+
+      const getUserMediaMock = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('NotFoundError: camera not found'))
+        .mockRejectedValueOnce(new Error('NotFoundError: video device not found'))
+        .mockResolvedValueOnce(mockStream);
+
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: { getUserMedia: getUserMediaMock },
+        configurable: true,
+      });
+
+      class MockMediaRecorder {
+        state = 'inactive';
+        mimeType = 'audio/webm';
+        ondataavailable: ((e: { data: Blob }) => void) | null = null;
+        onstop: (() => void) | null = null;
+        start() {
+          this.state = 'recording';
+          if (this.ondataavailable) {
+            this.ondataavailable({ data: new Blob(['real-audio-bytes'], { type: 'audio/webm' }) });
+          }
+        }
+        requestData() {}
+        stop() {
+          this.state = 'inactive';
+          if (this.onstop) this.onstop();
+        }
+      }
+      (globalThis as unknown as { MediaRecorder: unknown }).MediaRecorder = MockMediaRecorder;
+
+      const playSpy = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+
+      render(<SingleCardPromptCarousel />);
+      fireEvent.click(screen.getByTestId('fireside-warmup-trigger'));
+
+      // Start recording (triggers getUserMedia cascade: video facingMode -> video true -> audio true)
+      fireEvent.click(screen.getByTestId('warmup-record-btn'));
+      await waitFor(() => {
+        expect(getUserMediaMock).toHaveBeenCalledTimes(3);
+        expect(getUserMediaMock).toHaveBeenLastCalledWith({ audio: true });
+      });
+
+      // Finish recording -> Step 2
+      fireEvent.click(screen.getByTestId('warmup-record-btn'));
+      await waitFor(() => {
+        expect(screen.getByTestId('warmup-step-2')).toBeInTheDocument();
+        expect(screen.getByTestId('warmup-recorded-audio-player')).toBeInTheDocument();
+      });
+
+      // Click Play Back with Ambient Warmth -> invokes play() on recorded audio player
+      fireEvent.click(screen.getByTestId('warmup-playback-btn'));
+      expect(playSpy).toHaveBeenCalled();
+
+      playSpy.mockRestore();
+    });
   });
 });
+
