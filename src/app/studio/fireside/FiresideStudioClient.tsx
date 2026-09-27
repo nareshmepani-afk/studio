@@ -88,6 +88,9 @@ export default function FiresideStudioClient() {
   const [isBonusDrawerOpen, setIsBonusDrawerOpen] = useState<boolean>(false);
   const [forceRecordMode, setForceRecordMode] = useState<boolean>(false);
   const [isReviewingTake, setIsReviewingTake] = useState<boolean>(false);
+  const [isHybrid, setIsHybrid] = useState<boolean>(false);
+  const [pinnedPrompterQuestion, setPinnedPrompterQuestion] = useState<string | null>(null);
+  const [bonusDrawerSeedPrompt, setBonusDrawerSeedPrompt] = useState<string | null>(null);
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
@@ -158,8 +161,9 @@ export default function FiresideStudioClient() {
   const activeSceneMemory = getSceneMemory(effectiveSceneId);
   const activeMood = activeSceneMemory?.moodTag;
   const activeEditingAuthority: EditingAuthority = resolveEditingAuthority(activeSceneMemory);
-  const isDesktopLocked = activeEditingAuthority === 'desktop_locked';
-  const hasCompletedReel = isSceneCompleted(activeSceneMemory) || isDesktopLocked;
+  const isScriptProtected = activeEditingAuthority === 'desktop_locked';
+  const hasCompletedReel = isSceneCompleted(activeSceneMemory);
+  const isDesktopLocked = isScriptProtected && hasCompletedReel;
   const isCompleted = hasCompletedReel && (!forceRecordMode || isDesktopLocked) && !isReviewingTake;
 
   const resolveSceneAuthority = useCallback(
@@ -313,15 +317,36 @@ export default function FiresideStudioClient() {
     setActivePromptSpark((prev) => {
       if (prev && prev.id !== spark.id) {
         setForceRecordMode(false);
+        setPinnedPrompterQuestion(null);
       }
       return spark;
     });
   }, []);
 
+  const handlePinQuestionToPrompter = useCallback((question: string) => {
+    setPinnedPrompterQuestion((prev) => {
+      const next = prev === question ? null : question;
+      setNotification(
+        next
+          ? 'Follow-up prompt pinned beneath your active teleprompter script below.'
+          : 'Follow-up prompt unpinned from teleprompter.'
+      );
+      setTimeout(() => setNotification(null), 3500);
+      return next;
+    });
+  }, []);
+
+  const handleAnswerFollowUpNote = useCallback((question: string) => {
+    setBonusDrawerSeedPrompt(question);
+    setIsBonusDrawerOpen(true);
+  }, []);
+
   const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
     setSelectedSpark(spark);
+    const sparkSceneMemory = spark.linkedSceneId ? getSceneMemory(spark.linkedSceneId) : undefined;
     const sparkAuthority = resolveSceneAuthority(spark.linkedSceneId);
-    if (sparkAuthority === 'desktop_locked') {
+    const sparkHasReel = isSceneCompleted(sparkSceneMemory);
+    if (sparkAuthority === 'desktop_locked' && sparkHasReel) {
       setForceRecordMode(false);
       logEvent('FIRESIDE_STUDIO_MASTER_SELECTED', {
         promptId: spark.id,
@@ -764,7 +789,7 @@ export default function FiresideStudioClient() {
           </div>
         )}
 
-        {/* Unified Chapter Typography ("The Golden Thread" — MW-88-T3) */}
+        {/* Unified Chapter Typography ("The Golden Thread" — MW-88-T3 & MW-88-T6 Hybrid Bilingual Mode) */}
         <div className="text-center max-w-md" data-testid="fireside-golden-thread-header">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold mb-3 shadow-sm">
             <span>🌟 Vault Progress: {completedScenes} of {totalScenes} Stories Woven</span>
@@ -783,12 +808,14 @@ export default function FiresideStudioClient() {
           >
             {primaryPartHeading}
           </h1>
-          <p
-            data-testid="fireside-chapter-secondary-title"
-            className="text-sm sm:text-base font-serif text-amber-200/85 mt-0.5 leading-snug"
-          >
-            {secondaryPartHeading}
-          </p>
+          {(isHybrid || activeLanguage !== 'en') && (
+            <p
+              data-testid="fireside-chapter-secondary-title"
+              className="text-sm sm:text-base font-serif text-amber-200/85 mt-0.5 leading-snug"
+            >
+              {secondaryPartHeading}
+            </p>
+          )}
           <p className="text-xs text-stone-400 mt-1.5">
             One memory at a time. Select your mother tongue or swipe to browse.
           </p>
@@ -809,11 +836,16 @@ export default function FiresideStudioClient() {
             prompts={FIRESIDE_PROMPT_SPARKS}
             initialPromptId={autoSparkId}
             activeLanguage={activeLanguage}
+            isHybrid={isHybrid}
+            onToggleHybrid={setIsHybrid}
             mediaMode={mediaMode}
             editingAuthority={activeEditingAuthority}
             resolveSceneAuthority={resolveSceneAuthority}
             activeSceneMemory={activeSceneMemory}
             getSceneMemory={(sceneId?: string) => sceneId ? getSceneMemory(sceneId) : undefined}
+            pinnedPrompterQuestion={pinnedPrompterQuestion}
+            onPinQuestionToPrompter={handlePinQuestionToPrompter}
+            onAnswerFollowUpNote={handleAnswerFollowUpNote}
             onSelectPrompt={handleSelectPrompt}
             onActivePromptChange={handleActivePromptChange}
             onLanguageChange={handleLanguageChange}
@@ -842,7 +874,7 @@ export default function FiresideStudioClient() {
                 <h2 className="text-lg sm:text-xl font-serif text-stone-200">
                   {selectedSpark ? `Record: ${selectedSpark.title}` : 'Record Your Video Memo'}
                 </h2>
-                {activeSceneMemory?.prose && (
+                {(activeSceneMemory?.prose || pinnedPrompterQuestion) && (
                   <div
                     data-testid="fireside-recording-script-banner"
                     className="max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left"
@@ -851,9 +883,24 @@ export default function FiresideStudioClient() {
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>Active Teleprompter Script (Act I)</span>
                     </div>
-                    <p className="text-xs sm:text-sm font-serif text-stone-200 leading-relaxed line-clamp-3">
-                      &ldquo;{activeSceneMemory.prose}&rdquo;
-                    </p>
+                    {activeSceneMemory?.prose && (
+                      <p className="text-xs sm:text-sm font-serif text-stone-200 leading-relaxed line-clamp-3">
+                        &ldquo;{activeSceneMemory.prose}&rdquo;
+                      </p>
+                    )}
+                    {pinnedPrompterQuestion && (
+                      <div
+                        data-testid="fireside-pinned-prompter-footnote"
+                        className="mt-2 pt-2 border-t border-amber-500/20 flex items-start gap-2"
+                      >
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300 shrink-0 mt-0.5">
+                          📌 Follow-Up:
+                        </span>
+                        <p className="text-xs font-serif italic text-amber-100 leading-snug">
+                          {pinnedPrompterQuestion}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -895,7 +942,7 @@ export default function FiresideStudioClient() {
                   <h2 className="text-lg sm:text-xl font-serif text-stone-200">
                     {selectedSpark ? `Speak: ${selectedSpark.title}` : 'Speak Your Spoken Memoir'}
                   </h2>
-                  {activeSceneMemory?.prose && (
+                  {(activeSceneMemory?.prose || pinnedPrompterQuestion) && (
                     <div
                       data-testid="fireside-recording-script-banner"
                       className="max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left"
@@ -904,9 +951,24 @@ export default function FiresideStudioClient() {
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>Active Teleprompter Script (Act I)</span>
                       </div>
-                      <p className="text-xs sm:text-sm font-serif text-stone-200 leading-relaxed line-clamp-3">
-                        &ldquo;{activeSceneMemory.prose}&rdquo;
-                      </p>
+                      {activeSceneMemory?.prose && (
+                        <p className="text-xs sm:text-sm font-serif text-stone-200 leading-relaxed line-clamp-3">
+                          &ldquo;{activeSceneMemory.prose}&rdquo;
+                        </p>
+                      )}
+                      {pinnedPrompterQuestion && (
+                        <div
+                          data-testid="fireside-pinned-prompter-footnote"
+                          className="mt-2 pt-2 border-t border-amber-500/20 flex items-start gap-2"
+                        >
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300 shrink-0 mt-0.5">
+                            📌 Follow-Up:
+                          </span>
+                          <p className="text-xs font-serif italic text-amber-100 leading-snug">
+                            {pinnedPrompterQuestion}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -950,7 +1012,10 @@ export default function FiresideStudioClient() {
               }
               activeLanguage={activeLanguage}
               onWatchTheatricalReel={() => setIsLightboxOpen(true)}
-              onAddBonusNote={() => setIsBonusDrawerOpen(true)}
+              onAddBonusNote={() => {
+                setBonusDrawerSeedPrompt(null);
+                setIsBonusDrawerOpen(true);
+              }}
               onDiscardTake={handleDiscardActiveTake}
               onReRecordRequest={() => {
                 if (isDesktopLocked) return;
@@ -989,7 +1054,10 @@ export default function FiresideStudioClient() {
       <FiresideCinemaLightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
-        onOpenBonusDrawer={() => setIsBonusDrawerOpen(true)}
+        onOpenBonusDrawer={() => {
+          setBonusDrawerSeedPrompt(null);
+          setIsBonusDrawerOpen(true);
+        }}
         onDiscardTake={handleDiscardActiveTake}
         editingAuthority={activeEditingAuthority}
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
@@ -1013,12 +1081,16 @@ export default function FiresideStudioClient() {
         moodTag={activeMood}
       />
 
-      {/* Additive Bonus Memory Recollection Drawer (Ticket #259) */}
+      {/* Additive Bonus Memory Recollection Drawer (Ticket #259 & MW-88-T6) */}
       <BonusMemoryDrawer
         isOpen={isBonusDrawerOpen}
-        onClose={() => setIsBonusDrawerOpen(false)}
+        onClose={() => {
+          setIsBonusDrawerOpen(false);
+          setBonusDrawerSeedPrompt(null);
+        }}
         sceneId={effectiveSceneId}
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
+        initialPrompt={bonusDrawerSeedPrompt}
         onSaveBonusNote={async (note) => {
           await addBonusMemoryNote(effectiveSceneId, note);
           setNotification('Bonus recollection secured in vault!');

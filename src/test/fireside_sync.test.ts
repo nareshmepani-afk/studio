@@ -20,6 +20,8 @@ import { useCurriculumVault, resolveEditingAuthority, isSceneCompleted } from '@
 import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
 import { FiresideCinemaLightbox } from '@/components/fireside/FiresideCinemaLightbox';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
+import { BonusMemoryDrawer } from '@/components/fireside/BonusMemoryDrawer';
+import { isSceneCompleted as isSceneCompletedType } from '@/types/curriculum';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 import { getPartForScene, getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import { FiresideWarmupModal, WARMUP_CHAI_SCRIPTS } from '@/components/fireside/FiresideWarmupModal';
@@ -525,7 +527,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(spark0.title).toBe('A Child of Two Worlds');
       expect(spark0.localizedTitles?.gu).toBe('બે દુનિયાનું બાળક');
 
-      const { unmount } = render(React.createElement(SingleCardPromptCarousel, {}));
+      const { unmount } = render(React.createElement(SingleCardPromptCarousel, { isHybrid: true }));
       expect(document.querySelector('[data-testid="carousel-scene-number-badge"]')?.textContent).toBe('Part I • Scene 1');
       expect(document.querySelector('[data-testid="carousel-card-primary-title"]')?.textContent).toBe('A Child of Two Worlds');
       expect(document.querySelector('[data-testid="carousel-card-secondary-title"]')?.textContent).toBe('બે દુનિયાનું બાળક');
@@ -1046,7 +1048,200 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       unmountModal();
     });
   });
+
+  // =========================================================================
+  // 7. MW-88-T6: Cross-Surface UX, Hybrid Bilingual Mode & Act Progression
+  // =========================================================================
+  describe('7. MW-88-T6: Unblocked Act I Desktop Draft Capture, Hybrid Bilingual Mode, 4-Act Spine & Follow-Up Question Actions', () => {
+    it('unblocks mobile recording for unrecorded Desktop Act I drafts (takes: [], editingAuthority: desktop_locked) while preserving script protection, 4-Act Spine, and Next Desktop Act Link', () => {
+      const unrecordedDesktopActIDraft = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        sceneId: 'part-1-scene-1',
+        title: 'A Child of Two Worlds',
+        prose: 'The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me.',
+        editingAuthority: 'desktop_locked' as const,
+        takes: [],
+        videoUrl: null,
+        audioUrl: null,
+        actsCompleted: ['act1' as const],
+        productionStage: 1,
+        sensoryAnchors: { sound: 5, visual: 7, aroma: 6 },
+      };
+
+      // 1. isSceneCompleted returns false for unrecorded Desktop Act I draft
+      expect(isSceneCompleted(unrecordedDesktopActIDraft)).toBe(false);
+      expect(isSceneCompletedType(unrecordedDesktopActIDraft)).toBe(false);
+      expect(resolveEditingAuthority(unrecordedDesktopActIDraft)).toBe('desktop_locked');
+
+      // 2. When a take or media URL is present, isSceneCompleted returns true
+      expect(
+        isSceneCompletedType({
+          ...unrecordedDesktopActIDraft,
+          videoUrl: 'https://firebasestorage.googleapis.com/v0/b/test/reel.webm',
+        })
+      ).toBe(true);
+
+      // 3. Render SingleCardPromptCarousel with the unrecorded Desktop Act I draft
+      const onSelectPrompt = vi.fn();
+      const { unmount } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          mediaMode: 'video',
+          editingAuthority: 'desktop_locked',
+          resolveSceneAuthority: (): 'desktop_locked' => 'desktop_locked',
+          activeSceneMemory: unrecordedDesktopActIDraft,
+          getSceneMemory: () => unrecordedDesktopActIDraft,
+          onSelectPrompt,
+        })
+      );
+
+      // Carousel card has HS_FIRESIDE_PROMPT_CAROUSEL_CARD testid
+      expect(document.querySelector('[data-testid="HS_FIRESIDE_PROMPT_CAROUSEL_CARD"]')).toBeTruthy();
+
+      // Primary CTA is NOT locked to "Watch Studio Master Reel" — it enables recording the Video Memo!
+      const primaryCta = document.querySelector('[data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"]') as HTMLElement;
+      expect(primaryCta).toBeTruthy();
+      expect(primaryCta.textContent).toContain('Record Video Memo');
+      fireEvent.click(primaryCta);
+      expect(onSelectPrompt).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0], 'en');
+
+      // 4-Act Status Spine renders all 4 acts
+      const actSpine = document.querySelector('[data-testid="HS_FIRESIDE_ACT_SPINE"]') as HTMLElement;
+      expect(actSpine).toBeTruthy();
+      expect(actSpine.textContent).toContain('Act I: Script Woven');
+      expect(actSpine.textContent).toContain('Act II: Sensory Weave');
+      expect(actSpine.textContent).toContain('Act III: Soundstage Take');
+      expect(actSpine.textContent).toContain('Act IV: Master Reel');
+
+      // Next Desktop Act Link renders and points to /studio/production/ey96djU6qR1BrDGnvZwp?act=2
+      const nextActLink = document.querySelector('[data-testid="HS_FIRESIDE_NEXT_DESKTOP_ACT_LINK"]') as HTMLAnchorElement;
+      expect(nextActLink).toBeTruthy();
+      expect(nextActLink.textContent).toContain('[ 🎬 Progress to Act II (Sensory Weave) in Desktop Studio ↗ ]');
+      expect(nextActLink.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=2');
+
+      unmount();
+    });
+
+    it('renders HYBRID Bilingual Mode toggle (HS_FIRESIDE_HYBRID_TOGGLE_BTN) and exact Section 3B badge tooltips', () => {
+      const mockMemory = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        sceneId: 'part-1-scene-1',
+        prose: 'The history I carry is an epic journey across oceans and generations.',
+        editingAuthority: 'desktop_locked' as const,
+        sensoryAnchors: { sound: 5, visual: 7, aroma: 6 },
+      };
+
+      const { unmount } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          mediaMode: 'video',
+          editingAuthority: 'desktop_locked',
+          resolveSceneAuthority: (): 'desktop_locked' => 'desktop_locked',
+          activeSceneMemory: mockMemory,
+          getSceneMemory: () => mockMemory,
+        })
+      );
+
+      // Default: English + HYBRID: OFF -> Gujarati subtitle suppressed
+      const hybridBtn = document.querySelector('[data-testid="HS_FIRESIDE_HYBRID_TOGGLE_BTN"]') as HTMLButtonElement;
+      expect(hybridBtn).toBeTruthy();
+      expect(hybridBtn.textContent).toContain('[ 🔤 HYBRID: OFF ]');
+      expect(hybridBtn.getAttribute('title')).toBe(
+        'Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English.'
+      );
+      expect(document.querySelector('[data-testid="carousel-card-secondary-title"]')).toBeNull();
+
+      // Click HYBRID toggle -> HYBRID: ON -> Gujarati subtitle appears
+      fireEvent.click(hybridBtn);
+      expect(hybridBtn.textContent).toContain('[ 🔤 HYBRID: ON ]');
+      expect(document.querySelector('[data-testid="carousel-card-secondary-title"]')?.textContent).toBe('બે દુનિયાનું બાળક');
+
+      // Verify exact Section 3B tooltips on badges
+      const categoryBadge = document.querySelector('[data-testid="carousel-category-badge"]') as HTMLElement;
+      expect(categoryBadge?.getAttribute('title')).toBe(
+        'Story Theme: Origins & Roots — Exploring ancestral homeland, family foundations, and heritage.'
+      );
+
+      const sceneBadge = document.querySelector('[data-testid="carousel-scene-number-badge"]') as HTMLElement;
+      expect(sceneBadge?.getAttribute('title')).toBe(
+        'Curriculum Position: Part I (Roots and Foundations), Scene 1 of 11 in your Generational Vault.'
+      );
+
+      const studioMasterBadge = document.querySelector('[data-testid="carousel-studio-master-badge"]') as HTMLElement;
+      expect(studioMasterBadge?.getAttribute('title')).toBe(
+        'Desktop Studio Authority — Authored on Desktop Soundstage. Your Act I woven script is protected from accidental overwrite.'
+      );
+
+      const mediaBadge = document.querySelector('[data-testid="carousel-media-badge"]') as HTMLElement;
+      expect(mediaBadge?.getAttribute('title')).toBe(
+        'Recommended Capture Mode: Intimate selfie video with live teleprompter.'
+      );
+
+      const sensoryCounters = document.querySelector('[data-testid="fireside-sensory-counters"]') as HTMLElement;
+      expect(sensoryCounters?.getAttribute('title')).toBe(
+        'Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script.'
+      );
+
+      unmount();
+    });
+
+    it('renders Follow-Up Questions Two-Action Model (HS_FIRESIDE_PIN_PROMPTER_BTN & HS_FIRESIDE_ANSWER_NOTE_BTN) and pre-seeds BonusMemoryDrawer', () => {
+      const onPinSpy = vi.fn();
+      const onAnswerNoteSpy = vi.fn();
+
+      const { unmount } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          onPinQuestionToPrompter: onPinSpy,
+          onAnswerFollowUpNote: onAnswerNoteSpy,
+        })
+      );
+
+      // Expand Follow-Up Questions drawer
+      const drawerToggle = document.querySelector('[data-hotspot-id="HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN"]') as HTMLElement;
+      fireEvent.click(drawerToggle);
+
+      // Instruction header
+      const instruction = document.querySelector('[data-testid="fireside-followup-instruction"]') as HTMLElement;
+      expect(instruction?.textContent).toBe(
+        'Choose a prompt below to jot down a quick memory note, or pin it to your teleprompter to answer aloud during your recording.'
+      );
+
+      // Pin to Prompter button
+      const pinBtns = document.querySelectorAll('[data-testid="HS_FIRESIDE_PIN_PROMPTER_BTN"]');
+      expect(pinBtns.length).toBeGreaterThan(0);
+      fireEvent.click(pinBtns[0]);
+      expect(onPinSpy).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0].followUpQuestions.en[0]);
+
+      // Answer / Add Note button
+      const noteBtns = document.querySelectorAll('[data-testid="HS_FIRESIDE_ANSWER_NOTE_BTN"]');
+      expect(noteBtns.length).toBeGreaterThan(0);
+      fireEvent.click(noteBtns[0]);
+      expect(onAnswerNoteSpy).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0].followUpQuestions.en[0]);
+
+      unmount();
+
+      // Verify BonusMemoryDrawer pre-seeds textarea when initialPrompt is supplied
+      const seedQuestion = FIRESIDE_PROMPT_SPARKS[0].followUpQuestions.en[0];
+      const { unmount: unmountDrawer } = render(
+        React.createElement(BonusMemoryDrawer, {
+          isOpen: true,
+          onClose: vi.fn(),
+          sceneId: 'part-1-scene-1',
+          sceneTitle: 'A Child of Two Worlds',
+          initialPrompt: seedQuestion,
+          onSaveBonusNote: vi.fn(),
+        })
+      );
+
+      const textarea = document.querySelector('#bonus-note-text') as HTMLTextAreaElement;
+      expect(textarea).toBeTruthy();
+      expect(textarea.value).toContain(seedQuestion);
+      unmountDrawer();
+    });
+  });
 });
+
 
 
 

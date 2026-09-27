@@ -75,7 +75,7 @@ export const FiresideWalkthroughCard: React.FC<FiresideWalkthroughCardProps> = (
 
   if (isDismissed) {
     return (
-      <div className={`w-full flex flex-col items-center gap-2 ${className}`}>
+      <div className={`w-full max-w-xl mx-auto flex flex-col items-center gap-2 ${className}`}>
         <button
           type="button"
           data-testid="HS_FIRESIDE_WALKTHROUGH_COLLAPSED_PILL"
@@ -98,7 +98,7 @@ export const FiresideWalkthroughCard: React.FC<FiresideWalkthroughCardProps> = (
   return (
     <div
       data-testid="fireside-walkthrough-card"
-      className={`w-full relative rounded-3xl overflow-hidden bg-[#141210]/95 backdrop-blur-xl border border-amber-500/35 shadow-[0_0_40px_rgba(245,158,11,0.12)] p-5 sm:p-6 transition-all ${className}`}
+      className={`w-full max-w-xl mx-auto relative rounded-3xl overflow-hidden bg-[#141210]/95 backdrop-blur-xl border border-amber-500/35 shadow-[0_0_40px_rgba(245,158,11,0.12)] p-6 sm:p-8 transition-all ${className}`}
     >
       {/* Top Specular Edge Highlight */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-300/70 to-transparent" />

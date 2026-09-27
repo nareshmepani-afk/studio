@@ -48,6 +48,7 @@ import { FIRESIDE_LANGUAGE_LABELS, FIRESIDE_TOUCH_TARGETS } from '@/types/firesi
 import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
 import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import type { EditingAuthority, UnifiedCurriculumMemory } from '@/types/curriculum';
+import { isSceneCompleted } from '@/types/curriculum';
 import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
@@ -56,11 +57,16 @@ export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
   initialPromptId?: string;
   activeLanguage?: FiresideLanguage;
+  isHybrid?: boolean;
+  onToggleHybrid?: (nextHybrid: boolean) => void;
   mediaMode?: FiresideMediaMode;
   editingAuthority?: EditingAuthority;
   resolveSceneAuthority?: (sceneId?: string) => EditingAuthority;
   activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null;
-  getSceneMemory?: (sceneId?: string) => UnifiedCurriculumMemory | undefined;
+  getSceneMemory?: (sceneId?: string) => Partial<UnifiedCurriculumMemory> | undefined;
+  pinnedPrompterQuestion?: string | null;
+  onPinQuestionToPrompter?: (question: string) => void;
+  onAnswerFollowUpNote?: (question: string) => void;
   onSelectPrompt?: (spark: FiresidePromptSpark, language: FiresideLanguage) => void;
   onActivePromptChange?: (spark: FiresidePromptSpark) => void;
   onLanguageChange?: (language: FiresideLanguage) => void;
@@ -71,16 +77,56 @@ export interface SingleCardPromptCarouselProps {
 
 const CATEGORY_META: Record<
   PromptCategory,
-  { label: string; icon: React.ElementType; colour: string }
+  { label: string; icon: React.ElementType; colour: string; tooltip: string }
 > = {
-  childhood: { label: 'Childhood & Home', icon: BookOpen, colour: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-  roots: { label: 'Origins & Roots', icon: Compass, colour: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-  love: { label: 'Courtship & Love', icon: Heart, colour: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
-  wisdom: { label: 'Wisdom & Courage', icon: Award, colour: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-  traditions: { label: 'Festive Traditions', icon: Calendar, colour: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-  lessons: { label: 'Honest Labour', icon: Crown, colour: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-  humour: { label: 'Family Humour', icon: Smile, colour: 'text-amber-300 bg-amber-400/10 border-amber-400/20' },
-  legacy: { label: 'Blessing & Legacy', icon: Sparkles, colour: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  childhood: {
+    label: 'Childhood & Home',
+    icon: BookOpen,
+    colour: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    tooltip: 'Story Theme: Childhood & Home — Early memories of household warmth, neighbours, and growing up.',
+  },
+  roots: {
+    label: 'Origins & Roots',
+    icon: Compass,
+    colour: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    tooltip: 'Story Theme: Origins & Roots — Exploring ancestral homeland, family foundations, and heritage.',
+  },
+  love: {
+    label: 'Courtship & Love',
+    icon: Heart,
+    colour: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+    tooltip: 'Story Theme: Courtship & Love — Cherished moments of companionship, partnership, and devotion.',
+  },
+  wisdom: {
+    label: 'Wisdom & Courage',
+    icon: Award,
+    colour: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+    tooltip: 'Story Theme: Wisdom & Courage — Turning points, resilience, and life-shaping guidance.',
+  },
+  traditions: {
+    label: 'Festive Traditions',
+    icon: Calendar,
+    colour: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    tooltip: 'Story Theme: Festive Traditions — Celebrations, recipes, songs, and seasonal family rituals.',
+  },
+  lessons: {
+    label: 'Honest Labour',
+    icon: Crown,
+    colour: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+    tooltip: 'Story Theme: Honest Labour — Work ethic, craft, perseverance, and building a livelihood.',
+  },
+  humour: {
+    label: 'Family Humour',
+    icon: Smile,
+    colour: 'text-amber-300 bg-amber-400/10 border-amber-400/20',
+    tooltip: 'Story Theme: Family Humour — Light-hearted mischief, shared laughter, and unforgettable stories.',
+  },
+  legacy: {
+    label: 'Blessing & Legacy',
+    icon: Sparkles,
+    colour: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    tooltip: 'Story Theme: Blessing & Legacy — Enduring messages, values, and blessings for future generations.',
+  },
 };
 
 const LANGUAGES: FiresideLanguage[] = ['en', 'gu', 'pa', 'hi'];
@@ -89,11 +135,16 @@ export function SingleCardPromptCarousel({
   prompts = FIRESIDE_PROMPT_SPARKS,
   initialPromptId,
   activeLanguage: controlledLanguage,
+  isHybrid: controlledHybrid,
+  onToggleHybrid,
   mediaMode,
   editingAuthority,
   resolveSceneAuthority,
   activeSceneMemory,
   getSceneMemory,
+  pinnedPrompterQuestion,
+  onPinQuestionToPrompter,
+  onAnswerFollowUpNote,
   onSelectPrompt,
   onActivePromptChange,
   onLanguageChange,
@@ -113,6 +164,7 @@ export function SingleCardPromptCarousel({
 
   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
   const [internalLanguage, setInternalLanguage] = useState<FiresideLanguage>('en');
+  const [internalHybrid, setInternalHybrid] = useState<boolean>(false);
   const [direction, setDirection] = useState<number>(0);
   const [showFollowUps, setShowFollowUps] = useState<boolean>(false);
   const [isWarmupOpen, setIsWarmupOpen] = useState<boolean>(false);
@@ -120,6 +172,9 @@ export function SingleCardPromptCarousel({
   const [viewMode, setViewMode] = useState<'script' | 'spark'>('script');
 
   const currentLanguage = controlledLanguage || internalLanguage;
+  const effectiveHybrid = typeof controlledHybrid === 'boolean' ? controlledHybrid : internalHybrid;
+  const showSecondarySubtitle = effectiveHybrid || currentLanguage !== 'en';
+
   const currentSpark = sparkDeck[currentIndex] || sparkDeck[0];
   const onActivePromptChangeRef = React.useRef(onActivePromptChange);
   onActivePromptChangeRef.current = onActivePromptChange;
@@ -145,6 +200,12 @@ export function SingleCardPromptCarousel({
   }, [getSceneMemory, currentSpark.linkedSceneId, activeSceneMemory]);
 
   const activeProse = currentSceneMemory?.prose?.trim() || '';
+  const hasSceneCompletedReel = isSceneCompleted(currentSceneMemory);
+  const isMasteredScene =
+    currentSceneMemory?.currentStatus === 'mastered' ||
+    Boolean(currentSceneMemory?.directorialPolish?.masterReelUrl);
+  const targetProductionId =
+    currentSceneMemory?.id || currentSpark.linkedSceneId || 'part-1-scene-1';
 
   const sensoryCounts = useMemo(() => {
     if (!activeProse) return { soundscape: 0, visual: 0, aroma: 0 };
@@ -174,6 +235,12 @@ export function SingleCardPromptCarousel({
   const handleLanguageSelect = (lang: FiresideLanguage) => {
     setInternalLanguage(lang);
     onLanguageChange?.(lang);
+  };
+
+  const handleHybridToggle = () => {
+    const next = !effectiveHybrid;
+    setInternalHybrid(next);
+    onToggleHybrid?.(next);
   };
 
   const handleNext = useCallback(() => {
@@ -220,8 +287,8 @@ export function SingleCardPromptCarousel({
       className={`w-full max-w-xl mx-auto flex flex-col items-center select-none ${className}`}
       style={{ touchAction: 'pan-y' }}
     >
-      {/* 1. Language Toggle Pills (Armchair 1-Tap Switching, Rule 26: 56px touch targets) */}
-      <div className="w-full flex items-center justify-center gap-1.5 sm:gap-2 mb-4 px-1 overflow-x-auto no-scrollbar">
+      {/* 1. Language Toggle Pills + Synchronised HYBRID Bilingual Toggle (Rule 26: 56px touch targets) */}
+      <div className="w-full flex items-center justify-center gap-1.5 sm:gap-2 mb-4 px-1 overflow-x-auto no-scrollbar flex-wrap">
         {LANGUAGES.map((lang) => {
           const isActive = currentLanguage === lang;
           return (
@@ -244,11 +311,29 @@ export function SingleCardPromptCarousel({
             </button>
           );
         })}
+
+        <button
+          type="button"
+          data-testid="HS_FIRESIDE_HYBRID_TOGGLE_BTN"
+          data-hotspot-id="HS_FIRESIDE_HYBRID_TOGGLE_BTN"
+          onClick={handleHybridToggle}
+          title="Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English."
+          aria-label="Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English."
+          aria-pressed={effectiveHybrid}
+          style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+          className={`min-h-[56px] px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-mono font-bold transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
+            effectiveHybrid
+              ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50 shadow-sm shadow-emerald-500/10'
+              : 'bg-white/5 text-neutral-300 border-white/15 hover:border-amber-500/40 hover:text-amber-200'
+          }`}
+        >
+          <span>{effectiveHybrid ? '[ 🔤 HYBRID: ON ]' : '[ 🔤 HYBRID: OFF ]'}</span>
+        </button>
       </div>
 
       {/* 1b. Fireside Free Walkthrough & 30-Second Soundcheck Card (Index 0 of Carousel — MW-88-T3 / MW-88-T5) */}
       {currentIndex === 0 && (
-        <div className="w-full mb-4 flex flex-col gap-2">
+        <div className="w-full max-w-xl mx-auto mb-4 flex flex-col gap-2">
           {!isWarmupOpen && (
             <FiresideWalkthroughCard
               activeLanguage={currentLanguage}
@@ -283,14 +368,16 @@ export function SingleCardPromptCarousel({
       )}
 
       {/* 2. The Single Interactive Story Spark Card */}
-      <div className="w-full relative min-h-[360px] sm:min-h-[400px]">
+      <div className="w-full max-w-xl mx-auto relative min-h-[360px] sm:min-h-[400px]">
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={`${currentSpark.id}-${currentIndex}`}
+            data-testid="HS_FIRESIDE_PROMPT_CAROUSEL_CARD"
             custom={direction}
             drag="x"
+            dragSnapToOrigin={true}
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
+            dragElastic={0.15}
             onDragEnd={(_e, { offset, velocity }) => {
               const swipeThreshold = 50;
               if (offset.x < -swipeThreshold || velocity.x < -300) {
@@ -303,7 +390,7 @@ export function SingleCardPromptCarousel({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
             transition={{ duration: 0.22, ease: 'easeInOut' }}
-            className="w-full bg-[#171717]/95 border border-amber-500/25 hover:border-amber-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md flex flex-col justify-between transition-colors relative overflow-hidden shrink-0"
+            className="w-full max-w-xl mx-auto bg-[#171717]/95 border border-amber-500/25 hover:border-amber-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md flex flex-col justify-between transition-colors relative overflow-hidden shrink-0"
           >
             {/* Ambient Background Warmth */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -311,10 +398,12 @@ export function SingleCardPromptCarousel({
 
             <div>
               {/* Top Meta Bar: Category Pill + Curriculum Badge + Card Index Counter */}
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div className="flex items-center flex-wrap gap-1.5">
                   <div
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${categoryMeta.colour}`}
+                    data-testid="carousel-category-badge"
+                    title={categoryMeta.tooltip}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border cursor-help ${categoryMeta.colour}`}
                   >
                     <CategoryIcon className="w-3.5 h-3.5" />
                     <span className="uppercase tracking-wider text-[11px] font-semibold">
@@ -325,7 +414,8 @@ export function SingleCardPromptCarousel({
                   {linkedScene && (
                     <span
                       data-testid="carousel-scene-number-badge"
-                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold"
+                      title="Curriculum Position: Part I (Roots and Foundations), Scene 1 of 11 in your Generational Vault."
+                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold cursor-help"
                     >
                       {linkedScene.partTitle.split(':')[0]} • Scene {linkedScene.sceneNumber}
                     </span>
@@ -334,14 +424,19 @@ export function SingleCardPromptCarousel({
                   {cardEditingAuthority === 'desktop_locked' && (
                     <span
                       data-testid="carousel-studio-master-badge"
-                      className="text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm"
+                      title="Desktop Studio Authority — Authored on Desktop Soundstage. Your Act I woven script is protected from accidental overwrite."
+                      className="text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm cursor-help"
                     >
                       🔒 Studio Master
                     </span>
                   )}
 
                   {currentSpark.suggestedMediaMode && (
-                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-1 font-semibold">
+                    <span
+                      data-testid="carousel-media-badge"
+                      title="Recommended Capture Mode: Intimate selfie video with live teleprompter."
+                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-1 font-semibold cursor-help"
+                    >
                       {currentSpark.suggestedMediaMode === 'video' ? (
                         <>
                           <Video className="w-3 h-3 text-amber-400" />
@@ -374,7 +469,70 @@ export function SingleCardPromptCarousel({
                 </div>
               </div>
 
-              {/* Memory Prompt Heading (Bilingual Hierarchy — MW-88-T3) & Spark Prose */}
+              {/* 4-Act Production Status Spine & Desktop Progression Link (MW-88-T6) */}
+              <div
+                data-testid="HS_FIRESIDE_ACT_SPINE"
+                className="mb-4 p-2.5 rounded-2xl bg-black/40 border border-white/10 space-y-2"
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] font-mono">
+                  <div
+                    title="Act I: Script Woven — Story hook and narrative prose crafted in Scriptorium."
+                    className={`px-2 py-1 rounded-lg border text-center truncate ${
+                      activeProse
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
+                        : 'bg-amber-500/15 border-amber-500/40 text-amber-200 font-semibold'
+                    }`}
+                  >
+                    {activeProse ? '✓ ' : '● '}Act I: Script Woven
+                  </div>
+                  <div
+                    title="Act II: Sensory Weave — Multi-option sensory synthesis and script polish on Desktop."
+                    className={`px-2 py-1 rounded-lg border text-center truncate ${
+                      activeProse && !hasSceneCompletedReel
+                        ? 'bg-amber-500/20 border-amber-400/50 text-amber-200 font-bold'
+                        : hasSceneCompletedReel
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
+                        : 'bg-white/5 border-white/10 text-neutral-400'
+                    }`}
+                  >
+                    {hasSceneCompletedReel ? '✓ ' : activeProse ? '● ' : '○ '}Act II: Sensory Weave
+                  </div>
+                  <div
+                    title="Act III: Soundstage Take — Spoken voice or selfie video performance recorded."
+                    className={`px-2 py-1 rounded-lg border text-center truncate ${
+                      hasSceneCompletedReel
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
+                        : 'bg-white/5 border-white/10 text-neutral-400'
+                    }`}
+                  >
+                    {hasSceneCompletedReel ? '✓ ' : '○ '}Act III: Soundstage Take
+                  </div>
+                  <div
+                    title="Act IV: Master Reel — Cinema colour grading, acoustic score, and final exhibition lock."
+                    className={`px-2 py-1 rounded-lg border text-center truncate ${
+                      isMasteredScene
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
+                        : 'bg-white/5 border-white/10 text-neutral-400'
+                    }`}
+                  >
+                    {isMasteredScene ? '✓ ' : '○ '}Act IV: Master Reel
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <a
+                    href={`/studio/production/${targetProductionId}?act=2`}
+                    data-testid="HS_FIRESIDE_NEXT_DESKTOP_ACT_LINK"
+                    data-hotspot-id="HS_FIRESIDE_NEXT_DESKTOP_ACT_LINK"
+                    title="Open this memory directly in Act II (Sensory Weave) on the Desktop Studio Soundstage."
+                    className="w-full py-1.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 text-[11px] font-mono font-semibold text-center transition-colors block"
+                  >
+                    [ 🎬 Progress to Act II (Sensory Weave) in Desktop Studio ↗ ]
+                  </a>
+                </div>
+              </div>
+
+              {/* Memory Prompt Heading (Bilingual Hierarchy — MW-88-T3 & MW-88-T6 HYBRID Gate) & Spark Prose */}
               <div className="mb-3">
                 <h3
                   data-testid="carousel-card-primary-title"
@@ -382,7 +540,7 @@ export function SingleCardPromptCarousel({
                 >
                   <span>{primaryCardTitle}</span>
                 </h3>
-                {secondaryCardTitle && secondaryCardTitle !== primaryCardTitle && (
+                {showSecondarySubtitle && secondaryCardTitle && secondaryCardTitle !== primaryCardTitle && (
                   <p
                     data-testid="carousel-card-secondary-title"
                     className="text-xs sm:text-sm font-medium text-amber-200/75 tracking-wide mt-0.5 leading-snug"
@@ -397,16 +555,29 @@ export function SingleCardPromptCarousel({
                 <div className="space-y-3">
                   {/* Read-Only Sensory Counters & Script/Spark Toggle */}
                   <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-white/10">
-                    <div className="flex items-center gap-1.5 flex-wrap" data-testid="fireside-sensory-counters">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-sky-500/10 text-sky-300 border border-sky-500/25">
+                    <div
+                      className="flex items-center gap-1.5 flex-wrap cursor-help"
+                      data-testid="fireside-sensory-counters"
+                      title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
+                    >
+                      <span
+                        title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-sky-500/10 text-sky-300 border border-sky-500/25"
+                      >
                         <Headphones className="w-3 h-3 text-sky-400" />
                         <span>Soundscape ({sensoryCounts.soundscape})</span>
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
+                      <span
+                        title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/25"
+                      >
                         <Eye className="w-3 h-3 text-emerald-400" />
                         <span>Visual ({sensoryCounts.visual})</span>
                       </span>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                      <span
+                        title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25"
+                      >
                         <Coffee className="w-3 h-3 text-amber-400" />
                         <span>Aroma ({sensoryCounts.aroma})</span>
                       </span>
@@ -459,7 +630,7 @@ export function SingleCardPromptCarousel({
               )}
             </div>
 
-            {/* 3. Expandable Follow-Up Inquiries Drawer */}
+            {/* 3. Expandable Follow-Up Inquiries Drawer (MW-88-T6 Two-Action Model) */}
             <div className="mt-6 pt-4 border-t border-white/10">
               <button
                 type="button"
@@ -490,13 +661,51 @@ export function SingleCardPromptCarousel({
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <ul className="mt-3 space-y-2.5 pl-2 text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans">
-                      {followUps.map((question, qIdx) => (
-                        <li key={qIdx} className="flex items-start gap-2">
-                          <span className="text-amber-400 font-bold">•</span>
-                          <span>{question}</span>
-                        </li>
-                      ))}
+                    <p
+                      data-testid="fireside-followup-instruction"
+                      className="mt-3 px-2 text-xs text-amber-200/90 font-sans leading-relaxed"
+                    >
+                      Choose a prompt below to jot down a quick memory note, or pin it to your teleprompter to answer aloud during your recording.
+                    </p>
+                    <ul className="mt-2.5 space-y-3 pl-1 text-xs sm:text-sm text-neutral-200 leading-relaxed font-sans">
+                      {followUps.map((question, qIdx) => {
+                        const isPinned = pinnedPrompterQuestion === question;
+                        return (
+                          <li
+                            key={qIdx}
+                            className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-2"
+                          >
+                            <div className="flex items-start gap-2">
+                              <span className="text-amber-400 font-bold">•</span>
+                              <span>{question}</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                data-testid="HS_FIRESIDE_PIN_PROMPTER_BTN"
+                                data-hotspot-id="HS_FIRESIDE_PIN_PROMPTER_BTN"
+                                onClick={() => onPinQuestionToPrompter?.(question)}
+                                className={`min-h-[48px] px-3 py-1.5 rounded-xl text-xs font-mono font-semibold border transition-all cursor-pointer ${
+                                  isPinned
+                                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
+                                    : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/35 text-amber-200'
+                                }`}
+                              >
+                                {isPinned ? '✓ [ 📌 Pinned to Prompter ]' : '[ 📌 Pin to Prompter ]'}
+                              </button>
+                              <button
+                                type="button"
+                                data-testid="HS_FIRESIDE_ANSWER_NOTE_BTN"
+                                data-hotspot-id="HS_FIRESIDE_ANSWER_NOTE_BTN"
+                                onClick={() => onAnswerFollowUpNote?.(question)}
+                                className="min-h-[48px] px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-white/5 hover:bg-white/10 border border-white/15 text-stone-200 transition-all cursor-pointer"
+                              >
+                                [ ✍️ Answer / Add Note ]
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </motion.div>
                 )}

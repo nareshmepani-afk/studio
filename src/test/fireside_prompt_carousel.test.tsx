@@ -66,15 +66,16 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
   });
 
   describe('2. SingleCardPromptCarousel UI Component Ergonomics', () => {
-    it('renders the initial card with British English prose, counter, and category pill', () => {
+    it('renders the initial card with British English prose, counter, and category pill (strict English when HYBRID is OFF)', () => {
       render(<SingleCardPromptCarousel mediaMode="audio" />);
 
       // Counter check
       expect(screen.getByText(`1 of ${FIRESIDE_PROMPT_SPARKS.length}`)).toBeInTheDocument();
 
-      // Title and prose check (Part I - Scene 1 is index 0: A Child of Two Worlds / બે દુનિયાનું બાળક)
+      // Title and prose check (Part I - Scene 1 is index 0: A Child of Two Worlds; Gujarati subtitle hidden when HYBRID: OFF)
       expect(screen.getByText('A Child of Two Worlds')).toBeInTheDocument();
-      expect(screen.getByText('બે દુનિયાનું બાળક')).toBeInTheDocument();
+      expect(screen.queryByTestId('carousel-card-secondary-title')).not.toBeInTheDocument();
+      expect(screen.getByTestId('HS_FIRESIDE_HYBRID_TOGGLE_BTN')).toHaveTextContent('[ 🔤 HYBRID: OFF ]');
       expect(screen.getByText(/What stories did your grandparents share about where your family originally came from/i)).toBeInTheDocument();
 
       // Button labels check (Rule 20 UK English)
@@ -83,12 +84,18 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       expect(screen.getByRole('button', { name: /Speak this memory: A Child of Two Worlds/i })).toBeInTheDocument();
     });
 
-    it('allows 1-tap switching between languages (e.g. English -> Gujarati) and dynamically prioritises mother tongue script', () => {
+    it('allows toggling HYBRID Bilingual mode and 1-tap switching between languages (e.g. English -> Gujarati)', () => {
       const handleLanguageChange = vi.fn();
       render(<SingleCardPromptCarousel onLanguageChange={handleLanguageChange} />);
 
-      // Default English: primary title is English, secondary title is Gujarati
+      // Default English with HYBRID: OFF -> primary title is English, secondary title is hidden
       expect(screen.getByTestId('carousel-card-primary-title')).toHaveTextContent('A Child of Two Worlds');
+      expect(screen.queryByTestId('carousel-card-secondary-title')).not.toBeInTheDocument();
+
+      // Toggle HYBRID: ON -> secondary Gujarati title appears alongside English
+      const hybridToggle = screen.getByTestId('HS_FIRESIDE_HYBRID_TOGGLE_BTN');
+      fireEvent.click(hybridToggle);
+      expect(hybridToggle).toHaveTextContent('[ 🔤 HYBRID: ON ]');
       expect(screen.getByTestId('carousel-card-secondary-title')).toHaveTextContent('બે દુનિયાનું બાળક');
 
       // Find Gujarati pill

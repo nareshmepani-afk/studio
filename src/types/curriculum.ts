@@ -293,3 +293,15 @@ export function createEmptyCurriculumMemory(params: {
     lastModified: now,
   };
 }
+
+/**
+ * Determines whether a scene has a completed media reel (MW-88-T6).
+ * A reel is ONLY complete if media takes or media stream URLs actually exist.
+ */
+export function isSceneCompleted(memory?: Partial<UnifiedCurriculumMemory> | null): boolean {
+  if (!memory) return false;
+  const hasTakes = Array.isArray(memory.takes) && memory.takes.length > 0;
+  const hasMediaUrls = Boolean(memory.videoUrl || memory.audioUrl);
+  return hasTakes || hasMediaUrls;
+}
+

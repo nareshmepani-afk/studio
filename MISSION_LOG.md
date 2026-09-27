@@ -18,7 +18,7 @@
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 647 / 647 Vitest Tests Passing (53 Test Files)
+- **Current Invariant Test Baseline:** 651 / 651 Vitest Tests Passing (53 Test Files)
 
 
 
@@ -509,5 +509,25 @@
 
 ---
 
+### [2026-09-27 17:46 BST] • Checkpoint #023 — Cross-Surface UX, Hybrid Bilingual Mode & Act Progression (MW-88-T6)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved directive MW-88-T6 (Plane Sequence #296) to unblock mobile recording for unrecorded Desktop Act I drafts, standardise card geometry & Framer Motion drag-snap, introduce the HYBRID Bilingual Mode toggle, add UK English badge tooltips, and wire the 2-Action Follow-Up Questions model.
+  - 🧠 **Gemini Strategic Brain**: Diagnosed the root cause in `FiresideStudioClient.tsx` (`hasCompletedReel = isSceneCompleted(activeSceneMemory) || isDesktopLocked`) and `SingleCardPromptCarousel.tsx` (`drag="x"` missing `dragSnapToOrigin={true}`), specifying the decoupled `isScriptProtected` vs `hasCompletedReel` state model, 4-Act Status Spine (`HS_FIRESIDE_ACT_SPINE`), Next Desktop Act Link (`HS_FIRESIDE_NEXT_DESKTOP_ACT_LINK`), `HYBRID` Bilingual Toggle (`HS_FIRESIDE_HYBRID_TOGGLE_BTN`), and Follow-Up Questions Two-Action Model (`HS_FIRESIDE_PIN_PROMPTER_BTN` & `HS_FIRESIDE_ANSWER_NOTE_BTN`).
+  - ⚡ **Antigravity Execution**:
+    1. **Unblocked Act I Desktop Draft Capture & 4-Act Spine (`src/types/curriculum.ts`, `src/hooks/useCurriculumVault.ts`, `src/app/studio/fireside/FiresideStudioClient.tsx`, `src/components/fireside/SingleCardPromptCarousel.tsx`)**: Decoupled `hasCompletedReel = isSceneCompleted(activeSceneMemory)` from `isScriptProtected = activeEditingAuthority === 'desktop_locked'`. Unrecorded Desktop Act I drafts (`prose` exists, `takes.length === 0`) keep `prose`, `title`, `sensoryAnchors`, and `originalHook` 100% read-only on mobile while opening the active camera/voice studio with `activeSceneMemory.prose` pinned on the live teleprompter. Added the 4-Act Status Spine (`HS_FIRESIDE_ACT_SPINE`) and Next Desktop Act Link (`HS_FIRESIDE_NEXT_DESKTOP_ACT_LINK` -> `/studio/production/{id}?act=2`).
+    2. **Framer Motion Drag-Snap & Geometry Standardisation (`src/components/fireside/SingleCardPromptCarousel.tsx`, `src/components/fireside/FiresideWalkthroughCard.tsx`)**: Added `dragSnapToOrigin={true}`, `dragConstraints={{ left: 0, right: 0 }}`, `dragElastic={0.15}`, and `data-testid="HS_FIRESIDE_PROMPT_CAROUSEL_CARD"` to `<motion.div>`, and unified container geometry (`w-full max-w-xl mx-auto p-6 sm:p-8`).
+    3. **HYBRID Bilingual Mode Toggle (`src/components/fireside/SingleCardPromptCarousel.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`)**: Mounted `[ 🔤 HYBRID: ON ]` / `[ 🔤 HYBRID: OFF ]` (`HS_FIRESIDE_HYBRID_TOGGLE_BTN`). When `currentLanguage === 'en'` and `isHybrid === false` (default), strictly renders English headings (`Part I: Roots and Foundations`, `A Child of Two Worlds`) without secondary Gujarati subtitles; reveals mother-tongue subtitles when `HYBRID: ON` or when `gu`/`pa`/`hi` is active.
+    4. **Status Badge Tooltips & Follow-Up Questions Two-Action Model (`src/components/fireside/SingleCardPromptCarousel.tsx`, `src/components/fireside/BonusMemoryDrawer.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`)**: Added UK English tooltips across `ORIGINS & ROOTS`, `PART I • SCENE 1`, `STUDIO MASTER`, `VIDEO MEMO`, and `fireside-sensory-counters`. Added `"Choose a prompt below to jot down a quick memory note, or pin it to your teleprompter to answer aloud during your recording."` with `[ 📌 Pin to Prompter ]` (`HS_FIRESIDE_PIN_PROMPTER_BTN`) and `[ ✍️ Answer / Add Note ]` (`HS_FIRESIDE_ANSWER_NOTE_BTN` pre-seeding `BonusMemoryDrawer`).
+  - 🛡️ **QA Gatekeeper**: All 53 test suites passing (651/651 tests), including 28/28 in `fireside_sync.test.ts` and 14/14 in `fireside_prompt_carousel.test.tsx`. `tsc --noEmit` exit 0. Zero modifications to `SoloStage.tsx` (Rule 7).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\types\curriculum.ts`
+  - `C:\Users\home\studio\src\hooks\useCurriculumVault.ts`
+  - `C:\Users\home\studio\src\components\fireside\BonusMemoryDrawer.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideWalkthroughCard.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\src\test\fireside_prompt_carousel.test.tsx`
+  - `C:\Users\home\studio\MISSION_LOG.md`
 
-
+---

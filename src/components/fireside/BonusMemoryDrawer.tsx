@@ -31,6 +31,7 @@ export interface BonusMemoryDrawerProps {
   onClose: () => void;
   sceneId: string;
   sceneTitle: string;
+  initialPrompt?: string | null;
   onSaveBonusNote: (note: Omit<BonusMemoryNote, 'id' | 'createdAt'>) => Promise<void>;
   className?: string;
 }
@@ -40,6 +41,7 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
   onClose,
   sceneId,
   sceneTitle,
+  initialPrompt = null,
   onSaveBonusNote,
   className = '',
 }) => {
@@ -48,13 +50,13 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
   const [authorRole, setAuthorRole] = useState<'storyteller' | 'producer' | 'family_member'>('storyteller');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Reset form when opened
+  // Reset or pre-seed form when opened (MW-88-T6)
   useEffect(() => {
     if (isOpen) {
-      setText('');
+      setText(initialPrompt ? `${initialPrompt}\n\n` : '');
       setIsSaving(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialPrompt]);
 
   // Keyboard navigation
   useEffect(() => {

@@ -109,7 +109,7 @@ export const TOTAL_CURRICULUM_SCENES = ALL_CURRICULUM_SCENES.length;
 /**
  * Pure evaluation helper determining whether a scene has achieved captured/mastered completion
  */
-export function isSceneCompleted(memory: UnifiedCurriculumMemory | undefined): boolean {
+export function isSceneCompleted(memory?: Partial<UnifiedCurriculumMemory> | null): boolean {
   if (!memory) return false;
 
   // 1. Explicit status machine checks
@@ -133,8 +133,11 @@ export function isSceneCompleted(memory: UnifiedCurriculumMemory | undefined): b
     }
   }
 
-  // 3. Multi-take physical presence check
+  // 3. Multi-take physical presence or direct media URL check (MW-88-T6)
   if (Array.isArray(memory.takes) && memory.takes.length > 0) {
+    return true;
+  }
+  if (Boolean(memory.videoUrl || memory.audioUrl)) {
     return true;
   }
 
