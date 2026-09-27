@@ -18,6 +18,11 @@ import { render, fireEvent, renderHook, waitFor, act } from '@testing-library/re
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useCurriculumVault, resolveEditingAuthority } from '@/hooks/useCurriculumVault';
 import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
+import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
+import { getPartForScene } from '@/lib/curriculum/masterStoryStructure';
+import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
+import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
+import { setDoc } from 'firebase/firestore';
 
 // Mock localforage memory store
 const memoryStore = new Map<string, unknown>();
@@ -503,4 +508,97 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       unmount();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // 6. MW-88-T3: Bilingual Chapter Headers, Scene Sequence & FiresideWarmupModal
+  // ---------------------------------------------------------------------------
+  describe('MW-88-T3: Bilingual Chapter Headers, Scene Sequence & FiresideWarmupModal Invariants', () => {
+    it('aligns Scene 1 (part-1-scene-1) to "The House I Grew Up In" / "હું જે ઘરમાં મોટો થયો" and Chapter 1 to "Part I: Roots and Foundations" / "ભાગ I: મૂળ અને પાયા"', () => {
+      const part1 = getPartForScene('part-1-scene-1');
+      expect(part1.title).toBe('Part I: Roots and Foundations');
+      expect(part1.localizedTitles?.gu).toBe('ભાગ I: મૂળ અને પાયા');
+
+      const spark0 = FIRESIDE_PROMPT_SPARKS[0];
+      expect(spark0.linkedSceneId).toBe('part-1-scene-1');
+      expect(spark0.title).toBe('The House I Grew Up In');
+      expect(spark0.localizedTitles?.gu).toBe('હું જે ઘરમાં મોટો થયો');
+      expect(spark0.sparks.en).toContain('Daily life, environment, and your very first memories.');
+
+      const { unmount } = render(React.createElement(SingleCardPromptCarousel, {}));
+      expect(document.querySelector('[data-testid="carousel-scene-number-badge"]')?.textContent).toBe('Part I • Scene 1');
+      expect(document.querySelector('[data-testid="carousel-card-primary-title"]')?.textContent).toBe('The House I Grew Up In');
+      expect(document.querySelector('[data-testid="carousel-card-secondary-title"]')?.textContent).toBe('હું જે ઘરમાં મોટો થયો');
+      unmount();
+    });
+
+    it('executes the 3-step FiresideWarmupModal flow with visual waveform, reassurance feedback, and strict zero-contamination shield (zero Firestore writes)', async () => {
+      vi.mocked(setDoc).mockClear();
+      memoryStore.clear();
+      expect(FiresideWarmupModal).toBeDefined();
+
+      const onCompleteSpy = vi.fn();
+      const { unmount } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          onWarmupComplete: onCompleteSpy,
+        })
+      );
+
+      const triggerBtn = document.querySelector('[data-testid="fireside-warmup-trigger"]') as HTMLElement;
+      expect(triggerBtn).toBeTruthy();
+      expect(triggerBtn.textContent).toContain('30-Second Mic Warmup & Soundcheck');
+
+      // Open Warmup Modal
+      fireEvent.click(triggerBtn);
+      expect(document.querySelector('[data-testid="warmup-step-1"]')).toBeTruthy();
+
+      // Step 1: Start & finish 10-second test voice recording
+      const recordBtn = document.querySelector('[data-testid="warmup-record-btn"]') as HTMLElement;
+      fireEvent.click(recordBtn);
+      expect(document.querySelector('[data-testid="warmup-recording-meter"]')).toBeTruthy();
+      fireEvent.click(recordBtn);
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="warmup-step-2"]')).toBeTruthy();
+      });
+
+      // Step 2: Visual waveform + reassurance feedback ("Your voice sounds warm and crystal clear.")
+      expect(document.querySelector('[data-testid="warmup-visual-waveform"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="warmup-reassurance-feedback"]')?.textContent).toContain(
+        'Your voice sounds warm and crystal clear.'
+      );
+
+      const nextToPhotoBtn = document.querySelector('[data-testid="warmup-next-to-photo-btn"]') as HTMLElement;
+      fireEvent.click(nextToPhotoBtn);
+
+      // Step 3: Optional photo capture & client-side compression preview
+      expect(document.querySelector('[data-testid="warmup-step-3"]')).toBeTruthy();
+      const samplePrintBtn = document.querySelector('[data-testid="warmup-sample-print-btn"]') as HTMLElement;
+      fireEvent.click(samplePrintBtn);
+      expect(document.querySelector('[data-testid="warmup-photo-preview"]')).toBeTruthy();
+
+      // Complete warmup & verify exit banner + zero Firestore / IndexedDB contamination
+      const completeBtn = document.querySelector('[data-testid="warmup-complete-btn"]') as HTMLElement;
+      fireEvent.click(completeBtn);
+
+      expect(onCompleteSpy).toHaveBeenCalledTimes(1);
+      expect(document.querySelector('[data-testid="warmup-exit-banner"]')?.textContent).toContain(
+        'Soundcheck complete. Entering Part I: Roots and Foundations.'
+      );
+      expect(setDoc).not.toHaveBeenCalled();
+      expect(memoryStore.size).toBe(0);
+
+      unmount();
+    });
+
+    it('enforces Rule 20 British English orthography across FiresideWarmupModal.tsx', () => {
+      const modalSrc = fs.readFileSync('src/components/fireside/FiresideWarmupModal.tsx', 'utf8');
+      expect(modalSrc).toContain('synchronised');
+      expect(modalSrc).toContain('prioritised');
+      expect(modalSrc).toContain('centred');
+      expect(modalSrc).toContain('colour');
+      expect(modalSrc).toContain('digitiser');
+    });
+  });
 });
+

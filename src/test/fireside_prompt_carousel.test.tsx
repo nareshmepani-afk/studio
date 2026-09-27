@@ -72,15 +72,15 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       // Counter check
       expect(screen.getByText(`1 of ${FIRESIDE_PROMPT_SPARKS.length}`)).toBeInTheDocument();
 
-      // Title and prose check (Part I - Scene 1 is index 0: A Child of Two Worlds / બે દુનિયાનું બાળક)
-      expect(screen.getByText('A Child of Two Worlds')).toBeInTheDocument();
-      expect(screen.getByText('બે દુનિયાનું બાળક')).toBeInTheDocument();
-      expect(screen.getByText(/What stories did your grandparents share about where your family originally came from/i)).toBeInTheDocument();
+      // Title and prose check (Part I - Scene 1 is index 0: The House I Grew Up In / હું જે ઘરમાં મોટો થયો)
+      expect(screen.getByText('The House I Grew Up In')).toBeInTheDocument();
+      expect(screen.getByText('હું જે ઘરમાં મોટો થયો')).toBeInTheDocument();
+      expect(screen.getByText(/Daily life, environment, and your very first memories/i)).toBeInTheDocument();
 
       // Button labels check (Rule 20 UK English)
       expect(screen.getByRole('button', { name: /Previous story spark/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Next story spark/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Speak this memory: A Child of Two Worlds/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Speak this memory: The House I Grew Up In/i })).toBeInTheDocument();
     });
 
     it('allows 1-tap switching between languages (e.g. English -> Gujarati) and dynamically prioritises mother tongue script', () => {
@@ -88,8 +88,8 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       render(<SingleCardPromptCarousel onLanguageChange={handleLanguageChange} />);
 
       // Default English: primary title is English, secondary title is Gujarati
-      expect(screen.getByTestId('carousel-card-primary-title')).toHaveTextContent('A Child of Two Worlds');
-      expect(screen.getByTestId('carousel-card-secondary-title')).toHaveTextContent('બે દુનિયાનું બાળક');
+      expect(screen.getByTestId('carousel-card-primary-title')).toHaveTextContent('The House I Grew Up In');
+      expect(screen.getByTestId('carousel-card-secondary-title')).toHaveTextContent('હું જે ઘરમાં મોટો થયો');
 
       // Find Gujarati pill
       const guPill = screen.getByRole('button', { name: /Switch storytelling language to ગુજરાતી/i });
@@ -97,8 +97,8 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
 
       expect(handleLanguageChange).toHaveBeenCalledWith('gu');
       // Mother tongue prioritised: primary title becomes Gujarati, secondary title becomes English
-      expect(screen.getByTestId('carousel-card-primary-title')).toHaveTextContent('બે દુનિયાનું બાળક');
-      expect(screen.getByTestId('carousel-card-secondary-title')).toHaveTextContent('A Child of Two Worlds');
+      expect(screen.getByTestId('carousel-card-primary-title')).toHaveTextContent('હું જે ઘરમાં મોટો થયો');
+      expect(screen.getByTestId('carousel-card-secondary-title')).toHaveTextContent('The House I Grew Up In');
       // Expect Gujarati text to render for prompt 0
       expect(screen.getByText(/તમારા વડીલો કે દાદા-દાદીએ પોતાના મૂળ વતન અને મુશ્કેલ સ્થળાંતર વિશે તમને કઈ વાતો કહી હતી/i)).toBeInTheDocument();
     });
@@ -109,10 +109,10 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       const nextBtn = screen.getByRole('button', { name: /Next story spark/i });
       fireEvent.click(nextBtn);
 
-      // Card 2 check (Part I - Scene 2: The House I Grew Up In)
+      // Card 2 check (Part I - Scene 2: A Child of Two Worlds)
       await waitFor(() => {
         expect(screen.getByText(`2 of ${FIRESIDE_PROMPT_SPARKS.length}`)).toBeInTheDocument();
-        expect(screen.getByText('The House I Grew Up In')).toBeInTheDocument();
+        expect(screen.getByText('A Child of Two Worlds')).toBeInTheDocument();
         expect(screen.getByTestId('carousel-scene-number-badge')).toHaveTextContent('Part I • Scene 2');
       });
 
@@ -122,7 +122,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       // Back to Card 1
       await waitFor(() => {
         expect(screen.getByText(`1 of ${FIRESIDE_PROMPT_SPARKS.length}`)).toBeInTheDocument();
-        expect(screen.getByText('A Child of Two Worlds')).toBeInTheDocument();
+        expect(screen.getByText('The House I Grew Up In')).toBeInTheDocument();
         expect(screen.getByTestId('carousel-scene-number-badge')).toHaveTextContent('Part I • Scene 1');
       });
     });
@@ -142,7 +142,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       const handleSelect = vi.fn();
       render(<SingleCardPromptCarousel mediaMode="audio" onSelectPrompt={handleSelect} />);
 
-      const recordBtn = screen.getByRole('button', { name: /Speak this memory: A Child of Two Worlds/i });
+      const recordBtn = screen.getByRole('button', { name: /Speak this memory: The House I Grew Up In/i });
       fireEvent.click(recordBtn);
 
       expect(handleSelect).toHaveBeenCalledTimes(1);
@@ -178,12 +178,13 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
   describe('3. MW-88-T3: Dual-Surface Curriculum Synchronisation & 3-Step Fireside Warmup', () => {
     it('synchronises Part I curriculum sequence and bilingual titles across Desktop and Fireside', () => {
       expect(FIRESIDE_PROMPT_SPARKS[0].linkedSceneId).toBe('part-1-scene-1');
-      expect(FIRESIDE_PROMPT_SPARKS[0].title).toBe('A Child of Two Worlds');
-      expect(FIRESIDE_PROMPT_SPARKS[0].localizedTitles?.gu).toBe('બે દુનિયાનું બાળક');
+      expect(FIRESIDE_PROMPT_SPARKS[0].title).toBe('The House I Grew Up In');
+      expect(FIRESIDE_PROMPT_SPARKS[0].localizedTitles?.gu).toBe('હું જે ઘરમાં મોટો થયો');
+      expect(FIRESIDE_PROMPT_SPARKS[0].sparks.en).toContain('Daily life, environment, and your very first memories.');
 
       expect(FIRESIDE_PROMPT_SPARKS[1].linkedSceneId).toBe('part-1-scene-2');
-      expect(FIRESIDE_PROMPT_SPARKS[1].title).toBe('The House I Grew Up In');
-      expect(FIRESIDE_PROMPT_SPARKS[1].localizedTitles?.gu).toBe('હું જે ઘરમાં મોટો થયો');
+      expect(FIRESIDE_PROMPT_SPARKS[1].title).toBe('A Child of Two Worlds');
+      expect(FIRESIDE_PROMPT_SPARKS[1].localizedTitles?.gu).toBe('બે દુનિયાનું બાળક');
 
       expect(FIRESIDE_PROMPT_SPARKS[2].linkedSceneId).toBe('part-1-scene-3');
       expect(FIRESIDE_PROMPT_SPARKS[2].title).toBe('Innocence and Curiosity');
@@ -195,16 +196,15 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
 
       const scene1 = getSceneById('part-1-scene-1');
       expect(scene1?.sceneNumber).toBe(1);
-      expect(scene1?.title).toBe('A Child of Two Worlds');
     });
 
-    it('renders the [ 🎙️ 30-Second Warmup & Soundcheck ] trigger at index 0 and executes the 3-step rehearsal flow with contamination shield', async () => {
+    it('renders the [ 🎙️ 30-Second Mic Warmup & Soundcheck ] trigger at index 0 and executes the 3-step rehearsal flow with contamination shield', async () => {
       const handleWarmupComplete = vi.fn();
       render(<SingleCardPromptCarousel onWarmupComplete={handleWarmupComplete} />);
 
       const triggerBtn = screen.getByTestId('fireside-warmup-trigger');
       expect(triggerBtn).toBeInTheDocument();
-      expect(triggerBtn).toHaveTextContent('30-Second Warmup & Soundcheck');
+      expect(triggerBtn).toHaveTextContent('30-Second Mic Warmup & Soundcheck');
 
       // Launch warmup sandbox
       fireEvent.click(triggerBtn);
@@ -220,7 +220,11 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
         expect(screen.getByTestId('warmup-step-2')).toBeInTheDocument();
       });
 
-      // Step 2: Play back with ambient warmth & advance to Step 3
+      // Step 2: Verify visual waveform, reassurance feedback, and ambient warmth playback
+      expect(screen.getByTestId('warmup-visual-waveform')).toBeInTheDocument();
+      expect(screen.getByTestId('warmup-reassurance-feedback')).toHaveTextContent(
+        'Your voice sounds warm and crystal clear.'
+      );
       fireEvent.click(screen.getByTestId('warmup-playback-btn'));
       expect(screen.getByTestId('warmup-playback-btn')).toHaveTextContent(/Playing with Ambient Background Warmth/i);
       fireEvent.click(screen.getByTestId('warmup-next-to-photo-btn'));

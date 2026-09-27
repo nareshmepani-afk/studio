@@ -45,7 +45,7 @@ import { FIRESIDE_LANGUAGE_LABELS, FIRESIDE_TOUCH_TARGETS } from '@/types/firesi
 import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
 import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import type { EditingAuthority } from '@/types/curriculum';
-import { FiresideWarmupSandbox } from '@/components/fireside/FiresideWarmupSandbox';
+import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
@@ -126,12 +126,12 @@ export function SingleCardPromptCarousel({
     editingAuthority ?? (resolveSceneAuthority ? resolveSceneAuthority(currentSpark.linkedSceneId) : 'fireside_flexible');
 
   // Resolve bilingual card titles (Golden Thread: dynamically prioritise mother tongue when selected)
-  const englishTitle = currentSpark.localizedTitles?.en || linkedScene?.localizedTitles?.en || currentSpark.title;
+  const englishTitle = currentSpark.localizedTitles?.en || currentSpark.title || linkedScene?.localizedTitles?.en || '';
   const motherTongueLang: FiresideLanguage = currentLanguage === 'en' ? 'gu' : currentLanguage;
   const motherTongueTitle =
     currentSpark.localizedTitles?.[motherTongueLang] ||
-    linkedScene?.localizedTitles?.[motherTongueLang] ||
     currentSpark.localizedTitles?.gu ||
+    linkedScene?.localizedTitles?.[motherTongueLang] ||
     linkedScene?.localizedTitles?.gu ||
     '';
 
@@ -226,10 +226,10 @@ export function SingleCardPromptCarousel({
               onClick={() => setIsWarmupOpen(true)}
               style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
               className="w-full min-h-[56px] px-5 py-3 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 border border-amber-400/40 text-amber-200 font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-md shadow-amber-500/10"
-              aria-label="30-Second Warmup and Soundcheck"
+              aria-label="30-Second Mic Warmup and Soundcheck"
             >
               <span aria-hidden="true">🎙️</span>
-              <span>30-Second Warmup &amp; Soundcheck</span>
+              <span>30-Second Mic Warmup &amp; Soundcheck</span>
               {warmupCompleted && (
                 <span className="ml-1 text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
                   ✓ Ready
@@ -249,7 +249,7 @@ export function SingleCardPromptCarousel({
           )}
 
           {isWarmupOpen && (
-            <FiresideWarmupSandbox
+            <FiresideWarmupModal
               isOpen={isWarmupOpen}
               activeLanguage={currentLanguage}
               onClose={() => setIsWarmupOpen(false)}
