@@ -1092,3 +1092,26 @@ When requesting or executing any future change, enhancement, or new feature in M
   - Automatically update `qa_checklist_interactive.html` with dedicated test cards, fully qualified URLs, screenshot dropzones, and telemetry vector ingestion boxes.
   - Synchronise Plane.so backlog tickets via `scripts/plane.js` (Rule 15).
 
+# 41. Mandatory Dual-Surface Lockstep Synchronisation (`https://dev.memoryweaver.studio/studio/fireside` ↔ `https://dev.memoryweaver.studio/studio/production/`)
+
+`https://dev.memoryweaver.studio/studio/fireside` (Fireside Mobile Armchair Surface) and `https://dev.memoryweaver.studio/studio/production/` (Desktop Soundstage Production Surface, alongside `/studio`) are two ergonomic expressions of the **single unified Memory Weaver studio**. They MUST remain in permanent, atomic lockstep across all curriculum, rehearsal, vault, and authority states:
+
+## 41.1 Canonical Chapter & Scene Curriculum Lockstep ("The Golden Thread")
+- **Single Shared Curriculum Truth**: Both `/studio/fireside` and `/studio/production/` MUST resolve their chapter hierarchy (`PRODUCTION STAGE` / `Part I: Roots and Foundations` / `ભાગ I: મૂળ અને પાયા`), scene numbering badges (`PART I • SCENE 1`, `PART I • SCENE 2`, etc.), bilingual titles (`The House I Grew Up In` / `હું જે ઘરમાં મોટો થયો`, `A Child of Two Worlds` / `બે દુનિયાનું બાળક`, `Innocence and Curiosity` / `નિર્દોષતા અને જિજ્ઞાસા`), and story hooks from the shared curriculum contracts (`src/lib/curriculum/masterStoryStructure.ts` and `src/lib/firesidePrompts.ts`).
+- **Zero Curriculum Drift**: Every prompt card in `FIRESIDE_PROMPT_SPARKS` MUST bind to a valid canonical `linkedSceneId` (`part-1-scene-1`, `part-1-scene-2`, etc.) in `MASTER_STORY_PARTS`. Renaming, reordering, or adding a chapter, scene, or bilingual subtitle on one surface without updating the counterpart surface in the exact same commit is **STRICTLY PROHIBITED**.
+- **Mother-Tongue Script Priority**: When a narrator selects a diaspora language pill (`ગુજરાતી`, `ਪੰਜਾਬੀ`, `हिन्दी`), both the chapter header and active scene card MUST dynamically promote the mother-tongue script to the primary display tier while preserving English in the secondary tier without shifting layout bounds.
+
+## 41.2 Twin Rehearsal & Soundcheck Parity (`first_flight_rehearsal` ↔ `FiresideWarmupModal`)
+- **Dual Rehearsal Sandboxes**: Desktop Soundstage's `https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal` and Fireside Mobile's `FiresideWarmupModal` (`[ 🎙️ 30-Second Mic Warmup & Soundcheck ]` on `https://dev.memoryweaver.studio/studio/fireside`) serve as synchronised rehearsal entry points before entering Part I.
+- **Universal Zero-Contamination Shield**: Both rehearsal surfaces MUST strictly isolate test audio blobs, video streams, and sample/test photographs in ephemeral local memory (`useState` + `URL.revokeObjectURL()`) or sandbox state. Zero rehearsal or soundcheck data may ever be written to the user's permanent Firestore or IndexedDB memoir vault.
+
+## 41.3 Bi-Directional Vault, Media & Authority Ratchet Synchronisation
+- **Real-Time State Mirroring**: Any voice recording, video memo, preferred take (`isPreferred`), heirloom photograph (`photos[]` / `mediaAttachments[]`), or transcript persisted on `https://dev.memoryweaver.studio/studio/fireside` MUST immediately hydrate and render inside `https://dev.memoryweaver.studio/studio/production/[id]` (Acts I–IV) and `/studio`, and vice versa.
+- **One-Way Studio Master Authority Ratchet (`fireside_flexible` → `desktop_locked`)**:
+  - When a scene is edited, woven, or elevated in `https://dev.memoryweaver.studio/studio/production/[id]` via `elevateToStudioMaster(sceneId)`, its `editingAuthority` transitions to `'desktop_locked'`.
+  - `https://dev.memoryweaver.studio/studio/fireside` MUST immediately reflect this state by rendering the luminous `[ 🔒 Studio Master ]` badge, suppressing destructive retake triggers, and keeping `[ + Add Bonus Memory or Photo ]` active so the elder can continue contributing non-destructively.
+
+## 41.4 Atomic Lockstep Commit & Automated Drift-Detection Gate
+- **Atomic Single-Commit Rule**: Any pull request or commit that modifies scene structure, prompt copy, media attachment schemas, take management, or authority state on either `/studio/fireside` or `/studio/production/` MUST update and verify both surfaces atomically in the same commit.
+- **Mandatory Vitest Drift-Detection Shield**: `src/test/fireside_sync.test.ts` and `src/test/fireside_prompt_carousel.test.tsx` MUST programmatically assert 1:1 curriculum link integrity (`linkedSceneId` ↔ `getSceneById` / `getPartForScene`), bilingual title parity, rehearsal contamination isolation, and bi-directional authority ratchet synchronisation before any commit is pushed.
+

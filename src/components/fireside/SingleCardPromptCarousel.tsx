@@ -33,7 +33,10 @@ import {
   Award,
   Calendar,
   Smile,
-  Crown
+  Crown,
+  Headphones,
+  Eye,
+  Coffee,
 } from 'lucide-react';
 import type {
   FiresidePromptSpark,
@@ -44,7 +47,8 @@ import type {
 import { FIRESIDE_LANGUAGE_LABELS, FIRESIDE_TOUCH_TARGETS } from '@/types/fireside';
 import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
 import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
-import type { EditingAuthority } from '@/types/curriculum';
+import type { EditingAuthority, UnifiedCurriculumMemory } from '@/types/curriculum';
+import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 
 export interface SingleCardPromptCarouselProps {
@@ -54,6 +58,8 @@ export interface SingleCardPromptCarouselProps {
   mediaMode?: FiresideMediaMode;
   editingAuthority?: EditingAuthority;
   resolveSceneAuthority?: (sceneId?: string) => EditingAuthority;
+  activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null;
+  getSceneMemory?: (sceneId?: string) => UnifiedCurriculumMemory | undefined;
   onSelectPrompt?: (spark: FiresidePromptSpark, language: FiresideLanguage) => void;
   onActivePromptChange?: (spark: FiresidePromptSpark) => void;
   onLanguageChange?: (language: FiresideLanguage) => void;
@@ -85,6 +91,8 @@ export function SingleCardPromptCarousel({
   mediaMode,
   editingAuthority,
   resolveSceneAuthority,
+  activeSceneMemory,
+  getSceneMemory,
   onSelectPrompt,
   onActivePromptChange,
   onLanguageChange,
@@ -108,6 +116,7 @@ export function SingleCardPromptCarousel({
   const [showFollowUps, setShowFollowUps] = useState<boolean>(false);
   const [isWarmupOpen, setIsWarmupOpen] = useState<boolean>(false);
   const [warmupCompleted, setWarmupCompleted] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'script' | 'spark'>('script');
 
   const currentLanguage = controlledLanguage || internalLanguage;
   const currentSpark = sparkDeck[currentIndex] || sparkDeck[0];
@@ -124,6 +133,27 @@ export function SingleCardPromptCarousel({
   const linkedScene = currentSpark.linkedSceneId ? getSceneById(currentSpark.linkedSceneId) : undefined;
   const cardEditingAuthority: EditingAuthority =
     editingAuthority ?? (resolveSceneAuthority ? resolveSceneAuthority(currentSpark.linkedSceneId) : 'fireside_flexible');
+
+  // Resolve active scene memory and live Act I prose (Rule 14 Story Hook Fallback Hierarchy)
+  const currentSceneMemory = useMemo(() => {
+    if (getSceneMemory && currentSpark.linkedSceneId) {
+      const mem = getSceneMemory(currentSpark.linkedSceneId);
+      if (mem) return mem;
+    }
+    return activeSceneMemory;
+  }, [getSceneMemory, currentSpark.linkedSceneId, activeSceneMemory]);
+
+  const activeProse = currentSceneMemory?.prose?.trim() || '';
+
+  const sensoryCounts = useMemo(() => {
+    if (!activeProse) return { soundscape: 0, visual: 0, aroma: 0 };
+    const anchors = detectAnchors(activeProse);
+    return {
+      soundscape: anchors.filter((a) => a.type === 'soundscape').length,
+      visual: anchors.filter((a) => a.type === 'visual').length,
+      aroma: anchors.filter((a) => a.type === 'aroma').length,
+    };
+  }, [activeProse]);
 
   // Resolve bilingual card titles (Golden Thread: dynamically prioritise mother tongue when selected)
   const englishTitle = currentSpark.localizedTitles?.en || currentSpark.title || linkedScene?.localizedTitles?.en || '';
@@ -373,9 +403,71 @@ export function SingleCardPromptCarousel({
                 )}
               </div>
 
-              <p className="text-xl sm:text-2xl font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200">
-                "{currentText}"
-              </p>
+              {/* Live Act I Prose Rendering & Sensory Modality Counters (MW-88-T4 / Rule 14) */}
+              {activeProse ? (
+                <div className="space-y-3">
+                  {/* Read-Only Sensory Counters & Script/Spark Toggle */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-white/10">
+                    <div className="flex items-center gap-1.5 flex-wrap" data-testid="fireside-sensory-counters">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-sky-500/10 text-sky-300 border border-sky-500/25">
+                        <Headphones className="w-3 h-3 text-sky-400" />
+                        <span>Soundscape ({sensoryCounts.soundscape})</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
+                        <Eye className="w-3 h-3 text-emerald-400" />
+                        <span>Visual ({sensoryCounts.visual})</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                        <Coffee className="w-3 h-3 text-amber-400" />
+                        <span>Aroma ({sensoryCounts.aroma})</span>
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      data-testid="fireside-script-toggle-btn"
+                      onClick={() => setViewMode((prev) => (prev === 'script' ? 'spark' : 'script'))}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-white/5 hover:bg-white/10 text-amber-200 border border-amber-500/30 transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                      aria-label="Toggle between active script and original prompt spark"
+                    >
+                      {viewMode === 'script' ? (
+                        <>
+                          <BookOpen className="w-3 h-3 text-amber-400" />
+                          <span>View Original Spark</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>View Woven Script</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {viewMode === 'script' ? (
+                    <div
+                      data-testid="fireside-active-script-body"
+                      className="text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200 max-h-56 overflow-y-auto pr-1"
+                    >
+                      &ldquo;{activeProse}&rdquo;
+                    </div>
+                  ) : (
+                    <p
+                      data-testid="fireside-prompt-spark-body"
+                      className="text-lg sm:text-xl font-serif text-stone-200 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
+                    >
+                      &ldquo;{currentText}&rdquo;
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p
+                  data-testid="fireside-prompt-spark-body"
+                  className="text-xl sm:text-2xl font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
+                >
+                  &ldquo;{currentText}&rdquo;
+                </p>
+              )}
             </div>
 
             {/* 3. Expandable Follow-Up Inquiries Drawer */}

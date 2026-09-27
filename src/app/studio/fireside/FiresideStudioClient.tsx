@@ -43,6 +43,7 @@ import {
   CloudOff,
   AlertCircle,
   Monitor,
+  Sparkles,
 } from 'lucide-react';
 import { getSceneById, getPartForScene } from '@/lib/curriculum/masterStoryStructure';
 
@@ -767,7 +768,10 @@ export default function FiresideStudioClient() {
             initialPromptId={autoSparkId}
             activeLanguage={activeLanguage}
             mediaMode={mediaMode}
+            editingAuthority={activeEditingAuthority}
             resolveSceneAuthority={resolveSceneAuthority}
+            activeSceneMemory={activeSceneMemory}
+            getSceneMemory={(sceneId?: string) => sceneId ? getSceneMemory(sceneId) : undefined}
             onSelectPrompt={handleSelectPrompt}
             onActivePromptChange={handleActivePromptChange}
             onLanguageChange={handleLanguageChange}
@@ -796,6 +800,20 @@ export default function FiresideStudioClient() {
                 <h2 className="text-lg sm:text-xl font-serif text-stone-200">
                   {selectedSpark ? `Record: ${selectedSpark.title}` : 'Record Your Video Memo'}
                 </h2>
+                {activeSceneMemory?.prose && (
+                  <div
+                    data-testid="fireside-recording-script-banner"
+                    className="max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left"
+                  >
+                    <div className="flex items-center gap-1.5 text-amber-400 font-mono text-[11px] uppercase tracking-wider font-semibold mb-1">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Active Teleprompter Script (Act I)</span>
+                    </div>
+                    <p className="text-xs sm:text-sm font-serif text-stone-200 leading-relaxed line-clamp-3">
+                      &ldquo;{activeSceneMemory.prose}&rdquo;
+                    </p>
+                  </div>
+                )}
               </div>
 
               <FiresideVideoRecorder
@@ -835,6 +853,20 @@ export default function FiresideStudioClient() {
                   <h2 className="text-lg sm:text-xl font-serif text-stone-200">
                     {selectedSpark ? `Speak: ${selectedSpark.title}` : 'Speak Your Spoken Memoir'}
                   </h2>
+                  {activeSceneMemory?.prose && (
+                    <div
+                      data-testid="fireside-recording-script-banner"
+                      className="max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left"
+                    >
+                      <div className="flex items-center gap-1.5 text-amber-400 font-mono text-[11px] uppercase tracking-wider font-semibold mb-1">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Active Teleprompter Script (Act I)</span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-serif text-stone-200 leading-relaxed line-clamp-3">
+                        &ldquo;{activeSceneMemory.prose}&rdquo;
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <TactileVoiceRecorder

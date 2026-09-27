@@ -13,17 +13,17 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_roots_journey',
     category: 'roots',
-    title: 'The House I Grew Up In',
+    title: 'A Child of Two Worlds',
     localizedTitles: {
-      en: 'The House I Grew Up In',
-      gu: 'હું જે ઘરમાં મોટો થયો',
-      pa: 'ਉਹ ਘਰ ਜਿੱਥੇ ਮੈਂ ਵੱਡਾ ਹੋਇਆ',
-      hi: 'वह घर जहाँ मैं बड़ा हुआ',
+      en: 'A Child of Two Worlds',
+      gu: 'બે દુનિયાનું બાળક',
+      pa: 'ਦੋ ਦੁਨੀਆ ਦਾ ਬੱਚਾ',
+      hi: 'दो दुनिया का बच्चा',
     },
     linkedSceneId: 'part-1-scene-1',
     suggestedMediaMode: 'video',
     sparks: {
-      en: 'Daily life, environment, and your very first memories. What stories did your grandparents share about where your family originally came from, and what courageous journey brought them here?',
+      en: 'What stories did your grandparents share about where your family originally came from, and what courageous journey brought them here? Daily life, environment, and your very first memories.',
       gu: 'તમારા વડીલો કે દાદા-દાદીએ પોતાના મૂળ વતન અને મુશ્કેલ સ્થળાંતર વિશે તમને કઈ વાતો કહી હતી?',
       pa: 'ਤੁਹਾਡੇ ਬਜ਼ੁਰਗਾਂ ਜਾਂ ਦਾਦਾ-ਦਾਦੀ ਨੇ ਆਪਣੇ ਪੁਰਾਣੇ ਪਿੰਡ ਅਤੇ ਹਿਜਰਤ ਦੇ ਸਫ਼ਰ ਬਾਰੇ ਤੁਹਾਨੂੰ ਕੀ ਦੱਸਿਆ ਸੀ?',
       hi: 'आपके दादा-दादी या बुजुर्गों ने अपने पुश्तैनी गांव और वहां से नए शहर बसने के सफर के बारे में क्या सुनाया था?',
@@ -42,7 +42,7 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
       pa: [
         'ਉਹ ਆਪਣੇ ਨਾਲ ਕਿਹੜੀ ਯਾਦਗਾਰੀ ਜਾਂ ਪਿਆਰੀ ਚੀਜ਼ ਲੈ ਕੇ ਆਏ ਸਨ?',
         'ਨਵੀਂ ਧਰਤੀ \'ਤੇ ਜ਼ਿੰਦਗੀ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਸਭ ਤੋਂ ਵੱਡੀ ਚੁਣੌਤੀ ਕਿਹੜੀ ਸੀ?',
-        'ਬਜ਼ੁਰਗਾਂ ਦੀ ਕਿਹੜੀ ਰੀਤ ਜਾਂ ਅਸੂਲ ਤੁਸੀਂ ਅੱਜ ਵੀ ਸੰਭਾਲ ਕੇ ਰੱਖੇ ਹਨ?',
+        'ਬਜ਼ੁਰਗਾਂ ਦੀ ਕਿਹੜੀ ਰੀਤ ਜਾਂ ਅਸੂલ ਤੁਸੀਂ ਅੱਜ ਵੀ ਸੰਭਾਲ ਕੇ ਰੱਖੇ ਹਨ?',
       ],
       hi: [
         'वे अपने साथ कौन सी धरोहर या निशानी लेकर आए थे?',
@@ -60,12 +60,12 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_childhood_home',
     category: 'childhood',
-    title: 'A Child of Two Worlds',
+    title: 'The House I Grew Up In',
     localizedTitles: {
-      en: 'A Child of Two Worlds',
-      gu: 'બે દુનિયાનું બાળક',
-      pa: 'ਦੋ ਦੁਨੀਆ ਦਾ ਬੱਚਾ',
-      hi: 'दो दुनिया का बच्चा',
+      en: 'The House I Grew Up In',
+      gu: 'હું જે ઘરમાં મોટો થયો',
+      pa: 'ਉਹ ਘਰ ਜਿੱਥੇ ਮੈਂ ਵੱਡਾ ਹੋਇਆ',
+      hi: 'वह घर जहाँ मैं बड़ा हुआ',
     },
     linkedSceneId: 'part-1-scene-2',
     suggestedMediaMode: 'audio',

@@ -19,7 +19,7 @@ import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useCurriculumVault, resolveEditingAuthority } from '@/hooks/useCurriculumVault';
 import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
-import { getPartForScene } from '@/lib/curriculum/masterStoryStructure';
+import { getPartForScene, getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { setDoc } from 'firebase/firestore';
@@ -512,22 +512,37 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
   // ---------------------------------------------------------------------------
   // 6. MW-88-T3: Bilingual Chapter Headers, Scene Sequence & FiresideWarmupModal
   // ---------------------------------------------------------------------------
-  describe('MW-88-T3: Bilingual Chapter Headers, Scene Sequence & FiresideWarmupModal Invariants', () => {
-    it('aligns Scene 1 (part-1-scene-1) to "The House I Grew Up In" / "હું જે ઘરમાં મોટો થયો" and Chapter 1 to "Part I: Roots and Foundations" / "ભાગ I: મૂળ અને પાયા"', () => {
+  describe('MW-88-T3 & MW-88-T4: Bilingual Chapter Headers, Scene Sequence & Live Prose Invariants', () => {
+    it('aligns Scene 1 (part-1-scene-1) to "A Child of Two Worlds" / "બે દુનિયાનું બાળક" and Chapter 1 to "Part I: Roots and Foundations" / "ભાગ I: મૂળ અને પાયા"', () => {
       const part1 = getPartForScene('part-1-scene-1');
       expect(part1.title).toBe('Part I: Roots and Foundations');
       expect(part1.localizedTitles?.gu).toBe('ભાગ I: મૂળ અને પાયા');
 
       const spark0 = FIRESIDE_PROMPT_SPARKS[0];
       expect(spark0.linkedSceneId).toBe('part-1-scene-1');
-      expect(spark0.title).toBe('The House I Grew Up In');
-      expect(spark0.localizedTitles?.gu).toBe('હું જે ઘરમાં મોટો થયો');
-      expect(spark0.sparks.en).toContain('Daily life, environment, and your very first memories.');
+      expect(spark0.title).toBe('A Child of Two Worlds');
+      expect(spark0.localizedTitles?.gu).toBe('બે દુનિયાનું બાળક');
 
       const { unmount } = render(React.createElement(SingleCardPromptCarousel, {}));
       expect(document.querySelector('[data-testid="carousel-scene-number-badge"]')?.textContent).toBe('Part I • Scene 1');
-      expect(document.querySelector('[data-testid="carousel-card-primary-title"]')?.textContent).toBe('The House I Grew Up In');
-      expect(document.querySelector('[data-testid="carousel-card-secondary-title"]')?.textContent).toBe('હું જે ઘરમાં મોટો થયો');
+      expect(document.querySelector('[data-testid="carousel-card-primary-title"]')?.textContent).toBe('A Child of Two Worlds');
+      expect(document.querySelector('[data-testid="carousel-card-secondary-title"]')?.textContent).toBe('બે દુનિયાનું બાળક');
+      unmount();
+    });
+
+    it('renders live Act I prose with sensory counters and toggle button when activeSceneMemory is passed (MW-88-T4)', () => {
+      const mockMemory = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        sceneId: 'part-1-scene-1',
+        prose: 'The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me.',
+      };
+
+      const { unmount } = render(React.createElement(SingleCardPromptCarousel, { activeSceneMemory: mockMemory }));
+      expect(document.querySelector('[data-testid="fireside-active-script-body"]')?.textContent).toContain(
+        'The history I carry is an epic journey across oceans and generations'
+      );
+      expect(document.querySelector('[data-testid="fireside-sensory-counters"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="fireside-script-toggle-btn"]')).toBeTruthy();
       unmount();
     });
 
@@ -599,6 +614,29 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(modalSrc).toContain('colour');
       expect(modalSrc).toContain('digitiser');
     });
+
+    it('enforces Rule 41 Dual-Surface Lockstep Synchronisation between /studio/fireside and /studio/production/', () => {
+      const agentsMd = fs.readFileSync('.agents/AGENTS.md', 'utf8');
+      expect(agentsMd).toContain('# 41. Mandatory Dual-Surface Lockstep Synchronisation');
+      expect(agentsMd).toContain('https://dev.memoryweaver.studio/studio/fireside');
+      expect(agentsMd).toContain('https://dev.memoryweaver.studio/studio/production/');
+
+      // Every Fireside prompt spark must bind to a canonical scene and part in masterStoryStructure.ts with 4-language parity
+      FIRESIDE_PROMPT_SPARKS.forEach((spark) => {
+        expect(spark.linkedSceneId).toBeTruthy();
+        const linkedScene = getSceneById(spark.linkedSceneId!);
+        expect(linkedScene).toBeDefined();
+        expect(linkedScene?.sceneNumber).toBeGreaterThanOrEqual(1);
+
+        const linkedPart = getPartForScene(spark.linkedSceneId!);
+        expect(linkedPart).toBeDefined();
+        expect(linkedPart.localizedTitles?.en).toBeTruthy();
+        expect(linkedPart.localizedTitles?.gu).toBeTruthy();
+        expect(linkedPart.localizedTitles?.pa).toBeTruthy();
+        expect(linkedPart.localizedTitles?.hi).toBeTruthy();
+      });
+    });
   });
 });
+
 

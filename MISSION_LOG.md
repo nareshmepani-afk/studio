@@ -18,7 +18,7 @@
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 639 / 639 Vitest Tests Passing (53 Test Files)
+- **Current Invariant Test Baseline:** 642 / 642 Vitest Tests Passing (53 Test Files)
 
 
 
@@ -442,4 +442,48 @@
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
+### [2026-09-27 12:00 BST] • Checkpoint #020 — Plane.so Ticketing & Dual-Surface Backlog Boundaries Registration
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Ratified dual-surface sprint boundaries to protect Sprint 4 execution velocity and sequester Phase 2 enhancements into the project backlog.
+  - 🧠 **Gemini Strategic Brain**: Formalised the active sprint ticket for immediate Act I sequence alignment and live Scriptorium prose synchronization (`MW-88-T4`), along with three modular Phase 2 backlog enhancements (`MW-95`, `MW-96`, `MW-97`).
+  - ⚡ **Antigravity Execution**:
+    1. **Active Sprint Ticket (In Progress)**:
+       - **MW-88-T4 (Ticket #291)**: `fix(fireside): Scene sequence alignment & live Act I prose sync (Rule 14)` *(Priority: High, State: In Progress)*
+       - Target Files: `src/data/firesidePrompts.ts`, `src/components/fireside/SingleCardPromptCarousel.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`, `src/test/fireside_sync.test.ts`.
+       - Acceptance Criteria: Align `FIRESIDE_PROMPT_SPARKS[0]` to Scene 1 ("A Child of Two Worlds" / `ey96djU6qR1BrDGnvZwp`), `FIRESIDE_PROMPT_SPARKS[1]` to Scene 2 ("The House I Grew Up In"), render live `activeSceneMemory.prose` when populated per Rule 14, provide read-only sensory counters (`[ 🎧 Soundscape ]`, `[ 👁️ Visual ]`, `[ ☕ Aroma ]`), toggle between `[ ✨ Woven Script ]` and `[ 💡 Original Spark ]`, all 621+ tests passing.
+    2. **Backlog Registration (Post-Launch Phase 2)**:
+       - **MW-95 (Ticket #292)**: `feat(fireside): Mobile Act II 6-Fusion Weave Synthesis Drawer` *(Priority: Medium, State: Backlog)*
+       - **MW-96 (Ticket #293)**: `feat(twilio): Inbound WhatsApp Voice Note & Family Footnote Ingestion` *(Priority: Low, State: Backlog)*
+       - **MW-97 (Ticket #294)**: `feat(studio): Ephemeral Cross-Device Teleprompter Remote Sync` *(Priority: Low, State: Backlog)*
+  - 🛡️ **QA Gatekeeper**: Verified bidirectional API registration via `scripts/plane.js` against Plane.so Core Engine project `ef45f4c8-ea7e-490d-8282-e959e484ae07`.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+
+### [2026-09-27 12:10 BST] • Checkpoint #021 — Scene Sequence Alignment & Live Act I Prose Sync with Sensory Counters (MW-88-T4)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved directive MW-88-T4 to reconcile cross-surface narrative parity between Desktop Soundstage (`/studio`, `/studio/production/[id]`) and Fireside Mobile (`/studio/fireside`).
+  - 🧠 **Gemini Strategic Brain**: Specified the Scene 1 sequence alignment (`A Child of Two Worlds` / `બે દુનિયાનું બાળક` for `part-1-scene-1` mapped to memory `ey96djU6qR1BrDGnvZwp`, and `The House I Grew Up In` / `હું જે ઘરમાં મોટો થયો` for `part-1-scene-2`), Rule 14 text priority integration (`prose` > `originalHook` > `description`) in `SingleCardPromptCarousel.tsx`, live read-only sensory counters via `detectAnchors()`, accessible toggle button (`[ 👁️ View Original Spark ]` / `[ ✨ View Woven Script ]`), and the live teleprompter preview banner in `FiresideStudioClient.tsx`.
+  - ⚡ **Antigravity Execution**:
+    1. **Canonical Scene Sequence Parity (`src/lib/firesidePrompts.ts`)**: Realigned `FIRESIDE_PROMPT_SPARKS[0]` to Scene 1 ("A Child of Two Worlds" / `બે દુનિયાનું બાળક`, ID `part-1-scene-1`) and `FIRESIDE_PROMPT_SPARKS[1]` to Scene 2 ("The House I Grew Up In" / `હું જે ઘરમાં મોટો થયો`, ID `part-1-scene-2`), synchronising numbering, titles, and bilingual descriptions directly with `masterStoryStructure.ts`.
+    2. **Rule 14 Live Prose & Sensory Modality Rendering (`src/components/fireside/SingleCardPromptCarousel.tsx`)**: Extended props with `activeSceneMemory` and `getSceneMemory`. When `activeProse` exists:
+       - Renders active draft script body (`data-testid="fireside-active-script-body"`).
+       - Evaluates sensory anchor tokens (`detectAnchors`) and displays non-clickable sensory counters (`data-testid="fireside-sensory-counters"`) for `Soundscape`, `Visual`, and `Aroma`.
+       - Renders accessible toggle (`data-testid="fireside-script-toggle-btn"`) allowing seamless switching between Woven Script and Original Spark.
+    3. **Live Recording Teleprompter Banner (`src/app/studio/fireside/FiresideStudioClient.tsx`)**: Mounted `fireside-recording-script-banner` above video and voice recording surfaces, giving narrators an effortless reading teleprompter during takes.
+    4. **Rule 41 Lockstep Invariants & Constitutional Protection**: Codified Rule 41 into `.agents/AGENTS.md`. Zero modifications to `SoloStage.tsx` (Rule 7). Strict British English spelling maintained (Rule 20).
+  - 🛡️ **QA Gatekeeper**: All 53 test suites passing (642/642 tests), including updated `fireside_sync.test.ts` (20/20) and `fireside_prompt_carousel.test.tsx` (13/13). `tsc --noEmit` exit 0.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\.agents\AGENTS.md`
+  - `C:\Users\home\studio\src\lib\firesidePrompts.ts`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\src\test\fireside_prompt_carousel.test.tsx`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+
 
