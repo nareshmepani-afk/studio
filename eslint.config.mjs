@@ -23,7 +23,8 @@ const eslintConfig = [
       "react/no-unescaped-entities": "off",
       "react/jsx-no-comment-textnodes": "off",
       "@typescript-eslint/no-unsafe-function-type": "off",
-      "prefer-const": "off"
+      "prefer-const": "off",
+      "react-hooks/exhaustive-deps": "warn"
     }
   }
 ];

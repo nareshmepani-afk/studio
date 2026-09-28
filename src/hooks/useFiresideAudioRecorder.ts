@@ -34,6 +34,7 @@ export interface UseFiresideAudioRecorderReturn {
   resetRecording: () => void;
   retryPermission: () => Promise<void>;
   importAudioFile: (file: File) => void;
+  releaseHardwareStream: () => void;
 }
 
 /**
@@ -90,7 +91,7 @@ export function useFiresideAudioRecorder(
   const effectiveMinDuration =
     minDurationSeconds ??
     (process.env.NODE_ENV === 'test' ? 0 : FIRESIDE_VIDEO_DEFAULTS.MIN_RECORDING_SECONDS);
-  const { rearmHardware } = useHardwarePrivacy();
+  const { rearmHardware, registerStream } = useHardwarePrivacy();
 
   const [status, setStatus] = useState<RecordingLifecycleStatus>('idle');
   const [permissionState, setPermissionState] = useState<MicrophonePermissionState>('prompt');
@@ -263,6 +264,7 @@ export function useFiresideAudioRecorder(
         }
       }
       streamRef.current = stream;
+      registerStream(stream);
       setPermissionState('granted');
 
       // 2. Initialise Web Audio Context
@@ -401,7 +403,7 @@ export function useFiresideAudioRecorder(
       setStatus('error');
       return false;
     }
-  }, [cleanupAudioPipeline, rearmHardware, acquireWakeLock, triggerHaptic, maxDurationSeconds]);
+  }, [cleanupAudioPipeline, rearmHardware, acquireWakeLock, triggerHaptic, maxDurationSeconds, registerStream]);
 
   // ---------------------------------------------------------------------------
   // Pause Voice Recording
@@ -677,11 +679,26 @@ export function useFiresideAudioRecorder(
         }
       }
     };
+    const handleActChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<{ stage?: number; tab?: string }>;
+      const nextStage = customEvent.detail?.stage;
+      const nextTab = customEvent.detail?.tab;
+      if (
+        (nextStage !== undefined && nextStage !== 3) ||
+        (nextTab !== undefined && nextTab !== 'act3')
+      ) {
+        if (statusRef.current !== 'recording' && statusRef.current !== 'paused') {
+          cleanupAudioPipeline();
+        }
+      }
+    };
     window.addEventListener('mw:emergency-stop-recording', handleInterruptedAudio);
     window.addEventListener('mw:hardware-severed', handleInterruptedAudio);
+    window.addEventListener('mw:fireside-act-changed', handleActChanged);
     return () => {
       window.removeEventListener('mw:emergency-stop-recording', handleInterruptedAudio);
       window.removeEventListener('mw:hardware-severed', handleInterruptedAudio);
+      window.removeEventListener('mw:fireside-act-changed', handleActChanged);
     };
   }, [cleanupAudioPipeline, releaseWakeLock]);
 
@@ -715,5 +732,6 @@ export function useFiresideAudioRecorder(
     resetRecording,
     retryPermission,
     importAudioFile,
+    releaseHardwareStream: cleanupAudioPipeline,
   };
 }

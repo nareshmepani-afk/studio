@@ -35,6 +35,7 @@ export interface UseFiresideVideoRecorderReturn {
   retryPermission: () => Promise<void>;
   enableCameraPreview: () => Promise<boolean>;
   importVideoFile: (file: File) => void;
+  releaseHardwareStream: () => void;
 }
 
 /**
@@ -77,7 +78,7 @@ export function useFiresideVideoRecorder(
   const effectiveMinDuration =
     minDurationSeconds ??
     (process.env.NODE_ENV === 'test' ? 0 : FIRESIDE_VIDEO_DEFAULTS.MIN_RECORDING_SECONDS);
-  const { rearmHardware } = useHardwarePrivacy();
+  const { rearmHardware, registerStream } = useHardwarePrivacy();
 
   const [status, setStatus] = useState<RecordingLifecycleStatus>('idle');
   const [cameraPermissionState, setCameraPermissionState] = useState<CameraPermissionState>('prompt');
@@ -236,6 +237,7 @@ export function useFiresideVideoRecorder(
       }
 
       streamRef.current = mediaStream;
+      registerStream(mediaStream);
       setStream(mediaStream);
       setCameraPermissionState('granted');
       wasCameraActiveBeforeHideRef.current = true;
@@ -309,7 +311,7 @@ export function useFiresideVideoRecorder(
       setStatus('error');
       return false;
     }
-  }, [cleanupStream, rearmHardware, acquireWakeLock, triggerHaptic, maxDurationSeconds]);
+  }, [cleanupStream, rearmHardware, acquireWakeLock, triggerHaptic, maxDurationSeconds, registerStream]);
 
   // ---------------------------------------------------------------------------
   // Pause Video Memo Recording
@@ -533,6 +535,7 @@ export function useFiresideVideoRecorder(
         });
       }
       streamRef.current = mediaStream;
+      registerStream(mediaStream);
       setStream(mediaStream);
       setCameraPermissionState('granted');
       wasCameraActiveBeforeHideRef.current = true;
@@ -553,7 +556,7 @@ export function useFiresideVideoRecorder(
       setStatus('error');
       return false;
     }
-  }, [cleanupStream, rearmHardware]);
+  }, [cleanupStream, rearmHardware, registerStream]);
 
   // ---------------------------------------------------------------------------
   // 1-Tap Native Mobile Video Capture Import
@@ -647,12 +650,29 @@ export function useFiresideVideoRecorder(
       }
     };
 
+    const handleActChanged = (e: Event) => {
+      const customEvent = e as CustomEvent<{ stage?: number; tab?: string }>;
+      const nextStage = customEvent.detail?.stage;
+      const nextTab = customEvent.detail?.tab;
+      if (
+        (nextStage !== undefined && nextStage !== 3) ||
+        (nextTab !== undefined && nextTab !== 'act3')
+      ) {
+        if (statusRef.current !== 'recording' && statusRef.current !== 'paused') {
+          wasCameraActiveBeforeHideRef.current = false;
+          cleanupStream();
+        }
+      }
+    };
+
     window.addEventListener('mw:emergency-stop-recording', handleInterruptedRecordingOrPreview);
     window.addEventListener('mw:hardware-severed', handleInterruptedRecordingOrPreview);
+    window.addEventListener('mw:fireside-act-changed', handleActChanged);
     document.addEventListener('visibilitychange', handleVisibilityRestore);
     return () => {
       window.removeEventListener('mw:emergency-stop-recording', handleInterruptedRecordingOrPreview);
       window.removeEventListener('mw:hardware-severed', handleInterruptedRecordingOrPreview);
+      window.removeEventListener('mw:fireside-act-changed', handleActChanged);
       document.removeEventListener('visibilitychange', handleVisibilityRestore);
     };
   }, [cleanupStream, releaseWakeLock, enableCameraPreview]);
@@ -687,5 +707,6 @@ export function useFiresideVideoRecorder(
     retryPermission,
     enableCameraPreview,
     importVideoFile,
+    releaseHardwareStream: cleanupStream,
   };
 }

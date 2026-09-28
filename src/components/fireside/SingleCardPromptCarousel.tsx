@@ -253,6 +253,13 @@ export function SingleCardPromptCarousel({
         act4: 4,
       };
       onSelectActStage?.(stageMap[tab]);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('mw:fireside-act-changed', {
+            detail: { stage: stageMap[tab], tab },
+          })
+        );
+      }
     },
     [onSelectActStage]
   );
@@ -670,16 +677,16 @@ export function SingleCardPromptCarousel({
                 data-testid="HS_FIRESIDE_ACT_SPINE"
                 className="mb-4 p-2.5 rounded-2xl bg-black/40 border border-white/10 space-y-2"
               >
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px] font-mono">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono">
                   <button
                     type="button"
                     data-testid="HS_FIRESIDE_ACT_TAB_1"
                     onClick={() => handleSelectActTab('act1')}
                     aria-pressed={selectedActTab === 'act1'}
                     title="Act I: Script — Review or edit your story hook and narrative prose in-place."
-                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center ${
+                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center whitespace-nowrap text-xs sm:text-sm ${
                       selectedActTab === 'act1'
-                        ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 font-bold ring-1 ring-emerald-400/40'
+                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : activeProse
                         ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
                         : 'bg-amber-500/15 border-amber-500/40 text-amber-200 font-semibold hover:bg-amber-500/20'
@@ -693,9 +700,9 @@ export function SingleCardPromptCarousel({
                     onClick={() => handleSelectActTab('act2')}
                     aria-pressed={selectedActTab === 'act2'}
                     title="Act II: Weave — Inspect and pulse-highlight sensory anchor cues in-place."
-                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center ${
+                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center whitespace-nowrap text-xs sm:text-sm ${
                       selectedActTab === 'act2'
-                        ? 'bg-amber-500/25 border-amber-400 text-amber-100 font-bold ring-1 ring-amber-400/40'
+                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : hasSceneCompletedReel || activeProductionStage >= 2
                         ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
                         : activeProse
@@ -716,9 +723,9 @@ export function SingleCardPromptCarousel({
                     onClick={() => handleSelectActTab('act3')}
                     aria-pressed={selectedActTab === 'act3'}
                     title="Act III: Record — Capture your spoken voice or selfie video performance in-place."
-                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center ${
+                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center whitespace-nowrap text-xs sm:text-sm ${
                       selectedActTab === 'act3'
-                        ? 'bg-amber-500/25 border-amber-400 text-amber-100 font-bold ring-1 ring-amber-400/40'
+                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : hasSceneCompletedReel || activeProductionStage >= 3
                         ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
@@ -732,9 +739,9 @@ export function SingleCardPromptCarousel({
                     onClick={() => handleSelectActTab('act4')}
                     aria-pressed={selectedActTab === 'act4'}
                     title="Act IV: Screening — Watch your completed Master Reel in the in-place Fireside Screening Room."
-                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center ${
+                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center whitespace-nowrap text-xs sm:text-sm ${
                       selectedActTab === 'act4'
-                        ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 font-bold ring-1 ring-emerald-400/40'
+                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : isMasteredScene || activeProductionStage === 4
                         ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'

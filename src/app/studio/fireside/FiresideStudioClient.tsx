@@ -97,6 +97,26 @@ export default function FiresideStudioClient() {
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
   const videoRecorderRef = useRef<FiresideVideoRecorderRef>(null);
 
+  // MW-88-T9: Act-aware hardware teardown — release active camera & mic tracks when leaving Act III (Soundstage)
+  useEffect(() => {
+    if (selectedActStage !== undefined && selectedActStage !== 3) {
+      if (
+        videoRecorderRef.current &&
+        videoRecorderRef.current.status !== 'recording' &&
+        videoRecorderRef.current.status !== 'paused'
+      ) {
+        videoRecorderRef.current.releaseHardwareStream?.();
+      }
+      if (
+        recorderRef.current &&
+        recorderRef.current.status !== 'recording' &&
+        recorderRef.current.status !== 'paused'
+      ) {
+        recorderRef.current.releaseHardwareStream?.();
+      }
+    }
+  }, [selectedActStage]);
+
   // Smart Viewport & Foldable Device Detection (Canonical standard aligned with ProductionDeckContainer.tsx)
   const { isLargeScreen, isFoldableOrTabletCanvas, width } = useFoldableCanvas();
   const prevIsLargeRef = useRef(isLargeScreen);
@@ -899,6 +919,7 @@ export default function FiresideStudioClient() {
                 promptSpark={selectedSpark || activePromptSpark}
                 activeLanguage={activeLanguage}
                 activeMood={activeMood}
+                activeActStage={selectedActStage}
                 takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
                 onMoodChange={handleMoodChange}
                 onRecordingComplete={handleVideoRecordingComplete}
@@ -967,6 +988,7 @@ export default function FiresideStudioClient() {
                   promptSpark={selectedSpark || activePromptSpark}
                   activeLanguage={activeLanguage}
                   activeMood={activeMood}
+                  activeActStage={selectedActStage}
                   photos={photos.length > 0 ? photos : activeSceneMemory?.photos || []}
                   takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
                   onMoodChange={handleMoodChange}

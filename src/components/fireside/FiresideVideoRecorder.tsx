@@ -48,14 +48,17 @@ export interface FiresideVideoRecorderRef {
   startRecording: () => Promise<boolean>;
   stopRecording: () => Promise<Blob | null>;
   resetRecording: () => void;
+  releaseHardwareStream: () => void;
   scrollIntoView: () => void;
   status: RecordingLifecycleStatus;
+  stream: MediaStream | null;
 }
 
 export interface FiresideVideoRecorderProps {
   promptSpark?: FiresidePromptSpark | null;
   activeLanguage?: FiresideLanguage;
   activeMood?: StoryMoodTag;
+  activeActStage?: 1 | 2 | 3 | 4;
   takeNumber?: number;
   onMoodChange?: (mood: StoryMoodTag) => void;
   onRecordingComplete?: (videoBlob: Blob, durationSeconds: number) => void;
@@ -70,6 +73,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       promptSpark,
       activeLanguage = 'en',
       activeMood,
+      activeActStage,
       takeNumber = 1,
       onMoodChange,
       onRecordingComplete,
@@ -106,10 +110,30 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       retryPermission,
       enableCameraPreview,
       importVideoFile,
+      releaseHardwareStream,
     } = useFiresideVideoRecorder({
       onRecordingComplete,
       onReset,
     });
+
+    // MW-88-T9: Auto-release camera & microphone tracks when switching away from Act III (Soundstage)
+    useEffect(() => {
+      if (
+        activeActStage !== undefined &&
+        activeActStage !== 3 &&
+        status !== 'recording' &&
+        status !== 'paused'
+      ) {
+        if (stream) {
+          stream.getTracks().forEach((track) => {
+            try {
+              track.stop();
+            } catch {}
+          });
+        }
+        releaseHardwareStream();
+      }
+    }, [activeActStage, status, stream, releaseHardwareStream]);
 
     // Expose imperative API for parent container auto-scrolling and direct trigger
     useImperativeHandle(
@@ -118,12 +142,14 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
         startRecording,
         stopRecording,
         resetRecording,
+        releaseHardwareStream,
         scrollIntoView: () => {
           containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         },
         status,
+        stream,
       }),
-      [startRecording, stopRecording, resetRecording, status]
+      [startRecording, stopRecording, resetRecording, releaseHardwareStream, status, stream]
     );
 
     // Attach live stream to video element when recording or previewing
@@ -351,13 +377,16 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                     </div>
                   </>
                 ) : hardwarePrivacyStatus === 'severed' ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-300 space-y-3 p-6 pt-20 text-center z-10">
+                  <div
+                    data-testid="HS_FIRESIDE_VIEWFINDER_SEVERED_SLATE"
+                    className="w-full h-full flex flex-col items-center justify-center text-stone-300 space-y-3 p-6 pt-20 text-center z-10"
+                  >
                     <span
                       data-testid="HS_FIRESIDE_VIEWFINDER_OPTICS_BADGE"
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950/70 border border-rose-500/50 text-rose-300 text-[11px] font-mono font-bold uppercase tracking-widest"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950/70 border border-rose-500/50 text-rose-300 text-[11px] font-mono font-bold tracking-widest"
                     >
                       <Ban className="w-3.5 h-3.5 text-rose-400" />
-                      <span>🚫 SEVERED • RE-ARM</span>
+                      <span>🚫 OPTICS SEVERED — Privacy Shield Active</span>
                     </span>
                     <p className="text-xs text-stone-300 max-w-xs">
                       Hardware camera and microphone feeds are severed for your privacy. Tap below to re-arm optics.
@@ -370,20 +399,24 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                         rearmHardware();
                         enableCameraPreview();
                       }}
-                      className="min-h-[48px] px-4 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 border border-rose-500/50 text-rose-200 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-md"
+                      className="min-h-[48px] px-4 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 border border-rose-500/50 text-rose-200 text-xs font-mono font-bold tracking-wider flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-md"
                     >
-                      <Ban className="w-3.5 h-3.5 text-rose-400" />
-                      <span>🚫 Severed • Re-Arm Camera &amp; Mic</span>
+                      <span data-testid="HS_FIRESIDE_VIEWFINDER_REARM_BTN">
+                        [ 🛡️ Re-Arm Camera &amp; Mic ]
+                      </span>
                     </button>
                   </div>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-500 space-y-3 p-6 pt-20 text-center z-10">
+                  <div
+                    data-testid="HS_FIRESIDE_VIEWFINDER_INACTIVE_SLATE"
+                    className="w-full h-full flex flex-col items-center justify-center text-stone-500 space-y-3 p-6 pt-20 text-center z-10"
+                  >
                     <span
                       data-testid="HS_FIRESIDE_VIEWFINDER_OPTICS_BADGE"
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-700/60 text-zinc-300 text-[11px] font-mono font-bold uppercase tracking-widest"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-700/60 text-zinc-300 text-[11px] font-mono font-bold tracking-widest"
                     >
                       <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>🛡️ OPTICS INACTIVE</span>
+                      <span>🛡️ OPTICS INACTIVE — Standby</span>
                     </span>
                     <p className="text-xs text-stone-300 max-w-xs">
                       Tap below to enable your front camera &amp; microphone, or tap Record to start immediately.

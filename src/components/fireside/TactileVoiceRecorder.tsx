@@ -48,6 +48,7 @@ export interface TactileVoiceRecorderRef {
   startRecording: () => Promise<boolean>;
   stopRecording: () => Promise<Blob | null>;
   resetRecording: () => void;
+  releaseHardwareStream: () => void;
   scrollIntoView: () => void;
   status: RecordingLifecycleStatus;
 }
@@ -56,6 +57,7 @@ export interface TactileVoiceRecorderProps {
   promptSpark?: FiresidePromptSpark | null;
   activeLanguage?: FiresideLanguage;
   activeMood?: StoryMoodTag;
+  activeActStage?: 1 | 2 | 3 | 4;
   photos?: HeirloomPhotoAttachment[];
   takeNumber?: number;
   onMoodChange?: (mood: StoryMoodTag) => void;
@@ -71,6 +73,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
       promptSpark,
       activeLanguage = 'en',
       activeMood,
+      activeActStage,
       photos = [],
       takeNumber = 1,
       onMoodChange,
@@ -99,6 +102,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
     resetRecording,
     retryPermission,
     importAudioFile,
+    releaseHardwareStream,
   } = useFiresideAudioRecorder({
     onRecordingComplete,
     onReset,
@@ -106,6 +110,18 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
 
   const containerRef = useRef<HTMLDivElement>(null);
   const nativeAudioInputRef = useRef<HTMLInputElement>(null);
+
+  // MW-88-T9: Auto-release microphone pipeline when switching away from Act III (Soundstage)
+  useEffect(() => {
+    if (
+      activeActStage !== undefined &&
+      activeActStage !== 3 &&
+      status !== 'recording' &&
+      status !== 'paused'
+    ) {
+      releaseHardwareStream();
+    }
+  }, [activeActStage, status, releaseHardwareStream]);
 
   const handleNativeAudioCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -126,13 +142,16 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
     resetRecording: () => {
       resetRecording();
     },
+    releaseHardwareStream: () => {
+      releaseHardwareStream();
+    },
     scrollIntoView: () => {
       if (typeof containerRef.current?.scrollIntoView === 'function') {
         containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     },
     status,
-  }), [startRecording, stopRecording, resetRecording, status]);
+  }), [startRecording, stopRecording, resetRecording, releaseHardwareStream, status]);
 
   // ---------------------------------------------------------------------------
   // Audio Playback Preview State (When status === 'saved')
