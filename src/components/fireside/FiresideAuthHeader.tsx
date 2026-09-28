@@ -28,21 +28,50 @@ import {
   LogOut,
 } from 'lucide-react';
 
+import type { UnifiedCurriculumMemory } from '@/types/curriculum';
+import { isSceneCompleted } from '@/types/curriculum';
+
 export interface FiresideAuthHeaderProps {
   className?: string;
   activePartTitle?: string;
   activeSceneTitle?: string;
+  activeStage?: number;
+  activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null;
+}
+
+export function resolveHeaderActBadge(
+  activeStage?: number,
+  activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null
+): string {
+  const stage = activeStage ?? activeSceneMemory?.productionStage;
+  if (
+    stage === 4 ||
+    activeSceneMemory?.currentStatus === 'mastered' ||
+    Boolean(activeSceneMemory?.directorialPolish?.masterReelUrl)
+  ) {
+    return '🎞️ ACT IV: SCREENING ROOM';
+  }
+  if (stage === 3 || isSceneCompleted(activeSceneMemory)) {
+    return '🎙️ ACT III: SOUNDSTAGE';
+  }
+  if (stage === 2) {
+    return '✨ ACT II: THE WEAVE';
+  }
+  return '🎬 ACT I: SCRIPTORIUM';
 }
 
 export function FiresideAuthHeader({
   className = '',
   activePartTitle,
+  activeStage,
+  activeSceneMemory,
 }: FiresideAuthHeaderProps) {
   const { user, logout } = useAuth();
   const isAuthenticated = !!(user && !user.isAnonymous);
   const userEmail = user?.email || (isAuthenticated ? 'Authenticated Storyteller' : null);
 
   const commitSha = process.env.NEXT_PUBLIC_COMMIT_SHA || '';
+  const headerActBadge = resolveHeaderActBadge(activeStage, activeSceneMemory);
 
   return (
     <header
@@ -63,7 +92,7 @@ export function FiresideAuthHeader({
             <span className="sm:hidden">Desktop Stage</span>
           </Link>
 
-          <div className="flex items-center gap-2 text-amber-400">
+          <div className="flex items-center gap-2 text-amber-400 flex-wrap justify-end">
             <Sparkles className="w-4 h-4 animate-pulse text-amber-400 shrink-0" />
             <span className="text-xs sm:text-sm font-serif font-semibold tracking-wide text-amber-300 truncate">
               Fireside Studio
@@ -77,13 +106,13 @@ export function FiresideAuthHeader({
               Dev Staging{commitSha ? ` • ${commitSha.slice(0, 7)}` : ''}
             </span>
 
-            {/* Explicit Production Stage Context: Act II Equivalent (visible on unfolded foldables, tablets & desktops) */}
+            {/* Dynamic Production Stage Context Badge Synchronised with Desktop Studio (MW-88-T8) */}
             <span
-              className="hidden sm:inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-stone-300 shrink-0"
-              title="Production Context: Act II Equivalent Armchair Story Capture"
+              data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"
+              className="inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 font-semibold shrink-0"
+              title={`Active Production Stage: ${headerActBadge}`}
             >
-              <Mic className="w-2.5 h-2.5 text-amber-400" />
-              <span>Act II: Story Capture</span>
+              {headerActBadge}
             </span>
 
             {/* Active Curriculum Part Badge if provided */}

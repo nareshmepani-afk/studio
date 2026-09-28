@@ -168,6 +168,10 @@ export interface UnifiedCurriculumMemory {
   sensoryAnchors?: any;
   /** Optional production stage integer (1..4) */
   productionStage?: number;
+  /** Optional active cinematic weave vision ID (e.g. 'memory-weave') */
+  activeVision?: string;
+  /** Optional active cinematic weave vision label (e.g. 'The Memory Weave') */
+  activeVisionLabel?: string;
   /** Surface that performed the most recent mutation */
   lastEditedSurface?: string;
   /** Epoch ms or ISO timestamp of most recent update */

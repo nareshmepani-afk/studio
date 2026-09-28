@@ -51,12 +51,16 @@ describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => 
     }
   });
 
-  it('renders "Act II: Story Capture" production stage context pill', () => {
-    render(<FiresideAuthHeader />);
+  it('renders dynamic production stage context pill (HS_FIRESIDE_HEADER_ACT_BADGE — MW-88-T8)', () => {
+    const { unmount } = render(<FiresideAuthHeader />);
 
-    const stageContextPill = screen.getByTitle('Production Context: Act II Equivalent Armchair Story Capture');
+    const stageContextPill = screen.getByTestId('HS_FIRESIDE_HEADER_ACT_BADGE');
     expect(stageContextPill).toBeInTheDocument();
-    expect(stageContextPill).toHaveTextContent(/Act II: Story Capture/i);
+    expect(stageContextPill).toHaveTextContent('🎬 ACT I: SCRIPTORIUM');
+    unmount();
+
+    render(<FiresideAuthHeader activeStage={2} />);
+    expect(screen.getByTestId('HS_FIRESIDE_HEADER_ACT_BADGE')).toHaveTextContent('✨ ACT II: THE WEAVE');
   });
 
   it('renders curriculum part title when activePartTitle is provided', () => {

@@ -652,8 +652,12 @@ export default function FiresideStudioClient() {
     <div className="min-h-screen bg-[#0A0A0A] text-stone-100 flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-200">
       {/* 1. Top Sticky Navigation & Synchronisation Deck */}
       <div className="sticky top-0 z-30 w-full">
-        {/* Discreet Elder Auth Header with Desktop Stage Ingress */}
-        <FiresideAuthHeader activePartTitle={activePartTitle} />
+        {/* Discreet Elder Auth Header with Desktop Stage Ingress & Dynamic Stage Badge */}
+        <FiresideAuthHeader
+          activePartTitle={activePartTitle}
+          activeStage={activeSceneMemory?.productionStage}
+          activeSceneMemory={activeSceneMemory}
+        />
 
         {/* 2. Reassuring Vault Synchronisation HUD Strip */}
         <div className="w-full bg-stone-950/85 border-b border-stone-800/60 py-2 px-3 sm:px-6 backdrop-blur-md">

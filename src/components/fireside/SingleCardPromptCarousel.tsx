@@ -49,7 +49,7 @@ import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
 import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import type { EditingAuthority, UnifiedCurriculumMemory } from '@/types/curriculum';
 import { isSceneCompleted } from '@/types/curriculum';
-import { detectAnchors } from '@/hooks/studio/useDirectorInk';
+import { detectSensoryAnchors, filterDominantSensoryAnchors } from '@/utils/sensoryAnchors';
 import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
 
@@ -219,6 +219,42 @@ export function SingleCardPromptCarousel({
   const targetProductionId =
     currentSceneMemory?.id || currentSpark.linkedSceneId || 'part-1-scene-1';
 
+  const activeProductionStage = useMemo(() => {
+    const stage = currentSceneMemory?.productionStage;
+    if (stage === 4 || isMasteredScene) return 4;
+    if (stage === 3 || hasSceneCompletedReel) return 3;
+    if (stage === 2) return 2;
+    return 1;
+  }, [currentSceneMemory?.productionStage, isMasteredScene, hasSceneCompletedReel]);
+
+  const stageProgression = useMemo(() => {
+    if (activeProductionStage >= 3) {
+      return {
+        label: '[ 🎞️ ENTER SCREENING ROOM (ACT IV) → ]',
+        href: `/studio/production/${targetProductionId}?act=screening`,
+        title: 'Open this memory directly in Act IV (Screening Room) on the Desktop Studio Soundstage.',
+      };
+    }
+    if (activeProductionStage === 2) {
+      return {
+        label: '[ 🎬 ENTER SOUNDSTAGE (ACT III) → ]',
+        href: `/studio/production/${targetProductionId}?act=soundstage`,
+        title: 'Open this memory directly in Act III (Soundstage) on the Desktop Studio Soundstage.',
+      };
+    }
+    return {
+      label: '[ ✨ ENTER THE WEAVE (ACT II) → ]',
+      href: `/studio/production/${targetProductionId}?act=sensory`,
+      title: 'Open this memory directly in Act II (Sensory Weave) on the Desktop Studio Soundstage.',
+    };
+  }, [activeProductionStage, targetProductionId]);
+
+  const activeWeaveLabel = useMemo(() => {
+    const rawVision =
+      currentSceneMemory?.activeVisionLabel || currentSceneMemory?.activeVision || '';
+    return rawVision ? rawVision.toUpperCase().replace(/-/g, ' ') : 'THE MEMORY WEAVE';
+  }, [currentSceneMemory?.activeVisionLabel, currentSceneMemory?.activeVision]);
+
   const handleStartEditScript = () => {
     setDraftProse(activeProse);
     setIsEditingScript(true);
@@ -240,13 +276,20 @@ export function SingleCardPromptCarousel({
     setDraftProse(activeProse);
   };
 
+  // UNIFIED SENSORY ANCHOR PIPELINE (Identical to MemoryForm.tsx — MW-88-T8):
   const sensoryCounts = useMemo(() => {
     if (!activeProse) return { soundscape: 0, visual: 0, aroma: 0 };
-    const anchors = detectAnchors(activeProse);
+    const rawAnchors = detectSensoryAnchors(activeProse);
+    const dominantAnchors = filterDominantSensoryAnchors(rawAnchors);
+
+    const soundscapeCount = dominantAnchors.filter((a) => a.type === 'soundscape').length;
+    const visualCount = dominantAnchors.filter((a) => a.type === 'visual').length;
+    const aromaCount = dominantAnchors.filter((a) => a.type === 'aroma').length;
+
     return {
-      soundscape: anchors.filter((a) => a.type === 'soundscape').length,
-      visual: anchors.filter((a) => a.type === 'visual').length,
-      aroma: anchors.filter((a) => a.type === 'aroma').length,
+      soundscape: soundscapeCount,
+      visual: visualCount,
+      aroma: aromaCount,
     };
   }, [activeProse]);
 
@@ -638,65 +681,72 @@ export function SingleCardPromptCarousel({
                 </div>
               ) : activeProse ? (
                 <div className="space-y-3">
-                  {/* Read-Only Sensory Counters, Edit Script Trigger & Script/Spark Toggle */}
+                  {/* Dominant Sensory Counters, Weave Provenance Pill, Original Spark Pill & Edit Script Pill (MW-88-T8) */}
                   <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-white/10">
                     <div
                       className="flex items-center gap-1.5 flex-wrap cursor-help"
-                      data-testid="fireside-sensory-counters"
+                      data-testid="HS_FIRESIDE_DOMINANT_SENSORY_COUNTERS"
                       title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
                     >
                       <span
+                        data-testid="fireside-sensory-counters"
                         title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-sky-500/10 text-sky-300 border border-sky-500/25"
+                        className="inline-flex items-center gap-1.5 flex-wrap"
                       >
-                        <Headphones className="w-3 h-3 text-sky-400" />
-                        <span>Soundscape ({sensoryCounts.soundscape})</span>
-                      </span>
-                      <span
-                        title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/25"
-                      >
-                        <Eye className="w-3 h-3 text-emerald-400" />
-                        <span>Visual ({sensoryCounts.visual})</span>
-                      </span>
-                      <span
-                        title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25"
-                      >
-                        <Coffee className="w-3 h-3 text-amber-400" />
-                        <span>Aroma ({sensoryCounts.aroma})</span>
+                        <span
+                          title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-sky-500/10 text-sky-300 border border-sky-500/25"
+                        >
+                          <Headphones className="w-3 h-3 text-sky-400" />
+                          <span>Soundscape ({sensoryCounts.soundscape})</span>
+                        </span>
+                        <span
+                          title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/25"
+                        >
+                          <Eye className="w-3 h-3 text-emerald-400" />
+                          <span>Visual ({sensoryCounts.visual})</span>
+                        </span>
+                        <span
+                          title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25"
+                        >
+                          <Coffee className="w-3 h-3 text-amber-400" />
+                          <span>Aroma ({sensoryCounts.aroma})</span>
+                        </span>
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        data-testid="HS_FIRESIDE_WEAVE_PROVENANCE_PILL"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 shrink-0"
+                        title="Active AI Cinematic Weave Vision"
+                      >
+                        🎬 CINEMATIC WEAVE: {activeWeaveLabel}
+                      </span>
+
                       <button
                         type="button"
-                        data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"
-                        data-hotspot-id="HS_FIRESIDE_EDIT_SCRIPT_BTN"
-                        onClick={handleStartEditScript}
-                        className="min-h-[48px] sm:min-h-[44px] px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 text-amber-200 border border-amber-500/40 transition-all cursor-pointer shrink-0"
+                        data-testid="HS_FIRESIDE_VIEW_SPARK_PILL"
+                        data-hotspot-id="fireside-script-toggle-btn"
+                        onClick={() => setViewMode((prev) => (prev === 'script' ? 'spark' : 'script'))}
+                        className="min-h-[48px] sm:min-h-[44px] px-3.5 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-sky-950/60 hover:bg-sky-900/70 active:scale-98 text-sky-400 border border-sky-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                        aria-label="Toggle between active script and original prompt spark"
                       >
-                        [ ✏️ Edit Script ]
+                        <span data-testid="fireside-script-toggle-btn">
+                          {viewMode === 'script' ? '👁️ VIEW ORIGINAL SPARK' : '✨ VIEW WOVEN SCRIPT'}
+                        </span>
                       </button>
 
                       <button
                         type="button"
-                        data-testid="fireside-script-toggle-btn"
-                        onClick={() => setViewMode((prev) => (prev === 'script' ? 'spark' : 'script'))}
-                        className="min-h-[48px] sm:min-h-[44px] px-3 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 active:scale-98 text-amber-200 border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
-                        aria-label="Toggle between active script and original prompt spark"
+                        data-testid="HS_FIRESIDE_EDIT_SCRIPT_PILL"
+                        data-hotspot-id="HS_FIRESIDE_EDIT_SCRIPT_BTN"
+                        onClick={handleStartEditScript}
+                        className="min-h-[48px] sm:min-h-[44px] px-3.5 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-950/60 hover:bg-amber-900/70 active:scale-98 text-amber-400 border border-amber-500/30 transition-all cursor-pointer shrink-0"
                       >
-                        {viewMode === 'script' ? (
-                          <>
-                            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                            <span>View Original Spark</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                            <span>View Woven Script</span>
-                          </>
-                        )}
+                        <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">✏️ EDIT SCRIPT</span>
                       </button>
                     </div>
                   </div>
@@ -888,31 +938,35 @@ export function SingleCardPromptCarousel({
           </button>
         </div>
 
-        {/* Primary Story Confirmation Button: Speak or Record Video */}
-        <button
-          type="button"
-          data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"
-          onClick={handleSelectCurrent}
-          style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-          className="w-full px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold text-base sm:text-lg shadow-lg shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-          aria-label={
-            effectiveMediaMode === 'video'
-              ? `Record video memo: ${currentSpark.title}`
-              : `Speak this memory: ${currentSpark.title}`
-          }
-        >
-          {effectiveMediaMode === 'video' ? (
-            <>
-              <Video className="w-5 h-5 text-black" />
-              <span>Record Video Memo ➔</span>
-            </>
-          ) : (
-            <>
-              <Mic className="w-5 h-5 text-black" />
-              <span>Speak This Memory ➔</span>
-            </>
-          )}
-        </button>
+        {/* Dual-Action Synchronised Footer Dock (MW-88-T8: Emerald Stage Progression + Amber Direct Capture) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <a
+            href={stageProgression.href}
+            data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"
+            data-hotspot-id="HS_FIRESIDE_STAGE_PROGRESSION_BTN"
+            title={stageProgression.title}
+            style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+            className="w-full min-h-[56px] px-4 py-3 rounded-2xl bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-500/50 text-emerald-300 font-mono font-bold text-xs sm:text-sm shadow-lg shadow-emerald-950/30 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer"
+          >
+            {stageProgression.label}
+          </a>
+
+          <button
+            type="button"
+            data-testid="HS_FIRESIDE_DIRECT_RECORD_BTN"
+            data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"
+            onClick={handleSelectCurrent}
+            style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+            className="w-full min-h-[56px] px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-mono font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer"
+            aria-label={
+              effectiveMediaMode === 'video'
+                ? `Record performance: ${currentSpark.title}`
+                : `Speak this memory: ${currentSpark.title}`
+            }
+          >
+            [ 🎙️ RECORD PERFORMANCE (ACT III) → ]
+          </button>
+        </div>
 
       </div>
     </div>

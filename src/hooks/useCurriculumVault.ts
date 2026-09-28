@@ -261,6 +261,11 @@ export function useCurriculumVault({
                 (data.originSurface === 'fireside_mobile' ? 'fireside_mobile' : 'desktop_soundstage'),
               editingAuthority: resolveEditingAuthority(data),
               elevatedAt: typeof data.elevatedAt === 'number' ? data.elevatedAt : undefined,
+              productionStage: typeof data.productionStage === 'number' ? data.productionStage : undefined,
+              activeVision: data.activeVision,
+              activeVisionLabel: data.activeVisionLabel,
+              originalHook: data.originalHook,
+              sensoryAnchors: data.sensoryAnchors,
               lastModified: data.updatedAt || data.lastModified || data.createdAt || new Date().toISOString(),
               createdAt: data.createdAt || new Date().toISOString(),
             };

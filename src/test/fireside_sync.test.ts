@@ -26,7 +26,16 @@ import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 import { getPartForScene, getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import { FiresideWarmupModal, WARMUP_CHAI_SCRIPTS } from '@/components/fireside/FiresideWarmupModal';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
+import { FiresideAuthHeader, resolveHeaderActBadge } from '@/components/fireside/FiresideAuthHeader';
+import { detectSensoryAnchors, filterDominantSensoryAnchors } from '@/utils/sensoryAnchors';
 import { setDoc } from 'firebase/firestore';
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: { uid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2', email: 'nareshmepani@hotmail.com', isAnonymous: false },
+    logout: vi.fn(),
+  })),
+}));
 
 // Mock localforage memory store
 const memoryStore = new Map<string, unknown>();
@@ -561,13 +570,13 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // 3. Assert toggle cleanly switches display state between active script and original prompt
       const toggleBtn = document.querySelector('[data-testid="fireside-script-toggle-btn"]') as HTMLElement;
       expect(toggleBtn).toBeTruthy();
-      expect(toggleBtn.textContent).toContain('View Original Spark');
+      expect(toggleBtn.textContent).toContain('VIEW ORIGINAL SPARK');
 
       // Click to switch to original spark
       fireEvent.click(toggleBtn);
       expect(document.querySelector('[data-testid="fireside-prompt-spark-body"]')).toBeTruthy();
       expect(document.querySelector('[data-testid="fireside-active-script-body"]')).toBeNull();
-      expect(toggleBtn.textContent).toContain('View Woven Script');
+      expect(toggleBtn.textContent).toContain('VIEW WOVEN SCRIPT');
 
       // Click again to toggle back to active woven script
       fireEvent.click(toggleBtn);
@@ -1106,10 +1115,10 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // Carousel card has HS_FIRESIDE_PROMPT_CAROUSEL_CARD testid
       expect(document.querySelector('[data-testid="HS_FIRESIDE_PROMPT_CAROUSEL_CARD"]')).toBeTruthy();
 
-      // Primary CTA is NOT locked to "Watch Studio Master Reel" — it enables recording the Video Memo!
+      // Primary CTA is NOT locked to "Watch Studio Master Reel" — it enables recording the performance!
       const primaryCta = document.querySelector('[data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"]') as HTMLElement;
       expect(primaryCta).toBeTruthy();
-      expect(primaryCta.textContent).toContain('Record Video Memo');
+      expect(primaryCta.textContent).toContain('[ 🎙️ RECORD PERFORMANCE (ACT III) → ]');
       fireEvent.click(primaryCta);
       expect(onSelectPrompt).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0], 'en');
 
@@ -1340,10 +1349,10 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         })
       );
 
-      // 1. Click [ ✏️ Edit Script ] button
-      const editBtn = document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]') as HTMLButtonElement;
+      // 1. Click ✏️ EDIT SCRIPT pill
+      const editBtn = document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]') as HTMLElement;
       expect(editBtn).toBeTruthy();
-      expect(editBtn.textContent).toContain('[ ✏️ Edit Script ]');
+      expect(editBtn.textContent).toContain('✏️ EDIT SCRIPT');
       fireEvent.click(editBtn);
 
       // 2. Verify Armchair Script Editor eyebrow, reassurance copy, textarea, and buttons
@@ -1367,7 +1376,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
 
       // 4. Re-open editor, modify prose, and click [ ✓ Save Script ]
-      fireEvent.click(document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]') as HTMLButtonElement);
+      fireEvent.click(document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]') as HTMLElement);
       const textareaReopened = document.querySelector('[data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"]') as HTMLTextAreaElement;
       fireEvent.change(textareaReopened, {
         target: { value: 'Refined mobile armchair prose with sensory warmth.' },
@@ -1404,7 +1413,198 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       unmountMobile();
     });
   });
+
+  // =========================================================================
+  // 9. MW-88-T8: Cross-Surface Nomenclature, CTA & Sensory Lockstep
+  // =========================================================================
+  describe('9. MW-88-T8: Cross-Surface Nomenclature, CTA & Sensory Lockstep', () => {
+    it('renders dynamic Act I-IV stage badges in FiresideAuthHeader (HS_FIRESIDE_HEADER_ACT_BADGE)', () => {
+      // Stage 1 (Default / Act I Scriptorium)
+      expect(resolveHeaderActBadge(1)).toBe('🎬 ACT I: SCRIPTORIUM');
+      expect(resolveHeaderActBadge(0)).toBe('🎬 ACT I: SCRIPTORIUM');
+      expect(resolveHeaderActBadge(undefined)).toBe('🎬 ACT I: SCRIPTORIUM');
+
+      // Stage 2 (Act II The Weave)
+      expect(resolveHeaderActBadge(2)).toBe('✨ ACT II: THE WEAVE');
+
+      // Stage 3 (Act III Soundstage)
+      expect(resolveHeaderActBadge(3)).toBe('🎙️ ACT III: SOUNDSTAGE');
+
+      // Stage 4 (Act IV Screening Room)
+      expect(resolveHeaderActBadge(4)).toBe('🎞️ ACT IV: SCREENING ROOM');
+
+      // Component render check for Stage 1 memory
+      const { unmount: u1 } = render(
+        React.createElement(FiresideAuthHeader, {
+          activeStage: 1,
+          activePartTitle: 'Part I: Roots and Foundations',
+        })
+      );
+      const badge1 = document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]') as HTMLElement;
+      expect(badge1).toBeTruthy();
+      expect(badge1.textContent).toBe('🎬 ACT I: SCRIPTORIUM');
+      u1();
+
+      // Component render check for Stage 2 memory
+      const { unmount: u2 } = render(
+        React.createElement(FiresideAuthHeader, {
+          activeStage: 2,
+        })
+      );
+      expect(document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]')?.textContent).toBe(
+        '✨ ACT II: THE WEAVE'
+      );
+      u2();
+
+      // Component render check for Stage 3 memory
+      const { unmount: u3 } = render(
+        React.createElement(FiresideAuthHeader, {
+          activeStage: 3,
+        })
+      );
+      expect(document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]')?.textContent).toBe(
+        '🎙️ ACT III: SOUNDSTAGE'
+      );
+      u3();
+
+      // Component render check for Stage 4 memory
+      const { unmount: u4 } = render(
+        React.createElement(FiresideAuthHeader, {
+          activeStage: 4,
+        })
+      );
+      expect(document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]')?.textContent).toBe(
+        '🎞️ ACT IV: SCREENING ROOM'
+      );
+      u4();
+    });
+
+    it('pipes prose through filterDominantSensoryAnchors(detectSensoryAnchors(activeProse)) so ey96djU6qR1BrDGnvZwp reports Soundscape (1), Visual (1), Aroma (0) in lockstep with Desktop Studio', () => {
+      const fullProseEy96 =
+        'The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me. My origins begin in the sun-baked earth of Madhapur, a small farming village in the Kutch region of Gujarat, India, where my ancestors worked the soil with their bare hands.';
+
+      // Raw anchors have multiple matches across all 3 modalities, but dominant trio filter yields 1/1/0
+      const rawAnchors = detectSensoryAnchors(fullProseEy96);
+      expect(rawAnchors.length).toBeGreaterThan(3);
+      const dominantAnchors = filterDominantSensoryAnchors(rawAnchors);
+      expect(dominantAnchors.filter((a) => a.type === 'soundscape').length).toBe(1);
+      expect(dominantAnchors.filter((a) => a.type === 'visual').length).toBe(1);
+      expect(dominantAnchors.filter((a) => a.type === 'aroma').length).toBe(0);
+
+      const mockDocEy96 = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        sceneId: 'part-1-scene-1',
+        prose: fullProseEy96,
+        productionStage: 1,
+        activeVisionLabel: 'The Memory Weave',
+      };
+
+      const { unmount } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          activeSceneMemory: mockDocEy96,
+          getSceneMemory: () => mockDocEy96,
+        })
+      );
+
+      const countersContainer = document.querySelector(
+        '[data-testid="HS_FIRESIDE_DOMINANT_SENSORY_COUNTERS"]'
+      ) as HTMLElement;
+      expect(countersContainer).toBeTruthy();
+      expect(countersContainer.textContent).toContain('Soundscape (1)');
+      expect(countersContainer.textContent).toContain('Visual (1)');
+      expect(countersContainer.textContent).toContain('Aroma (0)');
+
+      // Verify Script Provenance Toolbar Pills (Section 3C & Section 5)
+      const weavePill = document.querySelector(
+        '[data-testid="HS_FIRESIDE_WEAVE_PROVENANCE_PILL"]'
+      ) as HTMLElement;
+      expect(weavePill).toBeTruthy();
+      expect(weavePill.textContent).toContain('🎬 CINEMATIC WEAVE: THE MEMORY WEAVE');
+
+      const sparkPill = document.querySelector(
+        '[data-testid="HS_FIRESIDE_VIEW_SPARK_PILL"]'
+      ) as HTMLElement;
+      expect(sparkPill).toBeTruthy();
+      expect(sparkPill.textContent).toContain('👁️ VIEW ORIGINAL SPARK');
+
+      const editPill = document.querySelector(
+        '[data-testid="HS_FIRESIDE_EDIT_SCRIPT_PILL"]'
+      ) as HTMLElement;
+      expect(editPill).toBeTruthy();
+      expect(editPill.textContent).toContain('✏️ EDIT SCRIPT');
+
+      unmount();
+    });
+
+    it('renders Dual-Action Synchronised Footer Dock (HS_FIRESIDE_STAGE_PROGRESSION_BTN & HS_FIRESIDE_DIRECT_RECORD_BTN) and routes to the exact production act URL across stages 1, 2, and 3', () => {
+      // Stage 1: [ ✨ ENTER THE WEAVE (ACT II) → ] -> /studio/production/ey96djU6qR1BrDGnvZwp?act=sensory
+      const memStage1 = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        sceneId: 'part-1-scene-1',
+        prose: 'Act I draft ready for sensory weaving.',
+        productionStage: 1,
+        takes: [],
+      };
+      const { unmount: u1 } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeSceneMemory: memStage1,
+          getSceneMemory: () => memStage1,
+        })
+      );
+
+      const prog1 = document.querySelector(
+        '[data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"]'
+      ) as HTMLAnchorElement;
+      const rec1 = document.querySelector(
+        '[data-testid="HS_FIRESIDE_DIRECT_RECORD_BTN"]'
+      ) as HTMLButtonElement;
+      expect(prog1).toBeTruthy();
+      expect(prog1.textContent).toBe('[ ✨ ENTER THE WEAVE (ACT II) → ]');
+      expect(prog1.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=sensory');
+      expect(rec1).toBeTruthy();
+      expect(rec1.textContent).toBe('[ 🎙️ RECORD PERFORMANCE (ACT III) → ]');
+      u1();
+
+      // Stage 2: [ 🎬 ENTER SOUNDSTAGE (ACT III) → ] -> /studio/production/ey96djU6qR1BrDGnvZwp?act=soundstage
+      const memStage2 = {
+        ...memStage1,
+        productionStage: 2,
+      };
+      const { unmount: u2 } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeSceneMemory: memStage2,
+          getSceneMemory: () => memStage2,
+        })
+      );
+      const prog2 = document.querySelector(
+        '[data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"]'
+      ) as HTMLAnchorElement;
+      expect(prog2.textContent).toBe('[ 🎬 ENTER SOUNDSTAGE (ACT III) → ]');
+      expect(prog2.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=soundstage');
+      u2();
+
+      // Stage 3: [ 🎞️ ENTER SCREENING ROOM (ACT IV) → ] -> /studio/production/ey96djU6qR1BrDGnvZwp?act=screening
+      const memStage3 = {
+        ...memStage1,
+        productionStage: 3,
+      };
+      const { unmount: u3 } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeSceneMemory: memStage3,
+          getSceneMemory: () => memStage3,
+        })
+      );
+      const prog3 = document.querySelector(
+        '[data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"]'
+      ) as HTMLAnchorElement;
+      expect(prog3.textContent).toBe('[ 🎞️ ENTER SCREENING ROOM (ACT IV) → ]');
+      expect(prog3.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=screening');
+      u3();
+    });
+  });
 });
+
 
 
 

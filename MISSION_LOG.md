@@ -553,3 +553,25 @@
 
 ---
 
+### [2026-09-28 16:46 BST] • Checkpoint #025 — Cross-Surface Nomenclature, CTA & Sensory Lockstep (MW-88-T8)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Identified the 4 cross-surface UX/naming divergences between `/studio/production/[id]` and `/studio/fireside` across live staging screenshots (`ENTER THE WEAVE` CTA visibility, header stage badge contradiction, script provenance pill symmetry, and sensory anchor count parity).
+  - 🧠 **Gemini Strategic Brain**: Formulated directive MW-88-T8 (Plane Sequence #298), ratifying Option A (Synchronised Dual-Action Footer on the Card: Emerald `[ ✨ ENTER THE WEAVE (ACT II) → ]` alongside Amber `[ 🎙️ RECORD PERFORMANCE (ACT III) → ]`), dynamic `FiresideAuthHeader` stage badges (`HS_FIRESIDE_HEADER_ACT_BADGE`), rounded provenance pills (`HS_FIRESIDE_WEAVE_PROVENANCE_PILL`, `HS_FIRESIDE_VIEW_SPARK_PILL`, `HS_FIRESIDE_EDIT_SCRIPT_PILL`), and deterministic `filterDominantSensoryAnchors(detectSensoryAnchors(activeProse))` lockstep.
+  - ⚡ **Antigravity Execution**:
+    1. **Dynamic Top Header Stage Badge (`src/components/fireside/FiresideAuthHeader.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`)**: Implemented `resolveHeaderActBadge` and drilled `activeStage` & `activeSceneMemory` into `FiresideAuthHeader`, rendering `"🎬 ACT I: SCRIPTORIUM"`, `"✨ ACT II: THE WEAVE"`, `"🎙️ ACT III: SOUNDSTAGE"`, and `"🎞️ ACT IV: SCREENING ROOM"` inside `data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"`.
+    2. **Dual-Action Synchronised Footer Dock (`src/components/fireside/SingleCardPromptCarousel.tsx`)**: Mounted the responsive Dual-Action Footer (`min-h-[56px]` touch targets per Rule 26) combining the Emerald Stage Progression Pill (`HS_FIRESIDE_STAGE_PROGRESSION_BTN`: `[ ✨ ENTER THE WEAVE (ACT II) → ]` -> `/studio/production/${memoryId}?act=sensory`, `[ 🎬 ENTER SOUNDSTAGE (ACT III) → ]`, `[ 🎞️ ENTER SCREENING ROOM (ACT IV) → ]`) and the Amber Direct Performance Capture Pill (`HS_FIRESIDE_DIRECT_RECORD_BTN`: `[ 🎙️ RECORD PERFORMANCE (ACT III) → ]`).
+    3. **Script Provenance Toolbar & Pill Styling Symmetry (`src/components/fireside/SingleCardPromptCarousel.tsx`)**: Mounted `🎬 CINEMATIC WEAVE: THE MEMORY WEAVE` (`HS_FIRESIDE_WEAVE_PROVENANCE_PILL`), `👁️ VIEW ORIGINAL SPARK` (`HS_FIRESIDE_VIEW_SPARK_PILL`), and `✏️ EDIT SCRIPT` (`HS_FIRESIDE_EDIT_SCRIPT_PILL`) with rounded pill styling matching `MemoryForm.tsx`.
+    4. **Dominant Sensory Anchors Lockstep (`src/utils/sensoryAnchors.ts`, `src/components/fireside/SingleCardPromptCarousel.tsx`)**: Created `src/utils/sensoryAnchors.ts` and piped `detectSensoryAnchors(activeProse)` through `filterDominantSensoryAnchors()` inside `SingleCardPromptCarousel.tsx` (`HS_FIRESIDE_DOMINANT_SENSORY_COUNTERS`), ensuring document `ey96djU6qR1BrDGnvZwp` reports `Soundscape (1)`, `Visual (1)`, `Aroma (0)` identically across Desktop and Fireside.
+  - 🛡️ **QA Gatekeeper**: All 53 test suites passing (656/656 tests), including 33/33 in `fireside_sync.test.ts` and 5/5 in `fireside_auth_header.test.tsx`. `tsc --noEmit` exit 0. Zero modifications to `SoloStage.tsx` (Rule 7).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\utils\sensoryAnchors.ts`
+  - `C:\Users\home\studio\src\types\curriculum.ts`
+  - `C:\Users\home\studio\src\hooks\useCurriculumVault.ts`
+  - `C:\Users\home\studio\src\components\fireside\FiresideAuthHeader.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\src\test\fireside_auth_header.test.tsx`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
