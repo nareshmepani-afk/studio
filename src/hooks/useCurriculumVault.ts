@@ -85,8 +85,10 @@ export interface UseCurriculumVaultReturn {
       editingAuthority?: EditingAuthority;
     }
   ) => Promise<void>;
-  /** Discards a specific take (or active take) with Rule 14 prose preservation and desktop_locked ratchet guard (MW-88-T5) */
+  /** Discards a specific take (or active take) universally with Rule 14 prose preservation (MW-88-T5 / MW-88-T7) */
   discardSceneTake: (sceneId: string, takeId?: string) => Promise<void>;
+  /** Updates scene narrative prose from Fireside Armchair Script Editor with 0ms optimistic UI and sensoryAnchors preservation (MW-88-T7) */
+  updateSceneProse: (sceneId: string, updatedProseText: string) => Promise<void>;
   /** Designates a target take as preferred master reel stream */
   promotePreferredTake: (sceneId: string, takeId: string) => Promise<void>;
   /** Adds a non-destructive additive note or photo without mutating the master reel */
@@ -96,7 +98,7 @@ export interface UseCurriculumVaultReturn {
   ) => Promise<void>;
   /** Sets emotional mood resonance tag ('joyful' | 'reflective' | 'nostalgic') */
   setStoryMoodTag: (sceneId: string, mood: StoryMoodTag) => Promise<void>;
-  /** Permanently promotes a scene's cross-surface editing authority to 'desktop_locked' (Rule 12 Optimistic UI) */
+  /** Sets provenance metadata to 'desktop_locked' when authored/elevated on Desktop Soundstage (Rule 12 Optimistic UI) */
   elevateToStudioMaster: (sceneId: string) => Promise<void>;
 }
 
@@ -624,16 +626,7 @@ export function useCurriculumVault({
         scenes[canonicalSceneId] ||
         getSceneMemory(canonicalSceneId);
 
-      // Ratchet Guard: Reject operation if Studio Master is protected on desktop
-      const resolvedAuthority: EditingAuthority =
-        current.editingAuthority || resolveEditingAuthority(current);
-      if (resolvedAuthority === 'desktop_locked') {
-        console.warn(
-          `[useCurriculumVault] Studio Master protected on desktop. Rejecting discardSceneTake for ${canonicalSceneId}.`
-        );
-        return;
-      }
-
+      // MW-88-T7 Responsive Ergonomic Specialisation: Universal take discard enabled across all surfaces
       const existingTakes = current.takes || [];
       const targetTakeId =
         takeId ||
@@ -789,6 +782,85 @@ export function useCurriculumVault({
           }
         } catch (cloudErr) {
           console.error('[useCurriculumVault] Failed to persist discarded take to Firestore:', cloudErr);
+        }
+      }
+    },
+    [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
+  );
+
+  const updateSceneProse = useCallback(
+    async (sceneId: string, updatedProseText: string): Promise<void> => {
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = sceneDef?.id || sceneId;
+      const mappedPromptId = sceneDef?.promptId;
+
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+
+      const nowEpoch = Date.now();
+      const nowIso = new Date(nowEpoch).toISOString();
+      const preservedSensoryAnchors =
+        current.sensoryAnchors !== undefined ? current.sensoryAnchors : [];
+
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        prose: updatedProseText,
+        description: updatedProseText,
+        sensoryAnchors: preservedSensoryAnchors,
+        lastEditedSurface: 'fireside_mobile',
+        updatedAt: nowEpoch,
+        lastModified: nowIso,
+      };
+
+      const payload: Record<string, any> = {
+        prose: updatedProseText,
+        description: updatedProseText, // Rule 14 dual-sync
+        sensoryAnchors: preservedSensoryAnchors,
+        lastEditedSurface: 'fireside_mobile',
+        updatedAt: nowEpoch,
+      };
+
+      // Rule 12 Optimistic UI: 0ms synchronous state update before network resolution
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) {
+        nextScenes[mappedPromptId] = updatedMemory;
+      }
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
+        const next = { ...prev, [canonicalSceneId]: updatedMemory };
+        if (mappedPromptId) next[mappedPromptId] = updatedMemory;
+        return next;
+      });
+
+      const memToPersist = updatedMemory;
+      if (db && userId && !userId.startsWith('guest') && memToPersist) {
+        try {
+          const targetDocId = resolveDocIdForScene(canonicalSceneId);
+          const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+
+          await setDoc(memoryDocRef, payload, { merge: true });
+
+          if (memoirId) {
+            const legacyDocRef = doc(
+              db,
+              'users',
+              userId,
+              'memoirs',
+              memoirId,
+              'scenes',
+              canonicalSceneId
+            );
+            await setDoc(legacyDocRef, memToPersist, { merge: true });
+          }
+        } catch (cloudErr) {
+          console.error('[useCurriculumVault] Failed to persist updated prose to Firestore:', cloudErr);
         }
       }
     },
@@ -1139,6 +1211,7 @@ export function useCurriculumVault({
     getSceneMemory,
     saveSceneTake,
     discardSceneTake,
+    updateSceneProse,
     promotePreferredTake,
     addBonusMemoryNote,
     setStoryMoodTag,

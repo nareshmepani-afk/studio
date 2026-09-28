@@ -531,3 +531,25 @@
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
+### [2026-09-28 12:58 BST] • Checkpoint #024 — Responsive Ergonomic Specialisation & Universal Cross-Editing (MW-88-T7)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Approved directive MW-88-T7 (Plane Sequence #297) to formally retire the hard "One-Way Studio Elevation Ratchet" in favour of Responsive Ergonomic Specialisation — enabling universal script prose editing, multi-take recording, and 2-step take discard across both Desktop Soundstage and Fireside Mobile regardless of where a memory was first authored.
+  - 🧠 **Gemini Strategic Brain**: Designed the Cross-Surface Capability Matrix (`< 600px` mobile ergonomic focus vs `>= 600px` desktop post-production suite), specified the non-destructive `updateSceneProse` Firestore mutation preserving `sensoryAnchors`, and defined the inline Armchair Script Editor (`HS_FIRESIDE_EDIT_SCRIPT_BTN`, `HS_FIRESIDE_SCRIPT_TEXTAREA`, `HS_FIRESIDE_SAVE_SCRIPT_BTN`, `HS_FIRESIDE_CANCEL_SCRIPT_BTN`) and informational provenance badges.
+  - ⚡ **Antigravity Execution**:
+    1. **Vault Authority Liberation & Non-Destructive Prose Sync (`src/types/curriculum.ts`, `src/hooks/useCurriculumVault.ts`)**: Repositioned `EditingAuthority` (`'fireside_flexible' | 'desktop_locked'`) as informational provenance metadata rather than a write-blocking lock. Removed the `desktop_locked` rejection guard from `discardSceneTake`. Implemented and exported `updateSceneProse(sceneId, updatedProseText)` with 0ms Rule 12 optimistic state updates, Rule 14 dual-sync (`prose` and `description`), `lastEditedSurface: 'fireside_mobile'`, and strict preservation of `sensoryAnchors`, `originalHook`, `title`, `takes`, `photos`, and `bonusNotes`.
+    2. **Mobile Armchair Script Editor (`src/components/fireside/SingleCardPromptCarousel.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`)**: Added inline Armchair Script Editor triggered by `[ ✏️ Edit Script ]` (`HS_FIRESIDE_EDIT_SCRIPT_BTN`), rendering `"ARMCHAIR SCRIPT EDITOR"`, reassurance copy `"Changes made here sync automatically to your Desktop Studio."`, `HS_FIRESIDE_SCRIPT_TEXTAREA`, `[ ✓ Save Script ]` (`HS_FIRESIDE_SAVE_SCRIPT_BTN`), and `[ Cancel ]` (`HS_FIRESIDE_CANCEL_SCRIPT_BTN`). Updated provenance badge tooltips (`"Authored in Desktop Studio • Full cross-device editing enabled"` and `"Captured on Fireside Mobile • Full cross-device editing enabled"`). Removed all remaining `isDesktopLocked` lockout gates in `FiresideStudioClient.tsx`.
+    3. **Universal Retakes & 2-Step Take Discard (`src/components/fireside/FiresideCompletedReelCard.tsx`, `src/components/fireside/FiresideCinemaLightbox.tsx`)**: Enabled `HS_FIRESIDE_COMPLETED_RETAKE_BTN`, `HS_FIRESIDE_CARD_DISCARD_BTN`, and `HS_FIRESIDE_LIGHTBOX_DISCARD_BTN` universally across all scenes regardless of origin surface. Updated the Studio Master informational drawer in `FiresideCompletedReelCard.tsx` to reflect full cross-device editing parity.
+  - 🛡️ **QA Gatekeeper**: All 53 test suites passing (653/653 tests), including 30/30 in `fireside_sync.test.ts`. `tsc --noEmit` exit 0. Production build (`npm.cmd run build`) compiled all 45 routes cleanly with exit code 0. Zero modifications to `SoloStage.tsx` (Rule 7).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\types\curriculum.ts`
+  - `C:\Users\home\studio\src\hooks\useCurriculumVault.ts`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideCompletedReelCard.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideCinemaLightbox.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+

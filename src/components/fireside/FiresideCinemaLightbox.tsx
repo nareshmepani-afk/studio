@@ -456,28 +456,8 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
               </button>
             )}
 
-            {/* Discard Take Trigger & 2-Step Safety Confirmation (MW-88-T5) */}
-            {isDesktopLocked ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled
-                  data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
-                  data-hotspot-id="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
-                  title="Studio Master protected on desktop."
-                  className="min-h-[48px] px-3.5 rounded-xl bg-stone-900/60 border border-stone-800 text-stone-500 text-xs font-semibold flex items-center gap-2 opacity-60 cursor-not-allowed"
-                >
-                  <Lock className="w-3.5 h-3.5 text-amber-400/70" />
-                  <span>[ 🗑️ Discard Take ]</span>
-                </button>
-                <span
-                  data-testid="HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP"
-                  className="text-[11px] font-mono text-amber-300/90 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30"
-                >
-                  Studio Master protected on desktop.
-                </span>
-              </div>
-            ) : !showDiscardConfirm ? (
+            {/* Discard Take Trigger & 2-Step Safety Confirmation (MW-88-T5 / MW-88-T7 Universal Editing) */}
+            {!showDiscardConfirm ? (
               <button
                 type="button"
                 data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"

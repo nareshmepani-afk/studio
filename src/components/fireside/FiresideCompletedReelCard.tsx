@@ -221,7 +221,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           </span>
         </div>
 
-        {/* Studio Elevation Ratchet Pill: [ 🔒 Studio Master ] (MW-88-T2) */}
+        {/* Studio Provenance Pill: [ ✨ Studio Master ] (MW-88-T2 / MW-88-T7 Informational Provenance) */}
         {isDesktopLocked && (
           <button
             type="button"
@@ -231,11 +231,12 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
             }}
             data-testid="studio-master-badge"
             data-hotspot-id="HS_FIRESIDE_STUDIO_MASTER_BADGE"
+            title="Authored in Desktop Studio • Full cross-device editing enabled"
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 via-yellow-500/25 to-amber-500/25 border border-amber-400/80 text-amber-200 text-xs sm:text-sm font-bold tracking-wide shadow-[0_0_20px_rgba(245,158,11,0.35)] hover:shadow-[0_0_28px_rgba(245,158,11,0.55)] hover:scale-[1.02] active:scale-98 transition-all cursor-pointer mb-3"
             aria-label="Studio Master reassurance drawer"
           >
-            <Lock className="w-3.5 h-3.5 text-amber-300" />
-            <span>[ 🔒 Studio Master ]</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>[ ✨ Studio Master ]</span>
           </button>
         )}
 
@@ -401,126 +402,105 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         </button>
       </div>
 
-      {/* Safety Guarded Retake & Discard Take Actions (Rule 7, Rule 14 & Rule 26 — MW-88-T5) */}
-      {isDesktopLocked ? (
-        <div className="mt-5 relative z-10 flex flex-col items-center justify-center gap-2 text-center">
-          <button
-            type="button"
-            disabled
-            data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"
-            data-hotspot-id="HS_FIRESIDE_CARD_DISCARD_BTN"
-            title="Studio Master protected on desktop."
-            className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/60 border border-stone-800 text-stone-500 text-xs font-semibold flex items-center gap-2 opacity-60 cursor-not-allowed"
-          >
-            <Lock className="w-3.5 h-3.5 text-amber-400/70" />
-            <span>[ 🗑️ Discard Current Take ]</span>
-          </button>
-          <span
-            data-testid="HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP"
-            className="text-[11px] font-mono text-amber-300/90 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30"
-          >
-            Studio Master protected on desktop.
-          </span>
-        </div>
-      ) : (
-        <div className="mt-5 relative z-10 flex flex-col items-center gap-3 text-center">
-          {/* Discard Current Take Trigger & 2-Step Confirmation */}
-          {!showDiscardConfirm ? (
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              {!showRetakeConfirm && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic();
-                    setShowRetakeConfirm(true);
-                  }}
-                  data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"
-                  className="text-xs text-stone-400 hover:text-amber-400 underline underline-offset-4 transition-colors cursor-pointer py-2 px-3 rounded-lg"
-                >
-                  Record an additional take for this scene
-                </button>
-              )}
-
+      {/* Universal Retake & 2-Step Discard Take Actions (MW-88-T5 / MW-88-T7 Responsive Ergonomic Specialisation) */}
+      <div className="mt-5 relative z-10 flex flex-col items-center gap-3 text-center">
+        {/* Discard Current Take Trigger & 2-Step Confirmation */}
+        {!showDiscardConfirm ? (
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            {!showRetakeConfirm && (
               <button
                 type="button"
-                data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"
-                data-hotspot-id="HS_FIRESIDE_CARD_DISCARD_BTN"
                 onClick={() => {
                   triggerHaptic();
-                  setShowRetakeConfirm(false);
-                  setShowDiscardConfirm(true);
+                  setShowRetakeConfirm(true);
                 }}
-                className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
+                data-testid="HS_FIRESIDE_COMPLETED_RETAKE_BTN"
+                data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"
+                className="text-xs text-stone-400 hover:text-amber-400 underline underline-offset-4 transition-colors cursor-pointer py-2 px-3 rounded-lg"
               >
-                <Trash2 className="w-4 h-4 text-rose-400" />
-                <span>[ 🗑️ Discard Current Take ]</span>
+                Record an additional take for this scene
+              </button>
+            )}
+
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"
+              data-hotspot-id="HS_FIRESIDE_CARD_DISCARD_BTN"
+              onClick={() => {
+                triggerHaptic();
+                setShowRetakeConfirm(false);
+                setShowDiscardConfirm(true);
+              }}
+              className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
+            >
+              <Trash2 className="w-4 h-4 text-rose-400" />
+              <span>[ 🗑️ Discard Current Take ]</span>
+            </button>
+          </div>
+        ) : (
+          <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-rose-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-2.5 mb-3">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <p className="text-xs sm:text-sm text-rose-200 font-medium leading-relaxed">
+                Discard this take permanently?
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_DISCARD_CANCEL_BTN"
+                data-hotspot-id="HS_FIRESIDE_DISCARD_CANCEL_BTN"
+                onClick={() => setShowDiscardConfirm(false)}
+                className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition cursor-pointer"
+              >
+                [ Cancel ]
+              </button>
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
+                data-hotspot-id="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
+                onClick={() => {
+                  triggerHaptic();
+                  setShowDiscardConfirm(false);
+                  onDiscardTake?.();
+                }}
+                className="min-h-[44px] px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
+              >
+                [ Confirm Discard ]
               </button>
             </div>
-          ) : (
-            <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-rose-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-start gap-2.5 mb-3">
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                <p className="text-xs sm:text-sm text-rose-200 font-medium leading-relaxed">
-                  Discard this take permanently?
-                </p>
-              </div>
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  data-testid="HS_FIRESIDE_DISCARD_CANCEL_BTN"
-                  data-hotspot-id="HS_FIRESIDE_DISCARD_CANCEL_BTN"
-                  onClick={() => setShowDiscardConfirm(false)}
-                  className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition cursor-pointer"
-                >
-                  [ Cancel ]
-                </button>
-                <button
-                  type="button"
-                  data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
-                  data-hotspot-id="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
-                  onClick={() => {
-                    triggerHaptic();
-                    setShowDiscardConfirm(false);
-                    onDiscardTake?.();
-                  }}
-                  className="min-h-[44px] px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
-                >
-                  [ Confirm Discard ]
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
+        )}
 
-          {showRetakeConfirm && !showDiscardConfirm && (
-            <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-amber-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-start gap-2.5 mb-3">
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-stone-300 leading-relaxed">
-                  Your existing master performance is safely preserved. Recording again will save an additional take to your multi-take stack.
-                </p>
-              </div>
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowRetakeConfirm(false)}
-                  className="px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmRetake}
-                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-stone-950 text-xs font-bold hover:bg-amber-400 transition"
-                >
-                  Proceed to Record
-                </button>
-              </div>
+        {showRetakeConfirm && !showDiscardConfirm && (
+          <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-amber-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-2.5 mb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-stone-300 leading-relaxed">
+                Your existing master performance is safely preserved. Recording again will save an additional take to your multi-take stack.
+              </p>
             </div>
-          )}
-        </div>
-      )}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRetakeConfirm(false)}
+                className="px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRetake}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-stone-950 text-xs font-bold hover:bg-amber-400 transition"
+              >
+                Proceed to Record
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
-      {/* Serene Studio Master Reassurance Bottom Drawer (MW-88-T2 / Rule 26 & 39) */}
+      {/* Serene Studio Master Reassurance Bottom Drawer (MW-88-T2 / MW-88-T7) */}
       {isStudioMasterDrawerOpen && (
         <div
           data-testid="studio-master-reassurance-drawer"
@@ -537,14 +517,14 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shrink-0">
-                  <Lock className="w-5 h-5" />
+                  <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
                   <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 block">
-                    Studio Elevation Ratchet • Cross-Surface Protection
+                    Responsive Ergonomic Specialisation • Cross-Surface Sync
                   </span>
                   <h4 className="text-base sm:text-lg font-serif text-white">
-                    Protected Desktop Studio Master
+                    Authored in Desktop Studio • Full Cross-Device Editing Enabled
                   </h4>
                 </div>
               </div>
@@ -559,10 +539,10 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
             </div>
 
             <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
-              This memory has been elevated and synchronised as a Studio Master on the Desktop Soundstage. To safeguard your prioritised narrative weave, colour grading, and acoustic score from accidental overwriting, mobile retakes are gently locked.
+              This memory is synchronised across your Desktop Soundstage and Fireside Mobile Studio. You can edit your script, record additional takes, discard rehearsal takes, or attach heirloom photographs from any device while your prioritised sensory anchors remain intact.
             </p>
             <p className="text-xs sm:text-sm text-amber-200/90 leading-relaxed">
-              Universal playback remains active across all your devices, and you can freely add non-destructive archival footnotes or heirloom photographs at any time.
+              Universal playback and editing remain active across all your devices.
             </p>
 
             <div className="pt-2 flex flex-col sm:flex-row gap-2.5">

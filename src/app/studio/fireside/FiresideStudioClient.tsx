@@ -147,6 +147,7 @@ export default function FiresideStudioClient() {
     getSceneMemory,
     saveSceneTake,
     discardSceneTake,
+    updateSceneProse,
     setStoryMoodTag,
     addBonusMemoryNote,
     completedScenes,
@@ -161,10 +162,8 @@ export default function FiresideStudioClient() {
   const activeSceneMemory = getSceneMemory(effectiveSceneId);
   const activeMood = activeSceneMemory?.moodTag;
   const activeEditingAuthority: EditingAuthority = resolveEditingAuthority(activeSceneMemory);
-  const isScriptProtected = activeEditingAuthority === 'desktop_locked';
   const hasCompletedReel = isSceneCompleted(activeSceneMemory);
-  const isDesktopLocked = isScriptProtected && hasCompletedReel;
-  const isCompleted = hasCompletedReel && (!forceRecordMode || isDesktopLocked) && !isReviewingTake;
+  const isCompleted = hasCompletedReel && !forceRecordMode && !isReviewingTake;
 
   const resolveSceneAuthority = useCallback(
     (sceneId?: string): EditingAuthority => {
@@ -341,26 +340,23 @@ export default function FiresideStudioClient() {
     setIsBonusDrawerOpen(true);
   }, []);
 
+  const handleSaveProse = useCallback(
+    async (targetSceneId: string, updatedProseText: string) => {
+      await updateSceneProse(targetSceneId, updatedProseText);
+      logEvent('FIRESIDE_PROSE_EDITED' as any, {
+        sceneId: targetSceneId,
+        proseLength: updatedProseText.length,
+      });
+      setNotification('Script saved and synchronised with Desktop Studio.');
+      setTimeout(() => {
+        setNotification(null);
+      }, 4000);
+    },
+    [updateSceneProse, logEvent]
+  );
+
   const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
     setSelectedSpark(spark);
-    const sparkSceneMemory = spark.linkedSceneId ? getSceneMemory(spark.linkedSceneId) : undefined;
-    const sparkAuthority = resolveSceneAuthority(spark.linkedSceneId);
-    const sparkHasReel = isSceneCompleted(sparkSceneMemory);
-    if (sparkAuthority === 'desktop_locked' && sparkHasReel) {
-      setForceRecordMode(false);
-      logEvent('FIRESIDE_STUDIO_MASTER_SELECTED', {
-        promptId: spark.id,
-        sceneId: spark.linkedSceneId,
-      });
-      setNotification(
-        `"${spark.title}" is a Studio Master. Watch your Theatrical Reel or add an archival footnote below.`
-      );
-      setTimeout(() => {
-        document.getElementById('fireside-completed-reel-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 80);
-      return;
-    }
-
     setForceRecordMode(true);
     const targetMode: FiresideMediaMode = mediaMode || spark.suggestedMediaMode || 'audio';
     logEvent('FIRESIDE_PROMPT_SELECTED', {
@@ -413,23 +409,13 @@ export default function FiresideStudioClient() {
   const scrollToActiveStudio = useCallback(
     (targetMode?: FiresideMediaMode, dismissNotification = true) => {
       const mode = targetMode || mediaMode;
-      if (!isDesktopLocked) {
-        setForceRecordMode(true);
-        setIsReviewingTake(false);
-      }
+      setForceRecordMode(true);
+      setIsReviewingTake(false);
       if (dismissNotification) {
         setNotification(null);
       }
 
       const attemptScroll = (retryCount = 0) => {
-        if (isDesktopLocked) {
-          const lockedCard = document.getElementById('fireside-completed-reel-card');
-          if (lockedCard) {
-            lockedCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-          }
-        }
-
         let targetEl: HTMLElement | null = null;
         if (mode === 'audio') {
           targetEl =
@@ -450,15 +436,13 @@ export default function FiresideStudioClient() {
 
       setTimeout(() => attemptScroll(0), 40);
     },
-    [mediaMode, isDesktopLocked]
+    [mediaMode]
   );
 
   const handleModeChange = (newMode: FiresideMediaMode) => {
     setMediaMode(newMode);
-    if (!isDesktopLocked) {
-      setForceRecordMode(true);
-      setIsReviewingTake(false);
-    }
+    setForceRecordMode(true);
+    setIsReviewingTake(false);
     if (!selectedSpark && activePromptSpark) {
       setSelectedSpark(activePromptSpark);
     }
@@ -504,10 +488,8 @@ export default function FiresideStudioClient() {
     if (mediaMode === 'video') {
       setMediaMode('audio');
     }
-    if (!isDesktopLocked) {
-      setForceRecordMode(true);
-      setIsReviewingTake(false);
-    }
+    setForceRecordMode(true);
+    setIsReviewingTake(false);
     setNotification(`Physical photo cue: "${photoText}". Opening heirloom photo digitiser...`);
     const triggerCameraWithRetry = (retryCount = 0) => {
       const tray = document.getElementById('album-photo-capture-tray');
@@ -610,10 +592,8 @@ export default function FiresideStudioClient() {
     }, 5000);
   };
 
-  // Multi-Take Discard Handler (MW-88-T5 — Rule 12 Optimistic UI & Rule 14 Prose Preservation)
+  // Multi-Take Discard Handler (MW-88-T5 / MW-88-T7 — Rule 12 Optimistic UI & Rule 14 Prose Preservation)
   const handleDiscardActiveTake = useCallback(async () => {
-    if (isDesktopLocked) return;
-
     const targetTakeId =
       preferredTake?.id ||
       activeSceneMemory?.activeTakeId ||
@@ -644,7 +624,6 @@ export default function FiresideStudioClient() {
       setNotification(null);
     }, 4000);
   }, [
-    isDesktopLocked,
     preferredTake,
     activeSceneMemory,
     discardSceneTake,
@@ -843,6 +822,7 @@ export default function FiresideStudioClient() {
             resolveSceneAuthority={resolveSceneAuthority}
             activeSceneMemory={activeSceneMemory}
             getSceneMemory={(sceneId?: string) => sceneId ? getSceneMemory(sceneId) : undefined}
+            onSaveProse={handleSaveProse}
             pinnedPrompterQuestion={pinnedPrompterQuestion}
             onPinQuestionToPrompter={handlePinQuestionToPrompter}
             onAnswerFollowUpNote={handleAnswerFollowUpNote}
@@ -1018,7 +998,6 @@ export default function FiresideStudioClient() {
               }}
               onDiscardTake={handleDiscardActiveTake}
               onReRecordRequest={() => {
-                if (isDesktopLocked) return;
                 setIsReviewingTake(false);
                 setForceRecordMode(true);
               }}

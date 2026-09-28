@@ -11,9 +11,16 @@ import { HeirloomPhotoAttachment } from './fireside';
 import { SceneCaptureStatus } from '@/lib/curriculum/masterStoryStructure';
 
 // ---------------------------------------------------------------------------
-// 1. Origin Surfaces & Take Sources
+// 1. Origin Surfaces & Take Sources (MW-88-T7 Responsive Ergonomic Specialisation)
 // ---------------------------------------------------------------------------
 
+/**
+ * Cross-Surface Provenance Metadata (MW-88-T7 Responsive Ergonomic Specialisation)
+ * - 'fireside_flexible': Originated on Fireside mobile surface.
+ * - 'desktop_locked': Originated or elevated on Desktop Studio Soundstage. Under MW-88-T7,
+ *   this serves as informational provenance metadata while permitting universal cross-device
+ *   prose editing, multi-take recording, and take discard.
+ */
 export type EditingAuthority = 'fireside_flexible' | 'desktop_locked';
 
 export type SurfaceOrigin = 'fireside_mobile' | 'desktop_soundstage';

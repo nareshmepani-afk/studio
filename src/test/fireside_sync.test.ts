@@ -473,7 +473,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       ).toBe(true);
     });
 
-    it('FiresideCompletedReelCard suppresses retake triggers when desktop_locked and opens reassurance drawer', () => {
+    it('FiresideCompletedReelCard enables retake triggers when desktop_locked and opens informational Studio Master drawer (MW-88-T7)', () => {
       const onReRecordSpy = vi.fn();
       const onAddBonusSpy = vi.fn();
 
@@ -488,16 +488,19 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         })
       );
 
-      // 1. Retake button must be suppressed when desktop_locked
+      // 1. Retake button must remain active and accessible under MW-88-T7 universal editing
       const retakeBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_COMPLETED_RETAKE_BTN"]');
-      expect(retakeBtn).toBeNull();
+      expect(retakeBtn).toBeTruthy();
 
-      // 2. Luminous gold pill [ 🔒 Studio Master ] must be rendered
-      const masterBadge = document.querySelector('[data-testid="studio-master-badge"]');
+      // 2. Luminous gold pill [ ✨ Studio Master ] must be rendered with informational tooltip
+      const masterBadge = document.querySelector('[data-testid="studio-master-badge"]') as HTMLElement;
       expect(masterBadge).toBeTruthy();
       expect(masterBadge?.textContent).toContain('Studio Master');
+      expect(masterBadge?.getAttribute('title')).toBe(
+        'Authored in Desktop Studio • Full cross-device editing enabled'
+      );
 
-      // 3. Tapping [ 🔒 Studio Master ] opens the serene reassurance drawer
+      // 3. Tapping [ ✨ Studio Master ] opens the informational cross-surface drawer
       fireEvent.click(masterBadge!);
       const drawer = document.querySelector('[data-testid="studio-master-reassurance-drawer"]');
       expect(drawer).toBeTruthy();
@@ -822,8 +825,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(isSceneCompleted(afterDiscard)).toBe(true);
     });
 
-    it('Ratchet Protection: desktop_locked memories reject discard attempts on mobile in hook and UI', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    it('Universal Take Discard (MW-88-T7): desktop_locked memories allow discard on mobile in hook and UI while preserving prose and sensoryAnchors', async () => {
       const { result } = renderHook(() =>
         useCurriculumVault({
           userId: 'user_discard_locked',
@@ -847,6 +849,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
           },
           {
             prose: 'Protected Studio Master prose.',
+            sensoryAnchors: [{ id: 'a1', type: 'visual', word: 'ocean' }],
             editingAuthority: 'desktop_locked',
           }
         );
@@ -854,18 +857,18 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
 
       vi.mocked(setDoc).mockClear();
 
-      // Attempt discard on desktop_locked memory
+      // Discard on desktop_locked memory succeeds universally
       await act(async () => {
         await result.current.discardSceneTake('part-1-scene-1', 'take_master_01');
       });
 
-      // Must reject mutation & log warning
-      expect(warnSpy).toHaveBeenCalled();
-      expect(setDoc).not.toHaveBeenCalled();
-      expect(result.current.getSceneMemory('part-1-scene-1').takes).toHaveLength(1);
-      warnSpy.mockRestore();
+      expect(setDoc).toHaveBeenCalledTimes(1);
+      const afterDiscard = result.current.getSceneMemory('part-1-scene-1');
+      expect(afterDiscard.takes).toEqual([]);
+      expect(afterDiscard.prose).toBe('Protected Studio Master prose.');
+      expect(afterDiscard.sensoryAnchors).toEqual([{ id: 'a1', type: 'visual', word: 'ocean' }]);
 
-      // Verify UI ratchet lock in Lightbox and Completed Reel Card
+      // Verify UI 2-step discard is enabled in Completed Reel Card and Lightbox even when desktop_locked
       const onDiscardSpy = vi.fn();
       const { unmount: unmountCard } = render(
         React.createElement(FiresideCompletedReelCard, {
@@ -879,14 +882,16 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
 
       const cardDiscardBtn = document.querySelector('[data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"]') as HTMLButtonElement;
-      const cardTooltip = document.querySelector('[data-testid="HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP"]');
       expect(cardDiscardBtn).toBeTruthy();
-      expect(cardDiscardBtn.disabled).toBe(true);
-      expect(cardTooltip?.textContent).toBe('Studio Master protected on desktop.');
+      expect(cardDiscardBtn.disabled).toBe(false);
       fireEvent.click(cardDiscardBtn);
-      expect(onDiscardSpy).not.toHaveBeenCalled();
+      const cardConfirmBtn = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"]') as HTMLButtonElement;
+      expect(cardConfirmBtn).toBeTruthy();
+      fireEvent.click(cardConfirmBtn);
+      expect(onDiscardSpy).toHaveBeenCalledTimes(1);
       unmountCard();
 
+      onDiscardSpy.mockClear();
       const { unmount: unmountLightbox } = render(
         React.createElement(FiresideCinemaLightbox, {
           isOpen: true,
@@ -900,10 +905,13 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
 
       const lbDiscardBtn = document.querySelector('[data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"]') as HTMLButtonElement;
-      const lbTooltip = document.querySelector('[data-testid="HS_FIRESIDE_RATCHET_LOCKED_TOOLTIP"]');
       expect(lbDiscardBtn).toBeTruthy();
-      expect(lbDiscardBtn.disabled).toBe(true);
-      expect(lbTooltip?.textContent).toBe('Studio Master protected on desktop.');
+      expect(lbDiscardBtn.disabled).toBe(false);
+      fireEvent.click(lbDiscardBtn);
+      const lbConfirmBtn = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"]') as HTMLButtonElement;
+      expect(lbConfirmBtn).toBeTruthy();
+      fireEvent.click(lbConfirmBtn);
+      expect(onDiscardSpy).toHaveBeenCalledTimes(1);
       unmountLightbox();
     });
 
@@ -1169,7 +1177,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
 
       const studioMasterBadge = document.querySelector('[data-testid="carousel-studio-master-badge"]') as HTMLElement;
       expect(studioMasterBadge?.getAttribute('title')).toBe(
-        'Desktop Studio Authority — Authored on Desktop Soundstage. Your Act I woven script is protected from accidental overwrite.'
+        'Authored in Desktop Studio • Full cross-device editing enabled'
       );
 
       const mediaBadge = document.querySelector('[data-testid="carousel-media-badge"]') as HTMLElement;
@@ -1238,6 +1246,162 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(textarea).toBeTruthy();
       expect(textarea.value).toContain(seedQuestion);
       unmountDrawer();
+    });
+  });
+
+  // =========================================================================
+  // 8. MW-88-T7: Responsive Ergonomic Specialisation & Universal Cross-Editing
+  // =========================================================================
+  describe('8. MW-88-T7: Responsive Ergonomic Specialisation & Universal Cross-Editing', () => {
+    it('updateSceneProse updates prose, dual-syncs description (Rule 14), sets lastEditedSurface: fireside_mobile, and strictly preserves sensoryAnchors', async () => {
+      vi.mocked(setDoc).mockClear();
+
+      const { result } = renderHook(() =>
+        useCurriculumVault({
+          userId: 'user_prose_sync',
+          initialSceneId: 'part-1-scene-1',
+        })
+      );
+
+      const existingSensoryAnchors = [
+        { id: 'sa_1', type: 'soundscape', word: 'ocean' },
+        { id: 'sa_2', type: 'aroma', word: 'cardamom' },
+      ];
+
+      await act(async () => {
+        await result.current.saveSceneTake(
+          'part-1-scene-1',
+          {
+            id: 'take_desktop_01',
+            takeNumber: 1,
+            source: 'soundstage_desktop',
+            mediaMode: 'video',
+            mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/test/desktop1.webm',
+            durationSeconds: 45,
+            createdAt: '2026-09-28T10:00:00.000Z',
+            label: 'Take 1 (4K Soundstage)',
+            isPreferred: true,
+          },
+          {
+            prose: 'Original desktop prose with ocean wind and cardamom chai.',
+            originalHook: 'My parents crossed two continents.',
+            sensoryAnchors: existingSensoryAnchors,
+            editingAuthority: 'desktop_locked',
+          }
+        );
+      });
+
+      vi.mocked(setDoc).mockClear();
+
+      const updatedProseText =
+        'Updated armchair script from mobile: The history I carry across oceans and cardamom-scented courtyards.';
+
+      await act(async () => {
+        await result.current.updateSceneProse('part-1-scene-1', updatedProseText);
+      });
+
+      // 1. 0ms Optimistic State Update (Rule 12) + Rule 14 Dual-Sync + Sensory Preservation
+      const afterEdit = result.current.getSceneMemory('part-1-scene-1');
+      expect(afterEdit.prose).toBe(updatedProseText);
+      expect(afterEdit.description).toBe(updatedProseText);
+      expect(afterEdit.lastEditedSurface).toBe('fireside_mobile');
+      expect(afterEdit.sensoryAnchors).toEqual(existingSensoryAnchors);
+      expect(afterEdit.originalHook).toBe('My parents crossed two continents.');
+      expect(afterEdit.takes).toHaveLength(1);
+
+      // 2. Exact Firestore Delta Payload verified
+      expect(setDoc).toHaveBeenCalledTimes(1);
+      const firestorePayload = vi.mocked(setDoc).mock.calls[0][1] as Record<string, any>;
+      expect(firestorePayload.prose).toBe(updatedProseText);
+      expect(firestorePayload.description).toBe(updatedProseText);
+      expect(firestorePayload.sensoryAnchors).toEqual(existingSensoryAnchors);
+      expect(firestorePayload.lastEditedSurface).toBe('fireside_mobile');
+      expect(typeof firestorePayload.updatedAt).toBe('number');
+    });
+
+    it('renders inline Armchair Script Editor (HS_FIRESIDE_EDIT_SCRIPT_BTN, HS_FIRESIDE_SCRIPT_TEXTAREA, HS_FIRESIDE_SAVE_SCRIPT_BTN, HS_FIRESIDE_CANCEL_SCRIPT_BTN) for desktop_locked and fireside_flexible memories', () => {
+      const onSaveProseSpy = vi.fn();
+      const mockDesktopMemory = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        sceneId: 'part-1-scene-1',
+        prose: 'The history I carry is an epic journey across oceans and generations.',
+        editingAuthority: 'desktop_locked' as const,
+        sensoryAnchors: [{ id: 'sa_1', type: 'visual', word: 'oceans' }],
+      };
+
+      const { unmount } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          editingAuthority: 'desktop_locked',
+          resolveSceneAuthority: (): 'desktop_locked' => 'desktop_locked',
+          activeSceneMemory: mockDesktopMemory,
+          getSceneMemory: () => mockDesktopMemory,
+          onSaveProse: onSaveProseSpy,
+        })
+      );
+
+      // 1. Click [ ✏️ Edit Script ] button
+      const editBtn = document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]') as HTMLButtonElement;
+      expect(editBtn).toBeTruthy();
+      expect(editBtn.textContent).toContain('[ ✏️ Edit Script ]');
+      fireEvent.click(editBtn);
+
+      // 2. Verify Armchair Script Editor eyebrow, reassurance copy, textarea, and buttons
+      const editorPanel = document.querySelector('[data-testid="fireside-armchair-script-editor"]') as HTMLElement;
+      expect(editorPanel).toBeTruthy();
+      expect(editorPanel.textContent).toContain('ARMCHAIR SCRIPT EDITOR');
+      expect(editorPanel.textContent).toContain('Changes made here sync automatically to your Desktop Studio.');
+
+      const textarea = document.querySelector('[data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"]') as HTMLTextAreaElement;
+      expect(textarea).toBeTruthy();
+      expect(textarea.value).toBe('The history I carry is an epic journey across oceans and generations.');
+
+      // 3. Test Cancel first
+      fireEvent.change(textarea, { target: { value: 'Transient unsaved edit' } });
+      const cancelBtn = document.querySelector('[data-testid="HS_FIRESIDE_CANCEL_SCRIPT_BTN"]') as HTMLButtonElement;
+      expect(cancelBtn?.textContent).toContain('[ Cancel ]');
+      fireEvent.click(cancelBtn);
+      expect(onSaveProseSpy).not.toHaveBeenCalled();
+      expect(document.querySelector('[data-testid="fireside-active-script-body"]')?.textContent).toContain(
+        'The history I carry is an epic journey across oceans and generations.'
+      );
+
+      // 4. Re-open editor, modify prose, and click [ ✓ Save Script ]
+      fireEvent.click(document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]') as HTMLButtonElement);
+      const textareaReopened = document.querySelector('[data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"]') as HTMLTextAreaElement;
+      fireEvent.change(textareaReopened, {
+        target: { value: 'Refined mobile armchair prose with sensory warmth.' },
+      });
+
+      const saveBtn = document.querySelector('[data-testid="HS_FIRESIDE_SAVE_SCRIPT_BTN"]') as HTMLButtonElement;
+      expect(saveBtn?.textContent).toContain('[ ✓ Save Script ]');
+      fireEvent.click(saveBtn);
+
+      // 5. Assert 0ms optimistic update on card and callback invocation
+      expect(onSaveProseSpy).toHaveBeenCalledWith(
+        'part-1-scene-1',
+        'Refined mobile armchair prose with sensory warmth.'
+      );
+      expect(document.querySelector('[data-testid="fireside-active-script-body"]')?.textContent).toContain(
+        'Refined mobile armchair prose with sensory warmth.'
+      );
+
+      unmount();
+
+      // 6. Verify Mobile Recording provenance badge tooltip when fireside_flexible
+      const { unmount: unmountMobile } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          editingAuthority: 'fireside_flexible',
+          resolveSceneAuthority: (): 'fireside_flexible' => 'fireside_flexible',
+        })
+      );
+      const mobileBadge = document.querySelector('[data-testid="carousel-mobile-recording-badge"]') as HTMLElement;
+      expect(mobileBadge).toBeTruthy();
+      expect(mobileBadge.getAttribute('title')).toBe(
+        'Captured on Fireside Mobile • Full cross-device editing enabled'
+      );
+      unmountMobile();
     });
   });
 });

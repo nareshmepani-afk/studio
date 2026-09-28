@@ -64,6 +64,7 @@ export interface SingleCardPromptCarouselProps {
   resolveSceneAuthority?: (sceneId?: string) => EditingAuthority;
   activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null;
   getSceneMemory?: (sceneId?: string) => Partial<UnifiedCurriculumMemory> | undefined;
+  onSaveProse?: (sceneId: string, updatedProseText: string) => void | Promise<void>;
   pinnedPrompterQuestion?: string | null;
   onPinQuestionToPrompter?: (question: string) => void;
   onAnswerFollowUpNote?: (question: string) => void;
@@ -142,6 +143,7 @@ export function SingleCardPromptCarousel({
   resolveSceneAuthority,
   activeSceneMemory,
   getSceneMemory,
+  onSaveProse,
   pinnedPrompterQuestion,
   onPinQuestionToPrompter,
   onAnswerFollowUpNote,
@@ -170,6 +172,9 @@ export function SingleCardPromptCarousel({
   const [isWarmupOpen, setIsWarmupOpen] = useState<boolean>(false);
   const [warmupCompleted, setWarmupCompleted] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'script' | 'spark'>('script');
+  const [isEditingScript, setIsEditingScript] = useState<boolean>(false);
+  const [draftProse, setDraftProse] = useState<string>('');
+  const [localProseOverride, setLocalProseOverride] = useState<string | null>(null);
 
   const currentLanguage = controlledLanguage || internalLanguage;
   const effectiveHybrid = typeof controlledHybrid === 'boolean' ? controlledHybrid : internalHybrid;
@@ -199,13 +204,41 @@ export function SingleCardPromptCarousel({
     return activeSceneMemory;
   }, [getSceneMemory, currentSpark.linkedSceneId, activeSceneMemory]);
 
-  const activeProse = currentSceneMemory?.prose?.trim() || '';
+  useEffect(() => {
+    setLocalProseOverride(null);
+    setIsEditingScript(false);
+  }, [currentSpark.id, currentSceneMemory?.prose]);
+
+  const rawSceneProse = currentSceneMemory?.prose?.trim() || '';
+  const activeProse =
+    localProseOverride !== null ? localProseOverride.trim() : rawSceneProse;
   const hasSceneCompletedReel = isSceneCompleted(currentSceneMemory);
   const isMasteredScene =
     currentSceneMemory?.currentStatus === 'mastered' ||
     Boolean(currentSceneMemory?.directorialPolish?.masterReelUrl);
   const targetProductionId =
     currentSceneMemory?.id || currentSpark.linkedSceneId || 'part-1-scene-1';
+
+  const handleStartEditScript = () => {
+    setDraftProse(activeProse);
+    setIsEditingScript(true);
+  };
+
+  const handleSaveScript = () => {
+    const trimmed = draftProse.trim();
+    // Rule 12 Optimistic UI: 0ms synchronous local state update
+    setLocalProseOverride(trimmed);
+    setIsEditingScript(false);
+    setViewMode('script');
+    const targetSceneId =
+      currentSpark.linkedSceneId || currentSceneMemory?.sceneId || 'part-1-scene-1';
+    onSaveProse?.(targetSceneId, trimmed);
+  };
+
+  const handleCancelEditScript = () => {
+    setIsEditingScript(false);
+    setDraftProse(activeProse);
+  };
 
   const sensoryCounts = useMemo(() => {
     if (!activeProse) return { soundscape: 0, visual: 0, aroma: 0 };
@@ -421,13 +454,21 @@ export function SingleCardPromptCarousel({
                     </span>
                   )}
 
-                  {cardEditingAuthority === 'desktop_locked' && (
+                  {cardEditingAuthority === 'desktop_locked' ? (
                     <span
                       data-testid="carousel-studio-master-badge"
-                      title="Desktop Studio Authority — Authored on Desktop Soundstage. Your Act I woven script is protected from accidental overwrite."
+                      title="Authored in Desktop Studio • Full cross-device editing enabled"
                       className="text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm cursor-help"
                     >
-                      🔒 Studio Master
+                      ✨ Studio Master
+                    </span>
+                  ) : (
+                    <span
+                      data-testid="carousel-mobile-recording-badge"
+                      title="Captured on Fireside Mobile • Full cross-device editing enabled"
+                      className="text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-emerald-200 font-semibold shadow-sm cursor-help"
+                    >
+                      📱 Fireside Mobile
                     </span>
                   )}
 
@@ -550,10 +591,54 @@ export function SingleCardPromptCarousel({
                 )}
               </div>
 
-              {/* Live Act I Prose Rendering & Sensory Modality Counters (MW-88-T4 / Rule 14) */}
-              {activeProse ? (
+              {/* Live Act I Prose Rendering, Armchair Script Editor & Sensory Modality Counters (MW-88-T4 / MW-88-T7 / Rule 14) */}
+              {isEditingScript ? (
+                <div
+                  data-testid="fireside-armchair-script-editor"
+                  className="space-y-3 p-4 rounded-2xl bg-black/55 border border-amber-500/40"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold">
+                      ARMCHAIR SCRIPT EDITOR
+                    </p>
+                    <p className="text-xs text-stone-300 leading-relaxed">
+                      Changes made here sync automatically to your Desktop Studio.
+                    </p>
+                  </div>
+                  <textarea
+                    data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"
+                    value={draftProse}
+                    onChange={(e) => setDraftProse(e.target.value)}
+                    rows={5}
+                    placeholder={currentText}
+                    className="w-full rounded-xl bg-[#111111] border border-amber-500/35 focus:border-amber-400 text-base sm:text-lg font-serif text-white p-3.5 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                    aria-label="Edit story script"
+                  />
+                  <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_SAVE_SCRIPT_BTN"
+                      data-hotspot-id="HS_FIRESIDE_SAVE_SCRIPT_BTN"
+                      onClick={handleSaveScript}
+                      className="min-h-[48px] px-4 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+                    >
+                      [ ✓ Save Script ]
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_CANCEL_SCRIPT_BTN"
+                      data-hotspot-id="HS_FIRESIDE_CANCEL_SCRIPT_BTN"
+                      onClick={handleCancelEditScript}
+                      className="min-h-[48px] px-4 py-2 rounded-xl text-xs sm:text-sm font-mono font-semibold bg-white/5 hover:bg-white/10 border border-white/20 text-stone-200 transition-all cursor-pointer"
+                    >
+                      [ Cancel ]
+                    </button>
+                  </div>
+                </div>
+              ) : activeProse ? (
                 <div className="space-y-3">
-                  {/* Read-Only Sensory Counters & Script/Spark Toggle */}
+                  {/* Read-Only Sensory Counters, Edit Script Trigger & Script/Spark Toggle */}
                   <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-white/10">
                     <div
                       className="flex items-center gap-1.5 flex-wrap cursor-help"
@@ -583,25 +668,37 @@ export function SingleCardPromptCarousel({
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      data-testid="fireside-script-toggle-btn"
-                      onClick={() => setViewMode((prev) => (prev === 'script' ? 'spark' : 'script'))}
-                      className="min-h-[48px] sm:min-h-[44px] px-3 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 active:scale-98 text-amber-200 border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
-                      aria-label="Toggle between active script and original prompt spark"
-                    >
-                      {viewMode === 'script' ? (
-                        <>
-                          <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                          <span>View Original Spark</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                          <span>View Woven Script</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"
+                        data-hotspot-id="HS_FIRESIDE_EDIT_SCRIPT_BTN"
+                        onClick={handleStartEditScript}
+                        className="min-h-[48px] sm:min-h-[44px] px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 text-amber-200 border border-amber-500/40 transition-all cursor-pointer shrink-0"
+                      >
+                        [ ✏️ Edit Script ]
+                      </button>
+
+                      <button
+                        type="button"
+                        data-testid="fireside-script-toggle-btn"
+                        onClick={() => setViewMode((prev) => (prev === 'script' ? 'spark' : 'script'))}
+                        className="min-h-[48px] sm:min-h-[44px] px-3 py-2 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 active:scale-98 text-amber-200 border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                        aria-label="Toggle between active script and original prompt spark"
+                      >
+                        {viewMode === 'script' ? (
+                          <>
+                            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                            <span>View Original Spark</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>View Woven Script</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {viewMode === 'script' ? (
@@ -621,12 +718,25 @@ export function SingleCardPromptCarousel({
                   )}
                 </div>
               ) : (
-                <p
-                  data-testid="fireside-prompt-spark-body"
-                  className="text-xl sm:text-2xl font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
-                >
-                  &ldquo;{currentText}&rdquo;
-                </p>
+                <div className="space-y-3">
+                  <p
+                    data-testid="fireside-prompt-spark-body"
+                    className="text-xl sm:text-2xl font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
+                  >
+                    &ldquo;{currentText}&rdquo;
+                  </p>
+                  <div className="flex items-center justify-end">
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"
+                      data-hotspot-id="HS_FIRESIDE_EDIT_SCRIPT_BTN"
+                      onClick={handleStartEditScript}
+                      className="min-h-[48px] sm:min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 text-amber-200 border border-amber-500/40 transition-all cursor-pointer"
+                    >
+                      [ ✏️ Edit Script ]
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
