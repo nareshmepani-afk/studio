@@ -30,6 +30,7 @@ import {
 
 import type { UnifiedCurriculumMemory } from '@/types/curriculum';
 import { isSceneCompleted } from '@/types/curriculum';
+import { OpticsPrivacyShield } from '@/components/studio/OpticsPrivacyShield';
 
 export interface FiresideAuthHeaderProps {
   className?: string;
@@ -43,6 +44,12 @@ export function resolveHeaderActBadge(
   activeStage?: number,
   activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null
 ): string {
+  if (typeof activeStage === 'number' && activeStage >= 1 && activeStage <= 4) {
+    if (activeStage === 4) return '🎞️ ACT IV: SCREENING ROOM';
+    if (activeStage === 3) return '🎙️ ACT III: SOUNDSTAGE';
+    if (activeStage === 2) return '✨ ACT II: THE WEAVE';
+    return '🎬 ACT I: SCRIPTORIUM';
+  }
   const stage = activeStage ?? activeSceneMemory?.productionStage;
   if (
     stage === 4 ||
@@ -106,7 +113,7 @@ export function FiresideAuthHeader({
               Dev Staging{commitSha ? ` • ${commitSha.slice(0, 7)}` : ''}
             </span>
 
-            {/* Dynamic Production Stage Context Badge Synchronised with Desktop Studio (MW-88-T8) */}
+            {/* Dynamic Production Stage Context Badge Synchronised with Desktop Studio (MW-88-T8 / MW-88-T9) */}
             <span
               data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"
               className="inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 font-semibold shrink-0"
@@ -114,6 +121,9 @@ export function FiresideAuthHeader({
             >
               {headerActBadge}
             </span>
+
+            {/* Hardware Camera & Microphone Privacy Shield (MW-88-T9 Desktop Parity) */}
+            <OpticsPrivacyShield compact className="py-1 px-2.5 min-h-[36px] sm:min-h-[40px]" />
 
             {/* Active Curriculum Part Badge if provided */}
             {activePartTitle && (

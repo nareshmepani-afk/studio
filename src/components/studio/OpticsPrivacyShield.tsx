@@ -25,6 +25,7 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
 
   const isSoundstageRoute = Boolean(
     pathname?.startsWith('/studio/production') ||
+    pathname?.startsWith('/studio/fireside') ||
     pathname?.startsWith('/studio/remote-camera') ||
     pathname?.startsWith('/interviewer')
   );
@@ -100,7 +101,7 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
             {status === 'inactive' && (
               <>
                 <ShieldCheck className="w-4 h-4 text-zinc-400 shrink-0" />
-                <span className={cn('tracking-widest font-bold', compact && 'hidden md:inline')}>
+                <span className="tracking-widest font-bold">
                   🛡️ Optics Inactive
                 </span>
               </>
@@ -112,7 +113,7 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
                 </div>
-                <span className={cn('tracking-widest font-black text-amber-300', compact && 'hidden sm:inline')}>
+                <span className="tracking-widest font-black text-amber-300">
                   🔴 CAMERA LIVE • Sever Feed ✕
                 </span>
               </>
@@ -121,10 +122,12 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
             {isSevered && (
               <>
                 <Ban className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
-                <span className={cn('tracking-widest font-black text-rose-300', compact && 'hidden sm:inline')}>
-                  {isSoundstageRoute
-                    ? (compact ? '🚫 Severed • Restore' : '🚫 Optics Severed • Click to Restore')
-                    : (compact ? '🚫 Severed • Re-Arm' : '🚫 Optics Severed • Re-Arm Permissions')}
+                <span className="tracking-widest font-black text-rose-300">
+                  {compact
+                    ? '🚫 Severed • Re-Arm'
+                    : isSoundstageRoute
+                    ? '🚫 Optics Severed • Click to Restore'
+                    : '🚫 Optics Severed • Re-Arm Permissions'}
                 </span>
               </>
             )}

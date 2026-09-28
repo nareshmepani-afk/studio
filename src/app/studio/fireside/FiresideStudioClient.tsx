@@ -91,6 +91,7 @@ export default function FiresideStudioClient() {
   const [isHybrid, setIsHybrid] = useState<boolean>(false);
   const [pinnedPrompterQuestion, setPinnedPrompterQuestion] = useState<string | null>(null);
   const [bonusDrawerSeedPrompt, setBonusDrawerSeedPrompt] = useState<string | null>(null);
+  const [selectedActStage, setSelectedActStage] = useState<1 | 2 | 3 | 4 | undefined>(undefined);
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
@@ -317,6 +318,7 @@ export default function FiresideStudioClient() {
       if (prev && prev.id !== spark.id) {
         setForceRecordMode(false);
         setPinnedPrompterQuestion(null);
+        setSelectedActStage(undefined);
       }
       return spark;
     });
@@ -655,7 +657,7 @@ export default function FiresideStudioClient() {
         {/* Discreet Elder Auth Header with Desktop Stage Ingress & Dynamic Stage Badge */}
         <FiresideAuthHeader
           activePartTitle={activePartTitle}
-          activeStage={activeSceneMemory?.productionStage}
+          activeStage={selectedActStage ?? activeSceneMemory?.productionStage}
           activeSceneMemory={activeSceneMemory}
         />
 
@@ -834,6 +836,9 @@ export default function FiresideStudioClient() {
             onActivePromptChange={handleActivePromptChange}
             onLanguageChange={handleLanguageChange}
             onPhotoPromptClick={handlePhotoPromptClick}
+            selectedActStage={selectedActStage}
+            onSelectActStage={setSelectedActStage}
+            onOpenScreeningRoom={() => setIsLightboxOpen(true)}
             onWarmupComplete={() => {
               logEvent('FIRESIDE_WARMUP_COMPLETED' as any, {
                 language: activeLanguage,

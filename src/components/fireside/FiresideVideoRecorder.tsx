@@ -31,6 +31,7 @@ import {
   RefreshCw,
   Eye,
   ShieldCheck,
+  Ban,
 } from 'lucide-react';
 import {
   FiresidePromptSpark,
@@ -41,6 +42,7 @@ import {
 import { StoryMoodTag } from '@/types/curriculum';
 import { FiresideMoodChips } from '@/components/fireside/FiresideMoodChips';
 import { useFiresideVideoRecorder } from '@/hooks/useFiresideVideoRecorder';
+import { useHardwarePrivacy } from '@/context/HardwarePrivacyContext';
 
 export interface FiresideVideoRecorderRef {
   startRecording: () => Promise<boolean>;
@@ -80,6 +82,11 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
     const containerRef = useRef<HTMLDivElement>(null);
     const liveVideoRef = useRef<HTMLVideoElement>(null);
     const nativeVideoInputRef = useRef<HTMLInputElement>(null);
+    const {
+      status: hardwarePrivacyStatus,
+      killAllHardwareFeeds,
+      rearmHardware,
+    } = useHardwarePrivacy();
 
     const {
       status,
@@ -321,28 +328,74 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
               >
                 {/* Live Video Preview Stream (Mirrored for Natural Selfie Feedback) */}
                 {stream ? (
-                  <video
-                    ref={liveVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    style={{ transform: 'scaleX(-1)' }}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <video
+                      ref={liveVideoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      style={{ transform: 'scaleX(-1)' }}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-3 right-3 z-20">
+                      <button
+                        type="button"
+                        data-testid="HS_FIRESIDE_VIEWFINDER_SEVER_BTN"
+                        onClick={() => killAllHardwareFeeds()}
+                        className="min-h-[44px] px-3 py-1.5 rounded-xl bg-amber-950/85 hover:bg-rose-950/90 border border-amber-500/50 text-amber-300 hover:text-rose-200 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-lg cursor-pointer transition-all"
+                        title="Immediately sever camera and microphone hardware feeds"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                        <span>🔴 CAMERA LIVE • Sever Feed ✕</span>
+                      </button>
+                    </div>
+                  </>
+                ) : hardwarePrivacyStatus === 'severed' ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-300 space-y-3 p-6 pt-20 text-center z-10">
+                    <span
+                      data-testid="HS_FIRESIDE_VIEWFINDER_OPTICS_BADGE"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950/70 border border-rose-500/50 text-rose-300 text-[11px] font-mono font-bold uppercase tracking-widest"
+                    >
+                      <Ban className="w-3.5 h-3.5 text-rose-400" />
+                      <span>🚫 SEVERED • RE-ARM</span>
+                    </span>
+                    <p className="text-xs text-stone-300 max-w-xs">
+                      Hardware camera and microphone feeds are severed for your privacy. Tap below to re-arm optics.
+                    </p>
+                    <button
+                      type="button"
+                      data-testid="enable-camera-preview-btn"
+                      data-hotspot-id="HS_FIRESIDE_REARM_OPTICS_BTN"
+                      onClick={() => {
+                        rearmHardware();
+                        enableCameraPreview();
+                      }}
+                      className="min-h-[48px] px-4 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 border border-rose-500/50 text-rose-200 text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-md"
+                    >
+                      <Ban className="w-3.5 h-3.5 text-rose-400" />
+                      <span>🚫 Severed • Re-Arm Camera &amp; Mic</span>
+                    </button>
+                  </div>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-stone-500 space-y-3 p-6 pt-20 text-center z-10">
-                    <Video className="w-10 h-10 text-amber-500/70 animate-pulse" />
+                    <span
+                      data-testid="HS_FIRESIDE_VIEWFINDER_OPTICS_BADGE"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-700/60 text-zinc-300 text-[11px] font-mono font-bold uppercase tracking-widest"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
+                      <span>🛡️ OPTICS INACTIVE</span>
+                    </span>
                     <p className="text-xs text-stone-300 max-w-xs">
-                      Tap below to enable your front camera & microphone, or tap Record to start immediately.
+                      Tap below to enable your front camera &amp; microphone, or tap Record to start immediately.
                     </p>
                     <button
                       type="button"
                       data-testid="enable-camera-preview-btn"
                       onClick={enableCameraPreview}
-                      className="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-sm"
+                      className="min-h-[48px] px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-sm"
                     >
                       <Video className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Enable Camera & Microphone</span>
+                      <span>Enable Camera &amp; Microphone</span>
                     </button>
                   </div>
                 )}

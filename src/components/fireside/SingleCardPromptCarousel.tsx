@@ -73,6 +73,9 @@ export interface SingleCardPromptCarouselProps {
   onLanguageChange?: (language: FiresideLanguage) => void;
   onPhotoPromptClick?: (photoPrompt: string) => void;
   onWarmupComplete?: () => void;
+  selectedActStage?: 1 | 2 | 3 | 4;
+  onSelectActStage?: (stage: 1 | 2 | 3 | 4) => void;
+  onOpenScreeningRoom?: () => void;
   className?: string;
 }
 
@@ -152,6 +155,9 @@ export function SingleCardPromptCarousel({
   onLanguageChange,
   onPhotoPromptClick,
   onWarmupComplete,
+  selectedActStage,
+  onSelectActStage,
+  onOpenScreeningRoom,
   className = '',
 }: SingleCardPromptCarouselProps) {
   const sparkDeck = useMemo(() => {
@@ -175,6 +181,10 @@ export function SingleCardPromptCarousel({
   const [isEditingScript, setIsEditingScript] = useState<boolean>(false);
   const [draftProse, setDraftProse] = useState<string>('');
   const [localProseOverride, setLocalProseOverride] = useState<string | null>(null);
+  const [selectedActTab, setSelectedActTab] = useState<'act1' | 'act2' | 'act3' | 'act4'>('act1');
+  const [highlightedSensoryType, setHighlightedSensoryType] = useState<
+    'soundscape' | 'visual' | 'aroma' | null
+  >(null);
 
   const currentLanguage = controlledLanguage || internalLanguage;
   const effectiveHybrid = typeof controlledHybrid === 'boolean' ? controlledHybrid : internalHybrid;
@@ -207,6 +217,7 @@ export function SingleCardPromptCarousel({
   useEffect(() => {
     setLocalProseOverride(null);
     setIsEditingScript(false);
+    setHighlightedSensoryType(null);
   }, [currentSpark.id, currentSceneMemory?.prose]);
 
   const rawSceneProse = currentSceneMemory?.prose?.trim() || '';
@@ -216,8 +227,6 @@ export function SingleCardPromptCarousel({
   const isMasteredScene =
     currentSceneMemory?.currentStatus === 'mastered' ||
     Boolean(currentSceneMemory?.directorialPolish?.masterReelUrl);
-  const targetProductionId =
-    currentSceneMemory?.id || currentSpark.linkedSceneId || 'part-1-scene-1';
 
   const activeProductionStage = useMemo(() => {
     const stage = currentSceneMemory?.productionStage;
@@ -227,27 +236,71 @@ export function SingleCardPromptCarousel({
     return 1;
   }, [currentSceneMemory?.productionStage, isMasteredScene, hasSceneCompletedReel]);
 
+  useEffect(() => {
+    if (selectedActStage === 4) setSelectedActTab('act4');
+    else if (selectedActStage === 3) setSelectedActTab('act3');
+    else if (selectedActStage === 2) setSelectedActTab('act2');
+    else if (selectedActStage === 1) setSelectedActTab('act1');
+  }, [selectedActStage]);
+
+  const handleSelectActTab = useCallback(
+    (tab: 'act1' | 'act2' | 'act3' | 'act4') => {
+      setSelectedActTab(tab);
+      const stageMap: Record<'act1' | 'act2' | 'act3' | 'act4', 1 | 2 | 3 | 4> = {
+        act1: 1,
+        act2: 2,
+        act3: 3,
+        act4: 4,
+      };
+      onSelectActStage?.(stageMap[tab]);
+    },
+    [onSelectActStage]
+  );
+
+  const scrollToActiveSoundstage = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      const target =
+        document.getElementById('fireside-active-studio') ||
+        document.getElementById('fireside-completed-reel-section');
+      if (target && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, []);
+
   const stageProgression = useMemo(() => {
-    if (activeProductionStage >= 3) {
+    const effectiveStage =
+      selectedActTab === 'act4'
+        ? 4
+        : selectedActTab === 'act3'
+        ? 3
+        : selectedActTab === 'act2'
+        ? 2
+        : activeProductionStage;
+
+    if (effectiveStage >= 3) {
       return {
-        label: '[ 🎞️ ENTER SCREENING ROOM (ACT IV) → ]',
-        href: `/studio/production/${targetProductionId}?act=screening`,
-        title: 'Open this memory directly in Act IV (Screening Room) on the Desktop Studio Soundstage.',
+        label: '[ 🎞️ Watch Master Reel in Screening Room ▶ ]',
+        spineLabel: '[ 🎞️ Watch Master Reel in Screening Room ▶ ]',
+        title: 'Open this memory directly in the in-place Fireside Screening Room.',
+        nextTab: 'act4' as const,
       };
     }
-    if (activeProductionStage === 2) {
+    if (effectiveStage === 2) {
       return {
-        label: '[ 🎬 ENTER SOUNDSTAGE (ACT III) → ]',
-        href: `/studio/production/${targetProductionId}?act=soundstage`,
-        title: 'Open this memory directly in Act III (Soundstage) on the Desktop Studio Soundstage.',
+        label: '[ 🎬 Progress to Act III: Record Performance → ]',
+        spineLabel: '[ 🎬 Progress to Act III: Record Performance → ]',
+        title: 'Advance in-place to Act III (Record Performance) inside Fireside Studio.',
+        nextTab: 'act3' as const,
       };
     }
     return {
-      label: '[ ✨ ENTER THE WEAVE (ACT II) → ]',
-      href: `/studio/production/${targetProductionId}?act=sensory`,
-      title: 'Open this memory directly in Act II (Sensory Weave) on the Desktop Studio Soundstage.',
+      label: '[ ✨ Progress to Act II: Sensory Weave → ]',
+      spineLabel: '[ ✨ Progress to Act II: Sensory Weave → ]',
+      title: 'Advance in-place to Act II (Sensory Weave Inspector) inside Fireside Studio.',
+      nextTab: 'act2' as const,
     };
-  }, [activeProductionStage, targetProductionId]);
+  }, [activeProductionStage, selectedActTab]);
 
   const activeWeaveLabel = useMemo(() => {
     const rawVision =
@@ -276,11 +329,15 @@ export function SingleCardPromptCarousel({
     setDraftProse(activeProse);
   };
 
-  // UNIFIED SENSORY ANCHOR PIPELINE (Identical to MemoryForm.tsx — MW-88-T8):
+  // UNIFIED SENSORY ANCHOR PIPELINE (Identical to MemoryForm.tsx — MW-88-T8 & MW-88-T9):
+  const rawDetectedAnchors = useMemo(() => {
+    if (!activeProse) return [];
+    return detectSensoryAnchors(activeProse);
+  }, [activeProse]);
+
   const sensoryCounts = useMemo(() => {
-    if (!activeProse) return { soundscape: 0, visual: 0, aroma: 0 };
-    const rawAnchors = detectSensoryAnchors(activeProse);
-    const dominantAnchors = filterDominantSensoryAnchors(rawAnchors);
+    if (!rawDetectedAnchors.length) return { soundscape: 0, visual: 0, aroma: 0 };
+    const dominantAnchors = filterDominantSensoryAnchors(rawDetectedAnchors);
 
     const soundscapeCount = dominantAnchors.filter((a) => a.type === 'soundscape').length;
     const visualCount = dominantAnchors.filter((a) => a.type === 'visual').length;
@@ -291,7 +348,62 @@ export function SingleCardPromptCarousel({
       visual: visualCount,
       aroma: aromaCount,
     };
-  }, [activeProse]);
+  }, [rawDetectedAnchors]);
+
+  const handleToggleSensoryPulse = (type: 'soundscape' | 'visual' | 'aroma') => {
+    setHighlightedSensoryType((prev) => (prev === type ? null : type));
+    setViewMode('script');
+  };
+
+  const sensoryHighlightToastText = useMemo(() => {
+    if (highlightedSensoryType === 'soundscape') {
+      return 'Highlighting acoustic soundscape cues.';
+    }
+    if (highlightedSensoryType === 'visual') {
+      return 'Highlighting visual atmosphere cues.';
+    }
+    if (highlightedSensoryType === 'aroma') {
+      return 'Highlighting culinary and aroma cues.';
+    }
+    return null;
+  }, [highlightedSensoryType]);
+
+  const renderedScriptContent = useMemo(() => {
+    if (!activeProse || !highlightedSensoryType) {
+      return activeProse;
+    }
+    const targetWords = Array.from(
+      new Set(
+        rawDetectedAnchors
+          .filter((a) => a.type === highlightedSensoryType)
+          .map((a) => a.word.toLowerCase())
+      )
+    );
+    if (targetWords.length === 0) {
+      return activeProse;
+    }
+    const escaped = targetWords
+      .sort((a, b) => b.length - a.length)
+      .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const regex = new RegExp(`(\\b(?:${escaped.join('|')})\\b)`, 'gi');
+    const parts = activeProse.split(regex);
+    const wordSet = new Set(targetWords);
+
+    return parts.map((part, idx) => {
+      if (wordSet.has(part.toLowerCase())) {
+        return (
+          <span
+            key={idx}
+            data-testid="fireside-sensory-highlighted-word"
+            className="bg-amber-400/30 text-amber-200 border-b border-amber-400 px-1 rounded animate-pulse"
+          >
+            {part}
+          </span>
+        );
+      }
+      return <React.Fragment key={idx}>{part}</React.Fragment>;
+    });
+  }, [activeProse, highlightedSensoryType, rawDetectedAnchors]);
 
   // Resolve bilingual card titles (Golden Thread: dynamically prioritise mother tongue when selected)
   const englishTitle = currentSpark.localizedTitles?.en || currentSpark.title || linkedScene?.localizedTitles?.en || '';
@@ -553,66 +665,107 @@ export function SingleCardPromptCarousel({
                 </div>
               </div>
 
-              {/* 4-Act Production Status Spine & Desktop Progression Link (MW-88-T6) */}
+              {/* 4-Act Production Status Spine & In-Place Progression (MW-88-T9 Surface Containment) */}
               <div
                 data-testid="HS_FIRESIDE_ACT_SPINE"
                 className="mb-4 p-2.5 rounded-2xl bg-black/40 border border-white/10 space-y-2"
               >
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] font-mono">
-                  <div
-                    title="Act I: Script Woven — Story hook and narrative prose crafted in Scriptorium."
-                    className={`px-2 py-1 rounded-lg border text-center truncate ${
-                      activeProse
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
-                        : 'bg-amber-500/15 border-amber-500/40 text-amber-200 font-semibold'
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px] font-mono">
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_ACT_TAB_1"
+                    onClick={() => handleSelectActTab('act1')}
+                    aria-pressed={selectedActTab === 'act1'}
+                    title="Act I: Script — Review or edit your story hook and narrative prose in-place."
+                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center ${
+                      selectedActTab === 'act1'
+                        ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 font-bold ring-1 ring-emerald-400/40'
+                        : activeProse
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
+                        : 'bg-amber-500/15 border-amber-500/40 text-amber-200 font-semibold hover:bg-amber-500/20'
                     }`}
                   >
-                    {activeProse ? '✓ ' : '● '}Act I: Script Woven
-                  </div>
-                  <div
-                    title="Act II: Sensory Weave — Multi-option sensory synthesis and script polish on Desktop."
-                    className={`px-2 py-1 rounded-lg border text-center truncate ${
-                      activeProse && !hasSceneCompletedReel
-                        ? 'bg-amber-500/20 border-amber-400/50 text-amber-200 font-bold'
-                        : hasSceneCompletedReel
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
-                        : 'bg-white/5 border-white/10 text-neutral-400'
+                    {activeProse ? '✓ ' : '● '}Act I: Script
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_ACT_TAB_2"
+                    onClick={() => handleSelectActTab('act2')}
+                    aria-pressed={selectedActTab === 'act2'}
+                    title="Act II: Weave — Inspect and pulse-highlight sensory anchor cues in-place."
+                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center ${
+                      selectedActTab === 'act2'
+                        ? 'bg-amber-500/25 border-amber-400 text-amber-100 font-bold ring-1 ring-amber-400/40'
+                        : hasSceneCompletedReel || activeProductionStage >= 2
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
+                        : activeProse
+                        ? 'bg-amber-500/20 border-amber-400/50 text-amber-200 font-bold hover:bg-amber-500/25'
+                        : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    {hasSceneCompletedReel ? '✓ ' : activeProse ? '● ' : '○ '}Act II: Sensory Weave
-                  </div>
-                  <div
-                    title="Act III: Soundstage Take — Spoken voice or selfie video performance recorded."
-                    className={`px-2 py-1 rounded-lg border text-center truncate ${
-                      hasSceneCompletedReel
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
-                        : 'bg-white/5 border-white/10 text-neutral-400'
+                    {hasSceneCompletedReel || activeProductionStage >= 2
+                      ? '✓ '
+                      : activeProse
+                      ? '● '
+                      : '○ '}
+                    Act II: Weave
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_ACT_TAB_3"
+                    onClick={() => handleSelectActTab('act3')}
+                    aria-pressed={selectedActTab === 'act3'}
+                    title="Act III: Record — Capture your spoken voice or selfie video performance in-place."
+                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center ${
+                      selectedActTab === 'act3'
+                        ? 'bg-amber-500/25 border-amber-400 text-amber-100 font-bold ring-1 ring-amber-400/40'
+                        : hasSceneCompletedReel || activeProductionStage >= 3
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
+                        : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    {hasSceneCompletedReel ? '✓ ' : '○ '}Act III: Soundstage Take
-                  </div>
-                  <div
-                    title="Act IV: Master Reel — Cinema colour grading, acoustic score, and final exhibition lock."
-                    className={`px-2 py-1 rounded-lg border text-center truncate ${
-                      isMasteredScene
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
-                        : 'bg-white/5 border-white/10 text-neutral-400'
+                    {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}Act III: Record
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_ACT_TAB_4"
+                    onClick={() => handleSelectActTab('act4')}
+                    aria-pressed={selectedActTab === 'act4'}
+                    title="Act IV: Screening — Watch your completed Master Reel in the in-place Fireside Screening Room."
+                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center ${
+                      selectedActTab === 'act4'
+                        ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 font-bold ring-1 ring-emerald-400/40'
+                        : isMasteredScene || activeProductionStage === 4
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
+                        : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    {isMasteredScene ? '✓ ' : '○ '}Act IV: Master Reel
-                  </div>
+                    {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}Act IV: Screening
+                  </button>
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-0.5">
-                  <a
-                    href={`/studio/production/${targetProductionId}?act=2`}
-                    data-testid="HS_FIRESIDE_NEXT_DESKTOP_ACT_LINK"
-                    data-hotspot-id="HS_FIRESIDE_NEXT_DESKTOP_ACT_LINK"
-                    title="Open this memory directly in Act II (Sensory Weave) on the Desktop Studio Soundstage."
-                    className="w-full py-1.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 text-[11px] font-mono font-semibold text-center transition-colors block"
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_INPLACE_PROGRESS_BTN"
+                    data-hotspot-id="HS_FIRESIDE_INPLACE_PROGRESS_BTN"
+                    onClick={() => {
+                      if (stageProgression.nextTab === 'act4') {
+                        handleSelectActTab('act4');
+                        onOpenScreeningRoom?.();
+                      } else if (stageProgression.nextTab === 'act3') {
+                        handleSelectActTab('act3');
+                        handleSelectCurrent();
+                        scrollToActiveSoundstage();
+                      } else {
+                        handleSelectActTab('act2');
+                      }
+                    }}
+                    title={stageProgression.title}
+                    className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 text-[11px] font-mono font-semibold text-center transition-colors cursor-pointer"
                   >
-                    [ 🎬 Progress to Act II (Sensory Weave) in Desktop Studio ↗ ]
-                  </a>
+                    {stageProgression.spineLabel}
+                  </button>
                 </div>
               </div>
 
@@ -634,7 +787,61 @@ export function SingleCardPromptCarousel({
                 )}
               </div>
 
-              {/* Live Act I Prose Rendering, Armchair Script Editor & Sensory Modality Counters (MW-88-T4 / MW-88-T7 / Rule 14) */}
+              {/* Mobile-Lite In-Place Stage Contextual Banner (Act II Weave / Act III Record / Act IV Screening — MW-88-T9) */}
+              {selectedActTab === 'act2' && (
+                <div
+                  data-testid="fireside-weave-helper-cue"
+                  className="mb-3 px-3.5 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 font-sans flex items-center justify-between gap-2"
+                >
+                  <span>Tap a sensory pill to highlight anchor cues in your script.</span>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300 shrink-0">
+                    Act II: Weave
+                  </span>
+                </div>
+              )}
+
+              {selectedActTab === 'act3' && (
+                <div
+                  data-testid="fireside-act3-soundstage-panel"
+                  className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
+                >
+                  <p className="text-xs text-amber-200 leading-relaxed">
+                    Ready to capture your voice or selfie video performance with the teleprompter below.
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
+                    onClick={() => {
+                      handleSelectCurrent();
+                      scrollToActiveSoundstage();
+                    }}
+                    className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold shrink-0 cursor-pointer transition-all"
+                  >
+                    [ 📹 Open Live Camera Viewfinder ↓ ]
+                  </button>
+                </div>
+              )}
+
+              {selectedActTab === 'act4' && (
+                <div
+                  data-testid="fireside-act4-screening-panel"
+                  className="mb-3 p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
+                >
+                  <p className="text-xs text-emerald-200 leading-relaxed">
+                    Screen your woven story and recorded performance in the 2.39:1 Fireside Screening Room.
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_INPLACE_SCREENING_BTN"
+                    onClick={() => onOpenScreeningRoom?.()}
+                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs font-mono font-bold shrink-0 cursor-pointer transition-all shadow-md"
+                  >
+                    [ 🎞️ Watch Master Reel in Screening Room ▶ ]
+                  </button>
+                </div>
+              )}
+
+              {/* Live Act I Prose Rendering, Armchair Script Editor & Sensory Modality Counters (MW-88-T4 / MW-88-T7 / MW-88-T9 / Rule 14) */}
               {isEditingScript ? (
                 <div
                   data-testid="fireside-armchair-script-editor"
@@ -681,10 +888,10 @@ export function SingleCardPromptCarousel({
                 </div>
               ) : activeProse ? (
                 <div className="space-y-3">
-                  {/* Dominant Sensory Counters, Weave Provenance Pill, Original Spark Pill & Edit Script Pill (MW-88-T8) */}
+                  {/* Dominant Sensory Counters (Interactive Word-Pulse Pills — MW-88-T9), Weave Provenance Pill, Original Spark Pill & Edit Script Pill */}
                   <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-white/10">
                     <div
-                      className="flex items-center gap-1.5 flex-wrap cursor-help"
+                      className="flex items-center gap-1.5 flex-wrap"
                       data-testid="HS_FIRESIDE_DOMINANT_SENSORY_COUNTERS"
                       title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
                     >
@@ -693,27 +900,51 @@ export function SingleCardPromptCarousel({
                         title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
                         className="inline-flex items-center gap-1.5 flex-wrap"
                       >
-                        <span
-                          title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-sky-500/10 text-sky-300 border border-sky-500/25"
+                        <button
+                          type="button"
+                          data-testid="HS_FIRESIDE_PULSE_PILL_SOUNDSCAPE"
+                          onClick={() => handleToggleSensoryPulse('soundscape')}
+                          aria-pressed={highlightedSensoryType === 'soundscape'}
+                          title="Tap to highlight acoustic soundscape cues in your script."
+                          className={`min-h-[44px] inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-mono font-medium border transition-all cursor-pointer ${
+                            highlightedSensoryType === 'soundscape'
+                              ? 'bg-sky-500/25 text-sky-100 border-sky-400 ring-1 ring-sky-400/50'
+                              : 'bg-sky-500/10 text-sky-300 border-sky-500/25 hover:bg-sky-500/20'
+                          }`}
                         >
                           <Headphones className="w-3 h-3 text-sky-400" />
                           <span>Soundscape ({sensoryCounts.soundscape})</span>
-                        </span>
-                        <span
-                          title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/25"
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="HS_FIRESIDE_PULSE_PILL_VISUAL"
+                          onClick={() => handleToggleSensoryPulse('visual')}
+                          aria-pressed={highlightedSensoryType === 'visual'}
+                          title="Tap to highlight visual atmosphere cues in your script."
+                          className={`min-h-[44px] inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-mono font-medium border transition-all cursor-pointer ${
+                            highlightedSensoryType === 'visual'
+                              ? 'bg-emerald-500/25 text-emerald-100 border-emerald-400 ring-1 ring-emerald-400/50'
+                              : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25 hover:bg-emerald-500/20'
+                          }`}
                         >
                           <Eye className="w-3 h-3 text-emerald-400" />
                           <span>Visual ({sensoryCounts.visual})</span>
-                        </span>
-                        <span
-                          title="Sensory Anchors Detected — Acoustic, visual, and aroma cues woven into your Act I script."
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-medium bg-amber-500/10 text-amber-300 border border-amber-500/25"
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="HS_FIRESIDE_PULSE_PILL_AROMA"
+                          onClick={() => handleToggleSensoryPulse('aroma')}
+                          aria-pressed={highlightedSensoryType === 'aroma'}
+                          title="Tap to highlight culinary and aroma cues in your script."
+                          className={`min-h-[44px] inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-mono font-medium border transition-all cursor-pointer ${
+                            highlightedSensoryType === 'aroma'
+                              ? 'bg-amber-500/25 text-amber-100 border-amber-400 ring-1 ring-amber-400/50'
+                              : 'bg-amber-500/10 text-amber-300 border-amber-500/25 hover:bg-amber-500/20'
+                          }`}
                         >
                           <Coffee className="w-3 h-3 text-amber-400" />
                           <span>Aroma ({sensoryCounts.aroma})</span>
-                        </span>
+                        </button>
                       </span>
                     </div>
 
@@ -751,12 +982,22 @@ export function SingleCardPromptCarousel({
                     </div>
                   </div>
 
+                  {sensoryHighlightToastText && (
+                    <div
+                      data-testid="fireside-sensory-highlight-toast"
+                      role="status"
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs font-mono"
+                    >
+                      {sensoryHighlightToastText}
+                    </div>
+                  )}
+
                   {viewMode === 'script' ? (
                     <div
                       data-testid="fireside-active-script-body"
                       className="text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200 max-h-56 overflow-y-auto pr-1"
                     >
-                      &ldquo;{activeProse}&rdquo;
+                      &ldquo;{renderedScriptContent}&rdquo;
                     </div>
                   ) : (
                     <p
@@ -938,24 +1179,40 @@ export function SingleCardPromptCarousel({
           </button>
         </div>
 
-        {/* Dual-Action Synchronised Footer Dock (MW-88-T8: Emerald Stage Progression + Amber Direct Capture) */}
+        {/* Dual-Action Synchronised In-Place Footer Dock (MW-88-T8 & MW-88-T9: 100% Surface Containment) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <a
-            href={stageProgression.href}
+          <button
+            type="button"
             data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"
             data-hotspot-id="HS_FIRESIDE_STAGE_PROGRESSION_BTN"
+            onClick={() => {
+              if (stageProgression.nextTab === 'act4') {
+                handleSelectActTab('act4');
+                onOpenScreeningRoom?.();
+              } else if (stageProgression.nextTab === 'act3') {
+                handleSelectActTab('act3');
+                handleSelectCurrent();
+                scrollToActiveSoundstage();
+              } else {
+                handleSelectActTab('act2');
+              }
+            }}
             title={stageProgression.title}
             style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
             className="w-full min-h-[56px] px-4 py-3 rounded-2xl bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-500/50 text-emerald-300 font-mono font-bold text-xs sm:text-sm shadow-lg shadow-emerald-950/30 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer"
           >
             {stageProgression.label}
-          </a>
+          </button>
 
           <button
             type="button"
             data-testid="HS_FIRESIDE_DIRECT_RECORD_BTN"
             data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"
-            onClick={handleSelectCurrent}
+            onClick={() => {
+              handleSelectActTab('act3');
+              handleSelectCurrent();
+              scrollToActiveSoundstage();
+            }}
             style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
             className="w-full min-h-[56px] px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-mono font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer"
             aria-label={
@@ -967,7 +1224,6 @@ export function SingleCardPromptCarousel({
             [ 🎙️ RECORD PERFORMANCE (ACT III) → ]
           </button>
         </div>
-
       </div>
     </div>
   );

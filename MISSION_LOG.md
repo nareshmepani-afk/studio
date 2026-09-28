@@ -12,13 +12,13 @@
 
 - **Active Sprint:** Sprint 4 — MW-87 Fireside Voice Studio Suite
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `a533c1c`, Head: `a533c1c5`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `f140128`, Head: `f140128`)
 
 - **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 30 Codified)
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 651 / 651 Vitest Tests Passing (53 Test Files)
+- **Current Invariant Test Baseline:** 656 / 656 Vitest Tests Passing (53 Test Files)
 
 
 
@@ -575,3 +575,43 @@
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
+
+### [2026-09-28 17:35 BST] • Checkpoint #026 — Plane.so Ticketing: Staging Verification Priority & Next Sprint Allocation (MW-88-T9 & MW-98)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Ratified Option 2 (Verify Staging First) to test Cards #11–#20 against certified live edge commit `f140128` on `https://dev.memoryweaver.studio` prior to launching another build, avoiding testing against a moving target and preventing deployment blackouts.
+  - 🧠 **Gemini Strategic Brain**: Codified the separation between the immediate next implementation ticket (`MW-88-T9`) and post-launch enhancement backlog (`MW-98`), maintaining zero-regression sprint boundaries.
+  - ⚡ **Antigravity Execution**:
+    1. **Active Sprint Queued Ticket**:
+       - **MW-88-T9 (Ticket #299)**: `feat(studio): ?from=fireside return banner & mobile sensory word-pulse highlight` *(Priority: Medium, State: Todo)*
+       - Scope: Intercept `?from=fireside` on `src/app/studio/production/[id]/page.tsx` and render a prominent `[ 🛋️ Return to Fireside Studio ]` button. Add interactive word-pulse highlighting in `src/components/fireside/SingleCardPromptCarousel.tsx` when tapping sensory counters. Complete File Paths: `src/app/studio/production/[id]/page.tsx`, `src/components/fireside/SingleCardPromptCarousel.tsx`, `src/test/fireside_prompt_carousel.test.tsx`.
+    2. **Post-Launch Backlog Ticket**:
+       - **MW-98 (Ticket #300)**: `feat(fireside): Inline original spark vs woven monologue comparison drawer` *(Priority: Low, State: Backlog)*
+       - Scope: Side-by-side prompt vs AI weave comparison popover on mobile.
+  - 🛡️ **QA Gatekeeper**: Confirmed live edge environment is stable at commit `f140128`. Ready for manual verification of Cards #11–#20 via `qa_checklist_interactive.html`.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+
+### [2026-09-28 18:56 BST] • Checkpoint #027 — MW-88-T9: Surface Containment, In-Place 4-Act Fireside Spine, Sensory Word-Pulse & Optics Privacy Shield Parity (Sequence #299)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Ratified the **Golden Rule of Surface Containment** — every Act spine tab (`✓ Act I: Script`, `✓ Act II: Weave`, `✓ Act III: Record`, `✓ Act IV: Screening`) and every stage progression button on `/studio/fireside` operates 100% in-place within the armchair mobile-lite surface, alongside full Desktop-parity Hardware Camera & Microphone Privacy Shield protection (`🛡️ Optics Inactive`, `🔴 CAMERA LIVE • Sever Feed ✕`, `🚫 Severed • Re-Arm`).
+  - 🧠 **Gemini Strategic Brain**: Architected the 3-Track MW-88-T9 specification: interactive 4-Act spine tabs (`HS_FIRESIDE_ACT_TAB_1`..`4`) synchronised with `FiresideAuthHeader` (`HS_FIRESIDE_HEADER_ACT_BADGE`), Mobile-Lite Act II Sensory Weave Inspector with word-pulse script highlighting (`HS_FIRESIDE_PULSE_PILL_SOUNDSCAPE`, `HS_FIRESIDE_PULSE_PILL_VISUAL`, `HS_FIRESIDE_PULSE_PILL_AROMA`), in-place Act IV Screening Room lightbox trigger (`HS_FIRESIDE_INPLACE_SCREENING_BTN`), and `OpticsPrivacyShield` integration across `FiresideAuthHeader.tsx` and `FiresideVideoRecorder.tsx`.
+  - ⚡ **Antigravity Execution**:
+    1. **100% Surface Containment & Interactive 4-Act Spine (`src/components/fireside/SingleCardPromptCarousel.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`)**: Converted the 4 static spine badges inside `HS_FIRESIDE_ACT_SPINE` into tactile `<button>` tabs (`HS_FIRESIDE_ACT_TAB_1`..`4`, `min-h-[44px]`, zero `truncate` ellipsis) and replaced all `/studio/production/[id]` anchor redirects (`HS_FIRESIDE_INPLACE_PROGRESS_BTN`, `HS_FIRESIDE_STAGE_PROGRESSION_BTN`) with 100% in-place stage transitions.
+    2. **Mobile-Lite Sensory Weave Inspector & Word-Pulse Highlighting (`src/components/fireside/SingleCardPromptCarousel.tsx`)**: Converted the dominant sensory counters (`HS_FIRESIDE_PULSE_PILL_SOUNDSCAPE`, `HS_FIRESIDE_PULSE_PILL_VISUAL`, `HS_FIRESIDE_PULSE_PILL_AROMA`) into interactive word-pulse pills that wrap matching sensory anchor words inside `fireside-active-script-body` with `<span className="bg-amber-400/30 text-amber-200 border-b border-amber-400 px-1 rounded animate-pulse">` and display inline status feedback (`fireside-sensory-highlight-toast`).
+    3. **In-Place Screening Room Trigger (`src/components/fireside/SingleCardPromptCarousel.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`)**: Wired `HS_FIRESIDE_INPLACE_SCREENING_BTN` (`[ 🎞️ Watch Master Reel in Screening Room ▶ ]`) directly to `onOpenScreeningRoom={() => setIsLightboxOpen(true)}`, launching `FiresideCinemaLightbox` inside `/studio/fireside`.
+    4. **Hardware Camera & Microphone Privacy Shield Parity (`src/components/studio/OpticsPrivacyShield.tsx`, `src/components/fireside/FiresideAuthHeader.tsx`, `src/components/fireside/FiresideVideoRecorder.tsx`)**: Included `/studio/fireside` in `OpticsPrivacyShield.tsx`'s `isSoundstageRoute` check, mounted `<OpticsPrivacyShield compact />` in `FiresideAuthHeader.tsx`, and added explicit `🛡️ OPTICS INACTIVE`, `🚫 SEVERED • RE-ARM`, and `🔴 CAMERA LIVE • Sever Feed ✕` controls inside `FiresideVideoRecorder.tsx`.
+  - 🛡️ **QA Gatekeeper**: All 53 test suites passing (659/659 tests), including Suite 10 in `fireside_sync.test.ts` (36/36) and `fireside_video_recorder.test.tsx`. `tsc --noEmit` exit 0. Zero modifications to `SoloStage.tsx` (Rule 7).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\components\studio\OpticsPrivacyShield.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideAuthHeader.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideVideoRecorder.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+
+

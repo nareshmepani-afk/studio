@@ -27,6 +27,8 @@ import { getPartForScene, getSceneById } from '@/lib/curriculum/masterStoryStruc
 import { FiresideWarmupModal, WARMUP_CHAI_SCRIPTS } from '@/components/fireside/FiresideWarmupModal';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { FiresideAuthHeader, resolveHeaderActBadge } from '@/components/fireside/FiresideAuthHeader';
+import { FiresideVideoRecorder } from '@/components/fireside/FiresideVideoRecorder';
+import { HardwarePrivacyProvider } from '@/context/HardwarePrivacyContext';
 import { detectSensoryAnchors, filterDominantSensoryAnchors } from '@/utils/sensoryAnchors';
 import { setDoc } from 'firebase/firestore';
 
@@ -1115,26 +1117,26 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // Carousel card has HS_FIRESIDE_PROMPT_CAROUSEL_CARD testid
       expect(document.querySelector('[data-testid="HS_FIRESIDE_PROMPT_CAROUSEL_CARD"]')).toBeTruthy();
 
+      // 4-Act Status Spine renders all 4 interactive in-place Act tabs (MW-88-T9)
+      const actSpine = document.querySelector('[data-testid="HS_FIRESIDE_ACT_SPINE"]') as HTMLElement;
+      expect(actSpine).toBeTruthy();
+      expect(actSpine.textContent).toContain('Act I: Script');
+      expect(actSpine.textContent).toContain('Act II: Weave');
+      expect(actSpine.textContent).toContain('Act III: Record');
+      expect(actSpine.textContent).toContain('Act IV: Screening');
+
+      // In-Place Progression Button renders with zero external redirect
+      const inPlaceBtn = document.querySelector('[data-testid="HS_FIRESIDE_INPLACE_PROGRESS_BTN"]') as HTMLButtonElement;
+      expect(inPlaceBtn).toBeTruthy();
+      expect(inPlaceBtn.textContent).toContain('[ ✨ Progress to Act II: Sensory Weave → ]');
+      expect(inPlaceBtn.getAttribute('href')).toBeNull();
+
       // Primary CTA is NOT locked to "Watch Studio Master Reel" — it enables recording the performance!
       const primaryCta = document.querySelector('[data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"]') as HTMLElement;
       expect(primaryCta).toBeTruthy();
       expect(primaryCta.textContent).toContain('[ 🎙️ RECORD PERFORMANCE (ACT III) → ]');
       fireEvent.click(primaryCta);
       expect(onSelectPrompt).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0], 'en');
-
-      // 4-Act Status Spine renders all 4 acts
-      const actSpine = document.querySelector('[data-testid="HS_FIRESIDE_ACT_SPINE"]') as HTMLElement;
-      expect(actSpine).toBeTruthy();
-      expect(actSpine.textContent).toContain('Act I: Script Woven');
-      expect(actSpine.textContent).toContain('Act II: Sensory Weave');
-      expect(actSpine.textContent).toContain('Act III: Soundstage Take');
-      expect(actSpine.textContent).toContain('Act IV: Master Reel');
-
-      // Next Desktop Act Link renders and points to /studio/production/ey96djU6qR1BrDGnvZwp?act=2
-      const nextActLink = document.querySelector('[data-testid="HS_FIRESIDE_NEXT_DESKTOP_ACT_LINK"]') as HTMLAnchorElement;
-      expect(nextActLink).toBeTruthy();
-      expect(nextActLink.textContent).toContain('[ 🎬 Progress to Act II (Sensory Weave) in Desktop Studio ↗ ]');
-      expect(nextActLink.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=2');
 
       unmount();
     });
@@ -1537,8 +1539,8 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       unmount();
     });
 
-    it('renders Dual-Action Synchronised Footer Dock (HS_FIRESIDE_STAGE_PROGRESSION_BTN & HS_FIRESIDE_DIRECT_RECORD_BTN) and routes to the exact production act URL across stages 1, 2, and 3', () => {
-      // Stage 1: [ ✨ ENTER THE WEAVE (ACT II) → ] -> /studio/production/ey96djU6qR1BrDGnvZwp?act=sensory
+    it('renders Dual-Action Synchronised Footer Dock (HS_FIRESIDE_STAGE_PROGRESSION_BTN & HS_FIRESIDE_DIRECT_RECORD_BTN) and progresses 100% in-place across stages 1, 2, and 3', () => {
+      // Stage 1: [ ✨ Progress to Act II: Sensory Weave → ] (in-place button, zero external href)
       const memStage1 = {
         id: 'ey96djU6qR1BrDGnvZwp',
         sceneId: 'part-1-scene-1',
@@ -1555,18 +1557,18 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
 
       const prog1 = document.querySelector(
         '[data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"]'
-      ) as HTMLAnchorElement;
+      ) as HTMLButtonElement;
       const rec1 = document.querySelector(
         '[data-testid="HS_FIRESIDE_DIRECT_RECORD_BTN"]'
       ) as HTMLButtonElement;
       expect(prog1).toBeTruthy();
-      expect(prog1.textContent).toBe('[ ✨ ENTER THE WEAVE (ACT II) → ]');
-      expect(prog1.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=sensory');
+      expect(prog1.textContent).toBe('[ ✨ Progress to Act II: Sensory Weave → ]');
+      expect(prog1.getAttribute('href')).toBeNull();
       expect(rec1).toBeTruthy();
       expect(rec1.textContent).toBe('[ 🎙️ RECORD PERFORMANCE (ACT III) → ]');
       u1();
 
-      // Stage 2: [ 🎬 ENTER SOUNDSTAGE (ACT III) → ] -> /studio/production/ey96djU6qR1BrDGnvZwp?act=soundstage
+      // Stage 2: [ 🎬 Progress to Act III: Record Performance → ]
       const memStage2 = {
         ...memStage1,
         productionStage: 2,
@@ -1579,12 +1581,12 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
       const prog2 = document.querySelector(
         '[data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"]'
-      ) as HTMLAnchorElement;
-      expect(prog2.textContent).toBe('[ 🎬 ENTER SOUNDSTAGE (ACT III) → ]');
-      expect(prog2.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=soundstage');
+      ) as HTMLButtonElement;
+      expect(prog2.textContent).toBe('[ 🎬 Progress to Act III: Record Performance → ]');
+      expect(prog2.getAttribute('href')).toBeNull();
       u2();
 
-      // Stage 3: [ 🎞️ ENTER SCREENING ROOM (ACT IV) → ] -> /studio/production/ey96djU6qR1BrDGnvZwp?act=screening
+      // Stage 3: [ 🎞️ Watch Master Reel in Screening Room ▶ ]
       const memStage3 = {
         ...memStage1,
         productionStage: 3,
@@ -1597,10 +1599,155 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
       const prog3 = document.querySelector(
         '[data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"]'
-      ) as HTMLAnchorElement;
-      expect(prog3.textContent).toBe('[ 🎞️ ENTER SCREENING ROOM (ACT IV) → ]');
-      expect(prog3.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=screening');
+      ) as HTMLButtonElement;
+      expect(prog3.textContent).toBe('[ 🎞️ Watch Master Reel in Screening Room ▶ ]');
+      expect(prog3.getAttribute('href')).toBeNull();
       u3();
+    });
+  });
+
+  // =========================================================================
+  // 10. MW-88-T9: Surface Containment, In-Place 4-Act Spine & Optics Shield
+  // =========================================================================
+  describe('10. MW-88-T9: Surface Containment, In-Place 4-Act Fireside Spine, Sensory Word-Pulse & Optics Privacy Shield Parity', () => {
+    it('switches 4-Act Spine tabs (HS_FIRESIDE_ACT_TAB_1..4) 100% in-place without truncation or /studio/production redirects and synchronises FiresideAuthHeader', () => {
+      const fullProseEy96 =
+        'The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me. My origins begin in the sun-baked earth of Madhapur, a small farming village in the Kutch region of Gujarat, India, where my ancestors worked the soil with their bare hands.';
+
+      const mockDocEy96 = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        sceneId: 'part-1-scene-1',
+        prose: fullProseEy96,
+        productionStage: 1,
+        activeVisionLabel: 'The Memory Weave',
+      };
+
+      const onSelectActStageSpy = vi.fn();
+      const onOpenScreeningRoomSpy = vi.fn();
+
+      const { unmount } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          activeSceneMemory: mockDocEy96,
+          getSceneMemory: () => mockDocEy96,
+          onSelectActStage: onSelectActStageSpy,
+          onOpenScreeningRoom: onOpenScreeningRoomSpy,
+        })
+      );
+
+      // 1. Verify all 4 tactile Act tabs render with min-h-[44px], zero truncate class, and zero /studio/production links
+      const tab1 = document.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_1"]') as HTMLButtonElement;
+      const tab2 = document.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_2"]') as HTMLButtonElement;
+      const tab3 = document.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_3"]') as HTMLButtonElement;
+      const tab4 = document.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_4"]') as HTMLButtonElement;
+
+      expect(tab1).toBeTruthy();
+      expect(tab2).toBeTruthy();
+      expect(tab3).toBeTruthy();
+      expect(tab4).toBeTruthy();
+      expect(tab1.textContent).toContain('✓ Act I: Script');
+      expect(tab2.textContent).toContain('● Act II: Weave');
+      expect(tab3.textContent).toContain('○ Act III: Record');
+      expect(tab4.textContent).toContain('○ Act IV: Screening');
+      expect(tab1.className).not.toContain('truncate');
+      expect(tab2.className).not.toContain('truncate');
+      expect(tab3.className).not.toContain('truncate');
+      expect(tab4.className).not.toContain('truncate');
+
+      // Assert zero external /studio/production links inside the carousel card
+      const productionLinks = document.querySelectorAll('a[href*="/studio/production"]');
+      expect(productionLinks.length).toBe(0);
+
+      // 2. Click Tab 2 (Act II: Weave) -> renders Mobile-Lite Sensory Weave Inspector helper cue
+      fireEvent.click(tab2);
+      expect(onSelectActStageSpy).toHaveBeenCalledWith(2);
+      const weaveCue = document.querySelector('[data-testid="fireside-weave-helper-cue"]') as HTMLElement;
+      expect(weaveCue).toBeTruthy();
+      expect(weaveCue.textContent).toContain('Tap a sensory pill to highlight anchor cues in your script.');
+
+      // 3. Click Tab 3 (Act III: Record) -> renders in-place Soundstage viewfinder trigger
+      fireEvent.click(tab3);
+      expect(onSelectActStageSpy).toHaveBeenCalledWith(3);
+      expect(document.querySelector('[data-testid="fireside-act3-soundstage-panel"]')).toBeTruthy();
+
+      // 4. Click Tab 4 (Act IV: Screening) -> renders in-place Screening Room button and invokes onOpenScreeningRoom
+      fireEvent.click(tab4);
+      expect(onSelectActStageSpy).toHaveBeenCalledWith(4);
+      const screeningBtn = document.querySelector('[data-testid="HS_FIRESIDE_INPLACE_SCREENING_BTN"]') as HTMLButtonElement;
+      expect(screeningBtn).toBeTruthy();
+      expect(screeningBtn.textContent).toContain('[ 🎞️ Watch Master Reel in Screening Room ▶ ]');
+      fireEvent.click(screeningBtn);
+      expect(onOpenScreeningRoomSpy).toHaveBeenCalledTimes(1);
+
+      unmount();
+    });
+
+    it('highlights sensory anchor words in-place when clicking HS_FIRESIDE_PULSE_PILL_SOUNDSCAPE, HS_FIRESIDE_PULSE_PILL_VISUAL, or HS_FIRESIDE_PULSE_PILL_AROMA', () => {
+      const fullProseEy96 =
+        'The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me. My origins begin in the sun-baked earth of Madhapur, a small farming village in the Kutch region of Gujarat, India, where my ancestors worked the soil with their bare hands.';
+
+      const mockDocEy96 = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        sceneId: 'part-1-scene-1',
+        prose: fullProseEy96,
+        productionStage: 2,
+      };
+
+      const { unmount } = render(
+        React.createElement(SingleCardPromptCarousel, {
+          activeLanguage: 'en',
+          activeSceneMemory: mockDocEy96,
+          getSceneMemory: () => mockDocEy96,
+        })
+      );
+
+      const visualPill = document.querySelector(
+        '[data-testid="HS_FIRESIDE_PULSE_PILL_VISUAL"]'
+      ) as HTMLButtonElement;
+      expect(visualPill).toBeTruthy();
+      fireEvent.click(visualPill);
+
+      // Verify inline sensory feedback toast and highlighted word span inside script body
+      const toastBanner = document.querySelector(
+        '[data-testid="fireside-sensory-highlight-toast"]'
+      ) as HTMLElement;
+      expect(toastBanner).toBeTruthy();
+      expect(toastBanner.textContent).toBe('Highlighting visual atmosphere cues.');
+
+      const highlightedSpans = document.querySelectorAll(
+        '[data-testid="fireside-sensory-highlighted-word"]'
+      );
+      expect(highlightedSpans.length).toBeGreaterThan(0);
+      expect((highlightedSpans[0] as HTMLElement).className).toContain(
+        'bg-amber-400/30 text-amber-200 border-b border-amber-400 px-1 rounded animate-pulse'
+      );
+
+      unmount();
+    });
+
+    it('renders Hardware Camera & Microphone Privacy Shield (🛡️ Optics Inactive / 🚫 Severed • Re-Arm) in FiresideAuthHeader and FiresideVideoRecorder', () => {
+      const { unmount } = render(
+        React.createElement(
+          HardwarePrivacyProvider,
+          null,
+          React.createElement(FiresideAuthHeader, { activeStage: 1 }),
+          React.createElement(FiresideVideoRecorder, { activeLanguage: 'en' })
+        )
+      );
+
+      const headerShieldBtn = document.querySelector(
+        '[data-testid="optics-privacy-shield-btn"]'
+      ) as HTMLButtonElement;
+      expect(headerShieldBtn).toBeTruthy();
+      expect(headerShieldBtn.textContent).toContain('🛡️ Optics Inactive');
+
+      const viewfinderOpticsBadge = document.querySelector(
+        '[data-testid="HS_FIRESIDE_VIEWFINDER_OPTICS_BADGE"]'
+      ) as HTMLElement;
+      expect(viewfinderOpticsBadge).toBeTruthy();
+      expect(viewfinderOpticsBadge.textContent).toContain('🛡️ OPTICS INACTIVE');
+
+      unmount();
     });
   });
 });
