@@ -1668,7 +1668,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // 3. Click Tab 3 (Act III: Record) -> renders in-place Soundstage viewfinder trigger
       fireEvent.click(tab3);
       expect(onSelectActStageSpy).toHaveBeenCalledWith(3);
-      expect(document.querySelector('[data-testid="fireside-act3-soundstage-panel"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="HS_FIRESIDE_ACT3_CAPTURE_SLATE"]')).toBeTruthy();
 
       // 4. Click Tab 4 (Act IV: Screening) -> renders in-place Screening Room button and invokes onOpenScreeningRoom
       fireEvent.click(tab4);
@@ -1752,7 +1752,135 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
   });
 });
 
+// =============================================================================
+// 11. MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branching
+// =============================================================================
+describe('11. MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branching', () => {
+  const baseMemory = {
+    id: 'test-scene-1',
+    sceneId: 'part-1-scene-1',
+    prose: 'Test prose content for Act III branching.',
+    originalHook: 'Test hook',
+    description: 'Test description',
+    takes: [] as import('@/types/curriculum').MemoirTake[],
+  };
 
+  const memoryWithTake = {
+    ...baseMemory,
+    takes: [{
+      id: 'take-001',
+      takeNumber: 1,
+      source: 'fireside_mobile' as const,
+      mediaMode: 'video' as const,
+      mediaUrl: 'https://example.com/take1.mp4',
+      durationSeconds: 45,
+      createdAt: '2026-09-29T12:00:00Z',
+      label: 'Take 1 (Fireside Mobile)',
+      isPreferred: true,
+    }],
+  };
 
+  it('Act III capture slate renders when takes is empty (HS_FIRESIDE_ACT3_CAPTURE_SLATE)', () => {
+    const { container, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeSceneMemory: baseMemory,
+        selectedActStage: 3,
+      })
+    );
+    const act3Tab = container.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_3"]') as HTMLButtonElement;
+    if (act3Tab) fireEvent.click(act3Tab);
 
+    const captureSlate = container.querySelector('[data-testid="HS_FIRESIDE_ACT3_CAPTURE_SLATE"]');
+    const recordedView = container.querySelector('[data-testid="HS_FIRESIDE_ACT3_RECORDED_VIEW"]');
+    expect(captureSlate).not.toBeNull();
+    expect(recordedView).toBeNull();
+    expect(captureSlate?.textContent).toContain('Ready to capture your voice');
+    unmount();
+  });
+
+  it('Act III recorded take slate renders when takes.length > 0 (HS_FIRESIDE_ACT3_RECORDED_VIEW)', () => {
+    const { container, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeSceneMemory: memoryWithTake,
+        selectedActStage: 3,
+      })
+    );
+    const act3Tab = container.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_3"]') as HTMLButtonElement;
+    if (act3Tab) fireEvent.click(act3Tab);
+
+    const recordedView = container.querySelector('[data-testid="HS_FIRESIDE_ACT3_RECORDED_VIEW"]');
+    const captureSlate = container.querySelector('[data-testid="HS_FIRESIDE_ACT3_CAPTURE_SLATE"]');
+    expect(recordedView).not.toBeNull();
+    expect(captureSlate).toBeNull();
+    expect(recordedView?.textContent).toContain('TAKE RECORDED');
+    expect(recordedView?.textContent).toContain('READY FOR SCREENING');
+    unmount();
+  });
+
+  it('Audition and retake buttons render in recorded take view with correct testids', () => {
+    const { container, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeSceneMemory: memoryWithTake,
+        selectedActStage: 3,
+        onOpenScreeningRoom: vi.fn(),
+      })
+    );
+    const act3Tab = container.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_3"]') as HTMLButtonElement;
+    if (act3Tab) fireEvent.click(act3Tab);
+
+    const auditionBtn = container.querySelector('[data-testid="HS_FIRESIDE_AUDITION_TAKE_BTN"]');
+    const retakeBtn = container.querySelector('[data-testid="HS_FIRESIDE_RETAKE_SCROLL_BTN"]');
+    expect(auditionBtn).not.toBeNull();
+    expect(auditionBtn?.textContent).toContain('Audition Master Take');
+    expect(retakeBtn).not.toBeNull();
+    expect(retakeBtn?.textContent).toContain('Record Additional Take');
+    unmount();
+  });
+
+  it('Spine container renders all 4 tab testids simultaneously (grid-cols-4)', () => {
+    const { container, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, { activeSceneMemory: baseMemory })
+    );
+    expect(container.querySelector('[data-testid="HS_FIRESIDE_ACT_SPINE"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_1"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_2"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_3"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="HS_FIRESIDE_ACT_TAB_4"]')).not.toBeNull();
+    unmount();
+  });
+
+  it('Mobile compact labels present in sm:hidden spans — no whitespace-nowrap on any tab button', () => {
+    const { container, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, { activeSceneMemory: baseMemory })
+    );
+    // All 4 mobile spans present
+    const mobileSpans = container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"] span.sm\\:hidden');
+    expect(mobileSpans.length).toBe(4);
+    // Check each span contains the compact label substring (use includes, not regex-strip, to preserve spaces)
+    const texts = Array.from(mobileSpans).map((s) => s.textContent ?? '');
+    expect(texts.some((t) => t.includes('I: Script'))).toBe(true);
+    expect(texts.some((t) => t.includes('II: Weave'))).toBe(true);
+    expect(texts.some((t) => t.includes('III: Record'))).toBe(true);
+    expect(texts.some((t) => t.includes('IV: Reel'))).toBe(true);
+    // No button carries whitespace-nowrap
+    container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"]').forEach((tab) => {
+      expect(tab.className).not.toContain('whitespace-nowrap');
+    });
+    unmount();
+  });
+
+  it('Desktop full labels present in hidden sm:inline spans', () => {
+    const { container, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, { activeSceneMemory: baseMemory })
+    );
+    const desktopSpans = container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"] span.hidden');
+    expect(desktopSpans.length).toBe(4);
+    const texts = Array.from(desktopSpans).map((s) => s.textContent ?? '');
+    expect(texts.some((t) => t.includes('Act I: Script'))).toBe(true);
+    expect(texts.some((t) => t.includes('Act II: Weave'))).toBe(true);
+    expect(texts.some((t) => t.includes('Act III: Record'))).toBe(true);
+    expect(texts.some((t) => t.includes('Act IV: Screening'))).toBe(true);
+    unmount();
+  });
+});
 

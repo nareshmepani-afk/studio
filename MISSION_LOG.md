@@ -640,3 +640,30 @@
 ---
 
 
+
+---
+
+## Checkpoint #029 — MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branching
+**Timestamp:** 2026-09-29T14:14:47+01:00
+**Branch:** dev
+**Status:** Pre-push (awaiting build gate)
+
+### Changes
+- **SingleCardPromptCarousel.tsx** — Track 1: switched spine from grid-cols-2 sm:grid-cols-4 whitespace-nowrap to grid-cols-4 overflow-hidden with dual <span> responsive labels (mobile: I: Script, desktop: Act I: Script). Added ria-label to all 4 tabs.
+- **SingleCardPromptCarousel.tsx** — Track 2: replaced unconditional Act III capture slate with hasRecordedTake branch: HS_FIRESIDE_ACT3_RECORDED_VIEW (takes.length > 0) vs HS_FIRESIDE_ACT3_CAPTURE_SLATE (takes.length === 0).
+- **fireside_sync.test.ts** — Track 3: appended Suite 11 with 6 hermetic regression tests. Fixed Suite 10 stale testid ireside-act3-soundstage-panel ? HS_FIRESIDE_ACT3_CAPTURE_SLATE.
+
+### Verification
+- Suite 11 (fireside_sync): 42/42 ?
+- tsc --noEmit: 0 errors ?
+- Full regression suite: 665/665 ? (53 test files, +6 new tests)
+- Production build: pending...
+
+### Root Cause (Issue A)
+grid-cols-2 on mobile with whitespace-nowrap — 2 cells at ~182px each, text labels exceeding cell width, bleeding across pill borders. Fix: uniform grid-cols-4 + overflow-hidden + truncated responsive spans.
+
+### Root Cause (Issue C)
+Act III panel was unconditional amber capture slate regardless of ctiveSceneMemory.takes.length. Desktop branches correctly via hasTake ? Player : Slate. Fireside now mirrors the same logic via hasRecordedTake IIFE branch.
+
+### Issue B (MW-99 backlog)
+Surface Chooser Card on /studio — Option 2 approved. Backlog MW-99 to be created post-push.

@@ -675,16 +675,18 @@ export function SingleCardPromptCarousel({
               {/* 4-Act Production Status Spine & In-Place Progression (MW-88-T9 Surface Containment) */}
               <div
                 data-testid="HS_FIRESIDE_ACT_SPINE"
-                className="mb-4 p-2.5 rounded-2xl bg-black/40 border border-white/10 space-y-2"
+                className="mb-4 p-2 rounded-2xl bg-black/40 border border-white/10 space-y-2"
               >
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono">
+                {/* MW-88-T10: grid-cols-4 (all viewports) + overflow-hidden — no more whitespace-nowrap bleed */}
+                <div className="w-full grid grid-cols-4 gap-1 p-0.5 font-mono">
                   <button
                     type="button"
                     data-testid="HS_FIRESIDE_ACT_TAB_1"
                     onClick={() => handleSelectActTab('act1')}
                     aria-pressed={selectedActTab === 'act1'}
+                    aria-label="Act I: Script — Review or edit your story hook and narrative prose in-place."
                     title="Act I: Script — Review or edit your story hook and narrative prose in-place."
-                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center whitespace-nowrap text-xs sm:text-sm ${
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
                       selectedActTab === 'act1'
                         ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : activeProse
@@ -692,15 +694,17 @@ export function SingleCardPromptCarousel({
                         : 'bg-amber-500/15 border-amber-500/40 text-amber-200 font-semibold hover:bg-amber-500/20'
                     }`}
                   >
-                    {activeProse ? '✓ ' : '● '}Act I: Script
+                    <span className="sm:hidden truncate">{activeProse ? '✓ ' : '● '}I: Script</span>
+                    <span className="hidden sm:inline truncate">{activeProse ? '✓ ' : '● '}Act I: Script</span>
                   </button>
                   <button
                     type="button"
                     data-testid="HS_FIRESIDE_ACT_TAB_2"
                     onClick={() => handleSelectActTab('act2')}
                     aria-pressed={selectedActTab === 'act2'}
+                    aria-label="Act II: Weave — Inspect and pulse-highlight sensory anchor cues in-place."
                     title="Act II: Weave — Inspect and pulse-highlight sensory anchor cues in-place."
-                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center whitespace-nowrap text-xs sm:text-sm ${
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
                       selectedActTab === 'act2'
                         ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : hasSceneCompletedReel || activeProductionStage >= 2
@@ -710,20 +714,21 @@ export function SingleCardPromptCarousel({
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    {hasSceneCompletedReel || activeProductionStage >= 2
-                      ? '✓ '
-                      : activeProse
-                      ? '● '
-                      : '○ '}
-                    Act II: Weave
+                    <span className="sm:hidden truncate">
+                      {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II: Weave
+                    </span>
+                    <span className="hidden sm:inline truncate">
+                      {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}Act II: Weave
+                    </span>
                   </button>
                   <button
                     type="button"
                     data-testid="HS_FIRESIDE_ACT_TAB_3"
                     onClick={() => handleSelectActTab('act3')}
                     aria-pressed={selectedActTab === 'act3'}
+                    aria-label="Act III: Record — Capture your spoken voice or selfie video performance in-place."
                     title="Act III: Record — Capture your spoken voice or selfie video performance in-place."
-                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center whitespace-nowrap text-xs sm:text-sm ${
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
                       selectedActTab === 'act3'
                         ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : hasSceneCompletedReel || activeProductionStage >= 3
@@ -731,15 +736,21 @@ export function SingleCardPromptCarousel({
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}Act III: Record
+                    <span className="sm:hidden truncate">
+                      {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III: Record
+                    </span>
+                    <span className="hidden sm:inline truncate">
+                      {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}Act III: Record
+                    </span>
                   </button>
                   <button
                     type="button"
                     data-testid="HS_FIRESIDE_ACT_TAB_4"
                     onClick={() => handleSelectActTab('act4')}
                     aria-pressed={selectedActTab === 'act4'}
+                    aria-label="Act IV: Screening — Watch your completed Master Reel in the in-place Fireside Screening Room."
                     title="Act IV: Screening — Watch your completed Master Reel in the in-place Fireside Screening Room."
-                    className={`min-h-[44px] px-2.5 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center whitespace-nowrap text-xs sm:text-sm ${
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
                       selectedActTab === 'act4'
                         ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : isMasteredScene || activeProductionStage === 4
@@ -747,7 +758,12 @@ export function SingleCardPromptCarousel({
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}Act IV: Screening
+                    <span className="sm:hidden truncate">
+                      {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV: Reel
+                    </span>
+                    <span className="hidden sm:inline truncate">
+                      {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}Act IV: Screening
+                    </span>
                   </button>
                 </div>
 
@@ -807,27 +823,74 @@ export function SingleCardPromptCarousel({
                 </div>
               )}
 
-              {selectedActTab === 'act3' && (
-                <div
-                  data-testid="fireside-act3-soundstage-panel"
-                  className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
-                >
-                  <p className="text-xs text-amber-200 leading-relaxed">
-                    Ready to capture your voice or selfie video performance with the teleprompter below.
-                  </p>
-                  <button
-                    type="button"
-                    data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
-                    onClick={() => {
-                      handleSelectCurrent();
-                      scrollToActiveSoundstage();
-                    }}
-                    className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold shrink-0 cursor-pointer transition-all"
+
+              {selectedActTab === 'act3' && (() => {
+                // MW-88-T10: Branch Act III on vault take availability (Rule 14 safe — prose untouched)
+                const hasRecordedTake = Boolean(
+                  activeSceneMemory?.takes && activeSceneMemory.takes.length > 0
+                );
+
+                if (hasRecordedTake) {
+                  return (
+                    <div
+                      data-testid="HS_FIRESIDE_ACT3_RECORDED_VIEW"
+                      className="mb-3 p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-2"
+                    >
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
+                        TAKE RECORDED • READY FOR SCREENING
+                      </p>
+                      <p className="text-xs text-stone-300 leading-relaxed">
+                        A master performance take is recorded and saved safely in your vault.
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button
+                          type="button"
+                          data-testid="HS_FIRESIDE_AUDITION_TAKE_BTN"
+                          onClick={() => onOpenScreeningRoom?.()}
+                          className="min-h-[48px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs font-mono flex items-center gap-2 cursor-pointer transition-all shadow-md"
+                        >
+                          ▶ Audition Master Take
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="HS_FIRESIDE_RETAKE_SCROLL_BTN"
+                          onClick={() => {
+                            handleSelectCurrent();
+                            scrollToActiveSoundstage();
+                          }}
+                          className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-mono flex items-center gap-2 cursor-pointer transition-all"
+                        >
+                          🔄 Record Additional Take ↓
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    data-testid="HS_FIRESIDE_ACT3_CAPTURE_SLATE"
+                    className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
                   >
-                    [ 📹 Open Live Camera Viewfinder ↓ ]
-                  </button>
-                </div>
-              )}
+                    <p className="text-xs text-amber-200 leading-relaxed">
+                      Ready to capture your voice or selfie video performance with the teleprompter below.
+                    </p>
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
+                      onClick={() => {
+                        handleSelectCurrent();
+                        scrollToActiveSoundstage();
+                      }}
+                      className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold shrink-0 cursor-pointer transition-all"
+                    >
+                      [ 📹 Open Live Camera Viewfinder ↓ ]
+                    </button>
+                  </div>
+                );
+              })()}
+
+
 
               {selectedActTab === 'act4' && (
                 <div
