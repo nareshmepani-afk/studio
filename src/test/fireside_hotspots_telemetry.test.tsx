@@ -77,12 +77,12 @@ describe('Fireside Hotspots & Telemetry Regression Shield (Ticket #261)', () => 
       expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_LANG_PA"]')).toBeTruthy();
       expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_LANG_HI"]')).toBeTruthy();
 
-      // Navigation and Action buttons
+      // Navigation (MW-100 ChapterSpineRail) and Action buttons
       expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_RANDOM_SPARK_BTN"]')).toBeTruthy();
       expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN"]')).toBeTruthy();
       expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_PHOTO_DIGITISE_BTN"]')).toBeTruthy();
-      expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_PREV_STORY_BTN"]')).toBeTruthy();
-      expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_NEXT_STORY_BTN"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="HS_CHAPTER_SPINE_RAIL"]')).toBeTruthy();
+      expect(document.querySelector('[data-testid="HS_SPINE_ACTIVE_SCENE"]')).toBeTruthy();
       expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"]')).toBeTruthy();
     });
   });

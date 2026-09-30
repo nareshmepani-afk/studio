@@ -1884,3 +1884,102 @@ describe('11. MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branchi
   });
 });
 
+
+// -------------------------------------------------------------------------------
+// SUITE 12 — MW-100: ChapterSpineRail Unit Tests (Regression Shield)
+// -------------------------------------------------------------------------------
+import { ChapterSpineRail, ChapterSpineScene } from '@/components/navigation/ChapterSpineRail';
+
+const SPINE_SCENES: ChapterSpineScene[] = [
+  { id: 'part-1-scene-1', index: 0, title: 'A Child of Two Worlds', partNumber: 1, partTitle: 'Part I: Roots and Foundations', hasCompletedReel: false, hasDraftProse: false, takesCount: 0 },
+  { id: 'part-1-scene-2', index: 1, title: 'The House I Grew Up In', partNumber: 1, partTitle: 'Part I: Roots and Foundations', hasCompletedReel: true, hasDraftProse: true, takesCount: 2 },
+  { id: 'part-1-scene-3', index: 2, title: 'Innocence and Curiosity', partNumber: 1, partTitle: 'Part I: Roots and Foundations', hasCompletedReel: false, hasDraftProse: true, takesCount: 0 },
+];
+
+describe('Suite 12 — MW-100: ChapterSpineRail', () => {
+  it('renders the correct count of scene tokens', () => {
+    const { container, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: SPINE_SCENES,
+        activeSceneId: 'part-1-scene-1',
+        onSelectScene: () => {},
+        orientation: 'horizontal',
+      })
+    );
+    const tokens = container.querySelectorAll('[data-testid^="HS_SPINE_SCENE_"]');
+    expect(tokens.length).toBe(3);
+    unmount();
+  });
+
+  it('marks the active scene with HS_SPINE_ACTIVE_SCENE testid', () => {
+    const { getByTestId, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: SPINE_SCENES,
+        activeSceneId: 'part-1-scene-2',
+        onSelectScene: () => {},
+        orientation: 'horizontal',
+      })
+    );
+    const activeLabel = getByTestId('HS_SPINE_ACTIVE_SCENE');
+    expect(activeLabel.textContent).toContain('The House I Grew Up In');
+    unmount();
+  });
+
+  it('calls onSelectScene with correct sceneId when an inactive token is clicked', () => {
+    const onSelect = vi.fn();
+    const { getByTestId, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: SPINE_SCENES,
+        activeSceneId: 'part-1-scene-1',
+        onSelectScene: onSelect,
+        orientation: 'horizontal',
+      })
+    );
+    const scene2Token = getByTestId('HS_SPINE_SCENE_part-1-scene-2');
+    scene2Token.click();
+    expect(onSelect).toHaveBeenCalledWith('part-1-scene-2');
+    unmount();
+  });
+
+  it('renders HS_CHAPTER_SPINE_RAIL container testid', () => {
+    const { getAllByTestId, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: SPINE_SCENES,
+        activeSceneId: 'part-1-scene-1',
+        onSelectScene: () => {},
+        orientation: 'horizontal',
+      })
+    );
+    const rails = getAllByTestId('HS_CHAPTER_SPINE_RAIL');
+    expect(rails.length).toBeGreaterThanOrEqual(1);
+    unmount();
+  });
+
+  it('does not render active scene label for inactive tokens', () => {
+    const { queryAllByTestId, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: SPINE_SCENES,
+        activeSceneId: 'part-1-scene-1',
+        onSelectScene: () => {},
+        orientation: 'horizontal',
+      })
+    );
+    const activeLabels = queryAllByTestId('HS_SPINE_ACTIVE_SCENE');
+    expect(activeLabels.length).toBe(1);
+    unmount();
+  });
+
+  it('renders part label divs for each part group', () => {
+    const { getAllByTestId, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: SPINE_SCENES,
+        activeSceneId: 'part-1-scene-1',
+        onSelectScene: () => {},
+        orientation: 'horizontal',
+      })
+    );
+    const partLabels = getAllByTestId('HS_SPINE_PART_LABEL');
+    expect(partLabels.length).toBeGreaterThanOrEqual(1);
+    unmount();
+  });
+});

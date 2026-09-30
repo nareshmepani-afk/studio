@@ -17,8 +17,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -52,6 +50,7 @@ import { isSceneCompleted } from '@/types/curriculum';
 import { detectSensoryAnchors, filterDominantSensoryAnchors } from '@/utils/sensoryAnchors';
 import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
+import { ChapterSpineRail, type ChapterSpineScene } from '@/components/navigation/ChapterSpineRail';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
@@ -473,6 +472,46 @@ export function SingleCardPromptCarousel({
     onSelectPrompt?.(currentSpark, currentLanguage);
   };
 
+  // ── Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100) ────
+  const spineScenes: ChapterSpineScene[] = useMemo(() => {
+    return sparkDeck.map((spark, idx) => {
+      const sceneId = spark.linkedSceneId || spark.id;
+      const linked = spark.linkedSceneId ? getSceneById(spark.linkedSceneId) : undefined;
+      const mem =
+        getSceneMemory && spark.linkedSceneId
+          ? getSceneMemory(spark.linkedSceneId)
+          : spark.linkedSceneId === activeSceneMemory?.sceneId
+            ? activeSceneMemory
+            : undefined;
+      const takesCount = mem?.takes?.length ?? 0;
+      return {
+        id: sceneId,
+        index: idx,
+        title: spark.title,
+        partNumber: linked?.partNumber ?? 1,
+        partTitle: linked?.partTitle ?? 'Part I: Roots and Foundations',
+        hasCompletedReel: Boolean(takesCount > 0 || (mem && isSceneCompleted(mem))),
+        hasDraftProse: Boolean(mem?.prose || mem?.originalHook),
+        takesCount,
+      };
+    });
+  }, [sparkDeck, getSceneMemory, activeSceneMemory]);
+
+  const handleSelectScene = useCallback(
+    (sceneId: string) => {
+      const targetIdx = sparkDeck.findIndex(
+        (s) => (s.linkedSceneId || s.id) === sceneId
+      );
+      if (targetIdx !== -1 && targetIdx !== currentIndex) {
+        setDirection(targetIdx > currentIndex ? 1 : -1);
+        setShowFollowUps(false);
+        setCurrentIndex(targetIdx);
+        onActivePromptChange?.(sparkDeck[targetIdx]);
+      }
+    },
+    [sparkDeck, currentIndex, onActivePromptChange]
+  );
+
   const currentText = currentSpark.sparks[currentLanguage] || currentSpark.sparks.en;
   const followUps = currentSpark.followUpQuestions[currentLanguage] || currentSpark.followUpQuestions.en || [];
   const photoPrompt = currentSpark.recommendedPhotoPrompt[currentLanguage] || currentSpark.recommendedPhotoPrompt.en;
@@ -559,6 +598,19 @@ export function SingleCardPromptCarousel({
               }}
             />
           )}
+        </div>
+      )}
+
+      {/* 1c. Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100) */}
+      {spineScenes.length > 0 && (
+        <div className="w-full max-w-xl mx-auto mb-3">
+          <ChapterSpineRail
+            scenes={spineScenes}
+            activeSceneId={currentSpark.linkedSceneId || currentSpark.id}
+            onSelectScene={handleSelectScene}
+            orientation="horizontal"
+            className="rounded-xl"
+          />
         </div>
       )}
 
@@ -1220,35 +1272,9 @@ export function SingleCardPromptCarousel({
         </AnimatePresence>
       </div>
 
-      {/* 5. Elder-Ergonomic Touch Controls (Rule 26: min-h-[56px]) */}
+      {/* 5. Elder-Ergonomic Primary Action Dock (Rule 26: min-h-[56px])
+          Navigation between scenes is handled by ChapterSpineRail (MW-100) above. */}
       <div className="w-full mt-5 flex flex-col gap-3">
-        {/* Navigation Touch Bar: Prev / Next buttons */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            data-hotspot-id="HS_FIRESIDE_PREV_STORY_BTN"
-            onClick={handlePrev}
-            style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-            className="w-full px-5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-98 border border-white/10 text-white font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer"
-            aria-label="Previous story spark"
-          >
-            <ChevronLeft className="w-5 h-5 text-neutral-300" />
-            <span>Previous Story</span>
-          </button>
-
-          <button
-            type="button"
-            data-hotspot-id="HS_FIRESIDE_NEXT_STORY_BTN"
-            onClick={handleNext}
-            style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-            className="w-full px-5 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-98 border border-white/10 text-white font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer"
-            aria-label="Next story spark"
-          >
-            <span>Next Story</span>
-            <ChevronRight className="w-5 h-5 text-neutral-300" />
-          </button>
-        </div>
-
         {/* Dual-Action Synchronised In-Place Footer Dock (MW-88-T8 & MW-88-T9: 100% Surface Containment) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button

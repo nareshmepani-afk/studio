@@ -667,3 +667,34 @@ Act III panel was unconditional amber capture slate regardless of ctiveSceneMem
 
 ### Issue B (MW-99 backlog)
 Surface Chooser Card on /studio — Option 2 approved. Backlog MW-99 to be created post-push.
+
+### [2026-09-29 19:03 BST] ?? Checkpoint #030 — Sprint 4 Closure & Sprint 5 Ingestion (MW-100 Series)
+
+- **Partner Disciplines:**
+  - ?? **Lead Architect (Antigravity)**: Executed Sprint 4 closure and Sprint 5 ticket ingestion autonomously.
+  - ?? **Plane.so Board**: All Sprint 4 MW-88 series tickets closed. Sprint 5 MW-100 series fully registered.
+
+- **Sprint 4 Closure (MW-88 Series) — COMPLETE @ commit eb9f85c7 (659/659 tests):**
+  - ? MW-88-T4 (#291) ? Done: Scene sequence alignment & live Act I prose sync
+  - ? MW-88-T9 (#299) ? Done: ?from=fireside return banner & mobile sensory word-pulse
+  - ? MW-101 (#307) ? Done: Act III recorded take branching (was already implemented in MW-88-T10 as HS_FIRESIDE_ACT3_RECORDED_VIEW / HS_FIRESIDE_ACT3_CAPTURE_SLATE, lines 827–891 of SingleCardPromptCarousel.tsx, 4/4 test invariants confirmed)
+
+- **Sprint 5 Tickets Registered (MW-100 Series):**
+  - ?? MW-100 (#308) ? In Progress: Unified Chapter Spine Rail & responsive spine tabs
+  - ?? MW-102 (#309) ? Todo: Post-recording Up Next transition slate (FiresideUpNextSlate.tsx)
+  - ?? MW-103 (#310) ? Todo: Studio Surface Chooser modal & landing parity (SurfaceChooserModal.tsx)
+  - ?? MW-104 (#311) ? Backlog / Sprint 6: Inbound WhatsApp voice note transcription bridge
+
+- **Architectural Boundary Codified:**
+  > "Sprint 4 (MW-88): Intra-Scene Lifecycle. Sprint 5 (MW-100): Inter-Scene Orchestration & Narrative Flow."
+  > SingleCardPromptCarousel.tsx has reached its structural ceiling — no macro-navigation patched inside.
+
+- **Current Invariant Test Baseline:** 659 / 659 Vitest Tests Passing (53 Test Files)
+- **Active Commit:** eb9f85c7 (live on staging at https://dev.memoryweaver.studio)
+- **Active Sprint:** Sprint 5 — MW-100 Series: Inter-Scene Orchestration & Narrative Flow
+- **Next Execution Target:** MW-100 — ChapterSpineRail.tsx (src/components/navigation/ChapterSpineRail.tsx)
+
+## Checkpoint #030 — MW-100: Unified Responsive Chapter Spine Rail & Orphaned Button Removal (2026-09-30)
+- **Track 1 (`src/components/navigation/ChapterSpineRail.tsx`)**: Built unified responsive hybrid scene navigation rail. Renders horizontal scrolling ribbon (`flex-row overflow-x-auto`, 44px+ elder-ergonomic touch targets, auto-centring active scene pill with jsdom-safe `scrollTo?.`) on mobile and vertical left-docked rail (`flex-col py-2`) on desktop. Implements canonical status dot mapping (completed reel emerald, in-progress draft amber pulse, unrecorded hollow stone, active emerald ring) and part separator labels (`HS_SPINE_PART_LABEL`).
+- **Track 2 (`src/components/fireside/SingleCardPromptCarousel.tsx`)**: Mounted `<ChapterSpineRail />` directly above the active story spark card inside `SingleCardPromptCarousel.tsx`, mapping `sparkDeck` to `ChapterSpineScene[]` enriched with live vault state (`hasCompletedReel`, `hasDraftProse`, `takesCount`) and wiring `handleSelectScene` to update `currentIndex` and invoke `onActivePromptChange` synchronously without triggering unintended recording starts. Removed orphaned `Previous Story` (`HS_FIRESIDE_PREV_STORY_BTN`) and `Next Story` (`HS_FIRESIDE_NEXT_STORY_BTN`) buttons and unused `ChevronLeft`/`ChevronRight` imports while preserving the Dual-Action Footer Dock.
+- **Track 3 (`src/test/fireside_sync.test.ts`, `src/test/fireside_prompt_carousel.test.tsx`, `src/test/fireside_hotspots_telemetry.test.tsx`, `src/test/fireside_video_recorder.test.tsx`)**: Added Suite 12 (6 unit tests for `ChapterSpineRail`) and updated existing Fireside carousel/hotspot/video test suites to assert `ChapterSpineRail` scene navigation (`HS_CHAPTER_SPINE_RAIL`, `HS_SPINE_ACTIVE_SCENE`, `HS_SPINE_SCENE_*`). All 53 test files (671/671 tests), `tsc --noEmit` (0 errors), and `npm.cmd run build` (45/45 routes) verified green.

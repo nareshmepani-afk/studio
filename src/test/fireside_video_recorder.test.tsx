@@ -397,9 +397,9 @@ describe('MW-249: Fireside Video Memo & Master Curriculum Invariants', () => {
         })
       );
 
-      // Click Next Story
-      const nextBtn = screen.getByRole('button', { name: /next story spark/i });
-      fireEvent.click(nextBtn);
+      // Navigate to Scene 2 via ChapterSpineRail (MW-100)
+      const scene2Token = screen.getByTestId('HS_SPINE_SCENE_part-1-scene-2');
+      fireEvent.click(scene2Token);
 
       // Card 2 is spark_childhood_home with suggestedMediaMode: 'audio'
       expect(onActivePromptChange).toHaveBeenLastCalledWith(

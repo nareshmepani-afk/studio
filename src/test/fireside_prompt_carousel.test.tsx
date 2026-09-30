@@ -78,9 +78,10 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       expect(screen.getByTestId('HS_FIRESIDE_HYBRID_TOGGLE_BTN')).toHaveTextContent('[ 🔤 HYBRID: OFF ]');
       expect(screen.getByText(/What stories did your grandparents share about where your family originally came from/i)).toBeInTheDocument();
 
-      // Button labels check (Rule 20 UK English)
-      expect(screen.getByRole('button', { name: /Previous story spark/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Next story spark/i })).toBeInTheDocument();
+      // ChapterSpineRail (MW-100) and primary CTA button check (Rule 20 UK English)
+      expect(screen.getByTestId('HS_CHAPTER_SPINE_RAIL')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Previous story spark/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Next story spark/i })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Speak this memory: A Child of Two Worlds/i })).toBeInTheDocument();
     });
 
@@ -110,11 +111,11 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       expect(screen.getByText(/તમારા વડીલો કે દાદા-દાદીએ પોતાના મૂળ વતન અને મુશ્કેલ સ્થળાંતર વિશે તમને કઈ વાતો કહી હતી/i)).toBeInTheDocument();
     });
 
-    it('navigates sequentially to the next and previous memory cards', async () => {
+    it('navigates sequentially to the next and previous memory cards via ChapterSpineRail (MW-100)', async () => {
       render(<SingleCardPromptCarousel />);
 
-      const nextBtn = screen.getByRole('button', { name: /Next story spark/i });
-      fireEvent.click(nextBtn);
+      const scene2Token = screen.getByTestId('HS_SPINE_SCENE_part-1-scene-2');
+      fireEvent.click(scene2Token);
 
       // Card 2 check (Part I - Scene 2: The House I Grew Up In)
       await waitFor(() => {
@@ -123,8 +124,8 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
         expect(screen.getByTestId('carousel-scene-number-badge')).toHaveTextContent('Part I • Scene 2');
       });
 
-      const prevBtn = screen.getByRole('button', { name: /Previous story spark/i });
-      fireEvent.click(prevBtn);
+      const scene1Token = screen.getByTestId('HS_SPINE_SCENE_part-1-scene-1');
+      fireEvent.click(scene1Token);
 
       // Back to Card 1
       await waitFor(() => {
@@ -207,8 +208,8 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
 
       expect(handleActivePromptChange).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0]);
 
-      const nextBtn = screen.getByRole('button', { name: /Next story spark/i });
-      fireEvent.click(nextBtn);
+      const scene2Token = screen.getByTestId('HS_SPINE_SCENE_part-1-scene-2');
+      fireEvent.click(scene2Token);
 
       await waitFor(() => {
         expect(handleActivePromptChange).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[1]);
