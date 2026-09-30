@@ -1134,7 +1134,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // Primary CTA is NOT locked to "Watch Studio Master Reel" — it enables recording the performance!
       const primaryCta = document.querySelector('[data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"]') as HTMLElement;
       expect(primaryCta).toBeTruthy();
-      expect(primaryCta.textContent).toContain('[ 🎙️ RECORD PERFORMANCE (ACT III) → ]');
+      expect(primaryCta.textContent).toContain('[ 🎬 Action: Enter Soundstage → ]');
       fireEvent.click(primaryCta);
       expect(onSelectPrompt).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0], 'en');
 
@@ -1565,7 +1565,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(prog1.textContent).toBe('[ ✨ Progress to Act II: Sensory Weave → ]');
       expect(prog1.getAttribute('href')).toBeNull();
       expect(rec1).toBeTruthy();
-      expect(rec1.textContent).toBe('[ 🎙️ RECORD PERFORMANCE (ACT III) → ]');
+      expect(rec1.textContent).toBe('[ 🎬 Action: Enter Soundstage → ]');
       u1();
 
       // Stage 2: [ 🎬 Progress to Act III: Record Performance → ]
@@ -1886,7 +1886,7 @@ describe('11. MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branchi
 
 
 // -------------------------------------------------------------------------------
-// SUITE 12 � MW-100: ChapterSpineRail Unit Tests (Regression Shield)
+// SUITE 12 � MW-100: ChapterSpineRail Unit Tests (Regression Shield)
 // -------------------------------------------------------------------------------
 import { ChapterSpineRail, ChapterSpineScene } from '@/components/navigation/ChapterSpineRail';
 
@@ -1896,7 +1896,7 @@ const SPINE_SCENES: ChapterSpineScene[] = [
   { id: 'part-1-scene-3', index: 2, title: 'Innocence and Curiosity', partNumber: 1, partTitle: 'Part I: Roots and Foundations', hasCompletedReel: false, hasDraftProse: true, takesCount: 0 },
 ];
 
-describe('Suite 12 � MW-100: ChapterSpineRail', () => {
+describe('Suite 12 � MW-100: ChapterSpineRail', () => {
   it('renders the correct count of scene tokens', () => {
     const { container, unmount } = render(
       React.createElement(ChapterSpineRail, {
@@ -1980,6 +1980,129 @@ describe('Suite 12 � MW-100: ChapterSpineRail', () => {
     );
     const partLabels = getAllByTestId('HS_SPINE_PART_LABEL');
     expect(partLabels.length).toBeGreaterThanOrEqual(1);
+    unmount();
+  });
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy & Action Verb Lockstep
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy & Action Verb Lockstep', () => {
+  it('13.1 HS_SPINE_PART_LABEL renders upright PART I text with zero rotate-180 or writing-mode-vertical classes', () => {
+    const { getAllByTestId, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: SPINE_SCENES,
+        activeSceneId: 'part-1-scene-1',
+        onSelectScene: () => {},
+        orientation: 'horizontal',
+      })
+    );
+    const partLabels = getAllByTestId('HS_SPINE_PART_LABEL');
+    expect(partLabels.length).toBeGreaterThanOrEqual(1);
+    const span = partLabels[0].querySelector('span') as HTMLElement;
+    expect(span).toBeTruthy();
+    expect(span.textContent).toBe('PART I');
+    expect(span.className).not.toContain('rotate-180');
+    expect(span.className).not.toContain('writing-mode-vertical');
+    unmount();
+  });
+
+  it('13.2 Next Recommended scene token receives data-recommended=true and pulsing emerald beacon ring', () => {
+    const testScenes = [
+      { id: 'part-1-scene-1', index: 0, title: 'A Child of Two Worlds', partNumber: 1, partTitle: 'Part I', hasCompletedReel: true, hasDraftProse: true, takesCount: 1 },
+      { id: 'part-1-scene-2', index: 1, title: 'The House I Grew Up In', partNumber: 1, partTitle: 'Part I', hasCompletedReel: false, hasDraftProse: true, takesCount: 0 },
+      { id: 'part-1-scene-3', index: 2, title: 'Innocence and Curiosity', partNumber: 1, partTitle: 'Part I', hasCompletedReel: false, hasDraftProse: false, takesCount: 0 },
+    ];
+    const { getByTestId, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: testScenes,
+        activeSceneId: 'part-1-scene-1',
+        onSelectScene: () => {},
+        orientation: 'horizontal',
+      })
+    );
+    const scene3Token = getByTestId('HS_SPINE_SCENE_part-1-scene-3');
+    expect(scene3Token.getAttribute('data-recommended')).toBe('true');
+    expect(scene3Token.className).toContain('ring-emerald-400');
+    unmount();
+  });
+
+  it('13.3 SingleCardPromptCarousel renders HS_FIRESIDE_CROWN_NEXT_RECOMMENDED and [ 🎬 READY FOR ACTION ] on first uncompleted scene', () => {
+    const { queryByTestId, getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        mediaMode: 'video',
+      })
+    );
+    const crown = getByTestId('HS_FIRESIDE_CROWN_NEXT_RECOMMENDED');
+    expect(crown.textContent).toContain('NEXT RECOMMENDED');
+    const readyBadge = getByTestId('HS_FIRESIDE_BADGE_READY_FOR_ACTION');
+    expect(readyBadge.textContent).toContain('READY FOR ACTION');
+    expect(queryByTestId('HS_FIRESIDE_BADGE_CAPTURED')).toBeNull();
+    const cta = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
+    expect(cta.textContent).toContain('[ 🎬 Action: Enter Soundstage → ]');
+    unmount();
+  });
+
+  it('13.4 SingleCardPromptCarousel renders [ 📹 CAPTURED ] + [ 🎞️ PRE-RELEASE ] and [ ✏️ Edit Scene / Audition Take → ] when scene has recorded take', () => {
+    const recordedMem = {
+      id: 'mem-1',
+      sceneId: 'part-1-scene-1',
+      currentStatus: 'captured' as const,
+      prose: 'My grandparents crossed the ocean.',
+      takes: [
+        {
+          id: 't1',
+          takeNumber: 1,
+          source: 'fireside_mobile' as const,
+          mediaMode: 'video' as const,
+          mediaType: 'video' as const,
+          label: 'Take 1',
+          isPreferred: true,
+          mediaUrl: 'https://storage.googleapis.com/test/reel1.mp4',
+          durationSeconds: 45,
+          createdAt: '2026-09-29T12:00:00Z',
+          originSurface: 'fireside_mobile' as const,
+        },
+      ],
+    };
+    const { getByTestId, queryByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        mediaMode: 'video',
+        activeSceneMemory: recordedMem,
+        getSceneMemory: (id?: string) => (id === 'part-1-scene-1' ? recordedMem : undefined),
+      })
+    );
+    expect(queryByTestId('HS_FIRESIDE_CROWN_NEXT_RECOMMENDED')).toBeNull();
+    expect(getByTestId('HS_FIRESIDE_BADGE_CAPTURED').textContent).toContain('CAPTURED');
+    expect(getByTestId('HS_FIRESIDE_BADGE_PRE_RELEASE').textContent).toContain('PRE-RELEASE');
+    const cta = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
+    expect(cta.textContent).toContain('[ ✏️ Edit Scene / Audition Take → ]');
+    unmount();
+  });
+
+  it('13.5 SingleCardPromptCarousel renders [ 📹 CAPTURED ] + [ ✍️ STUDIO DRAFT ] when scene has draft prose and 0 takes', () => {
+    const draftMem = {
+      id: 'mem-2',
+      sceneId: 'part-1-scene-1',
+      currentStatus: 'ready_for_action' as const,
+      prose: 'The house had a blue wooden veranda.',
+      takes: [],
+    };
+    const { getByTestId, queryByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        mediaMode: 'audio',
+        activeSceneMemory: draftMem,
+        getSceneMemory: (id?: string) => (id === 'part-1-scene-1' ? draftMem : undefined),
+      })
+    );
+    expect(queryByTestId('HS_FIRESIDE_CROWN_NEXT_RECOMMENDED')).toBeNull();
+    expect(getByTestId('HS_FIRESIDE_BADGE_CAPTURED').textContent).toContain('CAPTURED');
+    expect(getByTestId('HS_FIRESIDE_BADGE_STUDIO_DRAFT').textContent).toContain('STUDIO DRAFT');
     unmount();
   });
 });

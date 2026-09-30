@@ -28,6 +28,7 @@ export interface ChapterSpineScene {
   hasCompletedReel: boolean;
   hasDraftProse: boolean;
   takesCount: number;
+  isNextRecommended?: boolean;
 }
 
 export interface ChapterSpineRailProps {
@@ -39,6 +40,24 @@ export interface ChapterSpineRailProps {
    *  'vertical': always a vertical sidebar rail. */
   orientation?: 'horizontal' | 'vertical' | 'responsive';
   className?: string;
+}
+
+const PART_ROMAN_NUMERALS: Record<number, string> = {
+  1: 'PART I',
+  2: 'PART II',
+  3: 'PART III',
+  4: 'PART IV',
+  5: 'PART V',
+  6: 'PART VI',
+};
+
+function formatUprightPartLabel(partNumber: number, partTitle?: string): string {
+  if (PART_ROMAN_NUMERALS[partNumber]) return PART_ROMAN_NUMERALS[partNumber];
+  if (partTitle) {
+    const prefix = partTitle.split(':')[0]?.trim().toUpperCase();
+    if (prefix) return prefix;
+  }
+  return `PART ${partNumber}`;
 }
 
 // ─── Dot state resolver ───────────────────────────────────────────────────────
@@ -58,32 +77,35 @@ function resolveSceneState(
 interface SceneTokenProps {
   scene: ChapterSpineScene;
   isActive: boolean;
+  isNextRecommended: boolean;
   orientation: 'horizontal' | 'vertical';
   onSelect: (sceneId: string) => void;
 }
 
-function SceneToken({ scene, isActive, orientation, onSelect }: SceneTokenProps) {
+function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect }: SceneTokenProps) {
   const state = resolveSceneState(scene, isActive);
 
-  // Dot icon and colour per state
+  // Dot icon and colour per state (Desktop /studio lockstep: Teal = Captured, Amber = Studio Draft)
   const dotStyles: Record<typeof state, string> = {
     active:    'text-emerald-300',
-    completed: 'text-emerald-400',
+    completed: 'text-teal-400',
     draft:     'text-amber-400',
-    empty:     'text-stone-500',
+    empty:     isNextRecommended ? 'text-emerald-400' : 'text-stone-500',
   };
   const DotIcon =
     state === 'completed' ? CheckCircle2
     : state === 'draft'   ? Disc
     :                       Circle;
 
-  // Container ring when active
+  // Container ring when active or Next Recommended
   const containerBase =
     'relative flex items-center justify-center cursor-pointer transition-all rounded-2xl select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400';
 
   const containerActive = isActive
     ? 'ring-2 ring-emerald-400/80 bg-stone-800 shadow-md shadow-emerald-900/30'
-    : 'hover:bg-stone-800/60';
+    : isNextRecommended
+      ? 'ring-2 ring-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse bg-emerald-950/30 hover:bg-stone-800/60'
+      : 'hover:bg-stone-800/60';
 
   if (orientation === 'horizontal') {
     // Mobile: compact pill — 44px min height, auto width
@@ -91,7 +113,8 @@ function SceneToken({ scene, isActive, orientation, onSelect }: SceneTokenProps)
       <button
         type="button"
         data-testid={`HS_SPINE_SCENE_${scene.id}`}
-        aria-label={`Navigate to scene ${scene.index + 1}: ${scene.title}`}
+        data-recommended={isNextRecommended ? 'true' : undefined}
+        aria-label={`Navigate to scene ${scene.index + 1}: ${scene.title}${isNextRecommended ? ' (Next Recommended)' : ''}`}
         aria-current={isActive ? 'true' : undefined}
         onClick={() => onSelect(scene.id)}
         className={[
@@ -123,7 +146,7 @@ function SceneToken({ scene, isActive, orientation, onSelect }: SceneTokenProps)
           </span>
         )}
         {!isActive && (
-          <span className="text-[9px] font-mono text-stone-500 leading-none">
+          <span className={`text-[9px] font-mono leading-none ${isNextRecommended ? 'text-emerald-300 font-bold' : 'text-stone-500'}`}>
             {scene.index + 1}
           </span>
         )}
@@ -136,7 +159,8 @@ function SceneToken({ scene, isActive, orientation, onSelect }: SceneTokenProps)
     <button
       type="button"
       data-testid={`HS_SPINE_SCENE_${scene.id}`}
-      aria-label={`Navigate to scene ${scene.index + 1}: ${scene.title}`}
+      data-recommended={isNextRecommended ? 'true' : undefined}
+      aria-label={`Navigate to scene ${scene.index + 1}: ${scene.title}${isNextRecommended ? ' (Next Recommended)' : ''}`}
       aria-current={isActive ? 'true' : undefined}
       onClick={() => onSelect(scene.id)}
       className={[
@@ -170,7 +194,7 @@ function SceneToken({ scene, isActive, orientation, onSelect }: SceneTokenProps)
   );
 }
 
-// ─── Part group header ────────────────────────────────────────────────────────
+// ─── Part group header (MW-100-BRUTAL: Strictly Upright 0deg Rotation) ──────
 
 interface PartLabelProps {
   partNumber: number;
@@ -183,13 +207,13 @@ function PartLabel({ partNumber, partTitle, orientation }: PartLabelProps) {
     return (
       <div
         data-testid="HS_SPINE_PART_LABEL"
-        className="flex items-center shrink-0 px-1.5"
+        className="flex items-center shrink-0 px-1"
         aria-label={partTitle}
       >
-        <span className="text-[9px] font-mono font-bold text-stone-600 uppercase tracking-widest writing-mode-vertical rotate-180 select-none">
-          P{partNumber}
+        <span className="text-[10px] font-mono tracking-widest text-stone-500 select-none px-1.5 uppercase whitespace-nowrap">
+          {formatUprightPartLabel(partNumber, partTitle)}
         </span>
-        <div className="w-px h-6 bg-stone-800 ml-1.5" aria-hidden="true" />
+        <div className="w-px h-6 bg-stone-800 ml-1" aria-hidden="true" />
       </div>
     );
   }
@@ -216,6 +240,14 @@ export function ChapterSpineRail({
 }: ChapterSpineRailProps) {
   const activeTokenRef = useRef<HTMLButtonElement | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
+
+  // Resolve Next Recommended scene ID (first unstarted scene, or first scene with 0 takes)
+  const explicitRecommendedId = scenes.find((s) => s.isNextRecommended)?.id;
+  const fallbackRecommendedId =
+    scenes.find((s) => !s.hasCompletedReel && s.takesCount === 0 && !s.hasDraftProse)?.id ??
+    scenes.find((s) => !s.hasCompletedReel && s.takesCount === 0)?.id ??
+    null;
+  const nextRecommendedSceneId = explicitRecommendedId ?? fallbackRecommendedId;
 
   // Auto-scroll to the active token when it changes (horizontal only)
   useEffect(() => {
@@ -275,6 +307,7 @@ export function ChapterSpineRail({
                 <SceneToken
                   scene={scene}
                   isActive={isActive}
+                  isNextRecommended={scene.id === nextRecommendedSceneId}
                   orientation="horizontal"
                   onSelect={onSelectScene}
                 />
@@ -305,6 +338,7 @@ export function ChapterSpineRail({
               key={scene.id}
               scene={scene}
               isActive={scene.id === activeSceneId}
+              isNextRecommended={scene.id === nextRecommendedSceneId}
               orientation="vertical"
               onSelect={onSelectScene}
             />

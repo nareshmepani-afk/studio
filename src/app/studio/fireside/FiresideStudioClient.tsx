@@ -794,36 +794,33 @@ export default function FiresideStudioClient() {
           </div>
         )}
 
-        {/* Unified Chapter Typography ("The Golden Thread" — MW-88-T3 & MW-88-T6 Hybrid Bilingual Mode) */}
+        {/* Unified Chapter Typography ("The Golden Thread" — MW-88-T3, MW-88-T6 & MW-100-BRUTAL Compact Sub-Header) */}
         <div className="text-center max-w-md" data-testid="fireside-golden-thread-header">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold mb-3 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono font-bold mb-1.5 shadow-sm">
             <span>🌟 Vault Progress: {completedScenes} of {totalScenes} Stories Woven</span>
             <span className="text-stone-500">•</span>
             <span>{vaultProgressPercent}%</span>
           </div>
           <p
             data-testid="fireside-production-stage-label"
-            className="text-xs uppercase tracking-widest text-amber-400/90 font-semibold mb-1"
+            className="text-[10px] uppercase tracking-widest text-amber-400/90 font-semibold mb-0.5"
           >
             PRODUCTION STAGE
           </p>
           <h1
             data-testid="fireside-chapter-primary-title"
-            className="text-xl sm:text-2xl font-serif text-white font-normal leading-snug"
+            className="text-lg sm:text-xl font-serif text-white font-normal leading-tight"
           >
             {primaryPartHeading}
           </h1>
           {(isHybrid || activeLanguage !== 'en') && (
             <p
               data-testid="fireside-chapter-secondary-title"
-              className="text-sm sm:text-base font-serif text-amber-200/85 mt-0.5 leading-snug"
+              className="text-xs sm:text-sm font-serif text-amber-200/85 mt-0.5 leading-tight"
             >
               {secondaryPartHeading}
             </p>
           )}
-          <p className="text-xs text-stone-400 mt-1.5">
-            One memory at a time. Select your mother tongue or swipe to browse.
-          </p>
         </div>
 
         {/* Storytelling Media Mode Switcher (Voice & Photos vs Video Memo) */}

@@ -643,15 +643,15 @@
 
 ---
 
-## Checkpoint #029 ó MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branching
+## Checkpoint #029 ÔøΩ MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branching
 **Timestamp:** 2026-09-29T14:14:47+01:00
 **Branch:** dev
 **Status:** Pre-push (awaiting build gate)
 
 ### Changes
-- **SingleCardPromptCarousel.tsx** ó Track 1: switched spine from grid-cols-2 sm:grid-cols-4 whitespace-nowrap to grid-cols-4 overflow-hidden with dual <span> responsive labels (mobile: I: Script, desktop: Act I: Script). Added ria-label to all 4 tabs.
-- **SingleCardPromptCarousel.tsx** ó Track 2: replaced unconditional Act III capture slate with hasRecordedTake branch: HS_FIRESIDE_ACT3_RECORDED_VIEW (takes.length > 0) vs HS_FIRESIDE_ACT3_CAPTURE_SLATE (takes.length === 0).
-- **fireside_sync.test.ts** ó Track 3: appended Suite 11 with 6 hermetic regression tests. Fixed Suite 10 stale testid ireside-act3-soundstage-panel ? HS_FIRESIDE_ACT3_CAPTURE_SLATE.
+- **SingleCardPromptCarousel.tsx** ÔøΩ Track 1: switched spine from grid-cols-2 sm:grid-cols-4 whitespace-nowrap to grid-cols-4 overflow-hidden with dual <span> responsive labels (mobile: I: Script, desktop: Act I: Script). Added ria-label to all 4 tabs.
+- **SingleCardPromptCarousel.tsx** ÔøΩ Track 2: replaced unconditional Act III capture slate with hasRecordedTake branch: HS_FIRESIDE_ACT3_RECORDED_VIEW (takes.length > 0) vs HS_FIRESIDE_ACT3_CAPTURE_SLATE (takes.length === 0).
+- **fireside_sync.test.ts** ÔøΩ Track 3: appended Suite 11 with 6 hermetic regression tests. Fixed Suite 10 stale testid ireside-act3-soundstage-panel ? HS_FIRESIDE_ACT3_CAPTURE_SLATE.
 
 ### Verification
 - Suite 11 (fireside_sync): 42/42 ?
@@ -660,24 +660,24 @@
 - Production build: pending...
 
 ### Root Cause (Issue A)
-grid-cols-2 on mobile with whitespace-nowrap ó 2 cells at ~182px each, text labels exceeding cell width, bleeding across pill borders. Fix: uniform grid-cols-4 + overflow-hidden + truncated responsive spans.
+grid-cols-2 on mobile with whitespace-nowrap ÔøΩ 2 cells at ~182px each, text labels exceeding cell width, bleeding across pill borders. Fix: uniform grid-cols-4 + overflow-hidden + truncated responsive spans.
 
 ### Root Cause (Issue C)
 Act III panel was unconditional amber capture slate regardless of ctiveSceneMemory.takes.length. Desktop branches correctly via hasTake ? Player : Slate. Fireside now mirrors the same logic via hasRecordedTake IIFE branch.
 
 ### Issue B (MW-99 backlog)
-Surface Chooser Card on /studio ó Option 2 approved. Backlog MW-99 to be created post-push.
+Surface Chooser Card on /studio ÔøΩ Option 2 approved. Backlog MW-99 to be created post-push.
 
-### [2026-09-29 19:03 BST] ?? Checkpoint #030 ó Sprint 4 Closure & Sprint 5 Ingestion (MW-100 Series)
+### [2026-09-29 19:03 BST] ?? Checkpoint #030 ÔøΩ Sprint 4 Closure & Sprint 5 Ingestion (MW-100 Series)
 
 - **Partner Disciplines:**
   - ?? **Lead Architect (Antigravity)**: Executed Sprint 4 closure and Sprint 5 ticket ingestion autonomously.
   - ?? **Plane.so Board**: All Sprint 4 MW-88 series tickets closed. Sprint 5 MW-100 series fully registered.
 
-- **Sprint 4 Closure (MW-88 Series) ó COMPLETE @ commit eb9f85c7 (659/659 tests):**
+- **Sprint 4 Closure (MW-88 Series) ÔøΩ COMPLETE @ commit eb9f85c7 (659/659 tests):**
   - ? MW-88-T4 (#291) ? Done: Scene sequence alignment & live Act I prose sync
   - ? MW-88-T9 (#299) ? Done: ?from=fireside return banner & mobile sensory word-pulse
-  - ? MW-101 (#307) ? Done: Act III recorded take branching (was already implemented in MW-88-T10 as HS_FIRESIDE_ACT3_RECORDED_VIEW / HS_FIRESIDE_ACT3_CAPTURE_SLATE, lines 827ñ891 of SingleCardPromptCarousel.tsx, 4/4 test invariants confirmed)
+  - ? MW-101 (#307) ? Done: Act III recorded take branching (was already implemented in MW-88-T10 as HS_FIRESIDE_ACT3_RECORDED_VIEW / HS_FIRESIDE_ACT3_CAPTURE_SLATE, lines 827ÔøΩ891 of SingleCardPromptCarousel.tsx, 4/4 test invariants confirmed)
 
 - **Sprint 5 Tickets Registered (MW-100 Series):**
   - ?? MW-100 (#308) ? In Progress: Unified Chapter Spine Rail & responsive spine tabs
@@ -687,14 +687,30 @@ Surface Chooser Card on /studio ó Option 2 approved. Backlog MW-99 to be created
 
 - **Architectural Boundary Codified:**
   > "Sprint 4 (MW-88): Intra-Scene Lifecycle. Sprint 5 (MW-100): Inter-Scene Orchestration & Narrative Flow."
-  > SingleCardPromptCarousel.tsx has reached its structural ceiling ó no macro-navigation patched inside.
+  > SingleCardPromptCarousel.tsx has reached its structural ceiling ÔøΩ no macro-navigation patched inside.
 
 - **Current Invariant Test Baseline:** 659 / 659 Vitest Tests Passing (53 Test Files)
 - **Active Commit:** eb9f85c7 (live on staging at https://dev.memoryweaver.studio)
-- **Active Sprint:** Sprint 5 ó MW-100 Series: Inter-Scene Orchestration & Narrative Flow
-- **Next Execution Target:** MW-100 ó ChapterSpineRail.tsx (src/components/navigation/ChapterSpineRail.tsx)
+- **Active Sprint:** Sprint 5 ÔøΩ MW-100 Series: Inter-Scene Orchestration & Narrative Flow
+- **Next Execution Target:** MW-100 ÔøΩ ChapterSpineRail.tsx (src/components/navigation/ChapterSpineRail.tsx)
 
-## Checkpoint #030 ó MW-100: Unified Responsive Chapter Spine Rail & Orphaned Button Removal (2026-09-30)
+## Checkpoint #030 ÔøΩ MW-100: Unified Responsive Chapter Spine Rail & Orphaned Button Removal (2026-09-30)
 - **Track 1 (`src/components/navigation/ChapterSpineRail.tsx`)**: Built unified responsive hybrid scene navigation rail. Renders horizontal scrolling ribbon (`flex-row overflow-x-auto`, 44px+ elder-ergonomic touch targets, auto-centring active scene pill with jsdom-safe `scrollTo?.`) on mobile and vertical left-docked rail (`flex-col py-2`) on desktop. Implements canonical status dot mapping (completed reel emerald, in-progress draft amber pulse, unrecorded hollow stone, active emerald ring) and part separator labels (`HS_SPINE_PART_LABEL`).
 - **Track 2 (`src/components/fireside/SingleCardPromptCarousel.tsx`)**: Mounted `<ChapterSpineRail />` directly above the active story spark card inside `SingleCardPromptCarousel.tsx`, mapping `sparkDeck` to `ChapterSpineScene[]` enriched with live vault state (`hasCompletedReel`, `hasDraftProse`, `takesCount`) and wiring `handleSelectScene` to update `currentIndex` and invoke `onActivePromptChange` synchronously without triggering unintended recording starts. Removed orphaned `Previous Story` (`HS_FIRESIDE_PREV_STORY_BTN`) and `Next Story` (`HS_FIRESIDE_NEXT_STORY_BTN`) buttons and unused `ChevronLeft`/`ChevronRight` imports while preserving the Dual-Action Footer Dock.
 - **Track 3 (`src/test/fireside_sync.test.ts`, `src/test/fireside_prompt_carousel.test.tsx`, `src/test/fireside_hotspots_telemetry.test.tsx`, `src/test/fireside_video_recorder.test.tsx`)**: Added Suite 12 (6 unit tests for `ChapterSpineRail`) and updated existing Fireside carousel/hotspot/video test suites to assert `ChapterSpineRail` scene navigation (`HS_CHAPTER_SPINE_RAIL`, `HS_SPINE_ACTIVE_SCENE`, `HS_SPINE_SCENE_*`). All 53 test files (671/671 tests), `tsc --noEmit` (0 errors), and `npm.cmd run build` (45/45 routes) verified green.
+
+---
+
+## Checkpoint #032 ‚Äî MW-100-BRUTAL: Cross-Surface Streamline & 1:1 Taxonomy Lockstep (2026-09-30)
+
+- **Plane.so Ticket**: `MW-100-B` (Sequence #312)
+- **Baseline Commit**: `a47317cd`
+- **Files Modified**:
+  - `src/components/navigation/ChapterSpineRail.tsx` ‚Äî Stripped inverted `writing-mode-vertical rotate-180` CSS classes on `HS_SPINE_PART_LABEL`; rendered upright `PART I`‚Äì`PART VI` micro-capsules; added `isNextRecommended` emerald beacon ring (`data-recommended="true"`) and 1:1 Desktop dot colour parity (`text-teal-400` completed, `text-amber-400` draft, `text-stone-500` unrecorded).
+  - `src/components/fireside/SingleCardPromptCarousel.tsx` ‚Äî Mounted `[ ‚ú® NEXT RECOMMENDED ]` crown badge (`HS_FIRESIDE_CROWN_NEXT_RECOMMENDED`), replaced arbitrary visible tags with Desktop lifecycle status pills (`[ üìπ CAPTURED ]`, `[ üéûÔ∏è PRE-RELEASE ]`, `[ ‚úçÔ∏è STUDIO DRAFT ]`, `[ üé¨ READY FOR ACTION ]`), aligned primary footer CTA to `[ üé¨ Action: Enter Soundstage ‚Üí ]` (0 takes) and `[ ‚úèÔ∏è Edit Scene / Audition Take ‚Üí ]` (1+ takes), and compacted language/HYBRID tray.
+  - `src/components/fireside/FiresideModeSwitch.tsx` & `src/app/studio/fireside/FiresideStudioClient.tsx` ‚Äî Compacted attic overhead height while preserving Rule 26 touch targets and test contracts.
+  - `src/test/fireside_sync.test.ts` ‚Äî Added Suite 13 (5 hermetic tests verifying upright `PART I` labels, `data-recommended="true"` emerald beacon, lifecycle badges, and action verb lockstep).
+- **Verification**:
+  - `tsc --noEmit`: `0` errors
+  - `vitest run`: `53/53` test files (`676/676` tests passed)
+  - `npm.cmd run build`: `45/45` routes compiled cleanly

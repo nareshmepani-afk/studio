@@ -472,9 +472,9 @@ export function SingleCardPromptCarousel({
     onSelectPrompt?.(currentSpark, currentLanguage);
   };
 
-  // ── Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100) ────
+  // ── Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100 / MW-100-BRUTAL) ────
   const spineScenes: ChapterSpineScene[] = useMemo(() => {
-    return sparkDeck.map((spark, idx) => {
+    const rawScenes = sparkDeck.map((spark, idx) => {
       const sceneId = spark.linkedSceneId || spark.id;
       const linked = spark.linkedSceneId ? getSceneById(spark.linkedSceneId) : undefined;
       const mem =
@@ -495,7 +495,28 @@ export function SingleCardPromptCarousel({
         takesCount,
       };
     });
+
+    const recommendedId =
+      rawScenes.find((s) => !s.hasCompletedReel && s.takesCount === 0 && !s.hasDraftProse)?.id ??
+      rawScenes.find((s) => !s.hasCompletedReel && s.takesCount === 0)?.id ??
+      null;
+
+    return rawScenes.map((s) => ({
+      ...s,
+      isNextRecommended: s.id === recommendedId,
+    }));
   }, [sparkDeck, getSceneMemory, activeSceneMemory]);
+
+  const activeSceneId = currentSpark.linkedSceneId || currentSpark.id;
+  const isCurrentSceneRecommended = Boolean(
+    spineScenes.find((s) => s.id === activeSceneId)?.isNextRecommended
+  );
+  const currentTakesCount = currentSceneMemory?.takes?.length ?? 0;
+  const hasCurrentTake = currentTakesCount > 0 || hasSceneCompletedReel;
+  const hasCurrentDraftProse = Boolean(activeProse || currentSceneMemory?.originalHook);
+  const isCurrentDraftState =
+    (currentSceneMemory as any)?.status === 'draft' ||
+    (!hasCurrentTake && hasCurrentDraftProse);
 
   const handleSelectScene = useCallback(
     (sceneId: string) => {
@@ -521,8 +542,8 @@ export function SingleCardPromptCarousel({
       className={`w-full max-w-xl mx-auto flex flex-col items-center select-none ${className}`}
       style={{ touchAction: 'pan-y' }}
     >
-      {/* 1. Language Toggle Pills + Synchronised HYBRID Bilingual Toggle (Rule 26: 56px touch targets) */}
-      <div className="w-full flex items-center justify-center gap-1.5 sm:gap-2 mb-4 px-1 overflow-x-auto no-scrollbar flex-wrap">
+      {/* 1. Compact Sub-Header Language & HYBRID Tray (MW-100-BRUTAL Track 3; Rule 26 touch targets) */}
+      <div className="w-full flex items-center justify-center gap-1.5 mb-2.5 px-1.5 py-1 rounded-2xl bg-stone-950/60 border border-stone-800/70 overflow-x-auto no-scrollbar flex-wrap">
         {LANGUAGES.map((lang) => {
           const isActive = currentLanguage === lang;
           return (
@@ -532,9 +553,9 @@ export function SingleCardPromptCarousel({
               data-hotspot-id={`HS_FIRESIDE_LANG_${lang.toUpperCase()}`}
               onClick={() => handleLanguageSelect(lang)}
               style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-              className={`min-h-[56px] px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
+              className={`min-h-[48px] px-3 py-1 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
                 isActive
-                  ? 'bg-amber-500/20 text-amber-200 border-amber-500/50 shadow-sm shadow-amber-500/10 scale-102'
+                  ? 'bg-amber-500/20 text-amber-200 border-amber-500/50 shadow-sm shadow-amber-500/10'
                   : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/20 hover:text-neutral-200'
               }`}
               aria-label={`Switch storytelling language to ${FIRESIDE_LANGUAGE_LABELS[lang]}`}
@@ -555,7 +576,7 @@ export function SingleCardPromptCarousel({
           aria-label="Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English."
           aria-pressed={effectiveHybrid}
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-          className={`min-h-[56px] px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-mono font-bold transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
+          className={`min-h-[48px] px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
             effectiveHybrid
               ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50 shadow-sm shadow-emerald-500/10'
               : 'bg-white/5 text-neutral-300 border-white/15 hover:border-amber-500/40 hover:text-amber-200'
@@ -567,7 +588,7 @@ export function SingleCardPromptCarousel({
 
       {/* 1b. Fireside Free Walkthrough & 30-Second Soundcheck Card (Index 0 of Carousel — MW-88-T3 / MW-88-T5) */}
       {currentIndex === 0 && (
-        <div className="w-full max-w-xl mx-auto mb-4 flex flex-col gap-2">
+        <div className="w-full max-w-xl mx-auto mb-3 flex flex-col gap-2">
           {!isWarmupOpen && (
             <FiresideWalkthroughCard
               activeLanguage={currentLanguage}
@@ -603,10 +624,10 @@ export function SingleCardPromptCarousel({
 
       {/* 1c. Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100) */}
       {spineScenes.length > 0 && (
-        <div className="w-full max-w-xl mx-auto mb-3">
+        <div className="w-full max-w-xl mx-auto mb-2.5">
           <ChapterSpineRail
             scenes={spineScenes}
-            activeSceneId={currentSpark.linkedSceneId || currentSpark.id}
+            activeSceneId={activeSceneId}
             onSelectScene={handleSelectScene}
             orientation="horizontal"
             className="rounded-xl"
@@ -644,45 +665,94 @@ export function SingleCardPromptCarousel({
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div>
-              {/* Top Meta Bar: Category Pill + Curriculum Badge + Card Index Counter */}
+              {/* Crown Badge: First Uncompleted Scene (MW-100-BRUTAL Section 3A) */}
+              {isCurrentSceneRecommended && !hasCurrentTake && !hasCurrentDraftProse && (
+                <div className="mb-2.5 flex items-center">
+                  <span
+                    data-testid="HS_FIRESIDE_CROWN_NEXT_RECOMMENDED"
+                    className="bg-emerald-500 text-gray-950 font-black text-[10px] tracking-wider px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)] uppercase inline-flex items-center gap-1"
+                  >
+                    ✨ NEXT RECOMMENDED
+                  </span>
+                </div>
+              )}
+
+              {/* Top Meta Bar: 1:1 Desktop Lifecycle Badges + Curriculum Scene Badge + Card Index Counter */}
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div className="flex items-center flex-wrap gap-1.5">
-                  <div
+                  {/* Accessibility metadata hooks preserved as sr-only */}
+                  <span
                     data-testid="carousel-category-badge"
                     title={categoryMeta.tooltip}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border cursor-help ${categoryMeta.colour}`}
+                    className="sr-only"
                   >
                     <CategoryIcon className="w-3.5 h-3.5" />
-                    <span className="uppercase tracking-wider text-[11px] font-semibold">
-                      {categoryMeta.label}
-                    </span>
+                    {categoryMeta.label}
+                  </span>
+
+                  {/* 1:1 Desktop Lifecycle Status Badges (MW-100-BRUTAL Section 3B) */}
+                  <div
+                    data-testid={cardEditingAuthority !== 'desktop_locked' ? 'carousel-mobile-recording-badge' : 'carousel-lifecycle-status-badges'}
+                    title={cardEditingAuthority !== 'desktop_locked' ? 'Captured on Fireside Mobile • Full cross-device editing enabled' : undefined}
+                    className="inline-flex items-center flex-wrap gap-1.5"
+                  >
+                    {hasCurrentTake && !isCurrentDraftState ? (
+                      <>
+                        <span
+                          data-testid="HS_FIRESIDE_BADGE_CAPTURED"
+                          className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                        >
+                          [ 📹 CAPTURED ]
+                        </span>
+                        <span
+                          data-testid="HS_FIRESIDE_BADGE_PRE_RELEASE"
+                          className="bg-purple-950/80 text-purple-300 border border-purple-500/40 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                        >
+                          [ 🎞️ PRE-RELEASE ]
+                        </span>
+                      </>
+                    ) : hasCurrentTake || hasCurrentDraftProse ? (
+                      <>
+                        <span
+                          data-testid="HS_FIRESIDE_BADGE_CAPTURED"
+                          className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                        >
+                          [ 📹 CAPTURED ]
+                        </span>
+                        <span
+                          data-testid="HS_FIRESIDE_BADGE_STUDIO_DRAFT"
+                          className="bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                        >
+                          [ ✍️ STUDIO DRAFT ]
+                        </span>
+                      </>
+                    ) : (
+                      <span
+                        data-testid="HS_FIRESIDE_BADGE_READY_FOR_ACTION"
+                        className="bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                      >
+                        [ 🎬 READY FOR ACTION ]
+                      </span>
+                    )}
                   </div>
 
                   {linkedScene && (
                     <span
                       data-testid="carousel-scene-number-badge"
                       title="Curriculum Position: Part I (Roots and Foundations), Scene 1 of 11 in your Generational Vault."
-                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold cursor-help"
+                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold cursor-help"
                     >
                       {linkedScene.partTitle.split(':')[0]} • Scene {linkedScene.sceneNumber}
                     </span>
                   )}
 
-                  {cardEditingAuthority === 'desktop_locked' ? (
+                  {cardEditingAuthority === 'desktop_locked' && (
                     <span
                       data-testid="carousel-studio-master-badge"
                       title="Authored in Desktop Studio • Full cross-device editing enabled"
-                      className="text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm cursor-help"
+                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm cursor-help"
                     >
                       ✨ Studio Master
-                    </span>
-                  ) : (
-                    <span
-                      data-testid="carousel-mobile-recording-badge"
-                      title="Captured on Fireside Mobile • Full cross-device editing enabled"
-                      className="text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-emerald-200 font-semibold shadow-sm cursor-help"
-                    >
-                      📱 Fireside Mobile
                     </span>
                   )}
 
@@ -690,17 +760,17 @@ export function SingleCardPromptCarousel({
                     <span
                       data-testid="carousel-media-badge"
                       title="Recommended Capture Mode: Intimate selfie video with live teleprompter."
-                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-1 font-semibold cursor-help"
+                      className="sr-only"
                     >
                       {currentSpark.suggestedMediaMode === 'video' ? (
                         <>
                           <Video className="w-3 h-3 text-amber-400" />
-                          <span>Video Memo • Recommended</span>
+                          <span>Video Memo</span>
                         </>
                       ) : (
                         <>
                           <Mic className="w-3 h-3 text-amber-400" />
-                          <span>Voice &amp; Photos • Curriculum</span>
+                          <span>Voice &amp; Photos</span>
                         </>
                       )}
                     </span>
@@ -1306,18 +1376,28 @@ export function SingleCardPromptCarousel({
             data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"
             onClick={() => {
               handleSelectActTab('act3');
-              handleSelectCurrent();
-              scrollToActiveSoundstage();
+              if (hasCurrentTake) {
+                onOpenScreeningRoom?.();
+              } else {
+                handleSelectCurrent();
+                scrollToActiveSoundstage();
+              }
             }}
             style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-            className="w-full min-h-[56px] px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-mono font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer"
+            className={
+              hasCurrentTake
+                ? 'w-full min-h-[48px] px-4 py-3 rounded-xl border border-sky-500/40 bg-sky-950/30 text-sky-300 hover:bg-sky-900/40 font-mono font-bold text-xs sm:text-sm shadow-lg shadow-sky-950/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer'
+                : 'w-full min-h-[48px] px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-gray-950 font-mono font-black text-xs sm:text-sm shadow-lg shadow-sky-500/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer'
+            }
             aria-label={
               effectiveMediaMode === 'video'
                 ? `Record performance: ${currentSpark.title}`
                 : `Speak this memory: ${currentSpark.title}`
             }
           >
-            [ 🎙️ RECORD PERFORMANCE (ACT III) → ]
+            {hasCurrentTake
+              ? '[ ✏️ Edit Scene / Audition Take → ]'
+              : '[ 🎬 Action: Enter Soundstage → ]'}
           </button>
         </div>
       </div>
