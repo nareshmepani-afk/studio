@@ -2179,34 +2179,44 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     unmount();
   });
 
-  it('14.3 Option C Combined Header Stepper and ChapterSpineRail chevrons advance and retreat scenes in 1:1 lockstep', () => {
-    const { getByTestId, unmount } = render(
-      React.createElement(SingleCardPromptCarousel, {
+  it('14.3 PRODUCTION STAGE Header Stepper jumps to Scene 1 of next/previous Part while ChapterSpineRail chevrons step scene-by-scene in 1:1 lockstep', () => {
+    const ControlledHarness = () => {
+      const [activeId, setActiveId] = React.useState('part-1-scene-1');
+      return React.createElement(SingleCardPromptCarousel, {
         activeLanguage: 'en',
         mediaMode: 'video',
-      })
-    );
+        activePromptId: activeId,
+        onActivePromptChange: (spark) => setActiveId(spark.id),
+      });
+    };
+
+    const { getByTestId, unmount } = render(React.createElement(ControlledHarness));
 
     const subtitle = getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE');
+    expect(subtitle.textContent).toContain('Part I - Scene 1');
     expect(subtitle.textContent).toContain('Scene 1 of');
     expect(subtitle.textContent).toContain('A Child of Two Worlds');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · A Child of Two Worlds');
 
-    // Step forward via Header Next Chevron
+    // Jump to next Part Scene 1 via PRODUCTION STAGE Header Next Chevron (Part I -> Part II - Scene 1)
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_NEXT_SCENE'));
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 2 of');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('The House I Grew Up In');
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('2 · The House I Grew Up In');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 1');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 4 of');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Formative Friendships');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Formative Friendships');
 
-    // Step forward via Spine Rail Next Chevron
+    // Step forward 1 scene via Spine Rail Next Chevron (Part II - Scene 1 -> Part II - Scene 2)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 3 of');
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('3 ·');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 2');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 5 of');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('5 ·');
 
-    // Step backward via Header Prev Chevron
+    // Jump backward to previous Part Scene 1 via PRODUCTION STAGE Header Prev Chevron (Part II -> Part I - Scene 1)
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_PREV_SCENE'));
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 2 of');
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('2 · The House I Grew Up In');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part I - Scene 1');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 1 of');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('A Child of Two Worlds');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · A Child of Two Worlds');
 
     unmount();
   });

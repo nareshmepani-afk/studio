@@ -335,6 +335,7 @@ export default function FiresideStudioClient() {
   }, [notification, mediaMode]);
 
   const handleActivePromptChange = useCallback((spark: FiresidePromptSpark) => {
+    setSelectedSpark(spark);
     setActivePromptSpark((prev) => {
       if (prev && prev.id !== spark.id) {
         setForceRecordMode(false);
@@ -665,27 +666,76 @@ export default function FiresideStudioClient() {
 
   const resolvedActiveSpark = FIRESIDE_PROMPT_SPARKS[activeSparkIdx] || FIRESIDE_PROMPT_SPARKS[0];
 
-  const handleHeaderPrevScene = useCallback(() => {
-    const prevIdx = (activeSparkIdx - 1 + FIRESIDE_PROMPT_SPARKS.length) % FIRESIDE_PROMPT_SPARKS.length;
-    const targetSpark = FIRESIDE_PROMPT_SPARKS[prevIdx];
-    if (targetSpark) {
-      handleActivePromptChange(targetSpark);
-    }
-  }, [activeSparkIdx, handleActivePromptChange]);
-
-  const handleHeaderNextScene = useCallback(() => {
-    const nextIdx = (activeSparkIdx + 1) % FIRESIDE_PROMPT_SPARKS.length;
-    const targetSpark = FIRESIDE_PROMPT_SPARKS[nextIdx];
-    if (targetSpark) {
-      handleActivePromptChange(targetSpark);
-    }
-  }, [activeSparkIdx, handleActivePromptChange]);
-
   const activePart = useMemo(
     () => getPartForScene((selectedSpark || activePromptSpark || resolvedActiveSpark)?.linkedSceneId),
     [selectedSpark, activePromptSpark, resolvedActiveSpark]
   );
+
+  // Compute distinct Part start indices so PRODUCTION STAGE header < / > buttons jump to Scene 1 of the next/previous Part
+  const partFirstSceneIndices = useMemo(() => {
+    const seen = new Set<number>();
+    const result: { partNumber: number; firstIdx: number }[] = [];
+    FIRESIDE_PROMPT_SPARKS.forEach((spark, idx) => {
+      const part = getPartForScene(spark.linkedSceneId);
+      if (!seen.has(part.partNumber)) {
+        seen.add(part.partNumber);
+        result.push({ partNumber: part.partNumber, firstIdx: idx });
+      }
+    });
+    return result;
+  }, []);
+
+  const handleHeaderPrevScene = useCallback(() => {
+    if (partFirstSceneIndices.length <= 1) {
+      const prevIdx = (activeSparkIdx - 1 + FIRESIDE_PROMPT_SPARKS.length) % FIRESIDE_PROMPT_SPARKS.length;
+      const targetSpark = FIRESIDE_PROMPT_SPARKS[prevIdx];
+      if (targetSpark) handleActivePromptChange(targetSpark);
+      return;
+    }
+    const currentGroupIdx = partFirstSceneIndices.findIndex(
+      (g) => g.partNumber === activePart.partNumber
+    );
+    const prevGroupIdx =
+      currentGroupIdx !== -1
+        ? (currentGroupIdx - 1 + partFirstSceneIndices.length) % partFirstSceneIndices.length
+        : partFirstSceneIndices.length - 1;
+    const targetSpark = FIRESIDE_PROMPT_SPARKS[partFirstSceneIndices[prevGroupIdx].firstIdx];
+    if (targetSpark) {
+      handleActivePromptChange(targetSpark);
+    }
+  }, [activeSparkIdx, activePart.partNumber, partFirstSceneIndices, handleActivePromptChange]);
+
+  const handleHeaderNextScene = useCallback(() => {
+    if (partFirstSceneIndices.length <= 1) {
+      const nextIdx = (activeSparkIdx + 1) % FIRESIDE_PROMPT_SPARKS.length;
+      const targetSpark = FIRESIDE_PROMPT_SPARKS[nextIdx];
+      if (targetSpark) handleActivePromptChange(targetSpark);
+      return;
+    }
+    const currentGroupIdx = partFirstSceneIndices.findIndex(
+      (g) => g.partNumber === activePart.partNumber
+    );
+    const nextGroupIdx =
+      currentGroupIdx !== -1 ? (currentGroupIdx + 1) % partFirstSceneIndices.length : 0;
+    const targetSpark = FIRESIDE_PROMPT_SPARKS[partFirstSceneIndices[nextGroupIdx].firstIdx];
+    if (targetSpark) {
+      handleActivePromptChange(targetSpark);
+    }
+  }, [activeSparkIdx, activePart.partNumber, partFirstSceneIndices, handleActivePromptChange]);
+
   const activePartTitle = activePart.title;
+  const activePartRoman = activePart.title.split(':')[0] || `Part ${activePart.partNumber}`;
+  const activeSceneNumInPart = useMemo(() => {
+    let count = 0;
+    for (let i = 0; i <= activeSparkIdx; i++) {
+      const p = getPartForScene(FIRESIDE_PROMPT_SPARKS[i]?.linkedSceneId);
+      if (p.partNumber === activePart.partNumber) {
+        count++;
+      }
+    }
+    return count || 1;
+  }, [activeSparkIdx, activePart.partNumber]);
+
   const englishPartHeading = activePart.localizedTitles?.en || activePart.title;
   const motherTonguePartLang: FiresideLanguage = activeLanguage === 'en' ? 'gu' : activeLanguage;
   const motherTonguePartHeading =
@@ -811,8 +861,8 @@ export default function FiresideStudioClient() {
               type="button"
               data-testid="HS_FIRESIDE_HEADER_PREV_SCENE"
               onClick={handleHeaderPrevScene}
-              aria-label="Step to previous scene"
-              title="Step to previous scene"
+              aria-label="Jump to previous Part Scene 1"
+              title="Jump to previous Part Scene 1"
               style={{ minHeight: 44, minWidth: 44 }}
               className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
@@ -838,7 +888,7 @@ export default function FiresideStudioClient() {
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
                 className="text-[11px] font-mono text-amber-300/90 mt-1 leading-snug"
               >
-                Scene {activeSparkIdx + 1} of {FIRESIDE_PROMPT_SPARKS.length} • {activeSceneTitle}
+                {activePartRoman} - Scene {activeSceneNumInPart} • Scene {activeSparkIdx + 1} of {FIRESIDE_PROMPT_SPARKS.length} • {activeSceneTitle}
               </p>
             </div>
 
@@ -846,8 +896,8 @@ export default function FiresideStudioClient() {
               type="button"
               data-testid="HS_FIRESIDE_HEADER_NEXT_SCENE"
               onClick={handleHeaderNextScene}
-              aria-label="Step to next scene"
-              title="Step to next scene"
+              aria-label="Jump to next Part Scene 1"
+              title="Jump to next Part Scene 1"
               style={{ minHeight: 44, minWidth: 44 }}
               className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >

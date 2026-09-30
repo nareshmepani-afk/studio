@@ -188,10 +188,10 @@ export function SingleCardPromptCarousel({
   useEffect(() => {
     if (!activePromptId) return;
     const found = sparkDeck.findIndex((p) => p.id === activePromptId || p.linkedSceneId === activePromptId);
-    if (found !== -1 && found !== currentIndex) {
+    if (found !== -1) {
       setCurrentIndex(found);
     }
-  }, [activePromptId, sparkDeck, currentIndex]);
+  }, [activePromptId, sparkDeck]);
   const [viewMode, setViewMode] = useState<'script' | 'spark'>('script');
   const [isEditingScript, setIsEditingScript] = useState<boolean>(false);
   const [draftProse, setDraftProse] = useState<string>('');
@@ -561,6 +561,55 @@ export function SingleCardPromptCarousel({
       ? activePart.localizedTitles?.en || activePart.title
       : activePart.localizedTitles?.[currentLanguage] || activePart.localizedTitles?.gu || activePart.title;
 
+  const partFirstSceneIndices = useMemo(() => {
+    const seenParts = new Set<number>();
+    const list: Array<{ partNumber: number; firstIdx: number }> = [];
+    sparkDeck.forEach((spark, idx) => {
+      const scene = spark.linkedSceneId ? getSceneById(spark.linkedSceneId) : undefined;
+      const partNum = scene?.partNumber ?? getPartForScene(spark.linkedSceneId)?.partNumber ?? 1;
+      if (!seenParts.has(partNum)) {
+        seenParts.add(partNum);
+        list.push({ partNumber: partNum, firstIdx: idx });
+      }
+    });
+    return list;
+  }, [sparkDeck]);
+
+  const handleNextPart = useCallback(() => {
+    if (partFirstSceneIndices.length <= 1) {
+      handleNext();
+      return;
+    }
+    const currentPartNum = linkedScene?.partNumber ?? activePart.partNumber ?? 1;
+    const currentGroupIdx = partFirstSceneIndices.findIndex((g) => g.partNumber === currentPartNum);
+    const nextGroupIdx = ((currentGroupIdx !== -1 ? currentGroupIdx : 0) + 1) % partFirstSceneIndices.length;
+    const targetIdx = partFirstSceneIndices[nextGroupIdx].firstIdx;
+    setDirection(1);
+    setShowFollowUps(false);
+    setCurrentIndex(targetIdx);
+    onActivePromptChange?.(sparkDeck[targetIdx]);
+  }, [partFirstSceneIndices, linkedScene?.partNumber, activePart.partNumber, handleNext, sparkDeck, onActivePromptChange]);
+
+  const handlePrevPart = useCallback(() => {
+    if (partFirstSceneIndices.length <= 1) {
+      handlePrev();
+      return;
+    }
+    const currentPartNum = linkedScene?.partNumber ?? activePart.partNumber ?? 1;
+    const currentGroupIdx = partFirstSceneIndices.findIndex((g) => g.partNumber === currentPartNum);
+    const prevGroupIdx =
+      ((currentGroupIdx !== -1 ? currentGroupIdx : 0) - 1 + partFirstSceneIndices.length) %
+      partFirstSceneIndices.length;
+    const targetIdx = partFirstSceneIndices[prevGroupIdx].firstIdx;
+    setDirection(-1);
+    setShowFollowUps(false);
+    setCurrentIndex(targetIdx);
+    onActivePromptChange?.(sparkDeck[targetIdx]);
+  }, [partFirstSceneIndices, linkedScene?.partNumber, activePart.partNumber, handlePrev, sparkDeck, onActivePromptChange]);
+
+  const activePartRoman = activePartHeading.split(':')[0]?.trim() || `Part ${linkedScene?.partNumber ?? 1}`;
+  const activeSceneNumInPart = linkedScene?.sceneNumber ?? 1;
+
   return (
     <div
       className={`w-full max-w-xl mx-auto flex flex-col items-center select-none ${className}`}
@@ -580,16 +629,16 @@ export function SingleCardPromptCarousel({
         </div>
       )}
 
-      {/* 0b. Option C Combined Part + Scene Header Stepper (MW-100-C) */}
+      {/* 0b. Synchronised Part Header Stepper (Jumps to Next/Previous Part - Scene 1) */}
       {!hideInlineHeaderStepper && (
         <div className="w-full flex flex-col items-center mb-2.5 text-center">
           <div className="flex items-center justify-center gap-2.5 w-full">
             <button
               type="button"
               data-testid="HS_FIRESIDE_HEADER_PREV_SCENE"
-              onClick={handlePrev}
-              aria-label="Step to previous scene"
-              title="Step to previous scene"
+              onClick={handlePrevPart}
+              aria-label="Jump to previous Part"
+              title="Jump to previous Part (Scene 1)"
               style={{ minHeight: 44, minWidth: 44 }}
               className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
@@ -603,15 +652,15 @@ export function SingleCardPromptCarousel({
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
                 className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
               >
-                Scene {currentIndex + 1} of {sparkDeck.length} • {primaryCardTitle}
+                {activePartRoman} - Scene {activeSceneNumInPart} • Scene {currentIndex + 1} of {sparkDeck.length} • {primaryCardTitle}
               </span>
             </div>
             <button
               type="button"
               data-testid="HS_FIRESIDE_HEADER_NEXT_SCENE"
-              onClick={handleNext}
-              aria-label="Step to next scene"
-              title="Step to next scene"
+              onClick={handleNextPart}
+              aria-label="Jump to next Part"
+              title="Jump to next Part (Scene 1)"
               style={{ minHeight: 44, minWidth: 44 }}
               className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
