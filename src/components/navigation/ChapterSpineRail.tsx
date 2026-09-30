@@ -276,46 +276,91 @@ export function ChapterSpineRail({
     []
   );
 
+  const activeSceneIndex = scenes.findIndex((s) => s.id === activeSceneId);
+
+  const handleStepPrev = () => {
+    if (scenes.length === 0) return;
+    const currentIdx = activeSceneIndex >= 0 ? activeSceneIndex : 0;
+    const prevIdx = (currentIdx - 1 + scenes.length) % scenes.length;
+    onSelectScene(scenes[prevIdx].id);
+  };
+
+  const handleStepNext = () => {
+    if (scenes.length === 0) return;
+    const currentIdx = activeSceneIndex >= 0 ? activeSceneIndex : 0;
+    const nextIdx = (currentIdx + 1) % scenes.length;
+    onSelectScene(scenes[nextIdx].id);
+  };
+
   // ── Horizontal rail (mobile) ─────────────────────────────────────────────
   const horizontalRail = (
     <div
-      ref={railRef}
       data-testid="HS_CHAPTER_SPINE_RAIL"
       aria-label="Chapter navigation rail"
       role="navigation"
       className={[
-        'w-full flex flex-row items-center gap-0.5 overflow-x-auto no-scrollbar',
-        'bg-stone-950/80 border-b border-stone-800/60 px-2 py-1.5',
+        'w-full flex flex-row items-center gap-1 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden',
+        'bg-stone-950/80 border-b border-stone-800/60 px-1.5 py-1.5',
         className,
       ].join(' ')}
       // Prevent vertical scroll capture on touch
       onTouchMove={(e) => e.stopPropagation()}
     >
-      {partGroups.map((group, gi) => (
-        <React.Fragment key={group.partNumber}>
-          {gi > 0 && <PartLabel partNumber={group.partNumber} partTitle={group.partTitle} orientation="horizontal" />}
-          {gi === 0 && group.partNumber > 0 && (
-            <PartLabel partNumber={group.partNumber} partTitle={group.partTitle} orientation="horizontal" />
-          )}
-          {group.scenes.map((scene) => {
-            const isActive = scene.id === activeSceneId;
-            return (
-              <div
-                key={scene.id}
-                ref={isActive ? (el) => { (activeTokenRef as React.MutableRefObject<HTMLButtonElement | null>).current = el?.querySelector('button') ?? null; } : undefined}
-              >
-                <SceneToken
-                  scene={scene}
-                  isActive={isActive}
-                  isNextRecommended={scene.id === nextRecommendedSceneId}
-                  orientation="horizontal"
-                  onSelect={onSelectScene}
-                />
-              </div>
-            );
-          })}
-        </React.Fragment>
-      ))}
+      <button
+        type="button"
+        data-testid="HS_SPINE_PREV_BTN"
+        onClick={handleStepPrev}
+        aria-label="Previous scene in chapter spine"
+        title="Step to previous scene"
+        style={{ minHeight: 44, minWidth: 44 }}
+        className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-800 text-stone-300 hover:text-amber-300 flex items-center justify-center text-lg font-mono font-bold transition-colors cursor-pointer select-none"
+      >
+        ‹
+      </button>
+
+      <div
+        ref={railRef}
+        data-testid="HS_CHAPTER_SPINE_TRACK"
+        className="flex-1 flex flex-row items-center gap-0.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {partGroups.map((group, gi) => (
+          <React.Fragment key={group.partNumber}>
+            {gi > 0 && <PartLabel partNumber={group.partNumber} partTitle={group.partTitle} orientation="horizontal" />}
+            {gi === 0 && group.partNumber > 0 && (
+              <PartLabel partNumber={group.partNumber} partTitle={group.partTitle} orientation="horizontal" />
+            )}
+            {group.scenes.map((scene) => {
+              const isActive = scene.id === activeSceneId;
+              return (
+                <div
+                  key={scene.id}
+                  ref={isActive ? (el) => { (activeTokenRef as React.MutableRefObject<HTMLButtonElement | null>).current = el?.querySelector('button') ?? null; } : undefined}
+                >
+                  <SceneToken
+                    scene={scene}
+                    isActive={isActive}
+                    isNextRecommended={scene.id === nextRecommendedSceneId}
+                    orientation="horizontal"
+                    onSelect={onSelectScene}
+                  />
+                </div>
+              );
+            })}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        data-testid="HS_SPINE_NEXT_BTN"
+        onClick={handleStepNext}
+        aria-label="Next scene in chapter spine"
+        title="Step to next scene"
+        style={{ minHeight: 44, minWidth: 44 }}
+        className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-800 text-stone-300 hover:text-amber-300 flex items-center justify-center text-lg font-mono font-bold transition-colors cursor-pointer select-none"
+      >
+        ›
+      </button>
     </div>
   );
 
@@ -325,7 +370,7 @@ export function ChapterSpineRail({
       data-testid="HS_CHAPTER_SPINE_RAIL"
       aria-label="Chapter navigation rail"
       className={[
-        'flex flex-col overflow-y-auto no-scrollbar',
+        'flex flex-col overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden',
         'bg-stone-950/60 border-r border-stone-800/60 py-2 w-52',
         className,
       ].join(' ')}

@@ -44,17 +44,21 @@ import type {
 } from '@/types/fireside';
 import { FIRESIDE_LANGUAGE_LABELS, FIRESIDE_TOUCH_TARGETS } from '@/types/fireside';
 import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
-import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
+import { getSceneById, getPartForScene } from '@/lib/curriculum/masterStoryStructure';
 import type { EditingAuthority, UnifiedCurriculumMemory } from '@/types/curriculum';
 import { isSceneCompleted } from '@/types/curriculum';
 import { detectSensoryAnchors, filterDominantSensoryAnchors } from '@/utils/sensoryAnchors';
 import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
+import { OrientationSoundcheckDock } from '@/components/fireside/OrientationSoundcheckDock';
 import { ChapterSpineRail, type ChapterSpineScene } from '@/components/navigation/ChapterSpineRail';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
   initialPromptId?: string;
+  activePromptId?: string;
+  hideInlineOrientationDock?: boolean;
+  hideInlineHeaderStepper?: boolean;
   activeLanguage?: FiresideLanguage;
   isHybrid?: boolean;
   onToggleHybrid?: (nextHybrid: boolean) => void;
@@ -137,6 +141,9 @@ const LANGUAGES: FiresideLanguage[] = ['en', 'gu', 'pa', 'hi'];
 export function SingleCardPromptCarousel({
   prompts = FIRESIDE_PROMPT_SPARKS,
   initialPromptId,
+  activePromptId,
+  hideInlineOrientationDock = false,
+  hideInlineHeaderStepper = false,
   activeLanguage: controlledLanguage,
   isHybrid: controlledHybrid,
   onToggleHybrid,
@@ -164,10 +171,11 @@ export function SingleCardPromptCarousel({
   }, [prompts]);
 
   const initialIndex = useMemo(() => {
-    if (!initialPromptId) return 0;
-    const found = sparkDeck.findIndex((p) => p.id === initialPromptId);
+    const targetId = activePromptId || initialPromptId;
+    if (!targetId) return 0;
+    const found = sparkDeck.findIndex((p) => p.id === targetId || p.linkedSceneId === targetId);
     return found !== -1 ? found : 0;
-  }, [initialPromptId, sparkDeck]);
+  }, [activePromptId, initialPromptId, sparkDeck]);
 
   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
   const [internalLanguage, setInternalLanguage] = useState<FiresideLanguage>('en');
@@ -176,6 +184,14 @@ export function SingleCardPromptCarousel({
   const [showFollowUps, setShowFollowUps] = useState<boolean>(false);
   const [isWarmupOpen, setIsWarmupOpen] = useState<boolean>(false);
   const [warmupCompleted, setWarmupCompleted] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!activePromptId) return;
+    const found = sparkDeck.findIndex((p) => p.id === activePromptId || p.linkedSceneId === activePromptId);
+    if (found !== -1 && found !== currentIndex) {
+      setCurrentIndex(found);
+    }
+  }, [activePromptId, sparkDeck, currentIndex]);
   const [viewMode, setViewMode] = useState<'script' | 'spark'>('script');
   const [isEditingScript, setIsEditingScript] = useState<boolean>(false);
   const [draftProse, setDraftProse] = useState<string>('');
@@ -536,14 +552,77 @@ export function SingleCardPromptCarousel({
   const currentText = currentSpark.sparks[currentLanguage] || currentSpark.sparks.en;
   const followUps = currentSpark.followUpQuestions[currentLanguage] || currentSpark.followUpQuestions.en || [];
   const photoPrompt = currentSpark.recommendedPhotoPrompt[currentLanguage] || currentSpark.recommendedPhotoPrompt.en;
+  const activePart = useMemo(
+    () => getPartForScene(currentSpark.linkedSceneId),
+    [currentSpark.linkedSceneId]
+  );
+  const activePartHeading =
+    currentLanguage === 'en'
+      ? activePart.localizedTitles?.en || activePart.title
+      : activePart.localizedTitles?.[currentLanguage] || activePart.localizedTitles?.gu || activePart.title;
 
   return (
     <div
       className={`w-full max-w-xl mx-auto flex flex-col items-center select-none ${className}`}
       style={{ touchAction: 'pan-y' }}
     >
+      {/* 0a. Unified Studio Orientation & Soundcheck Dock (MW-100-C: anchored across all scenes, zero layout jump) */}
+      {!hideInlineOrientationDock && (
+        <div className="w-full mb-3">
+          <OrientationSoundcheckDock
+            activeLanguage={currentLanguage}
+            warmupCompleted={warmupCompleted}
+            onWarmupComplete={() => {
+              setWarmupCompleted(true);
+              onWarmupComplete?.();
+            }}
+          />
+        </div>
+      )}
+
+      {/* 0b. Option C Combined Part + Scene Header Stepper (MW-100-C) */}
+      {!hideInlineHeaderStepper && (
+        <div className="w-full flex flex-col items-center mb-2.5 text-center">
+          <div className="flex items-center justify-center gap-2.5 w-full">
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_HEADER_PREV_SCENE"
+              onClick={handlePrev}
+              aria-label="Step to previous scene"
+              title="Step to previous scene"
+              style={{ minHeight: 44, minWidth: 44 }}
+              className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            >
+              ‹
+            </button>
+            <div className="flex flex-col items-center min-w-0 px-1">
+              <span className="text-sm sm:text-base font-serif text-white font-normal leading-tight truncate max-w-full">
+                {activePartHeading}
+              </span>
+              <span
+                data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
+                className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
+              >
+                Scene {currentIndex + 1} of {sparkDeck.length} • {primaryCardTitle}
+              </span>
+            </div>
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_HEADER_NEXT_SCENE"
+              onClick={handleNext}
+              aria-label="Step to next scene"
+              title="Step to next scene"
+              style={{ minHeight: 44, minWidth: 44 }}
+              className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 1. Compact Sub-Header Language & HYBRID Tray (MW-100-BRUTAL Track 3; Rule 26 touch targets) */}
-      <div className="w-full flex items-center justify-center gap-1.5 mb-2.5 px-1.5 py-1 rounded-2xl bg-stone-950/60 border border-stone-800/70 overflow-x-auto no-scrollbar flex-wrap">
+      <div className="w-full flex items-center justify-center gap-1.5 mb-2.5 px-1.5 py-1 rounded-2xl bg-stone-950/60 border border-stone-800/70 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-wrap">
         {LANGUAGES.map((lang) => {
           const isActive = currentLanguage === lang;
           return (
@@ -586,43 +665,7 @@ export function SingleCardPromptCarousel({
         </button>
       </div>
 
-      {/* 1b. Fireside Free Walkthrough & 30-Second Soundcheck Card (Index 0 of Carousel — MW-88-T3 / MW-88-T5) */}
-      {currentIndex === 0 && (
-        <div className="w-full max-w-xl mx-auto mb-3 flex flex-col gap-2">
-          {!isWarmupOpen && (
-            <FiresideWalkthroughCard
-              activeLanguage={currentLanguage}
-              warmupCompleted={warmupCompleted}
-              onLaunchWalkthrough={() => setIsWarmupOpen(true)}
-            />
-          )}
-
-          {warmupCompleted && !isWarmupOpen && (
-            <div
-              data-testid="warmup-exit-banner"
-              className="w-full px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/35 text-emerald-200 text-xs sm:text-sm font-medium text-center"
-              role="status"
-            >
-              Soundcheck complete. Entering Part I: Roots and Foundations.
-            </div>
-          )}
-
-          {isWarmupOpen && (
-            <FiresideWarmupModal
-              isOpen={isWarmupOpen}
-              activeLanguage={currentLanguage}
-              onClose={() => setIsWarmupOpen(false)}
-              onComplete={() => {
-                setWarmupCompleted(true);
-                setIsWarmupOpen(false);
-                onWarmupComplete?.();
-              }}
-            />
-          )}
-        </div>
-      )}
-
-      {/* 1c. Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100) */}
+      {/* 1c. Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100 / MW-100-C) */}
       {spineScenes.length > 0 && (
         <div className="w-full max-w-xl mx-auto mb-2.5">
           <ChapterSpineRail

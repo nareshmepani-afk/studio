@@ -23,6 +23,7 @@ import { useCurriculumVault, StoryMoodTag, isSceneCompleted, resolveEditingAutho
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
 import { FiresideModeSwitch, FIRESIDE_MODE_STORAGE_KEY } from '@/components/fireside/FiresideModeSwitch';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
+import { OrientationSoundcheckDock } from '@/components/fireside/OrientationSoundcheckDock';
 import { TactileVoiceRecorder, TactileVoiceRecorderRef } from '@/components/fireside/TactileVoiceRecorder';
 import { FiresideVideoRecorder, FiresideVideoRecorderRef } from '@/components/fireside/FiresideVideoRecorder';
 import { AlbumPhotoCaptureTray, AlbumPhotoCaptureTrayRef } from '@/components/fireside/AlbumPhotoCaptureTray';
@@ -652,10 +653,37 @@ export default function FiresideStudioClient() {
     effectiveSceneId,
   ]);
 
-  // Active Curriculum Part Context & Golden Thread Bilingual Hierarchy (MW-249 / MW-88-T3)
+  // Active Curriculum Part Context & Golden Thread Bilingual Hierarchy (MW-249 / MW-88-T3 / MW-100-C)
+  const activeSparkIdx = useMemo(() => {
+    const currentId = (selectedSpark || activePromptSpark)?.id || autoSparkId;
+    if (!currentId) return 0;
+    const found = FIRESIDE_PROMPT_SPARKS.findIndex(
+      (p) => p.id === currentId || p.linkedSceneId === currentId
+    );
+    return found !== -1 ? found : 0;
+  }, [selectedSpark, activePromptSpark, autoSparkId]);
+
+  const resolvedActiveSpark = FIRESIDE_PROMPT_SPARKS[activeSparkIdx] || FIRESIDE_PROMPT_SPARKS[0];
+
+  const handleHeaderPrevScene = useCallback(() => {
+    const prevIdx = (activeSparkIdx - 1 + FIRESIDE_PROMPT_SPARKS.length) % FIRESIDE_PROMPT_SPARKS.length;
+    const targetSpark = FIRESIDE_PROMPT_SPARKS[prevIdx];
+    if (targetSpark) {
+      handleActivePromptChange(targetSpark);
+    }
+  }, [activeSparkIdx, handleActivePromptChange]);
+
+  const handleHeaderNextScene = useCallback(() => {
+    const nextIdx = (activeSparkIdx + 1) % FIRESIDE_PROMPT_SPARKS.length;
+    const targetSpark = FIRESIDE_PROMPT_SPARKS[nextIdx];
+    if (targetSpark) {
+      handleActivePromptChange(targetSpark);
+    }
+  }, [activeSparkIdx, handleActivePromptChange]);
+
   const activePart = useMemo(
-    () => getPartForScene((selectedSpark || activePromptSpark)?.linkedSceneId),
-    [selectedSpark, activePromptSpark]
+    () => getPartForScene((selectedSpark || activePromptSpark || resolvedActiveSpark)?.linkedSceneId),
+    [selectedSpark, activePromptSpark, resolvedActiveSpark]
   );
   const activePartTitle = activePart.title;
   const englishPartHeading = activePart.localizedTitles?.en || activePart.title;
@@ -669,6 +697,11 @@ export default function FiresideStudioClient() {
     activeLanguage === 'en' ? englishPartHeading : motherTonguePartHeading;
   const secondaryPartHeading =
     activeLanguage === 'en' ? motherTonguePartHeading : englishPartHeading;
+
+  const activeSceneTitle =
+    activeLanguage === 'en'
+      ? resolvedActiveSpark.localizedTitles?.en || resolvedActiveSpark.title
+      : resolvedActiveSpark.localizedTitles?.[activeLanguage] || resolvedActiveSpark.title;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-stone-100 flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-200">
@@ -742,60 +775,25 @@ export default function FiresideStudioClient() {
       </div>
 
       {/* 3. Primary Armchair Storytelling Surface */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-2xl mx-auto space-y-8">
-        {/* Prominent Desktop Soundstage Recommendation Banner (visible on large screens >= 600px: Unfolded Fold, iPad, Desktop) */}
-        {showDesktopBanner && (
-          <div
-            data-testid="desktop-soundstage-banner"
-            className="w-full bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/80 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 shadow-2xl shadow-amber-950/40 backdrop-blur-md relative animate-in fade-in slide-in-from-top-2 duration-300"
-          >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 text-amber-300">
-                  <Monitor className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono uppercase tracking-wider font-semibold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                      Large Display / Tablet Detected
-                    </span>
-                    <span className="text-xs text-stone-400">• Theatrical Experience Available</span>
-                  </div>
-                  <h2 className="text-sm sm:text-base font-serif font-medium text-white mt-1">
-                    Recommend Flagship Desktop Theatrical Soundstage
-                  </h2>
-                  <p className="text-xs text-stone-300 mt-1 max-w-lg leading-relaxed">
-                    You are viewing Fireside on a tablet, unfolded foldable, or desktop screen. For the full multi-act theatrical experience with teleprompter controls, live audio visualisation, and multi-track master reel editing, try the Desktop Stage (Acts I–IV).
-                  </p>
-                </div>
-              </div>
+      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-2xl mx-auto space-y-6">
+        {/* Unified Studio Orientation & Soundcheck Dock (MW-100-C: anchored at top on all scenes, zero vertical layout jump) */}
+        <OrientationSoundcheckDock
+          activeLanguage={activeLanguage}
+          showDesktopBanner={showDesktopBanner}
+          onDismissDesktopBanner={handleDismissDesktopBanner}
+          onWarmupComplete={() => {
+            logEvent('FIRESIDE_WARMUP_COMPLETED' as any, {
+              language: activeLanguage,
+            });
+            setNotification('Soundcheck complete. Entering Part I: Roots and Foundations.');
+            setTimeout(() => {
+              setNotification(null);
+            }, 5000);
+          }}
+        />
 
-              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
-                <Link
-                  href="/studio"
-                  data-hotspot-id="HS_FIRESIDE_BANNER_LAUNCH_STAGE_BTN"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-stone-950 font-sans shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-                >
-                  <span>Launch Soundstage</span>
-                  <span aria-hidden="true">→</span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleDismissDesktopBanner}
-                  data-hotspot-id="HS_FIRESIDE_BANNER_DISMISS_BTN"
-                  className="p-2 text-stone-400 hover:text-stone-200 hover:bg-white/5 rounded-lg text-xs transition-colors cursor-pointer"
-                  title="Dismiss and remain in mobile Fireside Studio"
-                  aria-label="Dismiss recommendation"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Unified Chapter Typography ("The Golden Thread" — MW-88-T3, MW-88-T6 & MW-100-BRUTAL Compact Sub-Header) */}
-        <div className="text-center max-w-md" data-testid="fireside-golden-thread-header">
+        {/* Unified Chapter Typography + Option C Combined Part & Scene Stepper (MW-100-C) */}
+        <div className="text-center w-full max-w-xl" data-testid="fireside-golden-thread-header">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono font-bold mb-1.5 shadow-sm">
             <span>🌟 Vault Progress: {completedScenes} of {totalScenes} Stories Woven</span>
             <span className="text-stone-500">•</span>
@@ -803,24 +801,59 @@ export default function FiresideStudioClient() {
           </div>
           <p
             data-testid="fireside-production-stage-label"
-            className="text-[10px] uppercase tracking-widest text-amber-400/90 font-semibold mb-0.5"
+            className="text-[10px] uppercase tracking-widest text-amber-400/90 font-semibold mb-1"
           >
             PRODUCTION STAGE
           </p>
-          <h1
-            data-testid="fireside-chapter-primary-title"
-            className="text-lg sm:text-xl font-serif text-white font-normal leading-tight"
-          >
-            {primaryPartHeading}
-          </h1>
-          {(isHybrid || activeLanguage !== 'en') && (
-            <p
-              data-testid="fireside-chapter-secondary-title"
-              className="text-xs sm:text-sm font-serif text-amber-200/85 mt-0.5 leading-tight"
+
+          <div className="flex items-center justify-center gap-3 w-full">
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_HEADER_PREV_SCENE"
+              onClick={handleHeaderPrevScene}
+              aria-label="Step to previous scene"
+              title="Step to previous scene"
+              style={{ minHeight: 44, minWidth: 44 }}
+              className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
-              {secondaryPartHeading}
-            </p>
-          )}
+              ‹
+            </button>
+
+            <div className="flex flex-col items-center min-w-0 px-1">
+              <h1
+                data-testid="fireside-chapter-primary-title"
+                className="text-lg sm:text-xl font-serif text-white font-normal leading-tight"
+              >
+                {primaryPartHeading}
+              </h1>
+              {(isHybrid || activeLanguage !== 'en') && (
+                <p
+                  data-testid="fireside-chapter-secondary-title"
+                  className="text-xs sm:text-sm font-serif text-amber-200/85 mt-0.5 leading-tight"
+                >
+                  {secondaryPartHeading}
+                </p>
+              )}
+              <p
+                data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
+                className="text-[11px] font-mono text-amber-300/90 mt-1 leading-snug"
+              >
+                Scene {activeSparkIdx + 1} of {FIRESIDE_PROMPT_SPARKS.length} • {activeSceneTitle}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_HEADER_NEXT_SCENE"
+              onClick={handleHeaderNextScene}
+              aria-label="Step to next scene"
+              title="Step to next scene"
+              style={{ minHeight: 44, minWidth: 44 }}
+              className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
+            >
+              ›
+            </button>
+          </div>
         </div>
 
         {/* Storytelling Media Mode Switcher (Voice & Photos vs Video Memo) */}
@@ -837,6 +870,9 @@ export default function FiresideStudioClient() {
           <SingleCardPromptCarousel
             prompts={FIRESIDE_PROMPT_SPARKS}
             initialPromptId={autoSparkId}
+            activePromptId={(selectedSpark || activePromptSpark || resolvedActiveSpark)?.id}
+            hideInlineOrientationDock={true}
+            hideInlineHeaderStepper={true}
             activeLanguage={activeLanguage}
             isHybrid={isHybrid}
             onToggleHybrid={setIsHybrid}

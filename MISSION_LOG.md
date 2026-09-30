@@ -714,3 +714,20 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `tsc --noEmit`: `0` errors
   - `vitest run`: `53/53` test files (`676/676` tests passed)
   - `npm.cmd run build`: `45/45` routes compiled cleanly
+
+---
+
+## Checkpoint #033 — MW-100-C: Unified Orientation Dock, Chevron Steppers & Route Redirect (2026-09-30)
+
+- **Plane.so Ticket**: `MW-100-C` (Sequence #313)
+- **Baseline Commit**: `da7e2ed3`
+- **Files Created / Modified**:
+  - `src/components/fireside/OrientationSoundcheckDock.tsx` (NEW) — Unifies the Large Display recommendation panel and the 30-Second Walkthrough & Soundcheck card into a single top-anchored orientation container across all scenes; starts expanded on first visit and collapses into a 44px+ single-line utility strip persisted in `localStorage('mw_orientation_dock_collapsed')`, permanently eliminating the 320px vertical layout shift between Scene 1 and Scene 2+.
+  - `src/components/navigation/ChapterSpineRail.tsx` — Stripped native Windows/Chrome scrollbars using `[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden` and added tactile 44px×44px `‹` (`HS_SPINE_PREV_BTN`) and `›` (`HS_SPINE_NEXT_BTN`) bookend chevron buttons that step the active scene and auto-centre the active pill.
+  - `src/components/fireside/SingleCardPromptCarousel.tsx` & `src/app/studio/fireside/FiresideStudioClient.tsx` — Implemented Option C Combined Part + Scene Header Stepper (`HS_FIRESIDE_HEADER_PREV_SCENE`, `HS_FIRESIDE_HEADER_NEXT_SCENE`, `HS_FIRESIDE_HEADER_SCENE_SUBTITLE`) flanking the Part heading and stepping in 1:1 lockstep with `ChapterSpineRail`.
+  - `src/app/studio/production/page.tsx` (NEW) — Added server-side redirect from bare `/studio/production` to `/studio`.
+  - `src/test/fireside_sync.test.ts` — Added Suite 14 (4 hermetic tests verifying `OrientationSoundcheckDock` collapse persistence, `ChapterSpineRail` scrollbar suppression and bookend chevrons, Option C header/rail stepper lockstep, and `/studio/production` redirect).
+- **Verification**:
+  - `tsc --noEmit`: `0` errors
+  - `vitest run`: `53/53` test files (`680/680` tests passed)
+  - `npm.cmd run build`: `46/46` routes compiled cleanly

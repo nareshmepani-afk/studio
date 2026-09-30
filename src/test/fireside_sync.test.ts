@@ -2106,3 +2106,115 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     unmount();
   });
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Route Redirect
+// ═══════════════════════════════════════════════════════════════════════════
+
+import { OrientationSoundcheckDock, ORIENTATION_DOCK_STORAGE_KEY } from '@/components/fireside/OrientationSoundcheckDock';
+
+describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Route Redirect', () => {
+  beforeEach(() => {
+    window.localStorage.removeItem(ORIENTATION_DOCK_STORAGE_KEY);
+    window.sessionStorage.removeItem('mw_dismiss_fireside_walkthrough');
+  });
+
+  it('14.1 OrientationSoundcheckDock starts expanded on first visit and persists mw_orientation_dock_collapsed in localStorage when minimised/expanded', () => {
+    const { getByTestId, queryByTestId, unmount } = render(
+      React.createElement(OrientationSoundcheckDock, {
+        activeLanguage: 'en',
+        showDesktopBanner: true,
+      })
+    );
+
+    const dock = getByTestId('HS_ORIENTATION_SOUNDCHECK_DOCK');
+    expect(dock).toBeTruthy();
+    expect(queryByTestId('HS_ORIENTATION_DOCK_COLLAPSED_STRIP')).toBeNull();
+    expect(getByTestId('desktop-soundstage-banner')).toBeTruthy();
+    expect(getByTestId('fireside-walkthrough-card')).toBeTruthy();
+
+    // Click Minimise
+    fireEvent.click(getByTestId('HS_ORIENTATION_DOCK_MINIMISE_BTN'));
+    expect(window.localStorage.getItem('mw_orientation_dock_collapsed')).toBe('true');
+    expect(getByTestId('HS_ORIENTATION_DOCK_COLLAPSED_STRIP')).toBeTruthy();
+    expect(getByTestId('HS_ORIENTATION_LAUNCH_SOUNDSTAGE_BTN')).toBeTruthy();
+    expect(getByTestId('HS_ORIENTATION_LAUNCH_SOUNDCHECK_BTN')).toBeTruthy();
+
+    // Click Expand
+    fireEvent.click(getByTestId('HS_ORIENTATION_DOCK_MINIMISE_BTN'));
+    expect(window.localStorage.getItem('mw_orientation_dock_collapsed')).toBe('false');
+    expect(queryByTestId('HS_ORIENTATION_DOCK_COLLAPSED_STRIP')).toBeNull();
+
+    unmount();
+  });
+
+  it('14.2 ChapterSpineRail applies scrollbar suppression classes and steps scene index via HS_SPINE_PREV_BTN and HS_SPINE_NEXT_BTN', () => {
+    const selectedIds: string[] = [];
+    const { getByTestId, unmount } = render(
+      React.createElement(ChapterSpineRail, {
+        scenes: SPINE_SCENES,
+        activeSceneId: 'part-1-scene-1',
+        onSelectScene: (id: string) => selectedIds.push(id),
+        orientation: 'horizontal',
+      })
+    );
+
+    const rail = getByTestId('HS_CHAPTER_SPINE_RAIL');
+    expect(rail.className).toContain('[scrollbar-width:none]');
+    expect(rail.className).toContain('[-ms-overflow-style:none]');
+    expect(rail.className).toContain('[&::-webkit-scrollbar]:hidden');
+
+    const nextBtn = getByTestId('HS_SPINE_NEXT_BTN');
+    const prevBtn = getByTestId('HS_SPINE_PREV_BTN');
+    expect(nextBtn.style.minHeight).toBe('44px');
+    expect(prevBtn.style.minHeight).toBe('44px');
+
+    fireEvent.click(nextBtn);
+    expect(selectedIds[selectedIds.length - 1]).toBe('part-1-scene-2');
+
+    fireEvent.click(prevBtn);
+    expect(selectedIds[selectedIds.length - 1]).toBe(SPINE_SCENES[SPINE_SCENES.length - 1].id);
+
+    unmount();
+  });
+
+  it('14.3 Option C Combined Header Stepper and ChapterSpineRail chevrons advance and retreat scenes in 1:1 lockstep', () => {
+    const { getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        mediaMode: 'video',
+      })
+    );
+
+    const subtitle = getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE');
+    expect(subtitle.textContent).toContain('Scene 1 of');
+    expect(subtitle.textContent).toContain('A Child of Two Worlds');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · A Child of Two Worlds');
+
+    // Step forward via Header Next Chevron
+    fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_NEXT_SCENE'));
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 2 of');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('The House I Grew Up In');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('2 · The House I Grew Up In');
+
+    // Step forward via Spine Rail Next Chevron
+    fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 3 of');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('3 ·');
+
+    // Step backward via Header Prev Chevron
+    fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_PREV_SCENE'));
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 2 of');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('2 · The House I Grew Up In');
+
+    unmount();
+  });
+
+  it('14.4 Bare /studio/production route page executes server-side redirect to /studio', () => {
+    const fsNode = require('fs');
+    const pageSource = fsNode.readFileSync('C:/Users/home/studio/src/app/studio/production/page.tsx', 'utf8');
+    expect(pageSource).toContain("import { redirect } from 'next/navigation'");
+    expect(pageSource).toContain("redirect('/studio')");
+  });
+});
