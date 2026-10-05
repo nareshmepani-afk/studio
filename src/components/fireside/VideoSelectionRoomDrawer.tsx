@@ -27,6 +27,7 @@ import {
   Smartphone,
   Clock,
   Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import { MemoirTake } from '@/types/curriculum';
 
@@ -39,6 +40,7 @@ export interface VideoSelectionRoomDrawerProps {
   onPromoteMaster: (takeId: string) => Promise<void> | void;
   onReorderTakes: (orderedTakeIds: string[]) => Promise<void> | void;
   onDiscardTake: (discardTakeId: string, fallbackMasterTakeId?: string) => Promise<void> | void;
+  onRestoreTake?: (takeId: string) => Promise<void> | void;
 }
 
 function formatDurationSeconds(totalSeconds: number): string {
@@ -71,6 +73,7 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
   onPromoteMaster,
   onReorderTakes,
   onDiscardTake,
+  onRestoreTake,
 }) => {
   const sortedTakes = useMemo(() => {
     return [...takes].sort((a, b) => {
@@ -80,6 +83,14 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
     });
   }, [takes]);
 
+  const activeTakes = useMemo(() => {
+    return sortedTakes.filter((t) => t.status !== 'outtake' && t.status !== 'purged');
+  }, [sortedTakes]);
+
+  const outtakes = useMemo(() => {
+    return sortedTakes.filter((t) => t.status === 'outtake');
+  }, [sortedTakes]);
+
   const [auditioningTakeId, setAuditioningTakeId] = useState<string | null>(null);
   const [isPlayingAudition, setIsPlayingAudition] = useState<boolean>(false);
   const [pendingDiscardTakeId, setPendingDiscardTakeId] = useState<string | null>(null);
@@ -88,9 +99,10 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
   if (!isOpen) return null;
 
   const currentMasterTake =
-    sortedTakes.find((t) => t.isPreferred) ||
-    (activeTakeId ? sortedTakes.find((t) => t.id === activeTakeId) : null) ||
-    sortedTakes[0];
+    activeTakes.find((t) => t.status === 'master') ||
+    activeTakes.find((t) => t.isPreferred) ||
+    (activeTakeId ? activeTakes.find((t) => t.id === activeTakeId) : null) ||
+    activeTakes[0];
 
   const handleAuditionToggle = (takeId: string) => {
     if (auditioningTakeId === takeId && isPlayingAudition) {
@@ -103,7 +115,7 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
 
   const handleMoveUp = (index: number) => {
     if (index <= 0) return;
-    const newTakes = [...sortedTakes];
+    const newTakes = [...activeTakes];
     const temp = newTakes[index - 1];
     newTakes[index - 1] = newTakes[index];
     newTakes[index] = temp;
@@ -111,8 +123,8 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
   };
 
   const handleMoveDown = (index: number) => {
-    if (index >= sortedTakes.length - 1) return;
-    const newTakes = [...sortedTakes];
+    if (index >= activeTakes.length - 1) return;
+    const newTakes = [...activeTakes];
     const temp = newTakes[index + 1];
     newTakes[index + 1] = newTakes[index];
     newTakes[index] = temp;
@@ -122,8 +134,8 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
   const initiateDiscard = (takeId: string) => {
     const isMaster = currentMasterTake?.id === takeId;
     setPendingDiscardTakeId(takeId);
-    if (isMaster && sortedTakes.length > 1) {
-      const alternate = sortedTakes.find((t) => t.id !== takeId);
+    if (isMaster && activeTakes.length > 1) {
+      const alternate = activeTakes.find((t) => t.id !== takeId);
       setInterlockTargetTakeId(alternate ? alternate.id : null);
     } else {
       setInterlockTargetTakeId(null);
@@ -167,7 +179,7 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                 Theatrical Reel Stack
               </span>
               <span className="text-xs font-mono text-stone-400">
-                {sortedTakes.length} {sortedTakes.length === 1 ? 'Take' : 'Takes'}
+                {activeTakes.length} {activeTakes.length === 1 ? 'Take' : 'Takes'}
               </span>
             </div>
             <h3 className="text-base sm:text-lg font-serif text-white">
@@ -190,13 +202,17 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
 
         {/* Takes List */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
-          {sortedTakes.length === 0 ? (
+          {activeTakes.length === 0 ? (
             <div className="p-8 text-center text-stone-500 space-y-2">
               <Film className="w-10 h-10 mx-auto stroke-1 text-stone-600" />
-              <p className="text-sm font-serif text-stone-400">No recorded takes in your stack yet.</p>
+              <p className="text-sm font-serif text-stone-400">
+                {outtakes.length > 0
+                  ? 'All recorded takes currently retired to the Cutting Room Floor below.'
+                  : 'No recorded takes in your stack yet.'}
+              </p>
             </div>
           ) : (
-            sortedTakes.map((take, idx) => {
+            activeTakes.map((take, idx) => {
               const isMaster = currentMasterTake?.id === take.id;
               const isAuditioning = auditioningTakeId === take.id;
               const isPendingThisDiscard = pendingDiscardTakeId === take.id;
@@ -346,7 +362,7 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                   {/* Discard Confirmation / Interlock */}
                   {isPendingThisDiscard && (
                     <div className="mt-3 p-3.5 rounded-xl bg-stone-900 border border-rose-500/50 animate-in fade-in duration-150">
-                      {isMaster && sortedTakes.length > 1 ? (
+                      {isMaster && activeTakes.length > 1 ? (
                         <div className="space-y-2.5">
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -361,7 +377,7 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                           </div>
 
                           <div className="space-y-1.5 pt-1">
-                            {sortedTakes
+                            {activeTakes
                               .filter((t) => t.id !== take.id)
                               .map((alt) => (
                                 <button
@@ -404,9 +420,9 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                       ) : (
                         <div className="space-y-2">
                           <p className="text-xs text-rose-200 leading-relaxed">
-                            {sortedTakes.length === 1
-                              ? 'Discard your only take? This scene will revert to an unrecorded slate.'
-                              : 'Discard this take permanently?'}
+                            {activeTakes.length === 1
+                              ? 'Move your only take to outtakes? This scene will revert to an unrecorded slate (restorable from the Cutting Room Floor below).'
+                              : `Move Take #${take.takeNumber || idx + 1} to outtakes? It can be restored from the Cutting Room Floor below.`}
                           </p>
                           <div className="flex items-center justify-end gap-2">
                             <button
@@ -422,7 +438,7 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                               onClick={confirmDiscard}
                               className="min-h-[44px] px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold"
                             >
-                              Confirm Discard
+                              Move to Outtakes
                             </button>
                           </div>
                         </div>
@@ -432,6 +448,121 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                 </div>
               );
             })
+          )}
+
+          {/* Cutting Room Floor (Soft-Discarded Outtakes) — MW-107 */}
+          {outtakes.length > 0 && (
+            <div
+              data-testid="fireside-cutting-room-floor"
+              className="mt-6 pt-5 border-t border-stone-800 space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Film className="w-4 h-4 text-amber-500/80" />
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-stone-300 font-bold">
+                    Cutting Room Floor ({outtakes.length} Retired {outtakes.length === 1 ? 'Take' : 'Takes'})
+                  </h4>
+                </div>
+                <span className="text-[10px] font-mono text-stone-500">
+                  Safely Preserved in Archive
+                </span>
+              </div>
+
+              <p className="text-[11px] text-stone-400 leading-relaxed">
+                These takes were soft-discarded. They are excluded from your master reel but preserved in Firestore and can be restored at any time.
+              </p>
+
+              <div className="space-y-2.5 pt-1">
+                {outtakes.map((outtake) => {
+                  const isAuditioning = auditioningTakeId === outtake.id;
+                  return (
+                    <div
+                      key={outtake.id}
+                      data-testid={`fireside-outtake-card-${outtake.id}`}
+                      className="p-3.5 rounded-xl border border-stone-800 bg-stone-950/60 flex flex-col gap-2.5 transition"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-stone-400 bg-stone-900 border border-stone-800">
+                              Outtake #{outtake.takeNumber || '?'}
+                            </span>
+                            <span className="text-[10px] font-mono text-stone-500">
+                              {formatDurationSeconds(outtake.durationSeconds)}
+                            </span>
+                          </div>
+                          <h5 className="text-xs text-stone-300 font-medium truncate">
+                            {outtake.label || `Take ${outtake.takeNumber}`}
+                          </h5>
+                          <span className="text-[10px] text-stone-500 font-mono">
+                            Discarded {formatDate(outtake.discardedAt || outtake.createdAt)}
+                          </span>
+                        </div>
+
+                        {/* Restore CTA */}
+                        <button
+                          type="button"
+                          data-testid={`fireside-restore-take-btn-${outtake.id}`}
+                          onClick={async () => {
+                            if (onRestoreTake) {
+                              await onRestoreTake(outtake.id);
+                            }
+                          }}
+                          className="min-h-[44px] px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 hover:text-amber-100 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{activeTakes.length === 0 ? 'Restore as Master Reel' : 'Restore to Alternates'}</span>
+                        </button>
+                      </div>
+
+                      {/* Audition Trigger for Outtake */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-stone-800/60">
+                        <button
+                          type="button"
+                          data-testid={`fireside-audition-outtake-btn-${outtake.id}`}
+                          onClick={() => handleAuditionToggle(outtake.id)}
+                          className="text-[11px] font-mono text-stone-400 hover:text-amber-300 flex items-center gap-1.5 cursor-pointer py-1"
+                        >
+                          {isAuditioning && isPlayingAudition ? (
+                            <>
+                              <Pause className="w-3 h-3 text-amber-400" />
+                              <span>Pause Audition</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3 h-3 text-amber-400" />
+                              <span>Audition Outtake</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Inline Audition Player for Outtake */}
+                      {isAuditioning && (
+                        <div className="mt-2 pt-2 border-t border-stone-800">
+                          <div className="relative aspect-video max-w-full bg-black rounded-lg overflow-hidden border border-stone-700">
+                            {outtake.mediaUrl ? (
+                              <video
+                                src={outtake.mediaUrl}
+                                controls
+                                autoPlay
+                                playsInline
+                                className="w-full h-full object-contain"
+                                onEnded={() => setIsPlayingAudition(false)}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-stone-500 text-xs font-mono">
+                                Media stream offline
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
 

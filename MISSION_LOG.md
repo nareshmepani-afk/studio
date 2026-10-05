@@ -10,7 +10,7 @@
 
 \## 📌 Active Platform Coordinates
 
-- **Active Sprint:** Sprint 4 — MW-87 Fireside Voice Studio Suite
+- **Active Sprint:** Sprint 5 — Fireside Video Studio & Theatrical Multi-Take Darkroom Suite
 
 - **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `f140128`, Head: `f140128`)
 
@@ -18,7 +18,9 @@
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 656 / 656 Vitest Tests Passing (53 Test Files)
+- **Current Invariant Test Baseline:** 699 / 699 Vitest Tests Passing (55 Test Files)
+
+- **Interactive Verification Suite:** qa_checklist_interactive.html (33 Test Cards Active)
 
 
 
@@ -769,5 +771,50 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `vitest run src/test/curriculum_vault.test.ts`: `16/16` tests passed
   - `vitest run src/test/fireside_prompt_carousel.test.tsx src/test/fireside_auth_header.test.tsx`: `21/21` tests passed
   - `npm.cmd run build`: `46/46` routes compiled cleanly with exit code 0
+- **Triage of Proactive Suggestions (Rule 17)**:
+  - **Suggestion 3 (Adopted into Sprint 5)**: Take-Count Micro-Badge on Chapter Spine Rail (`ChapterSpineRail.tsx`). Adding a subtle take indicator (`🎞️ N`) directly on scene tokens to give directors instant spatial awareness of alternate takes.
+  - **Suggestion 1 (Deferred to Sprint 6)**: Split-Screen A/B Cut Comparator (desktop darkroom post-production suite).
+  - **Suggestion 2 (Deferred to Act IV Audio Expansion)**: Ambient Soundtrack Auditioning in Selection Room.
+- **Sprint 5 Delivery Roadmap**:
+  - `MW-100-C`: Unified Orientation Dock & Steppers ➔ DONE (`82d16c0a`)
+  - `MW-101`: Act III Take Hydration & Recorded State Branching ➔ DONE
+  - `MW-106`: Multi-Take Selection Room & Master Reel Protection ➔ DONE (`f0df5ab`)
+  - `MW-102`: Post-Recording "Up Next" Transition Slate (`FiresideUpNextSlate.tsx`, Plane Ticket #309) ➔ READY FOR EXECUTION
+  - `MW-103`: Surface Chooser Modal (`SurfaceChooserModal.tsx`) ➔ TODO
+  - `MW-104`: Inbound WhatsApp Audio Bridge ➔ BACKLOG (Sprint 6)
+- **Rollout Verification Status**: Live on staging commit `f0df5ab` with Cards 29–33 active in `qa_checklist_interactive.html` awaiting physical user sign-off.
+
+---
+
+## Checkpoint #036 — MW-107: Universal Take Status Machine, Elder-First Discard Nomenclature & Cutting Room Floor (2026-10-05)
+
+- **Plane.so Ticket**: `MW-107` (Sequence #316, Issue UUID `5ee8e204-f923-43fd-ba3c-e864b29d2b46`)
+- **Baseline Commit**: `f0df5ab`
+- **Core Architecture & Invariants Resolved**:
+  - Root Cause Diagnosed: Telemetry trace `mw_telemetry_bk7lg7ewd8b` identified that clicking "Discard Take" caused takes to disappear in Fireside only to resurrect in Desktop Soundstage because the take array was popped without synchronising parent document flags (`currentStatus: 'captured'`, `status: 'pre-release'`, `actsCompleted: ['act1', 'act2']`).
+  - Implemented Universal Take Status Machine (`'master' | 'alternate' | 'outtake' | 'purged'`) in `src/types/curriculum.ts` and `src/hooks/useCurriculumVault.ts`.
+  - Enforced single-master invariants across snapshots and state transitions: exactly one take in the entire array holds `status: 'master'`, while all other active takes hold `status: 'alternate'`.
+  - Implemented non-destructive soft-discard: discarded takes receive `status: 'outtake'` and timestamp `discardedAt`, moving to the "Cutting Room Floor" drawer rather than being permanently destroyed.
+  - Implemented atomic `resetToDraftPayload`: when the sole active take is discarded, the parent document atomically downgrades to `status: 'draft'`, `currentStatus: 'ready_for_action'`, `productionStage: 1`, `actsCompleted: ['act1']`, while strictly preserving Rule 14 narrative prose, title, and bonus notes.
+  - Implemented 3-State Elder-First Nomenclature in `FiresideCompletedReelCard.tsx`:
+    - Sole Take: `[ 🔄 Clear Recording & Return to Script ]` + subtitle *"Moves this recording to outtakes and resets scene to Act I draft."*
+    - Multiple Takes: `[ ⇄ Replace Master Reel ]` + subtitle *"Opens Selection Room to assign a new Master before retiring this take."*
+  - Implemented Cutting Room Floor drawer & modal section in `VideoSelectionRoomDrawer.tsx` (mobile) and `VideoSelectionRoomModal.tsx` (desktop) with audition player and `[ ↩️ Restore to Alternate Takes ]` / `[ ↩️ Restore as Master Reel ]` actions via `restoreOuttakeTake`.
+  - Wired `handleSafeDiscardTake` and `handleRestoreOuttakeTake` in `SoloStage.tsx` with surgical containment (Rule 7).
+- **Files Created / Modified**:
+  - `src/types/curriculum.ts`
+  - `src/hooks/useCurriculumVault.ts`
+  - `src/components/fireside/FiresideCompletedReelCard.tsx`
+  - `src/components/fireside/VideoSelectionRoomDrawer.tsx`
+  - `src/app/studio/fireside/FiresideStudioClient.tsx`
+  - `src/components/studio/SoloStage.tsx`
+  - `src/components/studio/VideoSelectionRoomModal.tsx`
+  - `src/test/take_lifecycle.test.ts` (NEW)
+  - `src/test/fireside_sync.test.ts`
+- **Verification**:
+  - `tsc --noEmit`: 0 errors
+  - `vitest run`: 55/55 test files passing (699/699 tests passed)
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
+
 
 

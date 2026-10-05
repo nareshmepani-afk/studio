@@ -186,13 +186,20 @@ describe('MW-106: Multi-Take Video Selection Room & Master Reel Guardrails', () 
     });
 
     const updatedScene = result.current.scenes['part-1-scene-1'];
-    expect(updatedScene.takes?.length).toBe(1);
+    const activeTakes = (updatedScene.takes || []).filter(
+      (t) => t.status !== 'outtake' && t.status !== 'purged'
+    );
+    expect(activeTakes.length).toBe(1);
 
-    const remainingTake = updatedScene.takes![0];
+    const remainingTake = activeTakes[0];
     expect(remainingTake.id).toBe('take_mobile_audition');
     expect(remainingTake.isPreferred).toBe(true);
     expect(remainingTake.role).toBe('master_cut');
-    expect(remainingTake.order).toBe(1);
+
+    // MW-107: Soft-discarded take is preserved as outtake for Cutting Room Floor
+    const discardedTake = (updatedScene.takes || []).find((t) => t.id === 'take_master_desktop');
+    expect(discardedTake?.status).toBe('outtake');
+    expect(discardedTake?.isPreferred).toBe(false);
 
     // videoUrl must be updated synchronously to the new master take's URL
     expect(updatedScene.videoUrl).toBe('https://example.com/mobile_take2.webm');

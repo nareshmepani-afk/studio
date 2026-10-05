@@ -80,6 +80,15 @@ export interface DirectorialPolishMetadata {
 // 3. Multi-Take Architecture
 // ---------------------------------------------------------------------------
 
+/**
+ * Universal Take Lifecycle Status (MW-107)
+ * - 'master': Exactly one active master reel per scene; mirrored to videoUrl/audioUrl.
+ * - 'alternate': Live auxiliary take in active reel stack.
+ * - 'outtake': Soft-discarded take; excluded from active reels, preserved in Cutting Room Floor.
+ * - 'purged': Permanently unlinked/deleted take.
+ */
+export type MemoirTakeStatus = 'master' | 'alternate' | 'outtake' | 'purged';
+
 export interface MemoirTake {
   id: string; // e.g. "take_mobile_01", "take_desktop_02"
   takeNumber: number;
@@ -95,12 +104,16 @@ export interface MemoirTake {
   label: string; // e.g. "Take 1 (Fireside Mobile)", "Take 2 (4K Soundstage)"
   /** Indicates whether this take is the designated master audio/video stream */
   isPreferred: boolean;
+  /** Universal Take Lifecycle Status (MW-107) */
+  status?: MemoirTakeStatus;
   /** Visual sequence order in selection room */
   order?: number;
   /** Directorial role designation */
   role?: 'master_cut' | 'alternate' | 'b_roll' | 'rehearsal';
   /** URL alias for backward-compatibility with legacy payloads */
   url?: string;
+  /** ISO timestamp when moved to outtakes (MW-107) */
+  discardedAt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +157,8 @@ export interface UnifiedCurriculumMemory {
   elevatedAt?: number;
   /** Current state machine status in the curriculum */
   currentStatus: SceneCaptureStatus;
+  /** Primary Firestore memoir lifecycle status ('draft' | 'pre-release' | 'published') */
+  status?: 'draft' | 'in_progress' | 'pre-release' | 'completed' | 'published' | string;
   /** List of soundstage acts that have been visited or completed */
   actsCompleted: ActIdentifier[];
   /** Intelligent routing target when opening in Desktop Soundstage */
@@ -317,7 +332,10 @@ export function createEmptyCurriculumMemory(params: {
  */
 export function isSceneCompleted(memory?: Partial<UnifiedCurriculumMemory> | null): boolean {
   if (!memory) return false;
-  const hasTakes = Array.isArray(memory.takes) && memory.takes.length > 0;
+  const activeTakes = Array.isArray(memory.takes)
+    ? memory.takes.filter((t) => t.status !== 'outtake' && t.status !== 'purged')
+    : [];
+  const hasTakes = activeTakes.length > 0;
   const hasMediaUrls = Boolean(memory.videoUrl || memory.audioUrl);
   return hasTakes || hasMediaUrls;
 }

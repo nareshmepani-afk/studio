@@ -36,10 +36,11 @@ import {
   SurfaceOrigin,
   MemoirReel,
   resolveEditingAuthority,
+  MemoirTakeStatus,
 } from '@/types/curriculum';
 
 export { resolveEditingAuthority } from '@/types/curriculum';
-export type { StoryMoodTag, EditingAuthority, SurfaceOrigin, MemoirReel } from '@/types/curriculum';
+export type { StoryMoodTag, EditingAuthority, SurfaceOrigin, MemoirReel, MemoirTakeStatus } from '@/types/curriculum';
 
 export interface UseCurriculumVaultOptions {
   userId?: string | null;
@@ -108,6 +109,8 @@ export interface UseCurriculumVaultReturn {
     discardTakeId: string,
     fallbackMasterTakeId?: string
   ) => Promise<void>;
+  /** Restores a soft-discarded outtake back to alternate takes stack (MW-107) */
+  restoreOuttakeTake: (sceneId: string, takeId: string) => Promise<void>;
 }
 
 /**
@@ -121,6 +124,17 @@ export const TOTAL_CURRICULUM_SCENES = ALL_CURRICULUM_SCENES.length;
  */
 export function isSceneCompleted(memory?: Partial<UnifiedCurriculumMemory> | null): boolean {
   if (!memory) return false;
+
+  const hasTakes = Array.isArray(memory.takes);
+  const activeTakes = hasTakes
+    ? memory.takes!.filter((t) => t.status !== 'outtake' && t.status !== 'purged')
+    : [];
+
+  // 0. MW-107 Invariant: If takes array was populated but ALL takes are soft-discarded outtakes
+  // and no active media URL exists, the scene is reset to an unrecorded slate
+  if (hasTakes && memory.takes!.length > 0 && activeTakes.length === 0 && !memory.videoUrl && !memory.audioUrl) {
+    return false;
+  }
 
   // 1. Explicit status machine checks
   if (memory.currentStatus === 'mastered' || memory.currentStatus === 'captured') {
@@ -143,8 +157,8 @@ export function isSceneCompleted(memory?: Partial<UnifiedCurriculumMemory> | nul
     }
   }
 
-  // 3. Multi-take physical presence or direct media URL check (MW-88-T6)
-  if (Array.isArray(memory.takes) && memory.takes.length > 0) {
+  // 3. Multi-take physical presence or direct media URL check (MW-88-T6 / MW-107)
+  if (activeTakes.length > 0) {
     return true;
   }
   if (Boolean(memory.videoUrl || memory.audioUrl)) {
@@ -260,9 +274,26 @@ export function useCurriculumVault({
                 });
               }
             }
-            const takes = rawTakes;
+            // MW-107: Normalize take status (master, alternate, outtake, purged)
+            const takes: MemoirTake[] = rawTakes.map((t: any, idx: number) => {
+              const inferredStatus: MemoirTakeStatus =
+                t.status || (t.isPreferred ? 'master' : 'alternate');
+              return {
+                ...t,
+                status: inferredStatus,
+                role: inferredStatus === 'master' ? 'master_cut' : (t.role || 'alternate'),
+                isPreferred: inferredStatus === 'master',
+                order: t.order ?? idx + 1,
+              };
+            });
+
+            const activeTakes = takes.filter((t) => t.status !== 'outtake' && t.status !== 'purged');
             const preferredTake =
-              takes.find((t) => t.isPreferred) || takes[takes.length - 1] || takes[0];
+              activeTakes.find((t) => t.status === 'master') ||
+              activeTakes.find((t) => t.id === data.activeTakeId || t.id === data.preferredTakeId) ||
+              activeTakes.find((t) => t.isPreferred) ||
+              activeTakes[activeTakes.length - 1] ||
+              null;
 
             const normalized: UnifiedCurriculumMemory = {
               id: docSnap.id,
@@ -273,12 +304,14 @@ export function useCurriculumVault({
               sceneTitle: data.title || data.sceneTitle || sceneDef?.title || canonicalSceneId,
               prose: data.prose || data.description || '',
               currentStatus:
-                data.currentStatus ||
-                (data.status === 'pre-release' || data.status === 'published'
-                  ? 'mastered'
-                  : computedActs.includes('act2') || takes.length > 0
-                  ? 'captured'
-                  : 'ready_for_action'),
+                activeTakes.length === 0 && (data.status === 'draft' || !data.videoUrl)
+                  ? 'ready_for_action'
+                  : data.currentStatus ||
+                    (data.status === 'pre-release' || data.status === 'published'
+                      ? 'mastered'
+                      : computedActs.includes('act2') || activeTakes.length > 0
+                      ? 'captured'
+                      : 'ready_for_action'),
               actsCompleted: computedActs,
               smartLandingTarget: computedActs.includes('act3')
                 ? 'act4'
@@ -485,8 +518,15 @@ export function useCurriculumVault({
         getSceneMemory(canonicalSceneId);
       const existingTakes = current.takes || [];
 
-      const isFirstTake = existingTakes.length === 0;
-      const shouldBePreferred = take.isPreferred !== undefined ? take.isPreferred : isFirstTake;
+      const activeTakesBefore = existingTakes.filter(
+        (t) => t.status !== 'outtake' && t.status !== 'purged'
+      );
+      const isFirstActiveTake = activeTakesBefore.length === 0;
+      const shouldBePreferred =
+        take.isPreferred !== undefined ? Boolean(take.isPreferred) : isFirstActiveTake;
+
+      const inferredStatus: MemoirTakeStatus =
+        take.status || (shouldBePreferred ? 'master' : 'alternate');
 
       const takeWithLabel: MemoirTake = {
         ...take,
@@ -494,20 +534,28 @@ export function useCurriculumVault({
           take.label ||
           `Take ${take.takeNumber} (${take.mediaMode === 'video' ? 'Fireside Video' : 'Fireside Voice'})`,
         isPreferred: shouldBePreferred,
+        status: inferredStatus,
+        role: shouldBePreferred ? 'master_cut' : (take.role || 'alternate'),
+        order: take.order ?? existingTakes.length + 1,
       };
 
       const takeExists = existingTakes.some((t) => t.id === take.id);
-      const updatedTakes = takeExists
-        ? existingTakes.map((t) =>
-            t.id === take.id
-              ? { ...t, ...takeWithLabel }
-              : shouldBePreferred
-              ? { ...t, isPreferred: false }
-              : t
-          )
-        : existingTakes
-            .map((t) => (shouldBePreferred ? { ...t, isPreferred: false } : t))
-            .concat(takeWithLabel);
+      const updatedTakes: MemoirTake[] = takeExists
+        ? existingTakes.map((t) => {
+            if (t.id === take.id) return { ...t, ...takeWithLabel };
+            if (shouldBePreferred && t.status !== 'outtake' && t.status !== 'purged') {
+              return { ...t, isPreferred: false, status: 'alternate' as MemoirTakeStatus, role: 'alternate' as const };
+            }
+            return t;
+          })
+        : [
+            ...existingTakes.map((t) =>
+              shouldBePreferred && t.status !== 'outtake' && t.status !== 'purged'
+                ? { ...t, isPreferred: false, status: 'alternate' as MemoirTakeStatus, role: 'alternate' as const }
+                : t
+            ),
+            takeWithLabel,
+          ];
 
       const existingActs: ActIdentifier[] = Array.isArray(current.actsCompleted)
         ? current.actsCompleted
@@ -673,25 +721,45 @@ export function useCurriculumVault({
 
       const existingTakes = current.takes || [];
       const targetTake = existingTakes.find((t) => t.id === discardTakeId);
-      const filteredTakes = existingTakes.filter((t) => t.id !== discardTakeId);
+      if (!targetTake) return;
 
       const nowEpoch = Date.now();
       const nowIso = new Date(nowEpoch).toISOString();
 
+      // MW-107: Soft-discard target take by transitioning status to 'outtake' (persisted for Cutting Room Floor)
+      const markedTakes: MemoirTake[] = existingTakes.map((t) => {
+        if (t.id === discardTakeId) {
+          return {
+            ...t,
+            isPreferred: false,
+            status: 'outtake' as MemoirTakeStatus,
+            role: 'alternate' as const,
+            discardedAt: nowIso,
+          };
+        }
+        return t;
+      });
+
+      const remainingActiveTakes = markedTakes.filter(
+        (t) => t.status !== 'outtake' && t.status !== 'purged'
+      );
+
       let updatedMemory: UnifiedCurriculumMemory;
       let payload: Record<string, any>;
 
-      if (filteredTakes.length === 0) {
-        // Case A: Single Take in Stack (or last take discarded) -> Revert to Act I unrecorded capture slate
+      if (remainingActiveTakes.length === 0) {
+        // Case A: Discarding the sole active take -> Atomically execute resetToDraftPayload (MW-107)
+        // Global document downgrade across all queries while preserving Rule 14 prose
         updatedMemory = {
           ...current,
-          takes: [],
+          takes: markedTakes,
           activeTakeId: null,
           videoUrl: null,
           audioUrl: null,
+          status: 'draft',
+          currentStatus: 'ready_for_action',
           actsCompleted: ['act1'],
           productionStage: 1,
-          currentStatus: 'ready_for_action',
           smartLandingTarget: 'act1',
           lastEditedSurface: 'fireside_mobile',
           updatedAt: nowEpoch,
@@ -702,44 +770,71 @@ export function useCurriculumVault({
           originalHook: current.originalHook,
           description: current.description ?? current.prose,
           sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
-          bonusNotes: current.bonusNotes,
+          bonusNotes: current.bonusNotes ?? [],
           editingAuthority: current.editingAuthority || 'fireside_flexible',
         };
 
         payload = {
-          takes: [],
+          takes: markedTakes,
           activeTakeId: null,
+          preferredTakeId: null,
           videoUrl: null,
           audioUrl: null,
+          status: 'draft',
+          currentStatus: 'ready_for_action',
           actsCompleted: ['act1'],
           productionStage: 1,
+          smartLandingTarget: 'act1',
           lastEditedSurface: 'fireside_mobile',
           updatedAt: nowEpoch,
+          lastModified: nowIso,
           prose: current.prose,
           title: current.title ?? current.sceneTitle,
           originalHook: current.originalHook,
           description: current.description ?? current.prose,
           sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
-          bonusNotes: current.bonusNotes,
+          bonusNotes: current.bonusNotes ?? [],
           editingAuthority: current.editingAuthority || 'fireside_flexible',
         };
       } else {
-        // Case B: Multiple Takes in Stack -> Active Master Discard Interlock (MW-106 Amendment 3)
-        const wasMaster = targetTake?.isPreferred || current.activeTakeId === discardTakeId;
+        // Case B: Multiple active takes exist -> Active Master Discard Interlock (MW-106 / MW-107)
+        const wasMaster =
+          targetTake.status === 'master' ||
+          targetTake.isPreferred ||
+          current.activeTakeId === discardTakeId;
+
         let newMasterId = fallbackMasterTakeId;
-        if (!newMasterId || !filteredTakes.some((t) => t.id === newMasterId)) {
-          const existingPreferred = filteredTakes.find((t) => t.isPreferred);
-          newMasterId = existingPreferred ? existingPreferred.id : filteredTakes[filteredTakes.length - 1].id;
+        if (wasMaster) {
+          if (!newMasterId || !remainingActiveTakes.some((t) => t.id === newMasterId)) {
+            const existingPreferred = remainingActiveTakes.find(
+              (t) => t.isPreferred || t.status === 'master'
+            );
+            newMasterId = existingPreferred
+              ? existingPreferred.id
+              : remainingActiveTakes[remainingActiveTakes.length - 1].id;
+          }
         }
 
-        const remainingTakes: MemoirTake[] = filteredTakes.map((t, idx) => ({
-          ...t,
-          order: idx + 1,
-          isPreferred: wasMaster ? t.id === newMasterId : Boolean(t.isPreferred),
-          role: (wasMaster ? t.id === newMasterId : Boolean(t.isPreferred)) ? 'master_cut' : 'alternate',
-        }));
+        const reconciledTakes: MemoirTake[] = markedTakes.map((t) => {
+          if (t.status === 'outtake' || t.status === 'purged') {
+            return t;
+          }
+          if (wasMaster) {
+            const isElected = t.id === newMasterId;
+            return {
+              ...t,
+              isPreferred: isElected,
+              status: isElected ? 'master' : 'alternate',
+              role: isElected ? 'master_cut' : 'alternate',
+            };
+          }
+          return t;
+        });
 
-        const activeMaster = remainingTakes.find((t) => t.isPreferred) || remainingTakes[remainingTakes.length - 1];
+        const activeMaster =
+          reconciledTakes.find((t) => t.status === 'master') ||
+          reconciledTakes.find((t) => t.isPreferred && t.status !== 'outtake') ||
+          remainingActiveTakes[remainingActiveTakes.length - 1];
 
         const resolvedVideoUrl =
           (activeMaster as any).videoUrl !== undefined
@@ -756,25 +851,24 @@ export function useCurriculumVault({
 
         updatedMemory = {
           ...current,
-          takes: remainingTakes,
+          takes: reconciledTakes,
           activeTakeId: activeMaster.id,
           videoUrl: resolvedVideoUrl,
           audioUrl: resolvedAudioUrl,
           lastEditedSurface: 'fireside_mobile',
           updatedAt: nowEpoch,
           lastModified: nowIso,
-          // Immutable Rule 14 Invariants strictly preserved:
           prose: current.prose,
           title: current.title ?? current.sceneTitle,
           originalHook: current.originalHook,
           description: current.description ?? current.prose,
           sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
-          bonusNotes: current.bonusNotes,
+          bonusNotes: current.bonusNotes ?? [],
           editingAuthority: current.editingAuthority || 'fireside_flexible',
         };
 
         payload = {
-          takes: remainingTakes,
+          takes: reconciledTakes,
           activeTakeId: activeMaster.id,
           preferredTakeId: activeMaster.id,
           videoUrl: resolvedVideoUrl,
@@ -782,12 +876,13 @@ export function useCurriculumVault({
           duration: activeMaster.durationSeconds,
           lastEditedSurface: 'fireside_mobile',
           updatedAt: nowEpoch,
+          lastModified: nowIso,
           prose: current.prose,
           title: current.title ?? current.sceneTitle,
           originalHook: current.originalHook,
           description: current.description ?? current.prose,
           sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
-          bonusNotes: current.bonusNotes,
+          bonusNotes: current.bonusNotes ?? [],
           editingAuthority: current.editingAuthority || 'fireside_flexible',
         };
       }
@@ -1005,11 +1100,18 @@ export function useCurriculumVault({
         scenesRef.current[canonicalSceneId] ||
         scenes[canonicalSceneId] ||
         getSceneMemory(canonicalSceneId);
-      const updatedTakes: MemoirTake[] = (current.takes || []).map((t) => ({
-        ...t,
-        isPreferred: t.id === takeId,
-        role: t.id === takeId ? 'master_cut' : 'alternate',
-      }));
+      const updatedTakes: MemoirTake[] = (current.takes || []).map((t) => {
+        if (t.status === 'outtake' || t.status === 'purged') {
+          return t; // preserve outtake status
+        }
+        const isTarget = t.id === takeId;
+        return {
+          ...t,
+          isPreferred: isTarget,
+          status: (isTarget ? 'master' : 'alternate') as MemoirTakeStatus,
+          role: isTarget ? 'master_cut' : 'alternate',
+        };
+      });
 
       const preferredTake = updatedTakes.find((t) => t.id === takeId);
       const resolvedVideoUrl =
@@ -1336,6 +1438,127 @@ export function useCurriculumVault({
     return mem.smartLandingTarget || 'act1';
   }, [scenes, activeSceneId]);
 
+  const restoreOuttakeTake = useCallback(
+    async (sceneId: string, takeId: string): Promise<void> => {
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = sceneDef?.id || sceneId;
+      const mappedPromptId = sceneDef?.promptId;
+
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+
+      const existingTakes = current.takes || [];
+      const targetTake = existingTakes.find((t) => t.id === takeId);
+      if (!targetTake || targetTake.status !== 'outtake') return;
+
+      const activeTakesBefore = existingTakes.filter(
+        (t) => t.status !== 'outtake' && t.status !== 'purged'
+      );
+      const wasEmpty = activeTakesBefore.length === 0;
+
+      // If active stack was empty, restoring promotes this take to 'master'; otherwise 'alternate'
+      const restoredStatus: MemoirTakeStatus = wasEmpty ? 'master' : 'alternate';
+      const nowEpoch = Date.now();
+      const nowIso = new Date(nowEpoch).toISOString();
+
+      const updatedTakes: MemoirTake[] = existingTakes.map((t) => {
+        if (t.id === takeId) {
+          const { discardedAt, ...rest } = t;
+          return {
+            ...rest,
+            status: restoredStatus,
+            isPreferred: wasEmpty,
+            role: wasEmpty ? 'master_cut' : 'alternate',
+            order: activeTakesBefore.length + 1,
+          };
+        }
+        return t;
+      });
+
+      const activeMaster = wasEmpty
+        ? updatedTakes.find((t) => t.id === takeId)!
+        : updatedTakes.find((t) => t.status === 'master') ||
+          updatedTakes.find((t) => t.isPreferred && t.status !== 'outtake') ||
+          targetTake;
+
+      const resolvedVideoUrl =
+        activeMaster.mediaMode === 'video'
+          ? activeMaster.mediaUrl || (activeMaster as any).url
+          : (activeMaster as any).videoUrl || null;
+      const resolvedAudioUrl =
+        activeMaster.mediaMode === 'audio'
+          ? activeMaster.mediaUrl || (activeMaster as any).url
+          : (activeMaster as any).audioUrl || null;
+
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        takes: updatedTakes,
+        activeTakeId: activeMaster.id,
+        videoUrl: resolvedVideoUrl,
+        audioUrl: resolvedAudioUrl,
+        ...(wasEmpty
+          ? {
+              status: 'pre-release',
+              currentStatus: 'captured',
+              productionStage: 2,
+              actsCompleted: ['act1', 'act2'],
+              smartLandingTarget: 'act3',
+            }
+          : {}),
+        lastEditedSurface: 'fireside_mobile',
+        updatedAt: nowEpoch,
+        lastModified: nowIso,
+      };
+
+      // Rule 12 Optimistic UI: 0ms synchronous state update
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
+        const next = { ...prev, [canonicalSceneId]: updatedMemory };
+        if (mappedPromptId) next[mappedPromptId] = updatedMemory;
+        return next;
+      });
+
+      // Persist to Firestore
+      if (db && userId && !userId.startsWith('guest')) {
+        try {
+          const targetDocId = resolveDocIdForScene(canonicalSceneId);
+          const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+          const payload: Record<string, any> = {
+            takes: updatedTakes,
+            activeTakeId: activeMaster.id,
+            preferredTakeId: activeMaster.id,
+            videoUrl: resolvedVideoUrl,
+            audioUrl: resolvedAudioUrl,
+            updatedAt: nowEpoch,
+            lastModified: nowIso,
+            ...(wasEmpty
+              ? {
+                  status: 'pre-release',
+                  currentStatus: 'captured',
+                  productionStage: 2,
+                  actsCompleted: ['act1', 'act2'],
+                  smartLandingTarget: 'act3',
+                }
+              : {}),
+          };
+          await setDoc(memoryDocRef, payload, { merge: true });
+        } catch (err) {
+          console.error('[useCurriculumVault] Failed to persist restored take to Firestore:', err);
+        }
+      }
+    },
+    [userId, db, resolveDocIdForScene, getSceneMemory, scenes]
+  );
+
   return {
     scenes,
     activeSceneId,
@@ -1357,6 +1580,7 @@ export function useCurriculumVault({
     elevateToStudioMaster,
     reorderSceneTakes,
     safeDiscardTake,
+    restoreOuttakeTake,
   };
 }
 

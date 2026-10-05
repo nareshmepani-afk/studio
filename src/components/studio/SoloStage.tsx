@@ -312,52 +312,91 @@ export default function SoloStage({
 
   const handleSafeDiscardTake = useCallback(async (discardTakeId: string, fallbackMasterTakeId?: string) => {
     const targetTake = selectionRoomTakes.find((t) => t.id === discardTakeId);
-    const filteredTakes = selectionRoomTakes.filter((t) => t.id !== discardTakeId);
-    if (filteredTakes.length === 0) {
+    if (!targetTake) return;
+
+    const nowIso = new Date().toISOString();
+    const markedTakes: MemoirTake[] = selectionRoomTakes.map((t) => {
+      if (t.id === discardTakeId) {
+        return {
+          ...t,
+          isPreferred: false,
+          status: 'outtake' as const,
+          role: 'alternate' as const,
+          discardedAt: nowIso,
+        };
+      }
+      return t;
+    });
+
+    const remainingActiveTakes = markedTakes.filter(
+      (t) => t.status !== 'outtake' && t.status !== 'purged'
+    );
+
+    if (remainingActiveTakes.length === 0) {
       update({
         videoUrl: undefined,
-        takes: [],
+        takes: markedTakes,
         activeTakeId: undefined,
+        status: 'draft',
+        productionStage: 1,
       });
       if (db && userId && data?.id && !userId.startsWith('guest')) {
         try {
           const docRef = doc(db, 'users', userId, 'memories', data.id);
           await setDoc(docRef, {
             videoUrl: null,
-            takes: [],
+            audioUrl: null,
+            takes: markedTakes,
             activeTakeId: null,
             preferredTakeId: null,
-            updatedAt: new Date().toISOString(),
+            status: 'draft',
+            currentStatus: 'ready_for_action',
+            productionStage: 1,
+            actsCompleted: ['act1'],
+            updatedAt: nowIso,
           }, { merge: true });
         } catch (err) {
           console.warn("[SoloStage] Error persisting empty takes on discard:", err);
         }
       }
       setIsVideoSelectionRoomOpen(false);
-      toast.info("Take Discarded", { description: "Reel reset to unrecorded state." });
+      toast.info("Take Moved to Outtakes", { description: "Scene reset to unrecorded Act I draft." });
       return;
     }
 
-    const wasMaster = targetTake?.isPreferred || data?.activeTakeId === discardTakeId;
+    const wasMaster = targetTake?.isPreferred || targetTake?.status === 'master' || data?.activeTakeId === discardTakeId;
     let newMasterId = fallbackMasterTakeId;
-    if (!newMasterId || !filteredTakes.some((t) => t.id === newMasterId)) {
-      const existingPreferred = filteredTakes.find((t) => t.isPreferred);
-      newMasterId = existingPreferred ? existingPreferred.id : filteredTakes[filteredTakes.length - 1].id;
+    if (wasMaster) {
+      if (!newMasterId || !remainingActiveTakes.some((t) => t.id === newMasterId)) {
+        const existingPreferred = remainingActiveTakes.find((t) => t.isPreferred || t.status === 'master');
+        newMasterId = existingPreferred ? existingPreferred.id : remainingActiveTakes[remainingActiveTakes.length - 1].id;
+      }
     }
 
-    const remainingTakes: MemoirTake[] = filteredTakes.map((t, idx) => ({
-      ...t,
-      order: idx + 1,
-      isPreferred: wasMaster ? t.id === newMasterId : Boolean(t.isPreferred),
-      role: (wasMaster ? t.id === newMasterId : Boolean(t.isPreferred)) ? ('master_cut' as const) : ('alternate' as const),
-    }));
+    const reconciledTakes: MemoirTake[] = markedTakes.map((t) => {
+      if (t.status === 'outtake' || t.status === 'purged') return t;
+      if (wasMaster) {
+        const isElected = t.id === newMasterId;
+        return {
+          ...t,
+          isPreferred: isElected,
+          status: isElected ? ('master' as const) : ('alternate' as const),
+          role: isElected ? ('master_cut' as const) : ('alternate' as const),
+        };
+      }
+      return t;
+    });
 
-    const activeMaster = remainingTakes.find((t) => t.isPreferred) || remainingTakes[remainingTakes.length - 1];
+    const activeMaster =
+      reconciledTakes.find((t) => t.status === 'master') ||
+      reconciledTakes.find((t) => t.isPreferred && t.status !== 'outtake') ||
+      remainingActiveTakes[remainingActiveTakes.length - 1];
+
     const resolvedUrl = (activeMaster as any).videoUrl || activeMaster.mediaUrl || activeMaster.url || '';
 
     update({
       videoUrl: resolvedUrl,
-      takes: remainingTakes,
+      takes: reconciledTakes,
       activeTakeId: activeMaster.id,
     });
 
@@ -366,17 +405,81 @@ export default function SoloStage({
         const docRef = doc(db, 'users', userId, 'memories', data.id);
         await setDoc(docRef, {
           videoUrl: resolvedUrl,
-          takes: remainingTakes,
+          takes: reconciledTakes,
           activeTakeId: activeMaster.id,
           preferredTakeId: activeMaster.id,
-          updatedAt: new Date().toISOString(),
+          updatedAt: nowIso,
         }, { merge: true });
       } catch (err) {
         console.warn("[SoloStage] Error persisting discarded take:", err);
       }
     }
-    toast.success("Take Discarded", { description: "Active Master Reel updated." });
+    toast.success("Take Moved to Outtakes", { description: "Active Master Reel updated." });
   }, [selectionRoomTakes, data?.activeTakeId, update, db, userId, data?.id]);
+
+  const handleRestoreOuttakeTake = useCallback(async (takeId: string) => {
+    const targetTake = selectionRoomTakes.find((t) => t.id === takeId);
+    if (!targetTake || targetTake.status !== 'outtake') return;
+
+    const activeTakesBefore = selectionRoomTakes.filter(
+      (t) => t.status !== 'outtake' && t.status !== 'purged'
+    );
+    const wasEmpty = activeTakesBefore.length === 0;
+    const nowIso = new Date().toISOString();
+
+    const restoredTakes: MemoirTake[] = selectionRoomTakes.map((t) => {
+      if (t.id === takeId) {
+        const { discardedAt, ...rest } = t;
+        return {
+          ...rest,
+          status: wasEmpty ? ('master' as const) : ('alternate' as const),
+          isPreferred: wasEmpty,
+          role: wasEmpty ? ('master_cut' as const) : ('alternate' as const),
+        };
+      }
+      return t;
+    });
+
+    const activeMaster = wasEmpty
+      ? restoredTakes.find((t) => t.id === takeId)!
+      : restoredTakes.find((t) => t.status === 'master') ||
+        restoredTakes.find((t) => t.isPreferred && t.status !== 'outtake') ||
+        targetTake;
+
+    const resolvedUrl = (activeMaster as any).videoUrl || activeMaster.mediaUrl || activeMaster.url || '';
+
+    update({
+      videoUrl: resolvedUrl,
+      takes: restoredTakes,
+      activeTakeId: activeMaster.id,
+      ...(wasEmpty ? {
+        status: 'pre-release',
+        productionStage: 2,
+      } : {}),
+    });
+
+    if (db && userId && data?.id && !userId.startsWith('guest')) {
+      try {
+        const docRef = doc(db, 'users', userId, 'memories', data.id);
+        await setDoc(docRef, {
+          videoUrl: resolvedUrl,
+          takes: restoredTakes,
+          activeTakeId: activeMaster.id,
+          preferredTakeId: activeMaster.id,
+          updatedAt: nowIso,
+          ...(wasEmpty ? {
+            status: 'pre-release',
+            currentStatus: 'captured',
+            productionStage: 2,
+            actsCompleted: ['act1', 'act2'],
+          } : {}),
+        }, { merge: true });
+      } catch (err) {
+        console.warn("[SoloStage] Error persisting restored take:", err);
+      }
+    }
+    toast.success("Take Restored", { description: wasEmpty ? "Restored as Master Reel." : "Restored to alternate takes." });
+  }, [selectionRoomTakes, update, db, userId, data?.id]);
 
   // Rehydrate trimRange when Firestore data or videoDuration loads (default trimStart to 0 for zero-start playhead integrity)
   useEffect(() => {
@@ -7090,6 +7193,7 @@ export default function SoloStage({
         onPromoteMaster={handlePromoteMasterTake}
         onReorderTakes={handleReorderTakes}
         onDiscardTake={handleSafeDiscardTake}
+        onRestoreTake={handleRestoreOuttakeTake}
       />
     </>
   );

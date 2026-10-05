@@ -180,6 +180,7 @@ export default function FiresideStudioClient() {
     promotePreferredTake,
     reorderSceneTakes,
     safeDiscardTake,
+    restoreOuttakeTake,
   } = useCurriculumVault({
     userId: user?.uid,
     initialSceneId: effectiveSceneId,
@@ -1142,6 +1143,7 @@ export default function FiresideStudioClient() {
               onPromoteMasterTake={(takeId) => promotePreferredTake(effectiveSceneId, takeId)}
               onReorderTakes={(orderedIds) => reorderSceneTakes(effectiveSceneId, orderedIds)}
               onSafeDiscardTake={(discardId, fallbackId) => safeDiscardTake(effectiveSceneId, discardId, fallbackId)}
+              onRestoreTake={(takeId) => restoreOuttakeTake(effectiveSceneId, takeId)}
               onReRecordRequest={() => {
                 setIsReviewingTake(false);
                 setForceRecordMode(true);

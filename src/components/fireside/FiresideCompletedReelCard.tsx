@@ -57,6 +57,7 @@ export interface FiresideCompletedReelCardProps {
   onPromoteMasterTake?: (takeId: string) => Promise<void> | void;
   onReorderTakes?: (orderedTakeIds: string[]) => Promise<void> | void;
   onSafeDiscardTake?: (discardTakeId: string, fallbackMasterTakeId?: string) => Promise<void> | void;
+  onRestoreTake?: (takeId: string) => Promise<void> | void;
   className?: string;
 }
 
@@ -82,6 +83,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   onPromoteMasterTake,
   onReorderTakes,
   onSafeDiscardTake,
+  onRestoreTake,
   className = '',
 }) => {
   const [showRetakeConfirm, setShowRetakeConfirm] = useState(false);
@@ -101,15 +103,29 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
 
   const isDesktopLocked = resolvedAuthority === 'desktop_locked';
 
-  // Determine preferred take and metrics
+  const takes = useMemo(() => {
+    return Array.isArray(sceneMemory?.takes) ? sceneMemory.takes : [];
+  }, [sceneMemory?.takes]);
+
+  const activeTakes = useMemo(() => {
+    return takes.filter((t) => t.status !== 'outtake' && t.status !== 'purged');
+  }, [takes]);
+
+  const outtakes = useMemo(() => {
+    return takes.filter((t) => t.status === 'outtake');
+  }, [takes]);
+
+  // Determine preferred take and metrics across ACTIVE takes (MW-107)
   const preferredTake = useMemo(() => {
-    if (!sceneMemory || !sceneMemory.takes || sceneMemory.takes.length === 0) return null;
+    if (activeTakes.length === 0) return null;
     return (
-      sceneMemory.takes.find((t) => t.isPreferred) ||
-      sceneMemory.takes[sceneMemory.takes.length - 1] ||
-      sceneMemory.takes[0]
+      activeTakes.find((t) => t.status === 'master') ||
+      activeTakes.find((t) => t.id === sceneMemory?.activeTakeId) ||
+      activeTakes.find((t) => t.isPreferred) ||
+      activeTakes[activeTakes.length - 1] ||
+      activeTakes[0]
     );
-  }, [sceneMemory]);
+  }, [activeTakes, sceneMemory?.activeTakeId]);
 
   const effectiveDurationSeconds = useMemo(() => {
     if (
@@ -140,11 +156,11 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
     if (preferredTake?.takeNumber && preferredTake.takeNumber > 0) {
       return preferredTake.takeNumber;
     }
-    if (sceneMemory?.takes && sceneMemory.takes.length > 0) {
-      return sceneMemory.takes.length;
+    if (activeTakes.length > 0) {
+      return activeTakes.length;
     }
     return 1;
-  }, [preferredTake, sceneMemory?.takes]);
+  }, [preferredTake, activeTakes]);
 
   const recordedTimestampText = useMemo(() => {
     const rawDate =
@@ -169,7 +185,6 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   const bonusNotes = Array.isArray(sceneMemory?.bonusNotes) ? sceneMemory.bonusNotes : [];
   const bonusNotesCount = bonusNotes.length;
   const isMastered = sceneMemory?.currentStatus === 'mastered';
-  const takes = Array.isArray(sceneMemory?.takes) ? sceneMemory.takes : [];
 
   const moodTagDisplay = useMemo(() => {
     const tag = sceneMemory?.moodTag;
@@ -266,7 +281,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
             <span className="text-emerald-300 font-semibold">{durationText}</span>
           </div>
 
-          {takes.length > 0 && (
+          {(activeTakes.length > 0 || outtakes.length > 0) && (
             <button
               type="button"
               data-testid="HS_FIRESIDE_OPEN_SELECTION_ROOM_BTN"
@@ -277,7 +292,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/50 text-amber-300 hover:text-white text-xs font-mono font-bold transition cursor-pointer"
             >
               <Film className="w-3.5 h-3.5 text-amber-400" />
-              <span>Reel Stack ({takes.length}) ▾</span>
+              <span>Reel Stack ({activeTakes.length}){outtakes.length > 0 ? ` • ${outtakes.length} outtakes` : ''} ▾</span>
             </button>
           )}
         </div>
@@ -428,7 +443,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         </button>
       </div>
 
-      {/* Universal Retake & 2-Step Discard Take Actions (MW-88-T5 / MW-88-T7 Responsive Ergonomic Specialisation) */}
+      {/* Universal Retake & 2-Step Discard Take Actions (MW-107 Universal Nomenclature) */}
       <div className="mt-5 relative z-10 flex flex-col items-center gap-3 text-center">
         {/* Discard Current Take Trigger & 2-Step Confirmation */}
         {!showDiscardConfirm ? (
@@ -448,28 +463,61 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
               </button>
             )}
 
-            <button
-              type="button"
-              data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"
-              data-hotspot-id="HS_FIRESIDE_CARD_DISCARD_BTN"
-              onClick={() => {
-                triggerHaptic();
-                setShowRetakeConfirm(false);
-                setShowDiscardConfirm(true);
-              }}
-              className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
-            >
-              <Trash2 className="w-4 h-4 text-rose-400" />
-              <span>[ 🗑️ Discard Current Take ]</span>
-            </button>
+            {activeTakes.length > 1 ? (
+              /* Case 1: Multiple Active Takes -> Direct Master Replacement Interlock */
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"
+                  data-hotspot-id="HS_FIRESIDE_CARD_DISCARD_BTN"
+                  onClick={() => {
+                    triggerHaptic();
+                    setIsVideoSelectionRoomOpen(true);
+                  }}
+                  className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-amber-950/40 border border-amber-500/40 hover:border-amber-500/60 text-amber-300 hover:text-amber-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
+                >
+                  <Film className="w-4 h-4 text-amber-400" />
+                  <span>[ ⇄ Replace Master Reel ]</span>
+                </button>
+                <span className="text-[11px] text-stone-400 font-mono">
+                  Opens Selection Room to assign a new Master before retiring this take.
+                </span>
+              </div>
+            ) : (
+              /* Case 2: Single Active Take -> Clear Recording & Return to Script */
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"
+                  data-hotspot-id="HS_FIRESIDE_CARD_DISCARD_BTN"
+                  onClick={() => {
+                    triggerHaptic();
+                    setShowRetakeConfirm(false);
+                    setShowDiscardConfirm(true);
+                  }}
+                  className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
+                >
+                  <RotateCcw className="w-4 h-4 text-rose-400" />
+                  <span>[ 🔄 Clear Recording & Return to Script ]</span>
+                </button>
+                <span className="text-[11px] text-stone-400 font-mono">
+                  Moves this recording to outtakes and resets scene to Act I draft.
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-rose-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-start gap-2.5 mb-3">
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <p className="text-xs sm:text-sm text-rose-200 font-medium leading-relaxed">
-                Discard this take permanently?
-              </p>
+              <div>
+                <p className="text-xs sm:text-sm text-rose-200 font-bold mb-1">
+                  Clear this recording and return to script?
+                </p>
+                <p className="text-xs text-stone-300 leading-relaxed">
+                  This recording will be safely preserved in your Cutting Room Floor drawer. The scene will return to an unrecorded slate so you can refine your script and record fresh takes.
+                </p>
+              </div>
             </div>
             <div className="flex items-center justify-end gap-2">
               <button
@@ -479,7 +527,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
                 onClick={() => setShowDiscardConfirm(false)}
                 className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition cursor-pointer"
               >
-                [ Cancel ]
+                [ Keep Recording ]
               </button>
               <button
                 type="button"
@@ -488,11 +536,15 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
                 onClick={() => {
                   triggerHaptic();
                   setShowDiscardConfirm(false);
-                  onDiscardTake?.();
+                  if (preferredTake?.id && onSafeDiscardTake) {
+                    onSafeDiscardTake(preferredTake.id);
+                  } else {
+                    onDiscardTake?.();
+                  }
                 }}
                 className="min-h-[44px] px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
               >
-                [ Confirm Discard ]
+                [ Confirm & Return to Script ]
               </button>
             </div>
           </div>
@@ -623,6 +675,9 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           } else {
             onDiscardTake?.();
           }
+        }}
+        onRestoreTake={async (takeId) => {
+          await onRestoreTake?.(takeId);
         }}
       />
     </section>

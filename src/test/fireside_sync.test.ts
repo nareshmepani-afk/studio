@@ -766,8 +766,9 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       });
 
       const afterDiscard = result.current.getSceneMemory('part-1-scene-1');
-      // 1. Reverts to unrecorded capture slate
-      expect(afterDiscard.takes).toEqual([]);
+      // 1. Reverts to unrecorded capture slate (active takes empty, single take moved to outtake status)
+      expect(afterDiscard.takes.filter(t => t.status !== 'outtake')).toEqual([]);
+      expect(afterDiscard.takes[0].status).toBe('outtake');
       expect(afterDiscard.activeTakeId).toBeNull();
       expect(afterDiscard.videoUrl).toBeNull();
       expect(afterDiscard.audioUrl).toBeNull();
@@ -786,7 +787,8 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // 3. Firestore delta payload verified
       expect(setDoc).toHaveBeenCalledTimes(1);
       const firestorePayload = vi.mocked(setDoc).mock.calls[0][1] as Record<string, any>;
-      expect(firestorePayload.takes).toEqual([]);
+      expect(firestorePayload.takes.filter((t: any) => t.status !== 'outtake')).toEqual([]);
+      expect(firestorePayload.takes[0].status).toBe('outtake');
       expect(firestorePayload.activeTakeId).toBeNull();
       expect(firestorePayload.videoUrl).toBeNull();
       expect(firestorePayload.audioUrl).toBeNull();
@@ -852,9 +854,12 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       });
 
       const afterDiscard = result.current.getSceneMemory('part-1-scene-2');
-      expect(afterDiscard.takes).toHaveLength(1);
-      expect(afterDiscard.takes[0].id).toBe('take_multi_01');
-      expect(afterDiscard.takes[0].isPreferred).toBe(true);
+      const activeTakes = afterDiscard.takes.filter(t => t.status !== 'outtake');
+      expect(activeTakes).toHaveLength(1);
+      expect(activeTakes[0].id).toBe('take_multi_01');
+      expect(activeTakes[0].isPreferred).toBe(true);
+      expect(activeTakes[0].status).toBe('master');
+      expect(afterDiscard.takes.find(t => t.id === 'take_multi_02')?.status).toBe('outtake');
       expect(afterDiscard.activeTakeId).toBe('take_multi_01');
       expect(afterDiscard.videoUrl).toBe('https://firebasestorage.googleapis.com/v0/b/test/take1.webm');
       expect(afterDiscard.prose).toBe('The courtyard walls echoed with laughter.');
@@ -900,7 +905,8 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
 
       expect(setDoc).toHaveBeenCalledTimes(1);
       const afterDiscard = result.current.getSceneMemory('part-1-scene-1');
-      expect(afterDiscard.takes).toEqual([]);
+      expect(afterDiscard.takes.filter(t => t.status !== 'outtake')).toEqual([]);
+      expect(afterDiscard.takes[0].status).toBe('outtake');
       expect(afterDiscard.prose).toBe('Protected Studio Master prose.');
       expect(afterDiscard.sensoryAnchors).toEqual([{ id: 'a1', type: 'visual', word: 'ocean' }]);
 
@@ -999,11 +1005,11 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
 
       const cardTrigger = document.querySelector('[data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"]') as HTMLElement;
-      expect(cardTrigger?.textContent).toContain('[ 🗑️ Discard Current Take ]');
+      expect(cardTrigger?.textContent).toContain('[ 🔄 Clear Recording & Return to Script ]');
       fireEvent.click(cardTrigger);
 
       const cardConfirm = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"]') as HTMLElement;
-      expect(cardConfirm?.textContent).toContain('[ Confirm Discard ]');
+      expect(cardConfirm?.textContent).toContain('[ Confirm & Return to Script ]');
       fireEvent.click(cardConfirm);
       expect(onCardDiscard).toHaveBeenCalledTimes(1);
       unmountCard();
@@ -2247,8 +2253,7 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
   });
 
   it('14.4 Bare /studio/production route page executes server-side redirect to /studio', () => {
-    const fsNode = require('fs');
-    const pageSource = fsNode.readFileSync('C:/Users/home/studio/src/app/studio/production/page.tsx', 'utf8');
+    const pageSource = fs.readFileSync('C:/Users/home/studio/src/app/studio/production/page.tsx', 'utf8');
     expect(pageSource).toContain("import { redirect } from 'next/navigation'");
     expect(pageSource).toContain("redirect('/studio')");
   });
