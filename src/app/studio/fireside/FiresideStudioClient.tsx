@@ -1217,6 +1217,7 @@ export default function FiresideStudioClient() {
         sceneId={effectiveSceneId}
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
         initialPrompt={bonusDrawerSeedPrompt}
+        activeLanguage={activeLanguage}
         onSaveBonusNote={async (note) => {
           await addBonusMemoryNote(effectiveSceneId, note);
           setNotification('Bonus recollection secured in vault!');

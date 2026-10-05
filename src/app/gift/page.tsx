@@ -1058,7 +1058,11 @@ export default function GiftPage() {
                       setGiftMessage(e.target.value);
                       if (pendingTemplate) setPendingTemplate(null);
                     }}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm font-sans leading-relaxed"
+                    spellCheck={true}
+                    autoCorrect="on"
+                    autoCapitalize="sentences"
+                    lang="en-GB"
+                    className="w-full px-4 py-3 pr-10 rounded-xl bg-gray-950 border border-gray-800 text-white placeholder-gray-600 focus:outline-none focus:border-amber-500 text-sm font-sans leading-relaxed"
                   />
                 </div>
 

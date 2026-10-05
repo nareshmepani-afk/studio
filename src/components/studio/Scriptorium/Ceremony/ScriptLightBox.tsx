@@ -466,7 +466,11 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                         <textarea
                           value={userScript}
                           onChange={(e) => setUserScript(e.target.value)}
-                          className="w-full min-h-[50vh] bg-slate-900/60 border border-purple-500/30 rounded-3xl p-8 font-serif text-[24px] lg:text-[30px] text-white leading-[1.8] focus:outline-none focus:border-purple-500/60 transition-all custom-scrollbar resize-none shadow-inner"
+                          spellCheck={true}
+                          autoCorrect="on"
+                          autoCapitalize="sentences"
+                          lang="en-GB"
+                          className="w-full min-h-[50vh] bg-slate-900/60 border border-purple-500/30 rounded-3xl p-8 pr-12 pb-6 font-serif text-[24px] lg:text-[30px] text-white leading-[1.8] focus:outline-none focus:border-purple-500/60 transition-all custom-scrollbar resize-none shadow-inner"
                           placeholder="Edit your screenplay text here..."
                         />
                         <div className="flex justify-between items-center px-4 text-[10px] font-mono text-white/30">

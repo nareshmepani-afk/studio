@@ -816,5 +816,48 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `vitest run`: 55/55 test files passing (699/699 tests passed)
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
 
+---
+
+## Checkpoint #037 — MW-108: Universal Orthography, Spell-Check & In-App Grammar Polish Standard (2026-10-05)
+
+- **Plane.so Ticket**: `MW-108` (Sequence #316)
+- **Baseline Commit**: `5c5253c5`
+- **Core Architecture & Invariants Resolved**:
+  - **Base Primitives Narrative Defaults (`textarea.tsx` & `input.tsx`)**:
+    - `Textarea`: Automatic defaults for `spellCheck={true}`, `autoCorrect="on"`, `autoCapitalize="sentences"`, `lang="en-GB"`.
+    - `Input`: Type-aware discrimination: when `type === 'text'` (or undefined), defaults to narrative spellcheck and UK English; for `password`, `email`, `url`, `number`, `tel`, strictly disables `spellCheck: false`, `autoCorrect: "off"`, `autoCapitalize: "none"` (Guardrail 1).
+  - **Governance Codification in `AGENTS.md`**:
+    - Expanded Rule 20 with sections 20.1 (UI Copy), 20.2 (User Narrative Textareas & `lang="en-GB"`), and 20.3 (AI Copyediting UK Orthography).
+    - Codified Rule 42: "Universal Orthography, Spell-Check & In-App Grammar Polish Standard" ("The Heirloom Finish Quality Rule").
+  - **Fireside Bonus Memory Drawer (`BonusMemoryDrawer.tsx`)**:
+    - Added native attributes, dynamic diaspora locale binding (`lang={effectiveLang}`), and `pr-10 pb-4` extension clearance.
+    - Added note status bar with word count indicator (`data-testid="HS_NOTE_WORD_COUNT"`), `[ ✨ Polish Note ]` (`data-testid="HS_BONUS_NOTE_POLISH_BTN"`), and `[ ↺ Revert to original draft ]` (`data-testid="HS_BONUS_NOTE_REVERT_BTN"`).
+    - Implemented Zero-Data-Loss Network Exception Shield (Guardrail 3) on AI service failure.
+  - **Armchair Script Editor (`SingleCardPromptCarousel.tsx`)**:
+    - Added native attributes, dynamic diaspora locale binding, and extension clearance.
+    - Added `[ ✨ Proofread Script ]` (`data-testid="HS_FIRESIDE_SCRIPT_POLISH_BTN"`) and `[ ↺ Revert Draft ]` (`data-testid="HS_FIRESIDE_SCRIPT_REVERT_BTN"`) with non-destructive state snapshot and zero-data-loss exception shield.
+  - **Ceremony Lightbox & Dedication Composer**:
+    - `ScriptLightBox.tsx` and `src/app/gift/page.tsx` upgraded with explicit narrative attributes and `lang="en-GB"`.
+  - **Server Action Prompt Calibration (`aiWeaver.ts`)**:
+    - `checkAndPolishGrammar` calibrated to enforce Rule 20 British English spelling, Rule 11 `stripScreenplayCues()`, fence stripping, and fail-safe return.
+- **Files Created / Modified**:
+  - `src/components/ui/textarea.tsx`
+  - `src/components/ui/input.tsx`
+  - `src/actions/aiWeaver.ts`
+  - `src/components/fireside/BonusMemoryDrawer.tsx`
+  - `src/app/studio/fireside/FiresideStudioClient.tsx`
+  - `src/components/fireside/SingleCardPromptCarousel.tsx`
+  - `src/components/studio/Scriptorium/Ceremony/ScriptLightBox.tsx`
+  - `src/app/gift/page.tsx`
+  - `.agents/AGENTS.md`
+  - `src/test/orthography_grammar.test.ts` (NEW)
+  - `MISSION_LOG.md`
+- **Verification**:
+  - `tsc --noEmit`: 0 errors
+  - `vitest run src/test/orthography_grammar.test.ts`: 13/13 passed
+  - `npm.cmd run test`: 56/56 test files passing (712/712 tests passed)
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
+
+
 
 

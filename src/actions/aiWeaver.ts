@@ -760,16 +760,17 @@ export async function checkAndPolishGrammar(text: string): Promise<string> {
     const ai = await getAI();
     const prompt = `
       You are an expert Copyeditor and Teleprompter Proofreader.
-      Correct any spelling mistakes, typos, or grammatical agreement errors in the following spoken monologue.
+      Correct any spelling mistakes, typos, or grammatical agreement errors in the following spoken monologue or memoir recollection.
       
       [TEXT TO PROOFREAD]
       ${text}
       
       [STRICT RULES]
       - Fix spelling mistakes, typos, and grammatical errors (e.g., "helpless three child" -> "helpless three children").
+      - Enforce British English (UK) spelling conventions (e.g. colour, favourite, theatre, realise, centre) per Rule 20.
       - Preserve 100% of the author's custom wording, tone, and intended meaning.
       - Do NOT rephrase sentences unnecessarily.
-      - ABSOLUTELY NO SCREENPLAY OR CAMERA CUES: Do NOT add camera cues, editing commands, or stage directions.
+      - ABSOLUTELY NO SCREENPLAY OR CAMERA CUES: Do NOT add camera cues, editing commands, or stage directions per Rule 11.
       
       Return ONLY the corrected spoken text. No preamble, no quotes, no markdown wrappers.
     `;
@@ -778,7 +779,11 @@ export async function checkAndPolishGrammar(text: string): Promise<string> {
       return await ai.generate(prompt);
     }, { retries: 2 });
     
-    const polished = resultText?.trim() || text;
+    let raw = (resultText?.trim() || text)
+      .replace(/^```(?:markdown|text)?\s*|\s*```$/g, '')
+      .replace(/^"|"$/g, '')
+      .trim();
+    const polished = raw || text;
     console.log(`[AI Weaver] checkAndPolishGrammar completed successfully.`);
     return sanitizeProse(polished);
   } catch (error: any) {

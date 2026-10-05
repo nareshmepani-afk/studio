@@ -110,17 +110,25 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Mandatory Screenshot & Log Requirement**: For any UI transition, visual layout, or rendering bug, the agent MUST **INSIST** on receiving a live screenshot alongside full console log traces BEFORE proposing or applying code fixes.
 - **Zero-Guesswork Mandate**: The agent MUST NEVER fill in missing behavioral blanks, assume visual component behavior, or prematurely declare a bug resolved without verifying the exact rendered DOM state alongside the user.
 # 20. Mandatory UK English Orthography Standard
+
+## 20.1 Platform UI Copy
 - **Strict UK English Across All User-Facing UI**: All user-facing UI labels, headers, tooltips, buttons, modals, and notifications MUST strictly use British English (UK) spelling and orthography.
 - **Mandatory Spelling Mappings**:
   - `Color` -> `Colour` (`Colour Grade Filter`, `Colour Grading`, `Colour Tint`, `Colour Styling`)
   - `Favorite` -> `Favourite`
-
   - `Center` -> `Centre` (`Prompter Centre`)
   - `Theater` -> `Theatre` (`Theatre View`)
   - `Realize` -> `Realise`
   - `Synthesize` -> `Synthesise` (user-facing text strings)
   - `Behavior` -> `Behaviour`
   - `Minimize` -> `Minimise`
+
+## 20.2 User Narrative Textareas & Spellcheck Language Binding
+- **Mandatory `lang="en-GB"`**: All `<textarea>`, `<Textarea>`, `<input type="text">`, and `<Input>` components capturing prose, teleprompter scripts, bonus recollections, or narrative thoughts MUST declare `lang="en-GB"` (or dynamically bind to the narrator's active diaspora locale `gu`, `pa`, `hi`).
+- **Anti-Pattern (False Red Underlines)**: Omitting `lang` causes browser spellcheck engines configured with default US English to underline valid British spellings (e.g. `colour`, `favourite`, `theatre`) in red, confusing narrators and degrading the platform's sense of craft and finish quality.
+
+## 20.3 AI Copyediting UK Orthography Enforcement
+- All AI proofreading, grammar checking, and text expansion prompts (`checkAndPolishGrammar`, `proofreadScript`, `expandWithAI`) MUST explicitly instruct the language model to enforce British English (UK) spelling conventions.
 # 23. Direct Room Mode & Teleprompter Modal Unlocking Rule
 - **Explicit Room Mode Unlocking**: When performing room mode switches (Solo Stage, Collaboration, Guest Director), state handlers MUST explicitly set `lobbyConfirmed: true` to unlock teleprompter control modals immediately without forcing re-prompts or modal lockouts.
 - **Cross-Component Mode Handlers**: Room mode action cards embedded inside child components (e.g. `Collaborative Tip` inside `SoloStage`) MUST receive direct `onSelectRoom` callbacks to execute seamless room switching from anywhere in the UI tree.
@@ -1114,4 +1122,29 @@ When requesting or executing any future change, enhancement, or new feature in M
 ## 41.4 Atomic Lockstep Commit & Automated Drift-Detection Gate
 - **Atomic Single-Commit Rule**: Any pull request or commit that modifies scene structure, prompt copy, media attachment schemas, take management, or authority state on either `/studio/fireside` or `/studio/production/` MUST update and verify both surfaces atomically in the same commit.
 - **Mandatory Vitest Drift-Detection Shield**: `src/test/fireside_sync.test.ts` and `src/test/fireside_prompt_carousel.test.tsx` MUST programmatically assert 1:1 curriculum link integrity (`linkedSceneId` ↔ `getSceneById` / `getPartForScene`), bilingual title parity, rehearsal contamination isolation, and bi-directional authority ratchet synchronisation before any commit is pushed.
+
+# 42. Universal Orthography, Spell-Check & In-App Grammar Polish Standard ("The Heirloom Finish Quality Rule")
+
+In an heirloom production and teleprompter platform, typos and grammatical errors degrade spoken performance on camera and permanently blemish printed keepsake books. Every text entry point must provide both zero-latency browser-native validation and non-destructive AI grammar polish:
+
+## 42.1 Browser-Native Universal Baseline
+- **Mandatory Native Attributes**: Every `<textarea>` and `<input type="text">` capturing prose, notes, or titles MUST include:
+  1. `spellCheck={true}` (forces browser spellcheck engine active).
+  2. `autoCorrect="on"` (enables mobile keyboard autocorrection).
+  3. `autoCapitalize="sentences"` (auto-capitalizes after periods and line breaks).
+  4. `lang="en-GB"` (validates against British English dictionary per Rule 20, or dynamically binds to the active diaspora locale `gu`, `pa`, `hi`).
+- **Base Primitive Guarantees**: Shared components `src/components/ui/textarea.tsx` and `src/components/ui/input.tsx` MUST enable these narrative defaults automatically. For `<Input>`, type-aware discrimination strictly disables spellCheck, autoCorrect, and autoCapitalize for sensitive or structured types (`password`, `email`, `url`, `number`, `tel`). Caller-supplied props always take precedence.
+
+## 42.2 Non-Destructive In-App AI Grammar & Spell Polish
+- **Narrative Editor Requirement**: Key narrative capture surfaces (`BonusMemoryDrawer`, `SingleCardPromptCarousel` Armchair Script Editor, `ScriptLightBox`, `gift/page.tsx`) MUST provide an in-app `[ ✨ Polish Note ]` or `[ ✨ Proofread Script ]` action powered by `checkAndPolishGrammar()`.
+- **Non-Destructive Revert Guarantee**: AI polish actions MUST snapshot pre-polish text into state and render an immediate `[ ↺ Revert to original draft ]` undo affordance. A narrator must NEVER lose their authentic voice or phrasing to an automated rewrite.
+- **Zero-Data-Loss Network Exception Shield**: If `checkAndPolishGrammar()` fails due to a network glitch, timeout, or quota limit, the handler MUST catch the error cleanly without clearing or overwriting user text, preserve the draft safely, and notify the user with an unobtrusive toast (`"AI grammar service temporarily unavailable. Your draft was kept safely."`).
+- **Sub-Second Token Ceiling**: In-app grammar polish actions MUST adhere to Rule 35.2 (`maxOutputTokens: 250`, `temperature <= 0.25`) to guarantee responsive, low-latency execution.
+
+## 42.3 Teleprompter & Monologue Sanitisation (Rule 11 Binding)
+- All AI grammar-polished prose MUST pass through `stripScreenplayCues()` before being written to state or database, permanently preventing stage directions, camera movements, or screenplay headers from entering spoken teleprompter scripts.
+
+## 42.4 Assistive Extension & Layout Coexistence (Rule 8 Binding)
+- Narrative textareas MUST provide adequate inner padding (`pr-10`, `pb-4`) so browser extensions (Grammarly, LanguageTool, Apple Writing Tools) do not collide with or occlude user text, character counts, or action buttons.
+
 

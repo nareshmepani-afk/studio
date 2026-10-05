@@ -35,6 +35,8 @@ import {
   Headphones,
   Eye,
   Coffee,
+  Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import type {
   FiresidePromptSpark,
@@ -52,6 +54,8 @@ import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
 import { OrientationSoundcheckDock } from '@/components/fireside/OrientationSoundcheckDock';
 import { ChapterSpineRail, type ChapterSpineScene } from '@/components/navigation/ChapterSpineRail';
+import { checkAndPolishGrammar } from '@/actions/aiWeaver';
+import { toast } from 'sonner';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
@@ -195,6 +199,9 @@ export function SingleCardPromptCarousel({
   const [viewMode, setViewMode] = useState<'script' | 'spark'>('script');
   const [isEditingScript, setIsEditingScript] = useState<boolean>(false);
   const [draftProse, setDraftProse] = useState<string>('');
+  const [isPolishingScript, setIsPolishingScript] = useState<boolean>(false);
+  const [originalScriptDraft, setOriginalScriptDraft] = useState<string | null>(null);
+  const [isScriptPolished, setIsScriptPolished] = useState<boolean>(false);
   const [localProseOverride, setLocalProseOverride] = useState<string | null>(null);
   const [selectedActTab, setSelectedActTab] = useState<'act1' | 'act2' | 'act3' | 'act4'>('act1');
   const [highlightedSensoryType, setHighlightedSensoryType] = useState<
@@ -332,6 +339,9 @@ export function SingleCardPromptCarousel({
 
   const handleStartEditScript = () => {
     setDraftProse(activeProse);
+    setOriginalScriptDraft(null);
+    setIsScriptPolished(false);
+    setIsPolishingScript(false);
     setIsEditingScript(true);
   };
 
@@ -341,6 +351,8 @@ export function SingleCardPromptCarousel({
     setLocalProseOverride(trimmed);
     setIsEditingScript(false);
     setViewMode('script');
+    setOriginalScriptDraft(null);
+    setIsScriptPolished(false);
     const targetSceneId =
       currentSpark.linkedSceneId || currentSceneMemory?.sceneId || 'part-1-scene-1';
     onSaveProse?.(targetSceneId, trimmed);
@@ -349,6 +361,48 @@ export function SingleCardPromptCarousel({
   const handleCancelEditScript = () => {
     setIsEditingScript(false);
     setDraftProse(activeProse);
+    setOriginalScriptDraft(null);
+    setIsScriptPolished(false);
+  };
+
+  // Non-destructive AI script proofreader & polish (Guardrails 2 & 3)
+  const handlePolishScript = async () => {
+    const trimmed = draftProse.trim();
+    if (!trimmed || trimmed.length < 5 || isPolishingScript) return;
+
+    setIsPolishingScript(true);
+    const draftSnapshot = draftProse;
+
+    try {
+      const polished = await checkAndPolishGrammar(trimmed);
+      if (polished && polished !== trimmed) {
+        setOriginalScriptDraft(draftSnapshot);
+        setDraftProse(polished);
+        setIsScriptPolished(true);
+        toast.success('Script Polished!', {
+          description: 'Corrected typos and grammatical agreement while preserving voice.',
+        });
+      } else {
+        toast.success('Script Clean & Ready', {
+          description: 'No spelling or grammar errors detected.',
+        });
+      }
+    } catch (err: any) {
+      console.error('[SingleCardPromptCarousel] checkAndPolishGrammar error:', err);
+      // Zero-Data-Loss Network Exception Shield (Guardrail 3)
+      toast.error('AI grammar service temporarily unavailable. Your draft was kept safely.');
+    } finally {
+      setIsPolishingScript(false);
+    }
+  };
+
+  const handleRevertScript = () => {
+    if (originalScriptDraft !== null) {
+      setDraftProse(originalScriptDraft);
+      setOriginalScriptDraft(null);
+      setIsScriptPolished(false);
+      toast.info('Reverted to original script draft.');
+    }
   };
 
   // UNIFIED SENSORY ANCHOR PIPELINE (Identical to MemoryForm.tsx — MW-88-T8 & MW-88-T9):
@@ -1143,10 +1197,19 @@ export function SingleCardPromptCarousel({
                   <textarea
                     data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"
                     value={draftProse}
-                    onChange={(e) => setDraftProse(e.target.value)}
+                    onChange={(e) => {
+                      setDraftProse(e.target.value);
+                      if (isScriptPolished && originalScriptDraft !== null && e.target.value !== draftProse) {
+                        setIsScriptPolished(false);
+                      }
+                    }}
                     rows={5}
                     placeholder={currentText}
-                    className="w-full rounded-xl bg-[#111111] border border-amber-500/35 focus:border-amber-400 text-base sm:text-lg font-serif text-white p-3.5 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                    spellCheck={true}
+                    autoCorrect="on"
+                    autoCapitalize="sentences"
+                    lang={currentLanguage && currentLanguage !== 'en' ? currentLanguage : 'en-GB'}
+                    className="w-full rounded-xl bg-[#111111] border border-amber-500/35 focus:border-amber-400 text-base sm:text-lg font-serif text-white p-3.5 pr-10 pb-4 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-500/30 custom-scrollbar"
                     aria-label="Edit story script"
                   />
                   <div className="flex flex-wrap items-center gap-2.5 pt-1">
@@ -1159,6 +1222,37 @@ export function SingleCardPromptCarousel({
                     >
                       [ ✓ Save Script ]
                     </button>
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_SCRIPT_POLISH_BTN"
+                      onClick={handlePolishScript}
+                      disabled={isPolishingScript || draftProse.trim().length < 5}
+                      className="min-h-[48px] px-4 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      title="Check spelling, grammar agreement & British English"
+                    >
+                      {isPolishingScript ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                          <span>Elevating Script...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <span>[ ✨ Proofread Script ]</span>
+                        </>
+                      )}
+                    </button>
+                    {isScriptPolished && originalScriptDraft !== null && (
+                      <button
+                        type="button"
+                        data-testid="HS_FIRESIDE_SCRIPT_REVERT_BTN"
+                        onClick={handleRevertScript}
+                        className="min-h-[48px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-300 transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-stone-400" />
+                        <span>[ ↺ Revert Draft ]</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       data-testid="HS_FIRESIDE_CANCEL_SCRIPT_BTN"

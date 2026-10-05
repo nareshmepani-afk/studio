@@ -23,8 +23,11 @@ import {
   Sparkles,
   Heart,
   Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import { BonusMemoryNote } from '@/types/curriculum';
+import { checkAndPolishGrammar } from '@/actions/aiWeaver';
+import { toast } from 'sonner';
 
 export interface BonusMemoryDrawerProps {
   isOpen: boolean;
@@ -34,6 +37,8 @@ export interface BonusMemoryDrawerProps {
   initialPrompt?: string | null;
   onSaveBonusNote: (note: Omit<BonusMemoryNote, 'id' | 'createdAt'>) => Promise<void>;
   className?: string;
+  activeLanguage?: string;
+  lang?: string;
 }
 
 export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
@@ -44,19 +49,71 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
   initialPrompt = null,
   onSaveBonusNote,
   className = '',
+  activeLanguage,
+  lang,
 }) => {
   const [text, setText] = useState('');
   const [authorName, setAuthorName] = useState('');
   const [authorRole, setAuthorRole] = useState<'storyteller' | 'producer' | 'family_member'>('storyteller');
   const [isSaving, setIsSaving] = useState(false);
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [originalDraft, setOriginalDraft] = useState<string | null>(null);
+  const [isPolished, setIsPolished] = useState(false);
+
+  // Dynamic diaspora locale binding (Guardrail 2)
+  const effectiveLang = lang || (activeLanguage && activeLanguage !== 'en' ? activeLanguage : 'en-GB');
 
   // Reset or pre-seed form when opened (MW-88-T6)
   useEffect(() => {
     if (isOpen) {
       setText(initialPrompt ? `${initialPrompt}\n\n` : '');
       setIsSaving(false);
+      setIsPolishing(false);
+      setOriginalDraft(null);
+      setIsPolished(false);
     }
   }, [isOpen, initialPrompt]);
+
+  // Non-destructive AI grammar & spell polish handler (Guardrail 3)
+  const handlePolishNote = async () => {
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.length < 5 || isPolishing) return;
+
+    setIsPolishing(true);
+    // Snapshot original draft for non-destructive revert guarantee
+    const draftSnapshot = text;
+
+    try {
+      const polished = await checkAndPolishGrammar(trimmed);
+      if (polished && polished !== trimmed) {
+        setOriginalDraft(draftSnapshot);
+        setText(polished);
+        setIsPolished(true);
+        toast.success('Spelling & Grammar Polished!', {
+          description: 'Corrected typos and grammatical agreement while preserving voice.',
+        });
+      } else {
+        toast.success('Note Clean & Ready', {
+          description: 'No spelling or grammar errors detected.',
+        });
+      }
+    } catch (err: any) {
+      console.error('[BonusMemoryDrawer] checkAndPolishGrammar error:', err);
+      // Zero-Data-Loss Network Exception Shield (Guardrail 3)
+      toast.error('AI grammar service temporarily unavailable. Your draft was kept safely.');
+    } finally {
+      setIsPolishing(false);
+    }
+  };
+
+  const handleRevertNote = () => {
+    if (originalDraft !== null) {
+      setText(originalDraft);
+      setOriginalDraft(null);
+      setIsPolished(false);
+      toast.info('Reverted to original draft.');
+    }
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -154,10 +211,75 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
               id="bonus-note-text"
               rows={4}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (isPolished && originalDraft !== null && e.target.value !== text) {
+                  setIsPolished(false);
+                }
+              }}
               placeholder="e.g. I remembered Aunt Meena was also there that morning wearing her wedding sari..."
-              className="w-full p-4 rounded-2xl bg-stone-900/90 border border-stone-700 text-sm text-stone-100 placeholder-stone-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 outline-none transition custom-scrollbar"
+              spellCheck={true}
+              autoCorrect="on"
+              autoCapitalize="sentences"
+              lang={effectiveLang}
+              className="w-full p-4 pr-10 pb-4 rounded-2xl bg-stone-900/90 border border-stone-700 text-sm text-stone-100 placeholder-stone-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 outline-none transition custom-scrollbar"
             />
+
+            {/* Note Status Bar: Word Count & AI Grammar Polish Action */}
+            <div className="flex items-center justify-between gap-2 mt-2 pt-1 text-xs">
+              <div className="flex items-center gap-2">
+                <span
+                  data-testid="HS_NOTE_WORD_COUNT"
+                  className="text-[11px] font-mono text-stone-400"
+                >
+                  {text.trim() ? `${text.trim().split(/\s+/).length} ${text.trim().split(/\s+/).length === 1 ? 'word' : 'words'}` : '0 words'}
+                </span>
+                {isPolished && (
+                  <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Polished with AI Proofreader
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isPolished && originalDraft !== null && (
+                  <button
+                    type="button"
+                    data-testid="HS_BONUS_NOTE_REVERT_BTN"
+                    onClick={handleRevertNote}
+                    className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 text-[11px] font-mono transition cursor-pointer border border-stone-700 flex items-center gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3 text-stone-400" />
+                    <span>Revert to original draft</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  data-testid="HS_BONUS_NOTE_POLISH_BTN"
+                  onClick={handlePolishNote}
+                  disabled={isPolishing || text.trim().length < 5}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-mono font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                    text.trim().length >= 5 && !isPolishing
+                      ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30'
+                      : 'bg-stone-900 text-stone-600 border-stone-800 cursor-not-allowed'
+                  }`}
+                  title="Check spelling, grammar agreement & British English"
+                >
+                  {isPolishing ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
+                      <span>Elevating Draft...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>Polish Note</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -174,6 +296,9 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
                 placeholder="Elder Storyteller"
+                spellCheck={false}
+                autoCorrect="off"
+                autoCapitalize="words"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900 border border-stone-700 text-xs text-stone-200 placeholder-stone-500 focus:border-amber-400 outline-none"
               />
             </div>
