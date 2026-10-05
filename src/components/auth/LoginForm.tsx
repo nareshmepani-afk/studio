@@ -13,9 +13,12 @@ import { cn } from '@/lib/utils';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import { firebaseConfig } from '@/lib/config-schema';
 import { validateAuthAttempt } from '@/actions/authActions';
+import { useSearchParams } from 'next/navigation';
 
 const LoginForm = () => {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || searchParams.get('redirectTo') || '';
   
   const isStagingBypassAllowed = typeof window !== 'undefined' && (
     window.location.hostname === 'dev.memoryweaver.studio' ||
@@ -31,8 +34,9 @@ const LoginForm = () => {
   const [email, setEmail] = useState('test@example.com');
   const [password, setPassword] = useState('password');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // THE INVISIBLE GUIDE: Focus the primary input for Login
-  const emailRef = usePrimaryFocus();
+  // THE INVISIBLE GUIDE: Focus the primary input for Login on desktop pointers only to prevent mobile keyboard shove
+  const isDesktopPointer = typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia('(pointer: fine)').matches : false;
+  const emailRef = usePrimaryFocus(isDesktopPointer);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -65,6 +69,20 @@ const LoginForm = () => {
 
   return (
     <div className="space-y-6">
+      {/* Top Escape Hatch when coming from a specific surface (e.g. /studio/fireside) */}
+      {redirect && (
+        <div className="flex justify-start">
+          <Link
+            href={redirect}
+            data-testid="HS_AUTH_ESCAPE_HATCH"
+            className="inline-flex items-center gap-1.5 text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors py-2 px-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30"
+          >
+            <span>←</span>
+            <span>{redirect.includes('fireside') ? 'Return to Fireside Studio' : 'Return to Previous Surface'}</span>
+          </Link>
+        </div>
+      )}
+
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden group/form">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover/form:bg-primary/20 transition-colors duration-700" />
         
@@ -82,7 +100,7 @@ const LoginForm = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-white/5 border-white/10 pl-10 h-12 rounded-xl focus:ring-primary/20 focus:border-primary/50 text-white placeholder:text-white/20 transition-all"
+                  className="bg-white/5 border-white/10 pl-10 h-12 rounded-xl focus:ring-primary/20 focus:border-primary/50 text-white placeholder:text-white/20 transition-all text-base"
                   disabled={isSubmitting}
                 />
               </div>
@@ -103,7 +121,7 @@ const LoginForm = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-white/5 border-white/10 pl-10 h-12 rounded-xl focus:ring-primary/20 focus:border-primary/50 text-white transition-all"
+                  className="bg-white/5 border-white/10 pl-10 h-12 rounded-xl focus:ring-primary/20 focus:border-primary/50 text-white transition-all text-base"
                   disabled={isSubmitting}
                 />
               </div>
@@ -125,6 +143,20 @@ const LoginForm = () => {
               </span>
             )}
           </Button>
+
+          {/* New to Memory Weaver? Create an Account link preserving redirect */}
+          <div className="pt-2 text-center border-t border-white/10">
+            <p className="text-xs text-white/60">
+              New to Memory Weaver?{' '}
+              <Link
+                href={redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'}
+                data-testid="HS_AUTH_TO_REGISTER_LINK"
+                className="font-bold text-amber-400 hover:text-amber-300 underline underline-offset-4 transition-colors ml-1"
+              >
+                Create an Account (Claim 6-Month Pass) →
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
 

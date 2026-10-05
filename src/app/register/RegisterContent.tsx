@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,9 @@ import { firebaseConfig } from '@/lib/config-schema';
 import { validateAuthAttempt } from '@/actions/authActions';
 
 export default function RegisterContent() {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || searchParams.get('redirectTo') || '';
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,8 +45,9 @@ export default function RegisterContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   
-  // THE INVISIBLE GUIDE: Focus the primary input for Registration
-  const nameRef = usePrimaryFocus();
+  // THE INVISIBLE GUIDE: Focus the primary input for Registration on desktop pointers only
+  const isDesktopPointer = typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia('(pointer: fine)').matches : false;
+  const nameRef = usePrimaryFocus(isDesktopPointer);
 
   useEffect(() => {
     setHasMounted(true);
@@ -123,6 +128,20 @@ export default function RegisterContent() {
           transition={{ duration: 0.8 }}
           className="w-full max-w-md"
         >
+          {/* Top Escape Hatch when coming from a specific surface (e.g. /studio/fireside) */}
+          {redirect && (
+            <div className="mb-4 flex justify-start">
+              <Link
+                href={redirect}
+                data-testid="HS_AUTH_ESCAPE_HATCH"
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors py-2 px-3.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30"
+              >
+                <span>←</span>
+                <span>{redirect.includes('fireside') ? 'Return to Fireside Studio' : 'Return to Previous Surface'}</span>
+              </Link>
+            </div>
+          )}
+
           <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden group">
             
             {/* Ambient inner glow */}
@@ -165,7 +184,7 @@ export default function RegisterContent() {
                       onChange={(e) => setName(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="bg-white/5 border-white/10 h-12 pl-12 rounded-xl focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-white/10"
+                      className="bg-white/5 border-white/10 h-12 pl-12 rounded-xl focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-white/10 text-base"
                       suppressHydrationWarning={true}
                     />
                   </div>
@@ -183,7 +202,7 @@ export default function RegisterContent() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="bg-white/5 border-white/10 h-12 pl-12 rounded-xl focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-white/10"
+                      className="bg-white/5 border-white/10 h-12 pl-12 rounded-xl focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-white/10 text-base"
                       suppressHydrationWarning={true}
                     />
                   </div>
@@ -201,7 +220,7 @@ export default function RegisterContent() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="bg-white/5 border-white/10 h-12 pl-12 rounded-xl focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-white/10"
+                      className="bg-white/5 border-white/10 h-12 pl-12 rounded-xl focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-white/10 text-base"
                       suppressHydrationWarning={true}
                     />
                   </div>
@@ -219,7 +238,7 @@ export default function RegisterContent() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="bg-white/5 border-white/10 h-12 pl-12 rounded-xl focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-white/10"
+                      className="bg-white/5 border-white/10 h-12 pl-12 rounded-xl focus:ring-primary/30 focus:border-primary/50 transition-all placeholder:text-white/10 text-base"
                       suppressHydrationWarning={true}
                     />
                   </div>
@@ -259,7 +278,11 @@ export default function RegisterContent() {
               <div className="mt-8 pt-6 border-t border-white/5 flex flex-col items-center gap-4">
                 <p className="text-sm text-white/40">
                   Already a Studio Member?{' '}
-                  <Link href="/login" className="font-bold text-primary hover:text-sky-400 underline underline-offset-4 transition-colors">
+                  <Link
+                    href={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'}
+                    data-testid="HS_AUTH_TO_LOGIN_LINK"
+                    className="font-bold text-primary hover:text-sky-400 underline underline-offset-4 transition-colors"
+                  >
                     Enter Stage Door
                   </Link>
                 </p>

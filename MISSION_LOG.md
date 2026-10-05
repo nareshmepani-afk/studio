@@ -731,3 +731,20 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `tsc --noEmit`: `0` errors
   - `vitest run`: `53/53` test files (`680/680` tests passed)
   - `npm.cmd run build`: `46/46` routes compiled cleanly
+
+---
+
+## Checkpoint #034 — MW-105-A: Mobile Sign-In Ergonomics & Fireside Profile Drawer (2026-10-05)
+
+- **Plane.so Ticket**: `MW-105-A` (Sequence #314)
+- **Baseline Commit**: `ef38f151`
+- **Files Created / Modified**:
+  - `src/components/fireside/FiresideProfileDrawer.tsx` (NEW) — Implemented high-contrast slide-over navigation and account drawer with 1:1 Desktop profile dropdown parity (`data-testid="HS_FIRESIDE_PROFILE_DRAWER"`, `data-testid="HS_FIRESIDE_USER_PROFILE_BTN"` with min 44px×44px touch target). Renders user avatar, identity and tier status (`Generational Vault`, `Director Pass`, or `Guest Session`), and min 48px touch rows for Desktop Soundstage (`HS_DRAWER_LINK_DESKTOP_STUDIO`), Settings (`HS_DRAWER_LINK_SETTINGS` with `?returnTo=/studio/fireside`), How It Works (`HS_DRAWER_LINK_HOW_IT_WORKS`), Pricing & Plans (`HS_DRAWER_LINK_PRICING`), Gift a Memoir (`HS_DRAWER_LINK_GIFT`), Support (`HS_DRAWER_LINK_SUPPORT`), and Sign In / Sign Out (`HS_DRAWER_SESSION_BTN`).
+  - `src/components/fireside/FiresideAuthHeader.tsx` — Mounted `<FiresideProfileDrawer />` in both authenticated and guest headers; preserved discreet `HS_FIRESIDE_SIGNOUT_BTN` button; updated guest session pill to single clean text element `Guest Session (Saved to Phone)` preventing testing-library collisions; retained `Generational Vault ✓` status badge.
+  - `src/components/auth/LoginForm.tsx` & `src/app/register/RegisterContent.tsx` — Added prominent mobile-friendly return escape hatch `[ ← Return to Fireside Studio ]` (`HS_AUTH_ESCAPE_HATCH`) preserving `?redirect=...`; added cross-links between Login and Register (`HS_AUTH_TO_REGISTER_LINK` and `HS_AUTH_TO_LOGIN_LINK`); enforced `text-base` (≥ 16px) inputs on mobile to kill iOS Safari viewport auto-zoom; safely conditioned auto-focus with `(pointer: fine)` media query guard to prevent virtual keyboard shove on mobile mount.
+  - `src/test/fireside_sync.test.ts` — Added Suite 15 (5 unit tests covering FiresideProfileDrawer DOM mounting and trigger ergonomics, full 7-link navigation parity, 16px mobile input zoom shield, and auth escape hatch preservation).
+- **Verification**:
+  - `tsc --noEmit`: `0` errors
+  - `vitest run`: `53/53` test files (`685/685` tests passed)
+  - `npm.cmd run build`: `46/46` routes compiled cleanly
+

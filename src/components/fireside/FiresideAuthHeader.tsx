@@ -31,6 +31,7 @@ import {
 import type { UnifiedCurriculumMemory } from '@/types/curriculum';
 import { isSceneCompleted } from '@/types/curriculum';
 import { OpticsPrivacyShield } from '@/components/studio/OpticsPrivacyShield';
+import { FiresideProfileDrawer } from '@/components/fireside/FiresideProfileDrawer';
 
 export interface FiresideAuthHeaderProps {
   className?: string;
@@ -137,16 +138,16 @@ export function FiresideAuthHeader({
           </div>
         </div>
 
-        {/* Row 2: Discreet Elder Auth Badge (On its own dedicated row - zero horizontal collision) */}
-        <div className="w-full flex items-center justify-center sm:justify-end gap-2 shrink-0 pt-0.5">
+        {/* Row 2: Discreet Elder Auth Badge & Mobile Profile Drawer Trigger */}
+        <div className="w-full flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-0.5">
           {isAuthenticated ? (
-            <>
+            <div className="flex items-center gap-2">
               <div
-                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-full shadow-sm max-w-full truncate"
+                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-full shadow-sm max-w-[200px] sm:max-w-md truncate"
                 title={`Signed in as ${userEmail}. Your memories are secured in the Generational Vault.`}
               >
                 <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="truncate max-w-[180px] sm:max-w-[280px] md:max-w-[360px] font-medium text-emerald-200">
+                <span className="truncate max-w-[120px] sm:max-w-[240px] font-medium text-emerald-200">
                   {userEmail}
                 </span>
                 <span className="text-emerald-500/70">•</span>
@@ -161,6 +162,7 @@ export function FiresideAuthHeader({
               <button
                 type="button"
                 data-hotspot-id="HS_FIRESIDE_SIGNOUT_BTN"
+                data-testid="HS_FIRESIDE_SIGNOUT_BTN"
                 onClick={async () => {
                   try {
                     await logout(false);
@@ -175,22 +177,33 @@ export function FiresideAuthHeader({
                 <LogOut className="w-2.5 h-2.5 text-stone-400 group-hover:text-rose-300" />
                 <span>Sign Out</span>
               </button>
-            </>
+
+              {/* Mobile Slide-Over Account & Navigation Drawer (min 44px touch target) */}
+              <FiresideProfileDrawer />
+            </div>
           ) : (
-            <Link
-              href="/login?redirect=/studio/fireside"
-              data-hotspot-id="HS_FIRESIDE_SIGNIN_BTN"
-              className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-stone-300 hover:text-amber-200 bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 px-3 py-1 rounded-full transition-all shadow-sm group cursor-pointer"
-              title="Currently running in local guest session. Tap to sign in and back up to the Generational Vault."
-            >
-              <Smartphone className="w-3.5 h-3.5 text-amber-400/80 group-hover:text-amber-300 shrink-0" />
-              <span className="text-stone-300">Guest Session (Saved to Phone)</span>
-              <span className="text-stone-500">•</span>
-              <span className="text-amber-300 group-hover:underline flex items-center gap-1">
-                <span>Sign In</span>
-                <ExternalLink className="w-3 h-3" />
-              </span>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login?redirect=/studio/fireside"
+                data-testid="HS_FIRESIDE_SIGNIN_BTN"
+                data-hotspot-id="HS_FIRESIDE_SIGNIN_BTN"
+                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-stone-300 hover:text-amber-200 bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 px-3 py-1.5 rounded-full transition-all shadow-sm group cursor-pointer min-h-[44px]"
+                title="Currently running in local guest session. Tap to sign in and back up to the Generational Vault."
+              >
+                <Smartphone className="w-3.5 h-3.5 text-amber-400/80 group-hover:text-amber-300 shrink-0" />
+                <span className="text-stone-300">
+                  Guest Session<span className="hidden sm:inline"> (Saved to Phone)</span>
+                </span>
+                <span className="text-stone-500">•</span>
+                <span className="text-amber-300 group-hover:underline flex items-center gap-1 font-semibold">
+                  <span>Sign In</span>
+                  <ExternalLink className="w-3 h-3" />
+                </span>
+              </Link>
+
+              {/* Mobile Slide-Over Account & Navigation Drawer (min 44px touch target) */}
+              <FiresideProfileDrawer />
+            </div>
           )}
         </div>
       </div>

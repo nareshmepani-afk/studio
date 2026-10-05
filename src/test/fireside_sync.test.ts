@@ -31,12 +31,37 @@ import { FiresideVideoRecorder } from '@/components/fireside/FiresideVideoRecord
 import { HardwarePrivacyProvider } from '@/context/HardwarePrivacyContext';
 import { detectSensoryAnchors, filterDominantSensoryAnchors } from '@/utils/sensoryAnchors';
 import { setDoc } from 'firebase/firestore';
+import LoginForm from '@/components/auth/LoginForm';
+import RegisterContent from '@/app/register/RegisterContent';
+import { FiresideProfileDrawer } from '@/components/fireside/FiresideProfileDrawer';
+
+let mockCurrentUser: any = {
+  uid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2',
+  email: 'nareshmepani@hotmail.com',
+  displayName: 'Naresh Mepani',
+  isAnonymous: false,
+  directorPassStatus: 'free_host_pass_active',
+};
+const mockLogout = vi.fn();
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: vi.fn(() => ({
-    user: { uid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2', email: 'nareshmepani@hotmail.com', isAnonymous: false },
-    logout: vi.fn(),
+    user: mockCurrentUser,
+    logout: mockLogout,
+    loading: false,
   })),
+}));
+
+const mockSearchParams = new URLSearchParams('redirect=/studio/fireside');
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  useSearchParams: () => mockSearchParams,
+  usePathname: () => '/studio/fireside',
+  redirect: vi.fn(),
 }));
 
 // Mock localforage memory store
@@ -2228,3 +2253,133 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     expect(pageSource).toContain("redirect('/studio')");
   });
 });
+
+// =============================================================================
+// 15. MW-105-A: Mobile Sign-In Parity & Fireside Profile Drawer
+// =============================================================================
+describe('15. MW-105-A: Mobile Sign-In Parity & Fireside Profile Drawer', () => {
+  afterEach(() => {
+    mockCurrentUser = {
+      uid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2',
+      email: 'nareshmepani@hotmail.com',
+      displayName: 'Naresh Mepani',
+      isAnonymous: false,
+      directorPassStatus: 'free_host_pass_active',
+    };
+  });
+
+  it('15.1 LoginForm renders escape hatch and register link preserving redirect, with text-base inputs', () => {
+    const { getByTestId, unmount } = render(React.createElement(LoginForm));
+
+    const escapeHatch = getByTestId('HS_AUTH_ESCAPE_HATCH');
+    expect(escapeHatch).toBeTruthy();
+    expect(escapeHatch.getAttribute('href')).toBe('/studio/fireside');
+    expect(escapeHatch.textContent).toContain('Return to Fireside Studio');
+
+    const toRegisterLink = getByTestId('HS_AUTH_TO_REGISTER_LINK');
+    expect(toRegisterLink).toBeTruthy();
+    expect(toRegisterLink.getAttribute('href')).toBe('/register?redirect=%2Fstudio%2Ffireside');
+    expect(toRegisterLink.textContent).toContain('Create an Account');
+
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const passwordInput = document.getElementById('password') as HTMLInputElement;
+    expect(emailInput.className).toContain('text-base');
+    expect(passwordInput.className).toContain('text-base');
+
+    unmount();
+  });
+
+  it('15.2 RegisterContent renders escape hatch and login link preserving redirect, with text-base inputs', () => {
+    const { getByTestId, unmount } = render(React.createElement(RegisterContent));
+
+    const escapeHatch = getByTestId('HS_AUTH_ESCAPE_HATCH');
+    expect(escapeHatch).toBeTruthy();
+    expect(escapeHatch.getAttribute('href')).toBe('/studio/fireside');
+    expect(escapeHatch.textContent).toContain('Return to Fireside Studio');
+
+    const toLoginLink = getByTestId('HS_AUTH_TO_LOGIN_LINK');
+    expect(toLoginLink).toBeTruthy();
+    expect(toLoginLink.getAttribute('href')).toBe('/login?redirect=%2Fstudio%2Ffireside');
+
+    const nameInput = document.getElementById('name') as HTMLInputElement;
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    expect(nameInput.className).toContain('text-base');
+    expect(emailInput.className).toContain('text-base');
+
+    unmount();
+  });
+
+  it('15.3 FiresideProfileDrawer renders min 44px avatar trigger and slide-over drawer with 1:1 Desktop navigation for authenticated director', () => {
+    const { getByTestId, unmount } = render(React.createElement(FiresideProfileDrawer));
+
+    const triggerBtn = getByTestId('HS_FIRESIDE_USER_PROFILE_BTN');
+    expect(triggerBtn).toBeTruthy();
+    expect(triggerBtn.style.minHeight).toBe('44px');
+    expect(triggerBtn.style.minWidth).toBe('44px');
+    expect(triggerBtn.textContent).toContain('N');
+
+    // Click to open slide-over sheet drawer
+    fireEvent.click(triggerBtn);
+
+    const drawer = getByTestId('HS_FIRESIDE_PROFILE_DRAWER');
+    expect(drawer).toBeTruthy();
+    expect(drawer.textContent).toContain('Naresh Mepani');
+    expect(drawer.textContent).toContain('nareshmepani@hotmail.com');
+    expect(drawer.textContent).toContain('6-Month Director Pass');
+
+    // Verify all 1:1 Desktop menu links
+    expect(getByTestId('HS_DRAWER_LINK_DESKTOP_STUDIO').getAttribute('href')).toBe('/studio');
+    expect(getByTestId('HS_DRAWER_LINK_SETTINGS').getAttribute('href')).toBe('/settings?returnTo=/studio/fireside');
+    expect(getByTestId('HS_DRAWER_LINK_HOW_IT_WORKS').getAttribute('href')).toBe('/how-it-works');
+    expect(getByTestId('HS_DRAWER_LINK_PRICING').getAttribute('href')).toBe('/pricing');
+    expect(getByTestId('HS_DRAWER_LINK_GIFT').getAttribute('href')).toBe('/gift');
+    expect(getByTestId('HS_DRAWER_LINK_SUPPORT').getAttribute('href')).toBe('/contact');
+
+    // Verify session sign-out button
+    const sessionBtn = getByTestId('HS_DRAWER_SESSION_BTN');
+    expect(sessionBtn.textContent).toContain('Sign Out');
+
+    unmount();
+  });
+
+  it('15.4 FiresideProfileDrawer renders min 44px guest trigger and sign-in action for unauthenticated visitor', () => {
+    mockCurrentUser = null;
+
+    const { getByTestId, unmount } = render(React.createElement(FiresideProfileDrawer));
+
+    const triggerBtn = getByTestId('HS_FIRESIDE_USER_PROFILE_BTN');
+    expect(triggerBtn).toBeTruthy();
+    expect(triggerBtn.style.minHeight).toBe('44px');
+    expect(triggerBtn.textContent).toContain('Menu');
+
+    // Click to open drawer
+    fireEvent.click(triggerBtn);
+
+    const drawer = getByTestId('HS_FIRESIDE_PROFILE_DRAWER');
+    expect(drawer).toBeTruthy();
+    expect(drawer.textContent).toContain('Guest Storyteller');
+    expect(drawer.textContent).toContain('Local Phone Session');
+
+    // Verify session button points to sign-in
+    const sessionBtn = getByTestId('HS_DRAWER_SESSION_BTN');
+    expect(sessionBtn.getAttribute('href')).toBe('/login?redirect=/studio/fireside');
+    expect(sessionBtn.textContent).toContain('Sign In / Create Account');
+
+    unmount();
+  });
+
+  it('15.5 FiresideAuthHeader integrates FiresideProfileDrawer alongside vault status and sign-in links', () => {
+    // Authenticated state
+    const { getByTestId, unmount } = render(React.createElement(FiresideAuthHeader));
+    expect(getByTestId('HS_FIRESIDE_USER_PROFILE_BTN')).toBeTruthy();
+    unmount();
+
+    // Guest state
+    mockCurrentUser = null;
+    const { getByTestId: getByTestIdGuest, unmount: unmountGuest } = render(React.createElement(FiresideAuthHeader));
+    expect(getByTestIdGuest('HS_FIRESIDE_SIGNIN_BTN')).toBeTruthy();
+    expect(getByTestIdGuest('HS_FIRESIDE_USER_PROFILE_BTN')).toBeTruthy();
+    unmountGuest();
+  });
+});
+
