@@ -858,6 +858,22 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `npm.cmd run test`: 56/56 test files passing (712/712 tests passed)
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
 
+---
+
+## Checkpoint #038 — MW-109: Attention-First QA Harness & Rule 30.3 Refactor (2026-10-05)
+
+- **Plane.so Ticket**: `[MW-109] Attention-First QA Harness & Rule 30.3 Refactor` (Sequence #318, Issue UUID `7534402f-f456-437a-b39b-23894fbacf50`)
+- **Baseline Commit**: `3187cca9`
+- **Files Created / Modified**:
+  - `.agents/AGENTS.md` — Amended Rule 30.3 to "Attention-First Test Card Organisation & Smart Triage" (mandating Zone 1 Active Verification Deck for actionable/newest test cards at top fold, Zone 2 collapsible Verified Reel Archive for historical passes, deep-link anchor navigation `#card-[N]` with 3.5s luminous focus ring, and dynamic HUD view toggles).
+  - `qa_checklist_interactive.html` (Workspace root & Brain artifact) — Refactored to Two-Tier Layout (`#active-action-deck` + `<details id="verified-reel-archive">`), added HUD view toggles (`🔥 Active & Newest First`, `🗺️ Journey Route Flow`, `📦 Verified Archive`), deep-link hash jump with amber focus ring pulse, and non-destructive DOM re-parenting preserving all local inputs, notes, logs, and screenshots.
+  - `MISSION_LOG.md` — Recorded Checkpoint #038.
+- **Verification**:
+  - `tsc --noEmit`: 0 errors
+  - `npm.cmd run test`: 56/56 test files passing (712/712 tests passed)
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
+
+
 
 
 

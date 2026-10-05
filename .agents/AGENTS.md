@@ -243,10 +243,24 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **The Premature Milestone Celebration Lock**:
   - The agent is **STRICTLY FORBIDDEN** from declaring a milestone 100% complete, closing tickets, or transitioning to future ideation/suggestions if ANY user comment, note, observation, or question in the QA submission remains unanalyzed, unanswered, or unaddressed.
 
-# 30.3. Mandatory Route-Grouped Test Card Organisation
-- **Strict Grouping by Target Route**: Whenever generating or updating `qa_checklist_interactive.html` or `scripts/generate_qa_checklist.js`, test cards MUST be grouped strictly by their target staging URL route (e.g. Group 1: `first_flight_rehearsal`, Group 2: `studio/production/[id]`, Group 3: `studio/fireside`) rather than by abstract architectural tracks that force the user to jump back and forth between URLs.
-- **Chronological User-Flow Ordering Within Each Route Group**: Within each route group, test cards MUST be ordered sequentially following the natural user journey (e.g. Act I Scriptorium -> Act I to Act II Synthesis -> Act II SelectionDeck -> Act III Soundstage -> Post-Flight Isolation).
-- **Interactive Route Filter Bar & Group Banner Headers**: The top HUD of `qa_checklist_interactive.html` MUST render one-click route filter pills (`All Routes`, `Pending Only`, and individual route pills) alongside a prominent group banner header (`data-route-group`) with a `[ 🚀 Launch Route ↗ ]` CTA for each route group.
+# 30.3. Attention-First Test Card Organisation & Smart Triage
+- **Attention-First Default (Actionable & Newest on Top)**:
+  Whenever generating or updating `qa_checklist_interactive.html`, the default top view 
+  MUST present the **Active Verification Deck** containing all `PENDING`, `RETEST`, and 
+  newly introduced sprint test cards in reverse chronological order (Newest first, e.g. Test 35, 34...).
+  Historical `PASS` cards MUST be grouped into a **Verified Reel Archive** that is neatly 
+  categorised by target route and collapsed by default, preventing tester scroll fatigue 
+  while preserving complete historical evidence.
+- **Deep-Link Anchor Navigation Mandate**:
+  Every handoff message provided by agents MUST include the exact target anchor hash 
+  (e.g. `file:///C:/Users/home/studio/qa_checklist_interactive.html#card-35`).
+  The interactive script MUST auto-expand, scroll to, and visually highlight the targeted 
+  card with a luminous focus ring on page load.
+- **Interactive View Toggles in HUD**:
+  The checklist header HUD MUST provide dynamic view toggles:
+  1. `🔥 Active & Newest First` (Default: Pending/Retests at top, newest first)
+  2. `🗺️ Journey Route Flow` (Grouped by Route URL, Act I → Act III sequence)
+  3. `📦 Milestone Sprints` (Grouped by MW milestone/sprint release)
 
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
