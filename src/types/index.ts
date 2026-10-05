@@ -4,8 +4,8 @@
  */
 
 export * from './roles';
-import type { StoryMoodTag } from './curriculum';
-export type { StoryMoodTag };
+import type { StoryMoodTag, MemoirTake } from './curriculum';
+export type { StoryMoodTag, MemoirTake };
 
 export interface MediaAttachment {
   url: string;
@@ -155,6 +155,10 @@ export interface Memory {
   previousDraftState?: string; // 1-Prior-Version Instant Undo Fallback Slot (MW-34)
   isReviewing?: boolean;
   fusionManifest?: FusionManifest;
+  /** Multi-Take Video Selection Room records (MW-106) */
+  takes?: MemoirTake[];
+  /** Active or preferred take ID (MW-106) */
+  activeTakeId?: string;
 }
 
 export type PremiereMode = 'fusion' | 'raw';

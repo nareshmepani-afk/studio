@@ -161,6 +161,7 @@ export default function FiresideStudioClient() {
   const activeTakeIdRef = useRef<string | null>(null);
   const activeTakeNumberRef = useRef<number>(1);
   const lastSavedBlobRef = useRef<Blob | null>(null);
+  const takeIsPreferredRef = useRef<boolean>(true);
 
   const effectiveSceneId = selectedSpark?.linkedSceneId || activePromptSpark?.linkedSceneId || 'part-1-scene-1';
 
@@ -176,6 +177,9 @@ export default function FiresideStudioClient() {
     totalScenes,
     vaultProgressPercent,
     nextPendingSceneId,
+    promotePreferredTake,
+    reorderSceneTakes,
+    safeDiscardTake,
   } = useCurriculumVault({
     userId: user?.uid,
     initialSceneId: effectiveSceneId,
@@ -222,6 +226,7 @@ export default function FiresideStudioClient() {
       if (cloudMediaUrl) {
         const takeId = activeTakeIdRef.current || `take_${Date.now()}`;
         const takeNumber = activeTakeNumberRef.current || activeSceneMemory?.takes?.length || 1;
+        const isPref = takeIsPreferredRef.current;
         await saveSceneTake(
           effectiveSceneId,
           {
@@ -232,8 +237,9 @@ export default function FiresideStudioClient() {
             mediaUrl: cloudMediaUrl,
             durationSeconds: mediaMode === 'video' ? recordedVideoDuration : recordedAudioDuration,
             createdAt: new Date().toISOString(),
-            label: `Take ${takeNumber} (${mediaMode === 'video' ? 'Fireside Video' : 'Fireside Voice'})`,
-            isPreferred: true,
+            label: `Take ${takeNumber} (${mediaMode === 'video' ? (isPref ? 'Fireside Video' : 'Fireside Audition Take') : (isPref ? 'Fireside Voice' : 'Fireside Voice Audition')})`,
+            isPreferred: isPref,
+            role: isPref ? 'master_cut' : 'alternate',
           },
           { photos }
         );
@@ -542,6 +548,12 @@ export default function FiresideStudioClient() {
       durationSeconds,
       sceneId: effectiveSceneId,
     });
+
+    // Guardrail 2 (MW-106): If scene already completed/mastered, default new take to auxiliary audition mode
+    const isAlreadyCompleted = isSceneCompleted(activeSceneMemory);
+    const shouldBePreferred = !isAlreadyCompleted;
+    takeIsPreferredRef.current = shouldBePreferred;
+
     const blobUrl = typeof window !== 'undefined' ? URL.createObjectURL(audioBlob) : '';
     const isSameBlob = lastSavedBlobRef.current === audioBlob && !!activeTakeIdRef.current;
     const takeId = isSameBlob ? activeTakeIdRef.current! : `take_${Date.now()}`;
@@ -559,8 +571,9 @@ export default function FiresideStudioClient() {
       mediaUrl: blobUrl,
       durationSeconds,
       createdAt: new Date().toISOString(),
-      label: `Take ${takeNumber} (Fireside Voice)`,
-      isPreferred: true,
+      label: `Take ${takeNumber} (${shouldBePreferred ? 'Fireside Voice' : 'Fireside Voice Audition'})`,
+      isPreferred: shouldBePreferred,
+      role: shouldBePreferred ? 'master_cut' : 'alternate',
     }, { photos });
     setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
@@ -569,7 +582,11 @@ export default function FiresideStudioClient() {
     const photoSuffix = photoCount > 0
       ? ` with ${photoCount} attached heirloom photo${photoCount === 1 ? '' : 's'}`
       : '';
-    setNotification(`Memoir voice recording complete (${mins}m ${secs}s)${photoSuffix}. Synchronising to vault.`);
+    setNotification(
+      shouldBePreferred
+        ? `Memoir voice recording complete (${mins}m ${secs}s)${photoSuffix}. Synchronising to vault.`
+        : `Audition take recorded (${mins}m ${secs}s). Master Reel preserved in vault.`
+    );
     setTimeout(() => {
       setNotification(null);
     }, 5000);
@@ -583,6 +600,12 @@ export default function FiresideStudioClient() {
       durationSeconds,
       sceneId: effectiveSceneId,
     });
+
+    // Guardrail 2 (MW-106): If scene already completed/mastered, default new take to auxiliary audition mode
+    const isAlreadyCompleted = isSceneCompleted(activeSceneMemory);
+    const shouldBePreferred = !isAlreadyCompleted;
+    takeIsPreferredRef.current = shouldBePreferred;
+
     const blobUrl = typeof window !== 'undefined' ? URL.createObjectURL(videoBlob) : '';
     const isSameBlob = lastSavedBlobRef.current === videoBlob && !!activeTakeIdRef.current;
     const takeId = isSameBlob ? activeTakeIdRef.current! : `take_${Date.now()}`;
@@ -600,8 +623,9 @@ export default function FiresideStudioClient() {
       mediaUrl: blobUrl,
       durationSeconds,
       createdAt: new Date().toISOString(),
-      label: `Take ${takeNumber} (Fireside Video)`,
-      isPreferred: true,
+      label: `Take ${takeNumber} (${shouldBePreferred ? 'Fireside Video' : 'Fireside Audition Take'})`,
+      isPreferred: shouldBePreferred,
+      role: shouldBePreferred ? 'master_cut' : 'alternate',
     }, { photos });
     setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
@@ -610,7 +634,11 @@ export default function FiresideStudioClient() {
     const photoSuffix = photoCount > 0
       ? ` with ${photoCount} attached heirloom photo${photoCount === 1 ? '' : 's'}`
       : '';
-    setNotification(`Video memo recorded (${mins}m ${secs}s)${photoSuffix}. Synchronising to vault.`);
+    setNotification(
+      shouldBePreferred
+        ? `Video memo recorded (${mins}m ${secs}s)${photoSuffix}. Synchronising to vault.`
+        : `Audition video recorded (${mins}m ${secs}s). Master Reel preserved in vault.`
+    );
     setTimeout(() => {
       setNotification(null);
     }, 5000);
@@ -1111,6 +1139,9 @@ export default function FiresideStudioClient() {
                 setIsBonusDrawerOpen(true);
               }}
               onDiscardTake={handleDiscardActiveTake}
+              onPromoteMasterTake={(takeId) => promotePreferredTake(effectiveSceneId, takeId)}
+              onReorderTakes={(orderedIds) => reorderSceneTakes(effectiveSceneId, orderedIds)}
+              onSafeDiscardTake={(discardId, fallbackId) => safeDiscardTake(effectiveSceneId, discardId, fallbackId)}
               onReRecordRequest={() => {
                 setIsReviewingTake(false);
                 setForceRecordMode(true);

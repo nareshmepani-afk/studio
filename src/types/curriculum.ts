@@ -27,7 +27,7 @@ export type SurfaceOrigin = 'fireside_mobile' | 'desktop_soundstage';
 
 export type OriginSurface = 'fireside_mobile' | 'soundstage_desktop' | 'desktop_soundstage';
 
-export type MemoirTakeSource = 'fireside_mobile' | 'soundstage_desktop';
+export type MemoirTakeSource = 'fireside_mobile' | 'soundstage_desktop' | 'desktop_soundstage';
 
 export type ActIdentifier = 'act1' | 'act2' | 'act3' | 'act4';
 
@@ -95,6 +95,12 @@ export interface MemoirTake {
   label: string; // e.g. "Take 1 (Fireside Mobile)", "Take 2 (4K Soundstage)"
   /** Indicates whether this take is the designated master audio/video stream */
   isPreferred: boolean;
+  /** Visual sequence order in selection room */
+  order?: number;
+  /** Directorial role designation */
+  role?: 'master_cut' | 'alternate' | 'b_roll' | 'rehearsal';
+  /** URL alias for backward-compatibility with legacy payloads */
+  url?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -102,6 +102,8 @@ import { RecordEditingSuite } from './RecordEditingSuite';
 import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
 import { uploadFileInChunks } from '@/utils/storage/resumableUpload';
 import { HotspotOverlay } from './HotspotOverlay';
+import { VideoSelectionRoomModal } from './VideoSelectionRoomModal';
+import { MemoirTake } from '@/types/curriculum';
 
 interface RoomProps {
     data: Memory;
@@ -226,6 +228,155 @@ export default function SoloStage({
     }
     return false; // Not guest, proceed
   };
+
+  // Video Selection Room State & Handlers (MW-106)
+  const [isVideoSelectionRoomOpen, setIsVideoSelectionRoomOpen] = useState(false);
+
+  const selectionRoomTakes: MemoirTake[] = useMemo(() => {
+    if (data?.takes && data.takes.length > 0) return data.takes;
+    if (data?.videoUrl) {
+      return [{
+        id: 'take_legacy_desktop_master',
+        takeNumber: 1,
+        label: 'Desktop Soundstage Master Reel',
+        source: 'desktop_soundstage',
+        mediaMode: 'video',
+        mediaUrl: data.videoUrl,
+        url: data.videoUrl,
+        durationSeconds: data.durationQuantity || 0,
+        createdAt: data.updatedAt || new Date().toISOString(),
+        isPreferred: true,
+        role: 'master_cut',
+        order: 1,
+      }];
+    }
+    return [];
+  }, [data?.takes, data?.videoUrl, data?.durationQuantity, data?.updatedAt]);
+
+  const handlePromoteMasterTake = useCallback(async (takeId: string) => {
+    const targetTake = selectionRoomTakes.find((t) => t.id === takeId);
+    if (!targetTake) return;
+    const resolvedUrl = (targetTake as any).videoUrl || targetTake.mediaUrl || targetTake.url || '';
+    const updatedTakes: MemoirTake[] = selectionRoomTakes.map((t) => ({
+      ...t,
+      isPreferred: t.id === takeId,
+      role: t.id === takeId ? ('master_cut' as const) : ('alternate' as const),
+    }));
+    update({
+      videoUrl: resolvedUrl,
+      takes: updatedTakes,
+      activeTakeId: takeId,
+    });
+    if (db && userId && data?.id && !userId.startsWith('guest')) {
+      try {
+        const docRef = doc(db, 'users', userId, 'memories', data.id);
+        await setDoc(docRef, {
+          videoUrl: resolvedUrl,
+          takes: updatedTakes,
+          activeTakeId: takeId,
+          preferredTakeId: takeId,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      } catch (err) {
+        console.warn("[SoloStage] Error persisting promoted master:", err);
+      }
+    }
+    toast.success("Master Reel Updated", {
+      description: `Take #${targetTake.takeNumber || 1} designated as Master Reel.`
+    });
+  }, [selectionRoomTakes, update, db, userId, data?.id]);
+
+  const handleReorderTakes = useCallback(async (orderedTakeIds: string[]) => {
+    const takeMap = new Map(selectionRoomTakes.map((t) => [t.id, t]));
+    const reordered: MemoirTake[] = [];
+    orderedTakeIds.forEach((id, idx) => {
+      const t = takeMap.get(id);
+      if (t) {
+        reordered.push({ ...t, order: idx + 1 });
+        takeMap.delete(id);
+      }
+    });
+    Array.from(takeMap.values()).forEach((t) => {
+      reordered.push({ ...t, order: reordered.length + 1 });
+    });
+    update({ takes: reordered });
+    if (db && userId && data?.id && !userId.startsWith('guest')) {
+      try {
+        const docRef = doc(db, 'users', userId, 'memories', data.id);
+        await setDoc(docRef, { takes: reordered, updatedAt: new Date().toISOString() }, { merge: true });
+      } catch (err) {
+        console.warn("[SoloStage] Error persisting reordered takes:", err);
+      }
+    }
+  }, [selectionRoomTakes, update, db, userId, data?.id]);
+
+  const handleSafeDiscardTake = useCallback(async (discardTakeId: string, fallbackMasterTakeId?: string) => {
+    const targetTake = selectionRoomTakes.find((t) => t.id === discardTakeId);
+    const filteredTakes = selectionRoomTakes.filter((t) => t.id !== discardTakeId);
+    if (filteredTakes.length === 0) {
+      update({
+        videoUrl: undefined,
+        takes: [],
+        activeTakeId: undefined,
+      });
+      if (db && userId && data?.id && !userId.startsWith('guest')) {
+        try {
+          const docRef = doc(db, 'users', userId, 'memories', data.id);
+          await setDoc(docRef, {
+            videoUrl: null,
+            takes: [],
+            activeTakeId: null,
+            preferredTakeId: null,
+            updatedAt: new Date().toISOString(),
+          }, { merge: true });
+        } catch (err) {
+          console.warn("[SoloStage] Error persisting empty takes on discard:", err);
+        }
+      }
+      setIsVideoSelectionRoomOpen(false);
+      toast.info("Take Discarded", { description: "Reel reset to unrecorded state." });
+      return;
+    }
+
+    const wasMaster = targetTake?.isPreferred || data?.activeTakeId === discardTakeId;
+    let newMasterId = fallbackMasterTakeId;
+    if (!newMasterId || !filteredTakes.some((t) => t.id === newMasterId)) {
+      const existingPreferred = filteredTakes.find((t) => t.isPreferred);
+      newMasterId = existingPreferred ? existingPreferred.id : filteredTakes[filteredTakes.length - 1].id;
+    }
+
+    const remainingTakes: MemoirTake[] = filteredTakes.map((t, idx) => ({
+      ...t,
+      order: idx + 1,
+      isPreferred: wasMaster ? t.id === newMasterId : Boolean(t.isPreferred),
+      role: (wasMaster ? t.id === newMasterId : Boolean(t.isPreferred)) ? ('master_cut' as const) : ('alternate' as const),
+    }));
+
+    const activeMaster = remainingTakes.find((t) => t.isPreferred) || remainingTakes[remainingTakes.length - 1];
+    const resolvedUrl = (activeMaster as any).videoUrl || activeMaster.mediaUrl || activeMaster.url || '';
+
+    update({
+      videoUrl: resolvedUrl,
+      takes: remainingTakes,
+      activeTakeId: activeMaster.id,
+    });
+
+    if (db && userId && data?.id && !userId.startsWith('guest')) {
+      try {
+        const docRef = doc(db, 'users', userId, 'memories', data.id);
+        await setDoc(docRef, {
+          videoUrl: resolvedUrl,
+          takes: remainingTakes,
+          activeTakeId: activeMaster.id,
+          preferredTakeId: activeMaster.id,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      } catch (err) {
+        console.warn("[SoloStage] Error persisting discarded take:", err);
+      }
+    }
+    toast.success("Take Discarded", { description: "Active Master Reel updated." });
+  }, [selectionRoomTakes, data?.activeTakeId, update, db, userId, data?.id]);
 
   // Rehydrate trimRange when Firestore data or videoDuration loads (default trimStart to 0 for zero-start playhead integrity)
   useEffect(() => {
@@ -1926,12 +2077,71 @@ export default function SoloStage({
       try {
         const url = await uploadVideo(recordedBlob, data.id);
         if (url) {
+          const existingTakes: MemoirTake[] = (data.takes && data.takes.length > 0)
+            ? data.takes
+            : (data.videoUrl ? [{
+                id: 'take_legacy_desktop_master',
+                takeNumber: 1,
+                label: 'Desktop Soundstage Master Reel',
+                source: 'desktop_soundstage',
+                mediaMode: 'video',
+                mediaUrl: data.videoUrl,
+                url: data.videoUrl,
+                durationSeconds: data.durationQuantity || 0,
+                createdAt: data.updatedAt || new Date().toISOString(),
+                isPreferred: false,
+                role: 'alternate',
+                order: 1,
+              }] : []);
+
+          const takeNumber = existingTakes.length + 1;
+          const newTakeId = `take_desktop_${Date.now()}`;
+          const newTake: MemoirTake = {
+            id: newTakeId,
+            takeNumber,
+            label: `Take ${takeNumber} (Desktop Soundstage Master Reel)`,
+            source: 'desktop_soundstage',
+            mediaMode: 'video',
+            mediaUrl: url,
+            url: url,
+            durationSeconds: data.durationQuantity || 0,
+            createdAt: new Date().toISOString(),
+            isPreferred: true,
+            role: 'master_cut',
+            order: takeNumber,
+          };
+
+          const updatedTakes: MemoirTake[] = [
+            ...existingTakes.map((t) => ({ ...t, isPreferred: false, role: 'alternate' as const })),
+            newTake,
+          ];
+
           update({
             trimStart: trimRange[0],
             trimEnd: trimRange[1],
             videoUrl: url,
-            status: 'completed'
+            status: 'completed',
+            takes: updatedTakes,
+            activeTakeId: newTakeId,
           });
+
+          if (db && userId && data.id && !userId.startsWith('guest')) {
+            try {
+              const docRef = doc(db, 'users', userId, 'memories', data.id);
+              await setDoc(docRef, {
+                videoUrl: url,
+                takes: updatedTakes,
+                activeTakeId: newTakeId,
+                preferredTakeId: newTakeId,
+                status: 'completed',
+                trimStart: trimRange[0],
+                trimEnd: trimRange[1],
+                updatedAt: new Date().toISOString(),
+              }, { merge: true });
+            } catch (fsErr) {
+              console.warn("[SoloStage] Direct Firestore takes persistence warning:", fsErr);
+            }
+          }
 
           toast.success("Memory Secured", {
             description: "Footage uploaded. Director's analysis starting..."
@@ -5165,6 +5375,17 @@ export default function SoloStage({
                           </button>
                         </div>
 
+                        {selectionRoomTakes.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setIsVideoSelectionRoomOpen(true)}
+                            className="bg-slate-950/85 hover:bg-slate-900 border border-amber-500/40 text-amber-400 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
+                          >
+                            <FilmIcon className="w-3 h-3 text-amber-400" />
+                            <span>Reel Stack ({selectionRoomTakes.length})</span>
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
@@ -5172,7 +5393,7 @@ export default function SoloStage({
                           className="bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
                         >
                           <Maximize2 className="w-3 h-3 text-emerald-400" />
-                          <span>Theater View</span>
+                          <span>Theatre View</span>
                         </button>
                       </div>
 
@@ -6858,6 +7079,18 @@ export default function SoloStage({
           />
         )}
       </AnimatePresence>
+
+      {/* Theatrical Video Selection Room Modal (MW-106) */}
+      <VideoSelectionRoomModal
+        isOpen={isVideoSelectionRoomOpen}
+        onClose={() => setIsVideoSelectionRoomOpen(false)}
+        sceneTitle={data?.title || 'Story Scene'}
+        takes={selectionRoomTakes}
+        activeTakeId={data?.activeTakeId || (selectionRoomTakes.find((t) => t.isPreferred)?.id) || selectionRoomTakes[0]?.id}
+        onPromoteMaster={handlePromoteMasterTake}
+        onReorderTakes={handleReorderTakes}
+        onDiscardTake={handleSafeDiscardTake}
+      />
     </>
   );
 }

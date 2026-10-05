@@ -748,3 +748,26 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `vitest run`: `53/53` test files (`685/685` tests passed)
   - `npm.cmd run build`: `46/46` routes compiled cleanly
 
+---
+
+## Checkpoint #035 — MW-106: Multi-Take Video Selection Room & Master Reel Protection Guardrails (2026-10-05)
+
+- **Plane.so Ticket**: `MW-106` (Sequence #315, Issue UUID `87bf8af0-da92-4db9-b360-a38cfd8a62dc`)
+- **Baseline Commit**: `ef38f151`
+- **Files Created / Modified**:
+  - `src/types/curriculum.ts` & `src/types/index.ts`: Extended `MemoirTake` interface with `order?: number`, `role?: 'master_cut' | 'alternate' | 'b_roll' | 'rehearsal'`, `url?: string`, and `desktop_soundstage` in `MemoirTakeSource`. Added `takes?: MemoirTake[]` and `activeTakeId?: string` to `Memory` interface.
+  - `src/hooks/useCurriculumVault.ts`: Implemented Amendment 1 Self-Healing Schema Hydration (synthesising and persisting `legacyMasterTake` with deduplication `selfHealedDocsRef` whenever a scene has `videoUrl` or `audioUrl` without an existing takes array). Implemented `safeDiscardTake` with Amendment 3 Active Master Discard Interlock (preserving alternate takes and assigning designated fallback as Master Reel), `reorderSceneTakes` for persisting visual sequence order, and refined `promotePreferredTake` to update `role: 'master_cut' | 'alternate'` and accurately resolve `videoUrl`/`audioUrl`.
+  - `src/components/studio/VideoSelectionRoomModal.tsx` (NEW): Built Desktop Soundstage darkroom modal for Act IV & Act V with video audition player, sequence reordering chevrons (`[ ↑ ]` / `[ ↓ ]`), `[ ★ Set as Master Reel ]`, Active Master Discard Interlock re-assignment dialogue, and standard discard confirmation.
+  - `src/components/fireside/VideoSelectionRoomDrawer.tsx` (NEW): Built mobile elder-friendly slide-over drawer for `/studio/fireside` with ≥ 48px touch targets, video player, reordering controls, Master Reel designation, and Active Master Discard Interlock.
+  - `src/components/fireside/FiresideCompletedReelCard.tsx`: Mounted `[ 🎞️ Reel Stack (N) ▾ ]` pill button triggering `VideoSelectionRoomDrawer`. Implemented Guardrail 1 (Master Reel Protection Modal) with amber warning and explicit `[ Proceed to Record Alternate Take ]` vs `[ Cancel & Keep Master Reel ]` options.
+  - `src/app/studio/fireside/FiresideStudioClient.tsx`: Implemented Guardrail 2 (Non-destructive Audition Take Default) in `handleAudioRecordingComplete` and `handleVideoRecordingComplete` (defaulting new takes on already completed scenes to `isPreferred: false`, `role: 'alternate'`). Wired drawer callbacks (`onPromoteMasterTake`, `onReorderTakes`, `onSafeDiscardTake`).
+  - `src/components/studio/SoloStage.tsx`: Implemented Amendment 2 (Surgical Containment on `SoloStage.tsx`). Appended new take payload to `takes` array and Firestore doc alongside `videoUrl`. Added `[ 🎞️ Reel Stack (N) ]` button in Act IV reel header and rendered `<VideoSelectionRoomModal />`. Fixed British English spelling of `Theatre View`.
+  - `src/test/video_selection_room.test.ts` (NEW): 5 hermetic unit tests verifying self-healing hydration, Guardrail 2 audition defaults, Active Master Discard Interlock, selection room reordering, and theatrical master promotion.
+- **Verification**:
+  - `tsc --noEmit`: `0` errors
+  - `vitest run src/test/video_selection_room.test.ts`: `5/5` tests passed
+  - `vitest run src/test/curriculum_vault.test.ts`: `16/16` tests passed
+  - `vitest run src/test/fireside_prompt_carousel.test.tsx src/test/fireside_auth_header.test.tsx`: `21/21` tests passed
+  - `npm.cmd run build`: `46/46` routes compiled cleanly with exit code 0
+
+

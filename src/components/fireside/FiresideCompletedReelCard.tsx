@@ -40,6 +40,7 @@ import {
   resolveEditingAuthority,
 } from '@/types/curriculum';
 import { FiresideLanguage } from '@/types/fireside';
+import VideoSelectionRoomDrawer from './VideoSelectionRoomDrawer';
 
 export interface FiresideCompletedReelCardProps {
   sceneId: string;
@@ -53,6 +54,9 @@ export interface FiresideCompletedReelCardProps {
   onAddBonusNote: () => void;
   onReRecordRequest?: () => void;
   onDiscardTake?: () => void;
+  onPromoteMasterTake?: (takeId: string) => Promise<void> | void;
+  onReorderTakes?: (orderedTakeIds: string[]) => Promise<void> | void;
+  onSafeDiscardTake?: (discardTakeId: string, fallbackMasterTakeId?: string) => Promise<void> | void;
   className?: string;
 }
 
@@ -75,11 +79,15 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   onAddBonusNote,
   onReRecordRequest,
   onDiscardTake,
+  onPromoteMasterTake,
+  onReorderTakes,
+  onSafeDiscardTake,
   className = '',
 }) => {
   const [showRetakeConfirm, setShowRetakeConfirm] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [isStudioMasterDrawerOpen, setIsStudioMasterDrawerOpen] = useState(false);
+  const [isVideoSelectionRoomOpen, setIsVideoSelectionRoomOpen] = useState(false);
 
   const resolvedAuthority: EditingAuthority = useMemo(() => {
     if (editingAuthority === 'desktop_locked' || editingAuthority === 'fireside_flexible') {
@@ -161,6 +169,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   const bonusNotes = Array.isArray(sceneMemory?.bonusNotes) ? sceneMemory.bonusNotes : [];
   const bonusNotesCount = bonusNotes.length;
   const isMastered = sceneMemory?.currentStatus === 'mastered';
+  const takes = Array.isArray(sceneMemory?.takes) ? sceneMemory.takes : [];
 
   const moodTagDisplay = useMemo(() => {
     const tag = sceneMemory?.moodTag;
@@ -244,16 +253,33 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           {sceneTitle}
         </h3>
 
-        {/* Explicit Take Number & Date Timestamp Pill (Test 11 Step 1) */}
-        <div
-          data-testid="completed-reel-take-timestamp"
-          className="inline-flex flex-wrap items-center justify-center gap-2 px-3.5 py-1 rounded-full bg-stone-900/90 border border-stone-700/80 text-xs font-mono text-stone-300 mb-3"
-        >
-          <span className="text-amber-300 font-bold">Take #{takeNumber}</span>
-          <span className="text-stone-500">•</span>
-          <span>Recorded {recordedTimestampText}</span>
-          <span className="text-stone-500">•</span>
-          <span className="text-emerald-300 font-semibold">{durationText}</span>
+        {/* Explicit Take Number & Date Timestamp Pill + Selection Room Trigger (MW-106) */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+          <div
+            data-testid="completed-reel-take-timestamp"
+            className="inline-flex flex-wrap items-center justify-center gap-2 px-3.5 py-1 rounded-full bg-stone-900/90 border border-stone-700/80 text-xs font-mono text-stone-300"
+          >
+            <span className="text-amber-300 font-bold">Take #{takeNumber}</span>
+            <span className="text-stone-500">•</span>
+            <span>Recorded {recordedTimestampText}</span>
+            <span className="text-stone-500">•</span>
+            <span className="text-emerald-300 font-semibold">{durationText}</span>
+          </div>
+
+          {takes.length > 0 && (
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_OPEN_SELECTION_ROOM_BTN"
+              onClick={() => {
+                triggerHaptic();
+                setIsVideoSelectionRoomOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/50 text-amber-300 hover:text-white text-xs font-mono font-bold transition cursor-pointer"
+            >
+              <Film className="w-3.5 h-3.5 text-amber-400" />
+              <span>Reel Stack ({takes.length}) ▾</span>
+            </button>
+          )}
         </div>
 
         <p className="text-xs text-stone-400 max-w-md mb-5 leading-relaxed">
@@ -473,27 +499,36 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         )}
 
         {showRetakeConfirm && !showDiscardConfirm && (
-          <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-amber-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
+          <div
+            data-testid="master-reel-protection-modal"
+            className="w-full p-4 rounded-2xl bg-stone-900/95 border border-amber-500/60 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200"
+          >
             <div className="flex items-start gap-2.5 mb-3">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-stone-300 leading-relaxed">
-                Your existing master performance is safely preserved. Recording again will save an additional take to your multi-take stack.
-              </p>
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <h5 className="text-xs font-bold text-amber-200 uppercase tracking-wider mb-1">
+                  ⚠️ Master Reel Protected
+                </h5>
+                <p className="text-xs text-stone-300 leading-relaxed">
+                  You already have a completed Theatrical Master Reel for this scene ready for cinema release. Recording an auxiliary take will add an alternate take to your multi-take stack without altering your active master reel unless you choose to promote it.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowRetakeConfirm(false)}
-                className="px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition"
+                className="w-full sm:w-auto min-h-[44px] px-3.5 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition cursor-pointer"
               >
-                Cancel
+                Cancel & Keep Master Reel
               </button>
               <button
                 type="button"
+                data-testid="HS_FIRESIDE_CONFIRM_RETAKE_BTN"
                 onClick={handleConfirmRetake}
-                className="px-3.5 py-1.5 rounded-xl bg-amber-500 text-stone-950 text-xs font-bold hover:bg-amber-400 transition"
+                className="w-full sm:w-auto min-h-[44px] px-4 py-1.5 rounded-xl bg-amber-500 text-stone-950 text-xs font-bold hover:bg-amber-400 transition cursor-pointer"
               >
-                Proceed to Record
+                Proceed to Record Alternate Take
               </button>
             </div>
           </div>
@@ -568,6 +603,28 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           </div>
         </div>
       )}
+
+      {/* Video Selection Room Drawer (MW-106) */}
+      <VideoSelectionRoomDrawer
+        isOpen={isVideoSelectionRoomOpen}
+        onClose={() => setIsVideoSelectionRoomOpen(false)}
+        sceneTitle={sceneTitle}
+        takes={takes}
+        activeTakeId={sceneMemory?.activeTakeId}
+        onPromoteMaster={async (takeId) => {
+          await onPromoteMasterTake?.(takeId);
+        }}
+        onReorderTakes={async (orderedTakeIds) => {
+          await onReorderTakes?.(orderedTakeIds);
+        }}
+        onDiscardTake={async (discardTakeId, fallbackMasterTakeId) => {
+          if (onSafeDiscardTake) {
+            await onSafeDiscardTake(discardTakeId, fallbackMasterTakeId);
+          } else {
+            onDiscardTake?.();
+          }
+        }}
+      />
     </section>
   );
 };
