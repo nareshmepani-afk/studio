@@ -907,6 +907,45 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `vitest run src/test/bonus_memory_crud_ergonomics.test.tsx src/test/curriculum_vault.test.ts`: 25/25 passed
   - `vitest run src/test/orthography_grammar.test.ts src/test/fireside_sync.test.ts src/test/fireside_hotspots_telemetry.test.tsx`: 83/83 passed
 
+---
+
+## Checkpoint #040 — MW-110: Fireside "Weave Note" Sensory Memoir Engine & Compare Tray (2026-10-06)
+
+- **Plane.so Ticket**: `[MW-110] Fireside "Weave Note" Sensory Memoir Engine` (Sequence #318)
+- **Baseline Commit**: `a9c32ec0`
+- **Architectural Deliverables**:
+  - **Server Action `weaveBonusNote(draftText, context)` (`aiWeaver.ts`)**:
+    - Takes raw, spontaneous recollection seeds and synthesises a rich, first-person spoken memoir reflection.
+    - Deepens atmospheric, tactile, and olfactory textures (warmth, soil, scent, ambient sound) while strictly preserving the author's primary question or sentiment.
+    - Strictly enforces **Rule 11** Screenplay & Camera Cue ban (`sanitizeProse` strips `Cut to`, `Zoom in`, `[Fade in]`).
+    - Strictly enforces **Rule 11** AI Trope ban (banned words: `odyssey`, `lineage`, `tapestry`, `vibrant`, `testament`, `unfolding`, `interwoven`, `symphony`, `echoes`).
+    - Strictly enforces **Rule 20** British English (UK) orthography (`colour`, `nourish`, `realise`, `honour`).
+    - Enforces **Rule 35.2** fast options: `maxOutputTokens: 250`, `temperature: 0.35` for sub-700ms streaming/resolution.
+    - Includes zero-data-loss exception shielding returning the raw input draft upon network failures.
+  - **Dual-Action Toolbar & Inline Compare Tray (`BonusMemoryDrawer.tsx`)**:
+    - Dual actions beneath note textarea: conservative copyediting (`[ ✨ Polish ]`, stone) alongside creative sensory expansion (`[ 🧶 Weave Note ]`, amber, min 44px touch height).
+    - Pattern C inline compare tray rendering woven expansion preview with 3 choices:
+      - `[ ✨ Replace Note ]` (`HS_BONUS_WEAVE_REPLACE_BTN`): Swaps draft with woven text while snapshotting original for instant revert.
+      - `[ ➕ Append to Note ]` (`HS_BONUS_WEAVE_APPEND_BTN`): Retains author's original words verbatim and appends the woven reflection below a clean `---` divider.
+      - `[ ✕ Keep Original ]` (`HS_BONUS_WEAVE_DISMISS_BTN`): Closes preview tray with zero mutations.
+    - Full **Rule 42** Non-Destructive Invariant guarantee with single-click `[ ↺ Revert to original draft ]` restore.
+  - **QA Verification Harness (`qa_checklist_interactive.html`)**:
+    - Added Test 37: `[studio/fireside] Non-Destructive Sensory Note Weaving Engine ([ 🧶 Weave Note ]) & Compare Tray`.
+    - Incremented `TOTAL` test count to 37 with deep-link anchor support (`#card-37`).
+- **Files Modified**:
+  - `src/actions/aiWeaver.ts`
+  - `src/components/fireside/BonusMemoryDrawer.tsx`
+  - `src/test/orthography_grammar.test.ts`
+  - `qa_checklist_interactive.html` (Workspace root & Brain artifact)
+  - `MISSION_LOG.md`
+- **Verification**:
+  - `tsc --noEmit`: 0 errors
+  - `vitest run src/test/orthography_grammar.test.ts`: 20/20 passed
+  - `vitest run src/test/bonus_memory_crud_ergonomics.test.tsx src/test/curriculum_vault.test.ts`: 25/25 passed
+  - `npm.cmd run test`: 57/57 test files passing (728/728 tests passed)
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
+
+
 
 
 

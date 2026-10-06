@@ -791,6 +791,76 @@ export async function checkAndPolishGrammar(text: string): Promise<string> {
     return text;
   }
 }
+
+/**
+ * Server action to weave raw bonus memory recollections into rich, sensory memoir prose
+ * honoring the author's primary question, observation, or seed while deepening tactile,
+ * atmospheric, and generational resonance.
+ *
+ * Rules:
+ * - Rule 11 Screenplay Cue Ban: Strips all stage directions and camera cues via sanitizeProse().
+ * - Rule 11 Anti-Trope Ban: Forbids AI clichés ("odyssey", "lineage", "tapestry", "vibrant", "testament", "unfolding", "interwoven", "symphony", "echoes").
+ * - Rule 20 UK Orthography: Strictly enforces British English (colour, nourish, realise, honour).
+ * - Rule 35.2 / Elder Ergonomics: maxOutputTokens: 250, temperature: 0.35.
+ */
+export async function weaveBonusNote(
+  draftText: string,
+  context?: {
+    sceneTitle?: string;
+    promptQuestion?: string;
+    authorName?: string;
+  }
+): Promise<string> {
+  console.log(`[AI Weaver] weaveBonusNote triggered for length ${draftText?.length || 0}`);
+  if (!draftText || draftText.trim().length < 5) return draftText || '';
+
+  try {
+    const ai = await getAI();
+    const prompt = `
+      You are an award-winning Literary Memoirist and compassionate Family Biographer.
+      Your task is to take an authentic, raw spoken recollection or note from an elder storyteller and weave it into a rich, sensory, and emotionally resonant memoir reflection.
+
+      [STORYTELLER'S RAW NOTE]
+      "${draftText.trim()}"
+
+      ${context?.sceneTitle ? `[SCENE THEME]: ${context.sceneTitle}` : ''}
+      ${context?.promptQuestion ? `[ORIGINAL PROMPT SEED]: "${context.promptQuestion}"` : ''}
+
+      [STRICT CREATIVE GUIDELINES]
+      - First-Person Spoken Voice: Write strictly in first-person singular ("I", "my") as spoken prose meant to be read aloud or recorded.
+      - Honour the Core Seed: Preserve the author's primary question, observation, wonder, or memory seed in essence. Do NOT contradict or erase their authentic sentiment.
+      - Sensory & Atmospheric Depth: Deepen the tactile, olfactory, acoustic, and atmospheric textures (e.g. warmth of the sun, soil, dust, scent of rain, voices, light).
+      - British English (UK) Only: Enforce British English spelling (e.g., colour, favourite, nourish, realise, honour, centre) per Rule 20.
+      - Concise & Dignified: Keep the output to a single, lyrical paragraph of approximately 45 to 80 words. Never output an overwhelming essay.
+      - ABSOLUTE BAN ON SCREENPLAY / CAMERA CUES (Rule 11): You are writing spoken memoirs, NOT a film script. NEVER write "Cut to...", "Zoom in", "Fade in", "Wide shot", or any stage directions. Every word must be spoken by the narrator.
+      - ABSOLUTE BAN ON AI CLICHÉS (Rule 11): NEVER use the following banned words: "odyssey", "lineage", "tapestry", "vibrant", "testament", "unfolding", "interwoven", "symphony", "echoes".
+
+      Return ONLY the woven spoken paragraph. No preamble, no quotes, no markdown wrappers, no bullet points.
+    `;
+
+    const { text: resultText } = await pRetry(async () => {
+      return await ai.generate({
+        prompt,
+        config: {
+          maxOutputTokens: 250,
+          temperature: 0.35,
+        },
+      });
+    }, { retries: 2 });
+
+    let raw = (resultText?.trim() || draftText)
+      .replace(/^```(?:markdown|text)?\s*|\s*```$/g, '')
+      .replace(/^"|"$/g, '')
+      .trim();
+    const woven = raw || draftText;
+    console.log(`[AI Weaver] weaveBonusNote completed successfully.`);
+    return sanitizeProse(woven);
+  } catch (error: any) {
+    console.error("[AI Weaver] weaveBonusNote failure:", error);
+    return draftText;
+  }
+}
+
 /**
  * Server action to analyze the script for grammar, spelling, and cinematic clarity.
  */

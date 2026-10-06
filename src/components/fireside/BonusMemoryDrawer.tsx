@@ -27,7 +27,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { BonusMemoryNote } from '@/types/curriculum';
-import { checkAndPolishGrammar } from '@/actions/aiWeaver';
+import { checkAndPolishGrammar, weaveBonusNote } from '@/actions/aiWeaver';
 import { toast } from 'sonner';
 
 export interface BonusMemoryDrawerProps {
@@ -66,7 +66,10 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isPolishing, setIsPolishing] = useState(false);
+  const [isWeaving, setIsWeaving] = useState(false);
   const [originalDraft, setOriginalDraft] = useState<string | null>(null);
+  const [wovenDraft, setWovenDraft] = useState<string | null>(null);
+  const [preWeaveDraft, setPreWeaveDraft] = useState<string | null>(null);
   const [isPolished, setIsPolished] = useState(false);
 
   // Dynamic diaspora locale binding (Guardrail 2)
@@ -88,7 +91,10 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
       setIsDeleting(false);
       setShowDeleteConfirm(false);
       setIsPolishing(false);
+      setIsWeaving(false);
       setOriginalDraft(null);
+      setWovenDraft(null);
+      setPreWeaveDraft(null);
       setIsPolished(false);
     }
   }, [isOpen, initialPrompt, editingNote]);
@@ -96,7 +102,7 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
   // Non-destructive AI grammar & spell polish handler (Guardrail 3)
   const handlePolishNote = async () => {
     const trimmed = text.trim();
-    if (!trimmed || trimmed.length < 5 || isPolishing) return;
+    if (!trimmed || trimmed.length < 5 || isPolishing || isWeaving) return;
 
     setIsPolishing(true);
     // Snapshot original draft for non-destructive revert guarantee
@@ -123,6 +129,69 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
     } finally {
       setIsPolishing(false);
     }
+  };
+
+  // Creative sensory note weaving handler (MW-110)
+  const handleWeaveNote = async () => {
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.length < 5 || isWeaving || isPolishing) return;
+
+    setIsWeaving(true);
+    const draftSnapshot = text;
+
+    try {
+      const woven = await weaveBonusNote(trimmed, {
+        sceneTitle,
+        promptQuestion: initialPrompt || undefined,
+        authorName: authorName || undefined,
+      });
+
+      if (woven && woven !== trimmed) {
+        setPreWeaveDraft(draftSnapshot);
+        setWovenDraft(woven);
+        toast.success('Sensory Note Woven!', {
+          description: 'Review the poetic expansion below before updating your note.',
+        });
+      } else {
+        toast.info('Note already resonant and complete.', {
+          description: 'Your raw recollection carries strong authentic depth.',
+        });
+      }
+    } catch (err: any) {
+      console.error('[BonusMemoryDrawer] weaveBonusNote error:', err);
+      // Zero-Data-Loss Network Exception Shield (Rule 42)
+      toast.error('Narrative weave temporarily unavailable. Your original draft was kept safe.');
+    } finally {
+      setIsWeaving(false);
+    }
+  };
+
+  const handleApplyWeaveReplace = () => {
+    if (!wovenDraft) return;
+    setOriginalDraft(preWeaveDraft || text);
+    setText(wovenDraft);
+    setWovenDraft(null);
+    setIsPolished(true);
+    toast.success('Note Replaced with Woven Expansion', {
+      description: 'Original draft saved — you can revert at any time.',
+    });
+  };
+
+  const handleApplyWeaveAppend = () => {
+    if (!wovenDraft) return;
+    setOriginalDraft(preWeaveDraft || text);
+    const combined = `${text.trim()}\n\n---\n\n${wovenDraft.trim()}`;
+    setText(combined);
+    setWovenDraft(null);
+    setIsPolished(true);
+    toast.success('Woven Reflection Appended', {
+      description: 'Kept your original words and added the sensory expansion below.',
+    });
+  };
+
+  const handleDismissWeave = () => {
+    setWovenDraft(null);
+    toast.info('Kept original draft.');
   };
 
   const handleRevertNote = () => {
@@ -272,8 +341,8 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
               className="w-full p-4 pr-10 pb-4 rounded-2xl bg-stone-900/90 border border-stone-700 text-sm text-stone-100 placeholder-stone-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 outline-none transition custom-scrollbar"
             />
 
-            {/* Note Status Bar: Word Count & AI Grammar Polish Action */}
-            <div className="flex items-center justify-between gap-2 mt-2 pt-1 text-xs">
+            {/* Note Status Bar: Word Count & AI Grammar Polish / Weave Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-1 text-xs">
               <div className="flex items-center gap-2">
                 <span
                   data-testid="HS_NOTE_WORD_COUNT"
@@ -283,50 +352,137 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
                 </span>
                 {isPolished && (
                   <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Polished with AI Proofreader
+                    <Check className="w-3 h-3" /> Polished with AI
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                {isPolished && originalDraft !== null && (
+                {originalDraft !== null && (
                   <button
                     type="button"
                     data-testid="HS_BONUS_NOTE_REVERT_BTN"
                     onClick={handleRevertNote}
-                    className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 text-[11px] font-mono transition cursor-pointer border border-stone-700 flex items-center gap-1"
+                    style={{ minHeight: '44px' }}
+                    className="min-h-[44px] px-2.5 py-1 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-[11px] font-mono transition cursor-pointer border border-stone-700 flex items-center gap-1"
                   >
                     <RotateCcw className="w-3 h-3 text-stone-400" />
                     <span>Revert to original draft</span>
                   </button>
                 )}
 
+                {/* Polish Button (The Editor - Stone Styling) */}
                 <button
                   type="button"
                   data-testid="HS_BONUS_NOTE_POLISH_BTN"
                   onClick={handlePolishNote}
-                  disabled={isPolishing || text.trim().length < 5}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-mono font-bold flex items-center gap-1.5 transition cursor-pointer border ${
-                    text.trim().length >= 5 && !isPolishing
-                      ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30'
-                      : 'bg-stone-900 text-stone-600 border-stone-800 cursor-not-allowed'
+                  disabled={isPolishing || isWeaving || text.trim().length < 5}
+                  style={{ minHeight: '44px' }}
+                  className={`min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 transition cursor-pointer border ${
+                    text.trim().length >= 5 && !isPolishing && !isWeaving
+                      ? 'bg-stone-900/90 hover:bg-stone-800 text-stone-300 hover:text-white border-stone-700/80 shadow-sm'
+                      : 'bg-stone-950 text-stone-600 border-stone-800 cursor-not-allowed'
                   }`}
                   title="Check spelling, grammar agreement & British English"
                 >
                   {isPolishing ? (
                     <>
-                      <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
-                      <span>Elevating Draft...</span>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-400" />
+                      <span>Polishing...</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>Polish Note</span>
+                      <Sparkles className="w-3.5 h-3.5 text-stone-400" />
+                      <span>Polish</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Weave Button (The Memoirist - Amber Styling) */}
+                <button
+                  type="button"
+                  data-testid="HS_BONUS_NOTE_WEAVE_BTN"
+                  onClick={handleWeaveNote}
+                  disabled={isWeaving || isPolishing || text.trim().length < 5}
+                  style={{ minHeight: '44px' }}
+                  className={`min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                    text.trim().length >= 5 && !isWeaving && !isPolishing
+                      ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/40 hover:border-amber-400/60 shadow-sm shadow-amber-950/30'
+                      : 'bg-stone-950 text-stone-600 border-stone-800 cursor-not-allowed'
+                  }`}
+                  title="Weave raw notes with sensory, atmospheric depth"
+                >
+                  {isWeaving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                      <span>Weaving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🧶</span>
+                      <span>Weave Note</span>
                     </>
                   )}
                 </button>
               </div>
             </div>
+
+            {/* Inline Woven Sensory Expansion Compare Tray (MW-110 Pattern C) */}
+            {wovenDraft && (
+              <div
+                data-testid="HS_BONUS_WEAVE_PREVIEW_TRAY"
+                className="mt-3 p-3.5 sm:p-4 rounded-2xl bg-amber-950/20 border border-amber-500/40 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-amber-300 font-mono text-[11px] uppercase tracking-wider font-bold">
+                    <span>🧶</span>
+                    <span>Woven Sensory Expansion Preview</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-amber-400/70">
+                    {wovenDraft.trim().split(/\s+/).length} words
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-stone-900/90 border border-amber-500/20 text-xs sm:text-sm font-serif text-amber-100/95 leading-relaxed italic">
+                  &ldquo;{wovenDraft}&rdquo;
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    data-testid="HS_BONUS_WEAVE_REPLACE_BTN"
+                    onClick={handleApplyWeaveReplace}
+                    style={{ minHeight: '44px' }}
+                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold text-xs font-mono flex items-center gap-1.5 cursor-pointer transition shadow-md"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-stone-950" />
+                    <span>Replace Note</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="HS_BONUS_WEAVE_APPEND_BTN"
+                    onClick={handleApplyWeaveAppend}
+                    style={{ minHeight: '44px' }}
+                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-200 hover:text-white border border-amber-500/30 text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer transition"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Append to Note</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="HS_BONUS_WEAVE_DISMISS_BTN"
+                    onClick={handleDismissWeave}
+                    style={{ minHeight: '44px' }}
+                    className="min-h-[44px] px-3 py-2 rounded-xl bg-transparent hover:bg-stone-900 text-stone-400 hover:text-stone-200 text-xs font-mono flex items-center gap-1 cursor-pointer transition"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Keep Original</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

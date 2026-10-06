@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { BonusMemoryDrawer } from '@/components/fireside/BonusMemoryDrawer';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import * as aiWeaver from '@/actions/aiWeaver';
+import * as genkitModule from '@/ai/genkit';
 import { toast } from 'sonner';
 
 // Mock sonner toast
@@ -20,6 +21,7 @@ vi.mock('sonner', () => ({
 describe('MW-108: Universal Orthography, Spell-Check & In-App Grammar Polish Standard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Tier 1: Base UI Primitives (Textarea & Input)', () => {
@@ -227,6 +229,152 @@ describe('MW-108: Universal Orthography, Spell-Check & In-App Grammar Polish Sta
         'AI grammar service temporarily unavailable. Your draft was kept safely.'
       );
     });
+
+    it('executes sensory note weave and supports Replace Note action (MW-110)', async () => {
+      const originalText = 'I wonder if the hot Kenyan sun shaped my thoughts.';
+      const wovenText = 'I often wonder if that scorching equatorial sun and the red earth nourished the thoughts of my childhood.';
+      const weaveSpy = vi.spyOn(aiWeaver, 'weaveBonusNote').mockResolvedValue(wovenText);
+
+      render(
+        React.createElement(BonusMemoryDrawer, {
+          isOpen: true,
+          onClose: vi.fn(),
+          sceneId: 'part-1-scene-1',
+          sceneTitle: 'A Child of Two Worlds',
+          onSaveBonusNote: vi.fn(),
+        })
+      );
+
+      const textarea = screen.getByPlaceholderText(/I remembered Aunt Meena/i) as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: originalText } });
+
+      const weaveBtn = screen.getByTestId('HS_BONUS_NOTE_WEAVE_BTN');
+      expect(weaveBtn).not.toBeDisabled();
+      fireEvent.click(weaveBtn);
+
+      await waitFor(() => {
+        expect(weaveSpy).toHaveBeenCalledWith(originalText, expect.objectContaining({
+          sceneTitle: 'A Child of Two Worlds',
+        }));
+        expect(screen.getByTestId('HS_BONUS_WEAVE_PREVIEW_TRAY')).toBeTruthy();
+      });
+
+      // Textarea retains original draft until decision
+      expect(textarea.value).toBe(originalText);
+
+      // Click Replace Note
+      const replaceBtn = screen.getByTestId('HS_BONUS_WEAVE_REPLACE_BTN');
+      fireEvent.click(replaceBtn);
+
+      expect(textarea.value).toBe(wovenText);
+      expect(screen.queryByTestId('HS_BONUS_WEAVE_PREVIEW_TRAY')).toBeNull();
+
+      // Verify Revert Button restores original draft
+      const revertBtn = screen.getByTestId('HS_BONUS_NOTE_REVERT_BTN');
+      expect(revertBtn).toBeTruthy();
+      fireEvent.click(revertBtn);
+      expect(textarea.value).toBe(originalText);
+    });
+
+    it('supports Append to Note action preserving original text with divider (MW-110)', async () => {
+      const originalText = 'I wonder if the hot Kenyan sun shaped my thoughts.';
+      const wovenText = 'I often wonder if that scorching equatorial sun left an indelible mark.';
+      vi.spyOn(aiWeaver, 'weaveBonusNote').mockResolvedValue(wovenText);
+
+      render(
+        React.createElement(BonusMemoryDrawer, {
+          isOpen: true,
+          onClose: vi.fn(),
+          sceneId: 'part-1-scene-1',
+          sceneTitle: 'A Child of Two Worlds',
+          onSaveBonusNote: vi.fn(),
+        })
+      );
+
+      const textarea = screen.getByPlaceholderText(/I remembered Aunt Meena/i) as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: originalText } });
+
+      const weaveBtn = screen.getByTestId('HS_BONUS_NOTE_WEAVE_BTN');
+      fireEvent.click(weaveBtn);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('HS_BONUS_WEAVE_PREVIEW_TRAY')).toBeTruthy();
+      });
+
+      // Click Append to Note
+      const appendBtn = screen.getByTestId('HS_BONUS_WEAVE_APPEND_BTN');
+      fireEvent.click(appendBtn);
+
+      expect(textarea.value).toBe(`${originalText}\n\n---\n\n${wovenText}`);
+      expect(screen.queryByTestId('HS_BONUS_WEAVE_PREVIEW_TRAY')).toBeNull();
+    });
+
+    it('supports Keep Original action dismissing the preview tray without mutating textarea (MW-110)', async () => {
+      const originalText = 'I wonder if the hot Kenyan sun shaped my thoughts.';
+      const wovenText = 'I often wonder if that scorching equatorial sun left an indelible mark.';
+      vi.spyOn(aiWeaver, 'weaveBonusNote').mockResolvedValue(wovenText);
+
+      render(
+        React.createElement(BonusMemoryDrawer, {
+          isOpen: true,
+          onClose: vi.fn(),
+          sceneId: 'part-1-scene-1',
+          sceneTitle: 'A Child of Two Worlds',
+          onSaveBonusNote: vi.fn(),
+        })
+      );
+
+      const textarea = screen.getByPlaceholderText(/I remembered Aunt Meena/i) as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: originalText } });
+
+      const weaveBtn = screen.getByTestId('HS_BONUS_NOTE_WEAVE_BTN');
+      fireEvent.click(weaveBtn);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('HS_BONUS_WEAVE_PREVIEW_TRAY')).toBeTruthy();
+      });
+
+      // Click Keep Original
+      const dismissBtn = screen.getByTestId('HS_BONUS_WEAVE_DISMISS_BTN');
+      fireEvent.click(dismissBtn);
+
+      expect(textarea.value).toBe(originalText);
+      expect(screen.queryByTestId('HS_BONUS_WEAVE_PREVIEW_TRAY')).toBeNull();
+    });
+
+    it('Guardrail: Zero-Data-Loss Network Exception Shield on BonusMemoryDrawer weave action (MW-110)', async () => {
+      const weaveSpy = vi.spyOn(aiWeaver, 'weaveBonusNote').mockRejectedValue(
+        new Error('Network timeout: 504 Gateway Timeout')
+      );
+
+      render(
+        React.createElement(BonusMemoryDrawer, {
+          isOpen: true,
+          onClose: vi.fn(),
+          sceneId: 'part-1-scene-1',
+          sceneTitle: 'A Child of Two Worlds',
+          onSaveBonusNote: vi.fn(),
+        })
+      );
+
+      const textarea = screen.getByPlaceholderText(/I remembered Aunt Meena/i) as HTMLTextAreaElement;
+      const initialText = 'Crucial family draft that must never be lost.';
+      fireEvent.change(textarea, { target: { value: initialText } });
+
+      const weaveBtn = screen.getByTestId('HS_BONUS_NOTE_WEAVE_BTN');
+      fireEvent.click(weaveBtn);
+
+      await waitFor(() => {
+        expect(weaveSpy).toHaveBeenCalled();
+      });
+
+      // Draft must be preserved 100%
+      expect(textarea.value).toBe(initialText);
+      // Toast error dispatched safely
+      expect(toast.error).toHaveBeenCalledWith(
+        'Narrative weave temporarily unavailable. Your original draft was kept safe.'
+      );
+    });
   });
 
   describe('Tier 3: SingleCardPromptCarousel (Armchair Script Editor)', () => {
@@ -322,4 +470,42 @@ describe('MW-108: Universal Orthography, Spell-Check & In-App Grammar Polish Sta
       expect(textarea.value).toBe('Unpolished draft words from the narrator.');
     });
   });
+
+  describe('Tier 4: Server Action weaveBonusNote (MW-110)', () => {
+    it('returns short or empty draft text directly without calling AI', async () => {
+      const result1 = await aiWeaver.weaveBonusNote('');
+      expect(result1).toBe('');
+
+      const result2 = await aiWeaver.weaveBonusNote('Sun');
+      expect(result2).toBe('Sun');
+    });
+
+    it('enforces Rule 11 by stripping screenplay cues and formatting output', async () => {
+      const getAISpy = vi.spyOn(genkitModule, 'getAI').mockResolvedValue({
+        generate: vi.fn().mockResolvedValue({
+          text: 'Cut to a shot of the hot Kenyan sun. [Fade in] Long before words, the rich soil nourished my earliest memories.',
+        }),
+      } as any);
+
+      const input = 'I wonder if the hot Kenyan sun shaped my thoughts.';
+      const woven = await aiWeaver.weaveBonusNote(input, { sceneTitle: 'Roots' });
+
+      expect(woven).not.toMatch(/Cut to/i);
+      expect(woven).not.toMatch(/\[Fade in\]/i);
+      expect(woven).toContain('Long before words, the rich soil nourished my earliest memories.');
+
+      getAISpy.mockRestore();
+    });
+
+    it('catches exceptions gracefully and returns draftText safely (Rule 42)', async () => {
+      const getAISpy = vi.spyOn(genkitModule, 'getAI').mockRejectedValue(new Error('Quota exceeded'));
+
+      const input = 'I wonder if the hot Kenyan sun shaped my thoughts.';
+      const result = await aiWeaver.weaveBonusNote(input);
+
+      expect(result).toBe(input);
+      getAISpy.mockRestore();
+    });
+  });
 });
+
