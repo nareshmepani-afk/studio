@@ -21,7 +21,11 @@ import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
 import { useCurriculumVault, StoryMoodTag, isSceneCompleted, resolveEditingAuthority, EditingAuthority } from '@/hooks/useCurriculumVault';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
-import { FiresideModeSwitch, FIRESIDE_MODE_STORAGE_KEY } from '@/components/fireside/FiresideModeSwitch';
+import {
+  FiresideModeSwitch,
+  FIRESIDE_MODE_STORAGE_KEY,
+  FIRESIDE_PREFERRED_MODE_STORAGE_KEY,
+} from '@/components/fireside/FiresideModeSwitch';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { OrientationSoundcheckDock } from '@/components/fireside/OrientationSoundcheckDock';
 import { TactileVoiceRecorder, TactileVoiceRecorderRef } from '@/components/fireside/TactileVoiceRecorder';
@@ -46,6 +50,7 @@ import {
   AlertCircle,
   Monitor,
   Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import { getSceneById, getPartForScene } from '@/lib/curriculum/masterStoryStructure';
 
@@ -76,7 +81,7 @@ export default function FiresideStudioClient() {
     : 'en';
 
   const [activeLanguage, setActiveLanguage] = useState<FiresideLanguage>(resolvedLang);
-  const [mediaMode, setMediaMode] = useState<FiresideMediaMode>('audio');
+  const [mediaMode, setMediaMode] = useState<FiresideMediaMode>('video');
   const [activePromptSpark, setActivePromptSpark] = useState<FiresidePromptSpark>(FIRESIDE_PROMPT_SPARKS[0]);
   const [selectedSpark, setSelectedSpark] = useState<FiresidePromptSpark | null>(null);
   const [photos, setPhotos] = useState<HeirloomPhotoAttachment[]>([]);
@@ -148,13 +153,17 @@ export default function FiresideStudioClient() {
     } catch {}
   };
 
-  // Restore persisted media mode on mount
+  // Restore persisted media mode on mount (MW-111: default to video, check preferred then legacy key)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem(FIRESIDE_MODE_STORAGE_KEY) as FiresideMediaMode | null;
+        const preferred = localStorage.getItem(FIRESIDE_PREFERRED_MODE_STORAGE_KEY) as FiresideMediaMode | null;
+        const legacy = localStorage.getItem(FIRESIDE_MODE_STORAGE_KEY) as FiresideMediaMode | null;
+        const stored = preferred || legacy;
         if (stored === 'audio' || stored === 'video') {
           setMediaMode(stored);
+        } else {
+          setMediaMode('video');
         }
       } catch {}
     }
@@ -940,15 +949,6 @@ export default function FiresideStudioClient() {
           </div>
         </div>
 
-        {/* Storytelling Media Mode Switcher (Voice & Photos vs Video Memo) */}
-        <div className="w-full">
-          <FiresideModeSwitch
-            mode={mediaMode}
-            onModeChange={handleModeChange}
-            suggestedMode={activePromptSpark?.suggestedMediaMode}
-          />
-        </div>
-
         {/* The Prompt Carousel */}
         <div className="w-full">
           <SingleCardPromptCarousel
@@ -961,6 +961,7 @@ export default function FiresideStudioClient() {
             isHybrid={isHybrid}
             onToggleHybrid={setIsHybrid}
             mediaMode={mediaMode}
+            onMediaModeChange={handleModeChange}
             editingAuthority={activeEditingAuthority}
             resolveSceneAuthority={resolveSceneAuthority}
             activeSceneMemory={activeSceneMemory}
@@ -993,6 +994,18 @@ export default function FiresideStudioClient() {
           mediaMode === 'video' ? (
             /* Video Memo Recording Surface */
             <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+              <div className="w-full max-w-md flex justify-end mb-2 px-1">
+                <button
+                  type="button"
+                  data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"
+                  onClick={() => handleModeChange('audio')}
+                  className="px-3 py-1.5 rounded-full bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 text-stone-300 hover:text-amber-200 text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                  title="Switch to Voice & Photos recording mode"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Switch to Voice & Photos</span>
+                </button>
+              </div>
               <div className="text-center mb-4">
                 <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
                   WhatsApp / FaceTime Video Memo
@@ -1062,6 +1075,18 @@ export default function FiresideStudioClient() {
 
               {/* Tactile Web Audio Voice Recorder (MW-246) */}
               <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
+                <div className="w-full max-w-md flex justify-end mb-2 px-1">
+                  <button
+                    type="button"
+                    data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"
+                    onClick={() => handleModeChange('video')}
+                    className="px-3 py-1.5 rounded-full bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 text-stone-300 hover:text-amber-200 text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                    title="Switch to Video Memo recording mode"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Switch to Video Memo</span>
+                  </button>
+                </div>
                 <div className="text-center mb-4">
                   <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
                     Fireside Voice Recording

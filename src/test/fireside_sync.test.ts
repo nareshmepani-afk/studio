@@ -2388,3 +2388,119 @@ describe('15. MW-105-A: Mobile Sign-In Parity & Fireside Profile Drawer', () => 
   });
 });
 
+// =========================================================================
+// 16. MW-111: Eliminating Premature Recording Mode Decisions & Act III Just-in-Time Slate
+// =========================================================================
+describe('16. MW-111: Eliminating Premature Recording Mode Decisions & Act III Just-in-Time Slate', () => {
+  it('16.1 embeds HS_ACT3_MODE_SELECTOR inside Act III Capture Slate with min 56px touch targets and ring-2 ring-emerald-400 active styling', () => {
+    const onModeChangeSpy = vi.fn();
+    const mockDoc = {
+      id: 'ey96djU6qR1BrDGnvZwp',
+      sceneId: 'part-1-scene-1',
+      prose: 'A story of family and roots in Gujarat.',
+      takes: [],
+    };
+
+    const { getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        activeSceneMemory: mockDoc,
+        getSceneMemory: () => mockDoc,
+        mediaMode: 'video',
+        onMediaModeChange: onModeChangeSpy,
+      })
+    );
+
+    // Navigate to Act III: Record
+    const tab3 = getByTestId('HS_FIRESIDE_ACT_TAB_3');
+    fireEvent.click(tab3);
+
+    // Verify Act III Capture Slate is present
+    const slate = getByTestId('HS_FIRESIDE_ACT3_CAPTURE_SLATE');
+    expect(slate).toBeTruthy();
+    expect(slate.textContent).toContain('Act III: The Recording Floor');
+
+    // Verify HS_ACT3_MODE_SELECTOR is embedded inside the slate
+    const modeSelector = getByTestId('HS_ACT3_MODE_SELECTOR');
+    expect(modeSelector).toBeTruthy();
+
+    // Verify Voice and Video buttons
+    const voiceBtn = getByTestId('HS_ACT3_MODE_VOICE_BTN');
+    const videoBtn = getByTestId('HS_ACT3_MODE_VIDEO_BTN');
+    expect(voiceBtn).toBeTruthy();
+    expect(videoBtn).toBeTruthy();
+
+    // Elder ergonomics: min 56px height
+    expect(voiceBtn.style.minHeight).toBe('56px');
+    expect(videoBtn.style.minHeight).toBe('56px');
+
+    // Video button should have active emerald ring (ring-2 ring-emerald-400)
+    expect(videoBtn.className).toContain('ring-2 ring-emerald-400');
+    expect(voiceBtn.className).not.toContain('ring-2 ring-emerald-400');
+
+    // CTA button matches video mode
+    const launchBtn = getByTestId('HS_FIRESIDE_OPEN_VIEWFINDER_BTN');
+    expect(launchBtn.textContent).toContain('[ 🎬 Ignite Camera & Prompter → ]');
+
+    // Click Voice & Photos mode
+    fireEvent.click(voiceBtn);
+    expect(onModeChangeSpy).toHaveBeenCalledWith('audio');
+
+    unmount();
+  });
+
+  it('16.2 renders voice-specific launch CTA when mediaMode is audio and persists mode selection to localStorage', () => {
+    const onModeChangeSpy = vi.fn();
+    const mockDoc = {
+      id: 'ey96djU6qR1BrDGnvZwp',
+      sceneId: 'part-1-scene-1',
+      prose: 'A story of family and roots in Gujarat.',
+      takes: [],
+    };
+
+    const { getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        activeSceneMemory: mockDoc,
+        getSceneMemory: () => mockDoc,
+        mediaMode: 'audio',
+        onMediaModeChange: onModeChangeSpy,
+      })
+    );
+
+    // Navigate to Act III: Record
+    fireEvent.click(getByTestId('HS_FIRESIDE_ACT_TAB_3'));
+
+    const voiceBtn = getByTestId('HS_ACT3_MODE_VOICE_BTN');
+    expect(voiceBtn.className).toContain('ring-2 ring-emerald-400');
+
+    const launchBtn = getByTestId('HS_FIRESIDE_OPEN_VIEWFINDER_BTN');
+    expect(launchBtn.textContent).toContain('[ 🎙️ Open Voice Studio & Prompter → ]');
+
+    // Clicking voice tile triggers storage persistence via FiresideModeSwitch
+    fireEvent.click(voiceBtn);
+    expect(localStorage.getItem('mw_fireside_preferred_mode')).toBe('audio');
+    expect(localStorage.getItem('mw_fireside_media_mode')).toBe('audio');
+
+    unmount();
+  });
+
+  it('16.3 verifies FiresideStudioClient source code eliminates premature top-level mode switch and wires HS_ACT3_VIEWFINDER_SWITCH_MODE', () => {
+    const clientSrc = fs.readFileSync('src/app/studio/fireside/FiresideStudioClient.tsx', 'utf8');
+
+    // 1. Top-level mode switch before carousel removed
+    expect(clientSrc).not.toMatch(/{\/\*\s*Storytelling Media Mode Switcher[\s\S]*?<FiresideModeSwitch[\s\S]*?<\/div>\s*<div[^>]*>\s*<SingleCardPromptCarousel/);
+
+    // 2. onMediaModeChange wired to SingleCardPromptCarousel
+    expect(clientSrc).toContain('onMediaModeChange={handleModeChange}');
+
+    // 3. In-viewfinder switch pill present for both modes
+    expect(clientSrc).toContain('data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"');
+    expect(clientSrc).toContain('Switch to Voice & Photos');
+    expect(clientSrc).toContain('Switch to Video Memo');
+
+    // 4. Preferred storage key imported and used
+    expect(clientSrc).toContain('FIRESIDE_PREFERRED_MODE_STORAGE_KEY');
+  });
+});
+

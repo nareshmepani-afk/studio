@@ -55,6 +55,7 @@ import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthrou
 import { OrientationSoundcheckDock } from '@/components/fireside/OrientationSoundcheckDock';
 import { ChapterSpineRail, type ChapterSpineScene } from '@/components/navigation/ChapterSpineRail';
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
+import { FiresideModeSwitch } from '@/components/fireside/FiresideModeSwitch';
 import { toast } from 'sonner';
 
 export interface SingleCardPromptCarouselProps {
@@ -67,6 +68,7 @@ export interface SingleCardPromptCarouselProps {
   isHybrid?: boolean;
   onToggleHybrid?: (nextHybrid: boolean) => void;
   mediaMode?: FiresideMediaMode;
+  onMediaModeChange?: (mode: FiresideMediaMode) => void;
   editingAuthority?: EditingAuthority;
   resolveSceneAuthority?: (sceneId?: string) => EditingAuthority;
   activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null;
@@ -152,6 +154,7 @@ export function SingleCardPromptCarousel({
   isHybrid: controlledHybrid,
   onToggleHybrid,
   mediaMode,
+  onMediaModeChange,
   editingAuthority,
   resolveSceneAuthority,
   activeSceneMemory,
@@ -1135,25 +1138,52 @@ export function SingleCardPromptCarousel({
                   );
                 }
 
+                const currentCaptureMode: FiresideMediaMode = mediaMode || currentSpark?.suggestedMediaMode || 'video';
+
                 return (
                   <div
                     data-testid="HS_FIRESIDE_ACT3_CAPTURE_SLATE"
-                    className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5"
+                    className="mb-3 p-4 rounded-xl bg-stone-950/80 border border-amber-500/30 shadow-lg flex flex-col gap-3.5"
                   >
-                    <p className="text-xs text-amber-200 leading-relaxed">
-                      Ready to capture your voice or selfie video performance with the teleprompter below.
-                    </p>
-                    <button
-                      type="button"
-                      data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
-                      onClick={() => {
-                        handleSelectCurrent();
-                        scrollToActiveSoundstage();
-                      }}
-                      className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-mono font-bold shrink-0 cursor-pointer transition-all"
-                    >
-                      [ 📹 Open Live Camera Viewfinder ↓ ]
-                    </button>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1.5">
+                          <span>🎬</span>
+                          <span>Act III: The Recording Floor</span>
+                        </span>
+                        <span className="text-[11px] text-stone-400">
+                          Choose capture format:
+                        </span>
+                      </div>
+                      <p className="text-xs text-amber-200/90 leading-relaxed">
+                        Ready to capture your voice or selfie video performance with the teleprompter below.
+                      </p>
+                      <FiresideModeSwitch
+                        mode={currentCaptureMode}
+                        onModeChange={(nextMode) => {
+                          onMediaModeChange?.(nextMode);
+                        }}
+                        suggestedMode={currentSpark?.suggestedMediaMode}
+                        className="w-full my-0.5"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end pt-1">
+                      <button
+                        type="button"
+                        data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
+                        onClick={() => {
+                          handleSelectCurrent();
+                          scrollToActiveSoundstage();
+                        }}
+                        style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
+                      >
+                        {currentCaptureMode === 'audio'
+                          ? '[ 🎙️ Open Voice Studio & Prompter → ]'
+                          : '[ 🎬 Ignite Camera & Prompter → ]'}
+                      </button>
+                    </div>
                   </div>
                 );
               })()}

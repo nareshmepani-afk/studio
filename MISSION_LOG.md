@@ -945,6 +945,43 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `npm.cmd run test`: 57/57 test files passing (728/728 tests passed)
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
 
+---
+
+## Checkpoint #041 — MW-111: Eliminating Premature Recording Mode Decisions & Act III Just-in-Time Slate (2026-10-06)
+
+- **Plane.so Ticket**: `[MW-111] Eliminating Premature Recording Mode Decisions & Act III Just-in-Time Slate` (Sequence #320)
+- **Baseline Commit**: `24157145`
+- **Architectural Deliverables**:
+  - **Eliminated Top-Level Mode Selector**:
+    - Removed `FiresideModeSwitch` wedged between the Chapter Header Stepper and `SingleCardPromptCarousel` in `src/app/studio/fireside/FiresideStudioClient.tsx`.
+    - Restored natural cognitive hierarchy (Part Stepper -> Scene Stepper -> Card Prompt -> Act III Execution) and contiguous vertical flow.
+    - Reclaimed >100px of vertical fold height, ensuring story prompt text is visible without scrolling on mobile viewports.
+  - **Embedded Just-in-Time Act III Capture Slate**:
+    - Embedded `FiresideModeSwitch` inside Act III capture slate in `src/components/fireside/SingleCardPromptCarousel.tsx` when `activeAct === 3` and `takes.length === 0`.
+    - Active mode tile rendered with luminous `ring-2 ring-emerald-400` border and min 56px touch target (`FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX`).
+    - Primary CTA dynamically adapts to active mode: `[ 🎬 Ignite Camera & Prompter → ]` (video) vs `[ 🎙️ Open Voice Studio & Prompter → ]` (voice).
+  - **In-Session Fluidity & Viewfinder Mode Switcher**:
+    - Added compact in-viewfinder mode switch pill (`data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"`) on the active recording floor in both Video Memo and Voice surfaces.
+    - Allows narrators to switch recording formats in 0ms without resetting the scene.
+  - **Mode State & Storage Persistence**:
+    - Default media mode set to `'video'`.
+    - Dual persistence writes to both `localStorage['mw_fireside_preferred_mode']` and legacy key `mw_fireside_media_mode`.
+    - Restore checks `mw_fireside_preferred_mode`, falling back to `mw_fireside_media_mode`, defaulting to `'video'`.
+  - **Automated Regression Shield**:
+    - Added Suite 16 in `src/test/fireside_sync.test.ts` (3 new invariants testing Act III capture slate, 56px buttons, localStorage persistence, and source code assertions).
+- **Files Modified**:
+  - `src/components/fireside/FiresideModeSwitch.tsx`
+  - `src/components/fireside/SingleCardPromptCarousel.tsx`
+  - `src/app/studio/fireside/FiresideStudioClient.tsx`
+  - `src/test/fireside_sync.test.ts`
+  - `MISSION_LOG.md`
+- **Verification**:
+  - `tsc --noEmit`: 0 errors
+  - `vitest run src/test/fireside_sync.test.ts src/test/fireside_video_recorder.test.tsx src/test/fireside_prompt_carousel.test.tsx`: 101/101 passed
+  - `npm.cmd run test`: 57/57 test files passing (731/731 tests passed)
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
+
+
 
 
 

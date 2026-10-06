@@ -3865,6 +3865,99 @@
           </div>
         </div>
 
+        <!-- TEST CARD 38: MW-111: ELIMINATING PREMATURE RECORDING MODE DECISIONS & ACT III JUST-IN-TIME SLATE -->
+        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-38" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 38)">
+          <!-- ZONE 1: HEADER & DIRECT ROUTE TRIGGER -->
+          <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  TEST 38
+                </span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono text-purple-300 bg-purple-500/10 border border-purple-500/20">
+                  MW-111 RECORDING SLATE
+                </span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/20">
+                  JUST-IN-TIME FORMAT &bull; 0MS SWITCH PILL
+                </span>
+              </div>
+              <h2 class="text-lg font-bold text-white tracking-tight">
+                [studio/fireside] MW-111: Eliminating Premature Recording Mode Decisions &amp; Act III Just-in-Time Capture Slate
+              </h2>
+              <p class="text-xs text-gray-400 leading-relaxed">
+                Verifies that the premature top-level <code class="text-stone-300">FiresideModeSwitch</code> has been removed between the Chapter Header Stepper and the Scene Carousel, restoring contiguous alignment and reclaiming over 100px of vertical space so prompt text is visible above the fold. In Act III (<code class="text-amber-300">takes.length === 0</code>), the unrecorded capture slate (<code class="text-amber-300">HS_FIRESIDE_ACT3_CAPTURE_SLATE</code>) embeds the mode selector (<code class="text-amber-300">HS_ACT3_MODE_SELECTOR</code>) featuring minimum 56px touch targets (<code class="text-amber-300">HS_ACT3_MODE_VOICE_BTN</code> &amp; <code class="text-amber-300">HS_ACT3_MODE_VIDEO_BTN</code>) and an active <code class="text-emerald-400">ring-2 ring-emerald-400</code> indicator. Launch CTA dynamically adapts (<code class="text-amber-300">[ 🎬 Ignite Camera &amp; Prompter → ]</code> vs <code class="text-amber-300">[ 🎙️ Open Voice Studio &amp; Prompter → ]</code>). Inside the active studio, a compact switch pill (<code class="text-amber-300">HS_ACT3_VIEWFINDER_SWITCH_MODE</code>) allows switching format in 0ms without resetting the scene. Mode persists to <code class="text-stone-300">localStorage['mw_fireside_preferred_mode']</code>.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
+              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+                <span>🔗 Open Fireside Mobile ↗</span>
+              </a>
+              <button onclick="copySingleTestReport(38, this)" id="copy-test-btn-38" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Card Report</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ZONE 3: LIVE INVARIANT STATE INSPECTOR -->
+          <div class="bg-gray-900/60 rounded-xl p-3 border border-gray-800/80 text-xs space-y-1 font-mono text-gray-400 mb-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span>Governance: <strong class="text-gray-300">SingleCardPromptCarousel.tsx &amp; FiresideStudioClient.tsx</strong></span>
+              <span>Milestone: <strong class="text-amber-400">MW-111</strong></span>
+            </div>
+            <div class="text-[11px] text-gray-500 break-all">
+              Route: https://dev.memoryweaver.studio/studio/fireside
+            </div>
+          </div>
+
+          <!-- ZONE 4: VERDICT MATRIX -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            <button onclick="setVerdict(38, 'pass')" id="btn-pass-38" class="py-2.5 px-3 rounded-xl border border-gray-800 bg-gray-900/80 hover:bg-emerald-950/40 hover:border-emerald-500/40 text-gray-300 hover:text-emerald-300 text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>✅</span><span>PASS</span>
+            </button>
+            <button onclick="setVerdict(38, 'fail')" id="btn-fail-38" class="py-2.5 px-3 rounded-xl border border-gray-800 bg-gray-900/80 hover:bg-rose-950/40 hover:border-rose-500/40 text-gray-300 hover:text-rose-300 text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>❌</span><span>FAIL</span>
+            </button>
+            <button onclick="setVerdict(38, 'retest')" id="btn-retest-38" class="py-2.5 px-3 rounded-xl border border-gray-800 bg-gray-900/80 hover:bg-amber-950/40 hover:border-amber-500/40 text-gray-300 hover:text-amber-300 text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>🔄</span><span>RE-TEST</span>
+            </button>
+            <button onclick="setVerdict(38, 'pending')" id="btn-pending-38" class="py-2.5 px-3 rounded-xl border border-gray-800 bg-gray-900/80 hover:bg-gray-800 text-gray-400 text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>⏳</span><span>PENDING</span>
+            </button>
+          </div>
+
+          <!-- ZONE 5: LOG & EVIDENCE TRACE -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="block text-[11px] font-mono uppercase tracking-wider text-gray-400 mb-1">Console Error &amp; Network Fault Log</label>
+              <textarea id="console-log-38" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-xs font-mono text-rose-300 placeholder-gray-600 focus:border-amber-500 focus:outline-none" placeholder="Paste any console exceptions or network errors..."></textarea>
+            </div>
+            <div>
+              <label class="block text-[11px] font-mono uppercase tracking-wider text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-38" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-xs font-mono text-sky-300 placeholder-gray-600 focus:border-amber-500 focus:outline-none" placeholder="Log events captured in localStorage / analytics..."></textarea>
+            </div>
+          </div>
+
+          <!-- ZONE 7: NARRATIVE FEEDBACK -->
+          <div class="mb-4">
+            <label class="block text-[11px] font-mono uppercase tracking-wider text-gray-400 mb-1">Narrative Feedback &amp; Observations</label>
+            <textarea id="notes-38" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-xs text-gray-200 placeholder-gray-600 focus:border-amber-500 focus:outline-none" placeholder="Record visual observations, timing, or UX feedback..."></textarea>
+          </div>
+
+          <!-- ZONE 6: VISUAL EVIDENCE VAULT -->
+          <div>
+            <label class="block text-[11px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Evidence Vault (Screenshots)</label>
+            <div id="dropzone-38" ondragover="event.preventDefault(); this.classList.add('dropzone-active');" ondragleave="this.classList.remove('dropzone-active');" ondrop="handleDrop(event, 38)" class="border-2 border-dashed border-gray-800 rounded-xl p-4 text-center hover:border-gray-700 transition cursor-pointer bg-gray-950/40">
+              <input type="file" id="file-input-38" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(38, f))" />
+              <div onclick="document.getElementById('file-input-38').click()" class="space-y-1">
+                <span class="text-sm">📸</span>
+                <div class="text-xs text-gray-400">Drag &amp; drop screenshot, <span class="text-amber-400 underline font-medium">browse</span>, or paste (Ctrl+V) directly while card is active</div>
+                <div id="img-count-38" class="text-[10px] text-gray-500 font-mono">0 screenshots attached</div>
+              </div>
+            </div>
+            <div id="image-gallery-38" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+          </div>
+        </div>
+
       </section>
       </div>
     </details>
@@ -3906,7 +3999,7 @@
   </footer>
 
   <script>
-    const TOTAL = 37;
+    const TOTAL = 38;
     const STORAGE_KEY = 'MW_QA_ROUTE_GROUPED_3187cca9';
     let currentFilter = 'all';
 
@@ -3948,7 +4041,8 @@
       "[studio/fireside <-> /studio] MW-107: Universal Take Status Machine, Elder-First Discard Nomenclature & Cutting Room Floor",
       "[studio/fireside • Desktop Studio] MW-108: Studio-Grade Spell-Check, Dynamic UK/Diaspora Locales & Non-Destructive AI Polish",
       "[studio/fireside] MW-110: Centered Studio Dialog Ergonomics & In-Place Edit/Delete for Saved Bonus Recollections",
-      "[studio/fireside] MW-110: Non-Destructive Sensory Note Weaving Engine ([ 🧶 Weave Note ]) & Compare Tray"
+      "[studio/fireside] MW-110: Non-Destructive Sensory Note Weaving Engine ([ 🧶 Weave Note ]) & Compare Tray",
+      "[studio/fireside] MW-111: Eliminating Premature Recording Mode Decisions & Act III Just-in-Time Capture Slate"
     ];
 
     let verdicts = {

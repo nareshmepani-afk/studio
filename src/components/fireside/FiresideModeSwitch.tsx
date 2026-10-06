@@ -25,6 +25,7 @@ export interface FiresideModeSwitchProps {
   suggestedMode?: FiresideMediaMode | null;
 }
 
+export const FIRESIDE_PREFERRED_MODE_STORAGE_KEY = 'mw_fireside_preferred_mode';
 export const FIRESIDE_MODE_STORAGE_KEY = 'mw_fireside_media_mode';
 
 export function FiresideModeSwitch({
@@ -37,6 +38,7 @@ export function FiresideModeSwitch({
     (newMode: FiresideMediaMode) => {
       if (typeof window !== 'undefined') {
         try {
+          localStorage.setItem(FIRESIDE_PREFERRED_MODE_STORAGE_KEY, newMode);
           localStorage.setItem(FIRESIDE_MODE_STORAGE_KEY, newMode);
         } catch {
           // localStorage disabled or blocked
@@ -60,6 +62,7 @@ export function FiresideModeSwitch({
       aria-label="Storytelling Recording Mode"
     >
       <div
+        data-testid="HS_ACT3_MODE_SELECTOR"
         className="w-full bg-stone-950/80 border border-stone-800/80 rounded-xl p-1 grid grid-cols-2 gap-1.5 shadow-inner"
         role="tablist"
         aria-label="Storytelling Modes"
@@ -68,13 +71,14 @@ export function FiresideModeSwitch({
         <button
           type="button"
           role="tab"
+          data-testid="HS_ACT3_MODE_VOICE_BTN"
           data-hotspot-id="HS_FIRESIDE_MODE_VOICE"
           aria-selected={mode === 'audio'}
           onClick={() => handleSelectMode('audio')}
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
           className={`relative rounded-lg px-3 py-1.5 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 ${
             mode === 'audio'
-              ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-stone-950 shadow-sm shadow-amber-950/40 font-bold border border-amber-400/40'
+              ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-stone-950 shadow-sm shadow-amber-950/40 font-bold border border-amber-400/80 ring-2 ring-emerald-400'
               : 'bg-transparent text-stone-400 hover:text-stone-200 hover:bg-stone-900/60'
           }`}
         >
@@ -98,13 +102,14 @@ export function FiresideModeSwitch({
         <button
           type="button"
           role="tab"
+          data-testid="HS_ACT3_MODE_VIDEO_BTN"
           data-hotspot-id="HS_FIRESIDE_MODE_VIDEO"
           aria-selected={mode === 'video'}
           onClick={() => handleSelectMode('video')}
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
           className={`relative rounded-lg px-3 py-1.5 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 ${
             mode === 'video'
-              ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-stone-950 shadow-sm shadow-amber-950/40 font-bold border border-amber-400/40'
+              ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-stone-950 shadow-sm shadow-amber-950/40 font-bold border border-amber-400/80 ring-2 ring-emerald-400'
               : 'bg-transparent text-stone-400 hover:text-stone-200 hover:bg-stone-900/60'
           }`}
         >
