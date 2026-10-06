@@ -1161,4 +1161,35 @@ In an heirloom production and teleprompter platform, typos and grammatical error
 ## 42.4 Assistive Extension & Layout Coexistence (Rule 8 Binding)
 - Narrative textareas MUST provide adequate inner padding (`pr-10`, `pb-4`) so browser extensions (Grammarly, LanguageTool, Apple Writing Tools) do not collide with or occlude user text, character counts, or action buttons.
 
+# 43. Queued Message Triage & The Open-Loop Shield ("Zero Dropped Feedback Rule")
+
+In asynchronous pair programming sessions, the user frequently queues multiple messages while builds, background timers, subagents, or test suites are executing. When the messaging engine dequeues an incoming message immediately after the agent has asked for feedback, confirmation, or an architectural choice, models suffer from recency bias and frequently drop the previous question. Under Rule 43, **NO FEEDBACK QUESTION OR OPEN DECISION MAY EVER BE SILENTLY DROPPED**:
+
+## 43.1 Pre-Execution Turn Audit (Pre-Turn Scan)
+- Before acting upon any newly dequeued user prompt, the agent MUST inspect the immediately preceding assistant turn:
+  1. Did the agent request user feedback, confirmation, an architectural choice, or verification?
+  2. Does the incoming prompt explicitly address or resolve that pending inquiry?
+
+## 43.2 The Mandatory "Open-Loop" Box (Persistent Carrying Forward)
+- If the incoming prompt is an independent directive, new bug report, or queued idea rather than an answer to the pending inquiry:
+  1. The agent MUST acknowledge and execute the newly requested directive.
+  2. The agent MUST NOT drop the pending question.
+  3. The agent MUST carry forward the unresolved inquiry in a dedicated, high-contrast footer block:
+     ```markdown
+     ---
+     ### 📌 OPEN LOOPS AWAITING YOUR FEEDBACK
+     - **[Feature / Milestone Ref]**: [Concise question / decision options]
+     *(Proceeding autonomously with your latest directive in parallel — reply to this whenever you have breathing room!)*
+     ---
+     ```
+  4. This Open-Loop block MUST persist in every subsequent response until the user explicitly resolves, chooses, or dismisses it.
+
+## 43.3 Native Modal Escalation (`ask_question`)
+- When a strategic architectural fork, irreversible breaking decision, or design crossroad requires explicit alignment before code writes can begin, the agent MUST NOT rely on plain conversational chat prose that can be overrun by queued messages.
+- The agent MUST invoke the native `ask_question` tool, rendering an interactive modal with structured choices and write-in feedback.
+
+## 43.4 Multi-Message Triage & Numbered Breakdown
+- When the user queues or combines multiple questions or directives in a single turn, the agent MUST explicitly itemise them (`[Item 1]`, `[Item 2]`, `[Item 3]`), addressing each item point-by-point without skipping any sub-bullet or inquiry.
+
+
 
