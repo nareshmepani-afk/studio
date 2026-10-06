@@ -24,6 +24,7 @@ import {
   Heart,
   Loader2,
   RotateCcw,
+  Trash2,
 } from 'lucide-react';
 import { BonusMemoryNote } from '@/types/curriculum';
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
@@ -35,7 +36,10 @@ export interface BonusMemoryDrawerProps {
   sceneId: string;
   sceneTitle: string;
   initialPrompt?: string | null;
+  editingNote?: BonusMemoryNote | null;
   onSaveBonusNote: (note: Omit<BonusMemoryNote, 'id' | 'createdAt'>) => Promise<void>;
+  onUpdateBonusNote?: (noteId: string, updatedFields: Partial<Omit<BonusMemoryNote, 'id' | 'createdAt'>>) => Promise<void>;
+  onDeleteBonusNote?: (noteId: string) => Promise<void>;
   className?: string;
   activeLanguage?: string;
   lang?: string;
@@ -47,7 +51,10 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
   sceneId,
   sceneTitle,
   initialPrompt = null,
+  editingNote = null,
   onSaveBonusNote,
+  onUpdateBonusNote,
+  onDeleteBonusNote,
   className = '',
   activeLanguage,
   lang,
@@ -56,6 +63,8 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
   const [authorName, setAuthorName] = useState('');
   const [authorRole, setAuthorRole] = useState<'storyteller' | 'producer' | 'family_member'>('storyteller');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isPolishing, setIsPolishing] = useState(false);
   const [originalDraft, setOriginalDraft] = useState<string | null>(null);
   const [isPolished, setIsPolished] = useState(false);
@@ -63,16 +72,26 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
   // Dynamic diaspora locale binding (Guardrail 2)
   const effectiveLang = lang || (activeLanguage && activeLanguage !== 'en' ? activeLanguage : 'en-GB');
 
-  // Reset or pre-seed form when opened (MW-88-T6)
+  // Reset or pre-seed form when opened (MW-88-T6 / MW-110 Edit Mode)
   useEffect(() => {
     if (isOpen) {
-      setText(initialPrompt ? `${initialPrompt}\n\n` : '');
+      if (editingNote) {
+        setText(editingNote.text || '');
+        setAuthorName(editingNote.authorName || '');
+        setAuthorRole(editingNote.authorRole || 'storyteller');
+      } else {
+        setText(initialPrompt ? `${initialPrompt}\n\n` : '');
+        setAuthorName('');
+        setAuthorRole('storyteller');
+      }
       setIsSaving(false);
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
       setIsPolishing(false);
       setOriginalDraft(null);
       setIsPolished(false);
     }
-  }, [isOpen, initialPrompt]);
+  }, [isOpen, initialPrompt, editingNote]);
 
   // Non-destructive AI grammar & spell polish handler (Guardrail 3)
   const handlePolishNote = async () => {
@@ -138,18 +157,46 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
 
     setIsSaving(true);
     try {
-      await onSaveBonusNote({
-        authorName: authorName.trim() || 'Elder Storyteller',
-        authorRole,
-        text: text.trim(),
-      });
+      if (editingNote && onUpdateBonusNote) {
+        await onUpdateBonusNote(editingNote.id, {
+          authorName: authorName.trim() || 'Elder Storyteller',
+          authorRole,
+          text: text.trim(),
+        });
+      } else {
+        await onSaveBonusNote({
+          authorName: authorName.trim() || 'Elder Storyteller',
+          authorRole,
+          text: text.trim(),
+        });
+      }
       onClose();
     } catch (err) {
       console.error('[BonusMemoryDrawer] Error saving bonus note:', err);
     } finally {
       setIsSaving(false);
     }
-  }, [text, authorName, authorRole, isSaving, onSaveBonusNote, onClose]);
+  }, [text, authorName, authorRole, isSaving, editingNote, onUpdateBonusNote, onSaveBonusNote, onClose]);
+
+  const handleDelete = useCallback(async () => {
+    if (!editingNote || !onDeleteBonusNote || isDeleting) return;
+
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(40);
+      } catch {}
+    }
+
+    setIsDeleting(true);
+    try {
+      await onDeleteBonusNote(editingNote.id);
+      onClose();
+    } catch (err) {
+      console.error('[BonusMemoryDrawer] Error deleting bonus note:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [editingNote, onDeleteBonusNote, isDeleting, onClose]);
 
   if (!isOpen) return null;
 
@@ -157,33 +204,33 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Add bonus recollection for ${sceneTitle}`}
-      className="fixed inset-0 z-50 flex flex-col justify-end bg-black/80 backdrop-blur-md animate-in fade-in duration-200 select-none"
+      aria-label={editingNote ? `Edit bonus recollection for ${sceneTitle}` : `Add bonus recollection for ${sceneTitle}`}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200 select-none"
+      onClick={onClose}
     >
-      {/* Backdrop Dismiss Area */}
-      <div className="flex-1 w-full" onClick={onClose} aria-hidden="true" />
-
-      {/* Bottom Sheet Drawer */}
+      {/* Centered Modal Card on Desktop / Bottom Sheet on Mobile */}
       <div
-        className={`w-full max-w-2xl mx-auto rounded-t-3xl border-t border-x border-stone-800 bg-stone-950 p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom duration-300 ${className}`}
+        onClick={(e) => e.stopPropagation()}
+        className={`w-full sm:max-w-xl max-h-[92vh] sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl border-t sm:border border-x border-stone-800 bg-stone-950 p-6 sm:p-8 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200 overflow-y-auto custom-scrollbar select-text ${className}`}
       >
-        {/* Handle Bar */}
-        <div className="w-12 h-1.5 rounded-full bg-stone-700 mx-auto mb-6" />
+        {/* Handle Bar (mobile only) */}
+        <div className="w-12 h-1.5 rounded-full bg-stone-700 mx-auto mb-6 sm:hidden" />
 
         {/* Drawer Header */}
         <div className="flex items-start justify-between gap-4 mb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                Additive Family Note
+                {editingNote ? 'Edit Family Note' : 'Additive Family Note'}
               </span>
               <span className="text-xs text-stone-500">• Non-Destructive</span>
             </div>
             <h2 className="text-lg sm:text-xl font-serif text-white font-normal">
-              Add a Bonus Recollection
+              {editingNote ? 'Edit Bonus Recollection' : 'Add a Bonus Recollection'}
             </h2>
             <p className="text-xs text-stone-400">
-              Preserving extra details for: <strong className="text-stone-200">{sceneTitle}</strong>
+              {editingNote ? 'Updating extra details for: ' : 'Preserving extra details for: '}
+              <strong className="text-stone-200">{sceneTitle}</strong>
             </p>
           </div>
 
@@ -191,7 +238,7 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
             type="button"
             onClick={onClose}
             data-hotspot-id="HS_BONUS_DRAWER_CLOSE"
-            className="w-10 h-10 rounded-full bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+            className="w-10 h-10 rounded-full bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-400 hover:text-white flex items-center justify-center transition cursor-pointer shrink-0"
             aria-label="Close bonus recollection drawer"
           >
             <X className="w-5 h-5" />
@@ -323,14 +370,46 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
           </div>
 
           {/* Action CTAs (Rule 26: 56px Minimum Touch Target) */}
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-3">
+            {editingNote && onDeleteBonusNote && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (showDeleteConfirm) {
+                    handleDelete();
+                  } else {
+                    setShowDeleteConfirm(true);
+                  }
+                }}
+                disabled={isDeleting || isSaving}
+                className={`min-h-[56px] px-5 rounded-2xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer select-none border order-2 sm:order-1 ${
+                  showDeleteConfirm
+                    ? 'bg-rose-950/90 border-rose-500 text-rose-300 animate-pulse sm:flex-1'
+                    : 'bg-stone-900 hover:bg-stone-800 border-stone-800 text-stone-400 hover:text-rose-400 hover:border-rose-500/40'
+                }`}
+                title={showDeleteConfirm ? 'Confirm permanent removal' : 'Delete this bonus recollection'}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 text-rose-400" />
+                    <span>{showDeleteConfirm ? 'Confirm Delete Recollection?' : 'Delete Note'}</span>
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handleSave}
-              disabled={!text.trim() || isSaving}
+              disabled={!text.trim() || isSaving || isDeleting}
               data-hotspot-id="HS_BONUS_DRAWER_SAVE"
-              className={`w-full min-h-[56px] rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-lg transition-all cursor-pointer select-none active:scale-98 ${
-                text.trim() && !isSaving
+              className={`w-full sm:flex-1 min-h-[56px] rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-lg transition-all cursor-pointer select-none active:scale-98 order-1 sm:order-2 ${
+                text.trim() && !isSaving && !isDeleting
                   ? 'bg-amber-500 hover:bg-amber-400 text-stone-950 shadow-amber-500/20'
                   : 'bg-stone-800 text-stone-500 cursor-not-allowed'
               }`}
@@ -338,7 +417,12 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
               {isSaving ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Saving Recollection to Vault...</span>
+                  <span>{editingNote ? 'Saving Changes...' : 'Saving Recollection to Vault...'}</span>
+                </>
+              ) : editingNote ? (
+                <>
+                  <Check className="w-5 h-5" />
+                  <span>Update Bonus Recollection</span>
                 </>
               ) : (
                 <>

@@ -226,6 +226,58 @@ describe('MW-88-T1: useCurriculumVault & Bi-Directional Bridge Suite', () => {
     expect(scene.bonusNotes[0].id).toMatch(/^note_/);
   });
 
+  it('5b. updateBonusMemoryNote edits existing note in place without mutating other notes or takes (MW-110)', async () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    await act(async () => {
+      await result.current.addBonusMemoryNote('part-1-scene-1', {
+        authorName: 'Naresh Mepani',
+        authorRole: 'storyteller',
+        text: 'Initial note draft.',
+      });
+    });
+
+    const noteId = result.current.scenes['part-1-scene-1'].bonusNotes[0].id;
+
+    await act(async () => {
+      await result.current.updateBonusMemoryNote('part-1-scene-1', noteId, {
+        text: 'Polished note with extra family details.',
+        authorRole: 'family_member',
+      });
+    });
+
+    const updatedScene = result.current.scenes['part-1-scene-1'];
+    expect(updatedScene.bonusNotes.length).toBe(1);
+    expect(updatedScene.bonusNotes[0].id).toBe(noteId);
+    expect(updatedScene.bonusNotes[0].text).toBe('Polished note with extra family details.');
+    expect(updatedScene.bonusNotes[0].authorRole).toBe('family_member');
+  });
+
+  it('5c. deleteBonusMemoryNote removes note from vault cleanly (MW-110)', async () => {
+    const { result } = renderHook(() =>
+      useCurriculumVault({ userId: 'usr_naresh_123', memoirId: 'memoir_ancestral' })
+    );
+
+    await act(async () => {
+      await result.current.addBonusMemoryNote('part-1-scene-1', {
+        authorName: 'Naresh Mepani',
+        authorRole: 'storyteller',
+        text: 'Note to be removed.',
+      });
+    });
+
+    const noteId = result.current.scenes['part-1-scene-1'].bonusNotes[0].id;
+    expect(result.current.scenes['part-1-scene-1'].bonusNotes.length).toBe(1);
+
+    await act(async () => {
+      await result.current.deleteBonusMemoryNote('part-1-scene-1', noteId);
+    });
+
+    expect(result.current.scenes['part-1-scene-1'].bonusNotes.length).toBe(0);
+  });
+
   it('6. isSceneCompleted accurately identifies completion across status machine, actsCompleted and takes', () => {
     expect(isSceneCompleted(undefined)).toBe(false);
 

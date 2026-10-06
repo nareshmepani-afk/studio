@@ -97,6 +97,17 @@ export interface UseCurriculumVaultReturn {
     sceneId: string,
     note: Omit<BonusMemoryNote, 'id' | 'createdAt'>
   ) => Promise<void>;
+  /** Updates an existing bonus memory note in place */
+  updateBonusMemoryNote: (
+    sceneId: string,
+    noteId: string,
+    updatedFields: Partial<Omit<BonusMemoryNote, 'id' | 'createdAt'>>
+  ) => Promise<void>;
+  /** Deletes a bonus memory note from the scene */
+  deleteBonusMemoryNote: (
+    sceneId: string,
+    noteId: string
+  ) => Promise<void>;
   /** Sets emotional mood resonance tag ('joyful' | 'reflective' | 'nostalgic') */
   setStoryMoodTag: (sceneId: string, mood: StoryMoodTag) => Promise<void>;
   /** Sets provenance metadata to 'desktop_locked' when authored/elevated on Desktop Soundstage (Rule 12 Optimistic UI) */
@@ -1273,6 +1284,159 @@ export function useCurriculumVault({
     [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
   );
 
+  const updateBonusMemoryNote = useCallback(
+    async (
+      sceneId: string,
+      noteId: string,
+      updatedFields: Partial<Omit<BonusMemoryNote, 'id' | 'createdAt'>>
+    ): Promise<void> => {
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = sceneDef?.id || sceneId;
+      const mappedPromptId = sceneDef?.promptId;
+
+      const nowIso = new Date().toISOString();
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+
+      const existingNotes = current.bonusNotes || [];
+      const updatedBonusNotes = existingNotes.map((note) =>
+        note.id === noteId ? { ...note, ...updatedFields } : note
+      );
+
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        bonusNotes: updatedBonusNotes,
+        lastModified: nowIso,
+      };
+
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
+        const next = { ...prev, [canonicalSceneId]: updatedMemory };
+        if (mappedPromptId) next[mappedPromptId] = updatedMemory;
+        return next;
+      });
+
+      const memToPersist = updatedMemory;
+      if (db && userId && !userId.startsWith('guest') && memToPersist) {
+        try {
+          const targetDocId = resolveDocIdForScene(canonicalSceneId);
+          const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+
+          await setDoc(
+            memoryDocRef,
+            {
+              sceneId: canonicalSceneId,
+              promptId: mappedPromptId || canonicalSceneId,
+              bonusNotes: memToPersist.bonusNotes,
+              updatedAt: nowIso,
+            },
+            { merge: true }
+          );
+
+          if (memoirId) {
+            const legacyDocRef = doc(
+              db,
+              'users',
+              userId,
+              'memoirs',
+              memoirId,
+              'scenes',
+              canonicalSceneId
+            );
+            await setDoc(legacyDocRef, memToPersist, { merge: true });
+          }
+        } catch (cloudErr) {
+          console.error('[useCurriculumVault] Failed to persist updated bonus note to Firestore:', cloudErr);
+        }
+      }
+    },
+    [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
+  );
+
+  const deleteBonusMemoryNote = useCallback(
+    async (
+      sceneId: string,
+      noteId: string
+    ): Promise<void> => {
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = sceneDef?.id || sceneId;
+      const mappedPromptId = sceneDef?.promptId;
+
+      const nowIso = new Date().toISOString();
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+
+      const existingNotes = current.bonusNotes || [];
+      const updatedBonusNotes = existingNotes.filter((note) => note.id !== noteId);
+
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        bonusNotes: updatedBonusNotes,
+        lastModified: nowIso,
+      };
+
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
+        const next = { ...prev, [canonicalSceneId]: updatedMemory };
+        if (mappedPromptId) next[mappedPromptId] = updatedMemory;
+        return next;
+      });
+
+      const memToPersist = updatedMemory;
+      if (db && userId && !userId.startsWith('guest') && memToPersist) {
+        try {
+          const targetDocId = resolveDocIdForScene(canonicalSceneId);
+          const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+
+          await setDoc(
+            memoryDocRef,
+            {
+              sceneId: canonicalSceneId,
+              promptId: mappedPromptId || canonicalSceneId,
+              bonusNotes: memToPersist.bonusNotes,
+              updatedAt: nowIso,
+            },
+            { merge: true }
+          );
+
+          if (memoirId) {
+            const legacyDocRef = doc(
+              db,
+              'users',
+              userId,
+              'memoirs',
+              memoirId,
+              'scenes',
+              canonicalSceneId
+            );
+            await setDoc(legacyDocRef, memToPersist, { merge: true });
+          }
+        } catch (cloudErr) {
+          console.error('[useCurriculumVault] Failed to persist deleted bonus note to Firestore:', cloudErr);
+        }
+      }
+    },
+    [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
+  );
+
   const setStoryMoodTag = useCallback(
     async (sceneId: string, mood: StoryMoodTag): Promise<void> => {
       const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
@@ -1576,6 +1740,8 @@ export function useCurriculumVault({
     updateSceneProse,
     promotePreferredTake,
     addBonusMemoryNote,
+    updateBonusMemoryNote,
+    deleteBonusMemoryNote,
     setStoryMoodTag,
     elevateToStudioMaster,
     reorderSceneTakes,

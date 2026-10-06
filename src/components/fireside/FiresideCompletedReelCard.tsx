@@ -32,12 +32,14 @@ import {
   Paperclip,
   X,
   Trash2,
+  Pencil,
 } from 'lucide-react';
 import {
   UnifiedCurriculumMemory,
   StoryMoodTag,
   EditingAuthority,
   resolveEditingAuthority,
+  BonusMemoryNote,
 } from '@/types/curriculum';
 import { FiresideLanguage } from '@/types/fireside';
 import VideoSelectionRoomDrawer from './VideoSelectionRoomDrawer';
@@ -52,6 +54,8 @@ export interface FiresideCompletedReelCardProps {
   activeLanguage?: FiresideLanguage;
   onWatchTheatricalReel: () => void;
   onAddBonusNote: () => void;
+  onEditBonusNote?: (note: BonusMemoryNote) => void;
+  onDeleteBonusNote?: (noteId: string) => Promise<void> | void;
   onReRecordRequest?: () => void;
   onDiscardTake?: () => void;
   onPromoteMasterTake?: (takeId: string) => Promise<void> | void;
@@ -78,6 +82,8 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   activeLanguage = 'en',
   onWatchTheatricalReel,
   onAddBonusNote,
+  onEditBonusNote,
+  onDeleteBonusNote,
   onReRecordRequest,
   onDiscardTake,
   onPromoteMasterTake,
@@ -88,6 +94,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
 }) => {
   const [showRetakeConfirm, setShowRetakeConfirm] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [deletingBonusNoteId, setDeletingBonusNoteId] = useState<string | null>(null);
   const [isStudioMasterDrawerOpen, setIsStudioMasterDrawerOpen] = useState(false);
   const [isVideoSelectionRoomOpen, setIsVideoSelectionRoomOpen] = useState(false);
 
@@ -391,11 +398,11 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         </div>
       )}
 
-      {/* Added Bonus Memory Notes List (Test 11 Step 3 Confirmation) */}
+      {/* Added Bonus Memory Notes List (Test 11 Step 3 Confirmation / MW-110 Edit & Delete) */}
       {bonusNotes.length > 0 && (
         <div
           data-testid="completed-reel-bonus-notes-list"
-          className="w-full relative z-10 mb-5 p-3.5 rounded-2xl bg-stone-900/90 border border-stone-800 text-left space-y-2"
+          className="w-full relative z-10 mb-5 p-3.5 rounded-2xl bg-stone-900/90 border border-stone-800 text-left space-y-2.5"
         >
           <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-semibold block">
             Saved Bonus Memory Recollections ({bonusNotes.length})
@@ -403,12 +410,63 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
           {bonusNotes.map((note) => (
             <div
               key={note.id}
-              className="p-2.5 rounded-xl bg-stone-950/80 border border-stone-800/90 text-xs text-stone-200"
+              className="group p-3 rounded-xl bg-stone-950/80 border border-stone-800/90 hover:border-stone-700/80 text-xs text-stone-200 transition-all space-y-2"
             >
-              <p className="leading-relaxed">{note.text}</p>
-              <span className="text-[10px] font-mono text-stone-400 mt-1 block">
-                — {note.authorName}
-              </span>
+              <p className="leading-relaxed whitespace-pre-wrap">{note.text}</p>
+              <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-stone-900/90">
+                <span className="text-[10px] font-mono text-stone-400">
+                  — {note.authorName || 'Elder Storyteller'}
+                  {note.authorRole && (
+                    <span className="text-stone-500 ml-1">
+                      ({note.authorRole === 'family_member' ? 'Family Member' : 'Original Storyteller'})
+                    </span>
+                  )}
+                </span>
+
+                {/* Edit & Delete Action Buttons */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {onEditBonusNote && (
+                    <button
+                      type="button"
+                      onClick={() => onEditBonusNote(note)}
+                      data-testid={`edit-bonus-note-${note.id}`}
+                      className="px-2.5 py-1 rounded-lg bg-stone-900 hover:bg-stone-800 border border-stone-700/70 hover:border-amber-400/50 text-stone-300 hover:text-amber-300 text-[11px] font-mono flex items-center gap-1 transition-colors cursor-pointer select-none"
+                      title="Edit this bonus recollection"
+                    >
+                      <Pencil className="w-3 h-3 text-amber-400" />
+                      <span>Edit</span>
+                    </button>
+                  )}
+                  {onDeleteBonusNote && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (deletingBonusNoteId === note.id) {
+                          onDeleteBonusNote(note.id);
+                          setDeletingBonusNoteId(null);
+                        } else {
+                          setDeletingBonusNoteId(note.id);
+                        }
+                      }}
+                      onBlur={() => {
+                        if (deletingBonusNoteId === note.id) {
+                          setDeletingBonusNoteId(null);
+                        }
+                      }}
+                      data-testid={`delete-bonus-note-${note.id}`}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-mono flex items-center gap-1 transition-colors cursor-pointer select-none border ${
+                        deletingBonusNoteId === note.id
+                          ? 'bg-rose-950/90 border-rose-500 text-rose-300 animate-pulse'
+                          : 'bg-stone-900 hover:bg-stone-800 border-stone-700/70 hover:border-rose-400/50 text-stone-400 hover:text-rose-300'
+                      }`}
+                      title={deletingBonusNoteId === note.id ? 'Click again to confirm deletion' : 'Delete this bonus recollection'}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>{deletingBonusNoteId === note.id ? 'Confirm?' : 'Delete'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
         </div>

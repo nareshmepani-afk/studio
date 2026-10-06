@@ -873,6 +873,41 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `npm.cmd run test`: 56/56 test files passing (712/712 tests passed)
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
 
+---
+
+## Checkpoint #039 — MW-110: Bonus Memory Recollections: Centered Panel Ergonomics & In-Place Edit/Delete (2026-10-06)
+
+- **Plane.so Ticket**: `[MW-110] Bonus Memory Recollections: Centered Panel Ergonomics & In-Place Edit/Delete` (Sequence #319, Issue UUID `1cc0daf7-4c67-4b50-a76b-bdb2830bb0b0`)
+- **Baseline Commit**: `607b71f1`
+- **Architectural Deliverables**:
+  - **Centered Desktop Dialog Ergonomics (`BonusMemoryDrawer.tsx`)**:
+    - Replaced unconditional bottom docking (`justify-end`) with responsive centering (`sm:items-center sm:justify-center p-0 sm:p-4`) on desktop viewports.
+    - Added fully rounded dialog borders (`sm:rounded-3xl border border-stone-800`), smooth zoom entrance (`sm:zoom-in-95`), and scrollable constraint (`max-h-[85vh] overflow-y-auto`).
+    - Maintained ergonomic bottom-sheet drawer experience on mobile phones (`< sm`).
+    - Added backdrop click dismissal (`onClick={onClose}`) with internal click event stop-propagation.
+  - **Full In-Place CRUD Capabilities for Saved Recollections**:
+    - **`useCurriculumVault.ts`**: Implemented `updateBonusMemoryNote(sceneId, noteId, updatedFields)` and `deleteBonusMemoryNote(sceneId, noteId)` with 0ms optimistic UI updates and resilient Firestore cloud persistence.
+    - **`FiresideCompletedReelCard.tsx`**: Upgraded `Saved Bonus Memory Recollections` card list to render dedicated `[ ✏️ Edit ]` and `[ 🗑️ Delete ]` action buttons on each recollection, featuring 2-step inline safety protection (`Delete` -> pulsating `Confirm?`).
+    - **`BonusMemoryDrawer.tsx`**: Added Edit mode support (`editingNote` prop): pre-populates note text, author name, and family role; updates titles to "Edit Bonus Recollection"; supports saving updates via `onUpdateBonusNote`; and renders an in-drawer 2-step deletion button (`[ 🗑️ Delete Note ]` -> `[ Confirm Delete Recollection? ]`).
+    - **`FiresideStudioClient.tsx`**: Added `editingBonusNote` state and wired all edit and delete handlers between `useCurriculumVault`, `FiresideCompletedReelCard`, `FiresideCinemaLightbox`, and `BonusMemoryDrawer`.
+  - **QA Verification Harness (`qa_checklist_interactive.html`)**:
+    - Added Test 36: `[studio/fireside] Centered Studio Dialog Ergonomics & In-Place Edit/Delete for Saved Bonus Recollections`.
+    - Incremented `TOTAL` test count to 36 with deep-link anchor support (`#card-36`).
+- **Files Created / Modified**:
+  - `src/hooks/useCurriculumVault.ts`
+  - `src/components/fireside/BonusMemoryDrawer.tsx`
+  - `src/components/fireside/FiresideCompletedReelCard.tsx`
+  - `src/app/studio/fireside/FiresideStudioClient.tsx`
+  - `src/test/curriculum_vault.test.ts`
+  - `src/test/bonus_memory_crud_ergonomics.test.tsx` (NEW)
+  - `qa_checklist_interactive.html` (Workspace root & Brain artifact)
+  - `MISSION_LOG.md`
+- **Verification**:
+  - `tsc --noEmit`: 0 errors
+  - `vitest run src/test/bonus_memory_crud_ergonomics.test.tsx src/test/curriculum_vault.test.ts`: 25/25 passed
+  - `vitest run src/test/orthography_grammar.test.ts src/test/fireside_sync.test.ts src/test/fireside_hotspots_telemetry.test.tsx`: 83/83 passed
+
+
 
 
 

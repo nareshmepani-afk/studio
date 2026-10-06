@@ -30,6 +30,7 @@ import { AlbumPhotoCaptureTray, AlbumPhotoCaptureTrayRef } from '@/components/fi
 import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
 import { FiresideCinemaLightbox } from '@/components/fireside/FiresideCinemaLightbox';
 import { BonusMemoryDrawer } from '@/components/fireside/BonusMemoryDrawer';
+import { BonusMemoryNote } from '@/types/curriculum';
 import {
   FiresideLanguage,
   FiresidePromptSpark,
@@ -92,6 +93,7 @@ export default function FiresideStudioClient() {
   const [isHybrid, setIsHybrid] = useState<boolean>(false);
   const [pinnedPrompterQuestion, setPinnedPrompterQuestion] = useState<string | null>(null);
   const [bonusDrawerSeedPrompt, setBonusDrawerSeedPrompt] = useState<string | null>(null);
+  const [editingBonusNote, setEditingBonusNote] = useState<BonusMemoryNote | null>(null);
   const [selectedActStage, setSelectedActStage] = useState<1 | 2 | 3 | 4 | undefined>(undefined);
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
@@ -173,6 +175,8 @@ export default function FiresideStudioClient() {
     updateSceneProse,
     setStoryMoodTag,
     addBonusMemoryNote,
+    updateBonusMemoryNote,
+    deleteBonusMemoryNote,
     completedScenes,
     totalScenes,
     vaultProgressPercent,
@@ -367,6 +371,7 @@ export default function FiresideStudioClient() {
   }, []);
 
   const handleAnswerFollowUpNote = useCallback((question: string) => {
+    setEditingBonusNote(null);
     setBonusDrawerSeedPrompt(question);
     setIsBonusDrawerOpen(true);
   }, []);
@@ -1137,7 +1142,18 @@ export default function FiresideStudioClient() {
               onWatchTheatricalReel={() => setIsLightboxOpen(true)}
               onAddBonusNote={() => {
                 setBonusDrawerSeedPrompt(null);
+                setEditingBonusNote(null);
                 setIsBonusDrawerOpen(true);
+              }}
+              onEditBonusNote={(note) => {
+                setBonusDrawerSeedPrompt(null);
+                setEditingBonusNote(note);
+                setIsBonusDrawerOpen(true);
+              }}
+              onDeleteBonusNote={async (noteId) => {
+                await deleteBonusMemoryNote(effectiveSceneId, noteId);
+                setNotification('Bonus recollection removed from vault.');
+                setTimeout(() => setNotification(null), 3000);
               }}
               onDiscardTake={handleDiscardActiveTake}
               onPromoteMasterTake={(takeId) => promotePreferredTake(effectiveSceneId, takeId)}
@@ -1182,6 +1198,7 @@ export default function FiresideStudioClient() {
         onClose={() => setIsLightboxOpen(false)}
         onOpenBonusDrawer={() => {
           setBonusDrawerSeedPrompt(null);
+          setEditingBonusNote(null);
           setIsBonusDrawerOpen(true);
         }}
         onDiscardTake={handleDiscardActiveTake}
@@ -1207,20 +1224,32 @@ export default function FiresideStudioClient() {
         moodTag={activeMood}
       />
 
-      {/* Additive Bonus Memory Recollection Drawer (Ticket #259 & MW-88-T6) */}
+      {/* Additive Bonus Memory Recollection Drawer (Ticket #259 & MW-88-T6 / MW-110) */}
       <BonusMemoryDrawer
         isOpen={isBonusDrawerOpen}
         onClose={() => {
           setIsBonusDrawerOpen(false);
           setBonusDrawerSeedPrompt(null);
+          setEditingBonusNote(null);
         }}
         sceneId={effectiveSceneId}
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
         initialPrompt={bonusDrawerSeedPrompt}
+        editingNote={editingBonusNote}
         activeLanguage={activeLanguage}
         onSaveBonusNote={async (note) => {
           await addBonusMemoryNote(effectiveSceneId, note);
           setNotification('Bonus recollection secured in vault!');
+          setTimeout(() => setNotification(null), 3000);
+        }}
+        onUpdateBonusNote={async (noteId, updated) => {
+          await updateBonusMemoryNote(effectiveSceneId, noteId, updated);
+          setNotification('Bonus recollection updated in vault!');
+          setTimeout(() => setNotification(null), 3000);
+        }}
+        onDeleteBonusNote={async (noteId) => {
+          await deleteBonusMemoryNote(effectiveSceneId, noteId);
+          setNotification('Bonus recollection removed from vault.');
           setTimeout(() => setNotification(null), 3000);
         }}
       />
