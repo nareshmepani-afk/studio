@@ -252,15 +252,20 @@ export function ChapterSpineRail({
 
   // Auto-scroll to the active token when it changes (horizontal only)
   useEffect(() => {
-    if (!railRef.current || !activeTokenRef.current) return;
-    const rail = railRef.current;
-    const token = activeTokenRef.current;
-    const railRect = rail.getBoundingClientRect();
-    const tokenRect = token.getBoundingClientRect();
-    const scrollLeft =
-      token.offsetLeft - rail.clientWidth / 2 + token.offsetWidth / 2;
-    rail.scrollTo?.({ left: scrollLeft, behavior: 'smooth' });
-    void railRect; void tokenRect; // satisfy linter
+    const handleScroll = () => {
+      if (!railRef.current || !activeTokenRef.current) return;
+      const rail = railRef.current;
+      const token = activeTokenRef.current;
+      const railRect = rail.getBoundingClientRect();
+      const tokenRect = token.getBoundingClientRect();
+      const offsetRelativeToRail = tokenRect.left - railRect.left;
+      const targetScrollLeft =
+        rail.scrollLeft + offsetRelativeToRail - rail.clientWidth / 2 + tokenRect.width / 2;
+      rail.scrollTo?.({ left: Math.max(0, targetScrollLeft), behavior: 'smooth' });
+    };
+
+    const timer = setTimeout(handleScroll, 50);
+    return () => clearTimeout(timer);
   }, [activeSceneId]);
 
   // Group scenes by part for labelling

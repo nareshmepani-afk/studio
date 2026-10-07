@@ -779,6 +779,17 @@ export default function FiresideStudioClient() {
     return count || 1;
   }, [activeSparkIdx, activePart.partNumber]);
 
+  const totalScenesInActivePart = useMemo(() => {
+    let count = 0;
+    for (let i = 0; i < FIRESIDE_PROMPT_SPARKS.length; i++) {
+      const p = getPartForScene(FIRESIDE_PROMPT_SPARKS[i]?.linkedSceneId);
+      if (p.partNumber === activePart.partNumber) {
+        count++;
+      }
+    }
+    return count || 1;
+  }, [activePart.partNumber]);
+
   const englishPartHeading = activePart.localizedTitles?.en || activePart.title;
   const motherTonguePartLang: FiresideLanguage = activeLanguage === 'en' ? 'gu' : activeLanguage;
   const motherTonguePartHeading =
@@ -931,7 +942,7 @@ export default function FiresideStudioClient() {
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
                 className="text-[11px] font-mono text-amber-300/90 mt-1 leading-snug"
               >
-                {activePartRoman} - Scene {activeSceneNumInPart} • Scene {activeSparkIdx + 1} of {FIRESIDE_PROMPT_SPARKS.length} • {activeSceneTitle}
+                {activePartRoman} - Scene {activeSceneNumInPart} of {totalScenesInActivePart} • Story {activeSparkIdx + 1} of {FIRESIDE_PROMPT_SPARKS.length} • {activeSceneTitle}
               </p>
             </div>
 

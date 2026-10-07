@@ -255,7 +255,7 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
       pa: 'ਚੌਰਾਹੇ ਅਤੇ ਫੈਸਲੇ',
       hi: 'मोड़ और फैसले',
     },
-    linkedSceneId: 'part-3-scene-1',
+    linkedSceneId: 'part-2-scene-3',
     suggestedMediaMode: 'video',
     sparks: {
       en: 'Walk us through your very first job, craft, or pivotal life crossroads. What did it feel like to earn your first wages, and what discipline did that work instil in you?',
@@ -293,6 +293,53 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     },
   },
   {
+    id: 'spark_learning_hard_way',
+    category: 'lessons',
+    title: 'Learning the Hard Way',
+    localizedTitles: {
+      en: 'Learning the Hard Way',
+      gu: 'અઘરી રીતે શીખવું',
+      pa: 'ਮੁਸ਼ਕਿਲ ਰਾਹਾਂ ਤੋਂ ਸਿੱਖਿਆ',
+      hi: 'कठिन राहों से सीख',
+    },
+    linkedSceneId: 'part-2-scene-4',
+    suggestedMediaMode: 'audio',
+    sparks: {
+      en: 'Reflect on a setback, misstep, or hard mistake from your youth. What did that experience teach you about character, humility, and resilience?',
+      gu: 'તમારી યુવાનીની કોઈ મુશ્કેલ ભૂલ કે પડકારને યાદ કરો. તે કડવા અનુભવે તમને નમ્રતા, હિંમત અને જીવન વિશે શું મૂલ્યવાન પાઠ શીખવ્યો?',
+      pa: 'ਆਪਣੀ ਜਵਾਨੀ ਦੀ ਕਿਸੇ ਗਲਤੀ ਜਾਂ ਔਖੇ ਸਮੇਂ ਨੂੰ ਯਾਦ ਕਰੋ। ਉਸ ਤਜਰਬੇ ਨੇ ਤੁਹਾਨੂੰ ਹੌਸਲਾ ਅਤੇ ਜ਼ਿੰਦਗੀ ਬਾਰੇ ਕੀ ਸਿਖਾਇਆ?',
+      hi: 'अपनी युवावस्था की किसी कठिन भूल या चुनौती को याद कीजिए। उस अनुभव ने आपको विनम्रता, धैर्य और जीवन के बारे में क्या सिखाया?',
+    },
+    followUpQuestions: {
+      en: [
+        'How did you make amends or pick yourself back up after that mistake?',
+        'Who offered you forgiveness or understanding when you needed it most?',
+        'How did that hard lesson protect you from greater pitfalls later in life?',
+      ],
+      gu: [
+        'તે ભૂલ પછી તમે પરિસ્થિતિને કેવી રીતે સંભાળી અને ફરી બેઠા થયા?',
+        'જ્યારે તમને સૌથી વધુ જરૂર હતી ત્યારે કોણે તમને માફી અને સહારો આપ્યો?',
+        'તે કડવા અનુભવે પાછળથી તમને કેવી રીતે મોટી મુશ્કેલીઓથી બચાવ્યા?',
+      ],
+      pa: [
+        'ਉਸ ਗਲਤੀ ਤੋਂ ਬਾਅਦ ਤੁਸੀਂ ਆਪਣੇ ਆਪ ਨੂੰ ਕਿਵੇਂ ਸੰਭਾਲਿਆ ਅਤੇ ਦੁਬਾਰਾ ਖੜ੍ਹੇ ਹੋਏ?',
+        'ਕਿਸ ਨੇ ਤੁਹਾਨੂੰ ਮੁਆਫ਼ ਕੀਤਾ ਅਤੇ ਹੌਸਲਾ ਦਿੱਤਾ?',
+        'ਉਸ ਸਬਕ ਨੇ ਜ਼ਿੰਦਗੀ ਦੇ ਅਗਲੇ ਸਫ਼ਰ ਵਿੱਚ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕੀਤੀ?',
+      ],
+      hi: [
+        'उस गलती के बाद आपने खुद को कैसे संभाला और दोबारा शुरुआत की?',
+        'जब आपको सबसे ज्यादा जरूरत थी तब किसने आपको माफ किया और सहारा दिया?',
+        'उस कड़वे अनुभव ने आगे चलकर आपको बड़ी मुश्किलों से कैसे बचाया?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Look for a photograph from the time of that turning point or the place where you resolved to begin anew.',
+      gu: 'તે વળાંકના સમયની અથવા જ્યાંથી તમે નવી શરૂઆત કરી તે સ્થળની કોઈ તસવીર શોધો.',
+      pa: 'ਉਸ ਮੋੜ ਵੇਲੇ ਦੀ ਜਾਂ ਉਸ ਥਾਂ ਦੀ ਕੋਈ ਤਸਵੀਰ ਲੱਭੋ ਜਿੱਥੋਂ ਤੁਸੀਂ ਨਵੀਂ ਸ਼ੁਰੂਆਤ ਕੀਤੀ ਸੀ।',
+      hi: 'उस मोड़ के समय की या उस जगह की कोई तस्वीर तलाशिए जहां से आपने नई शुरुआत की थी।',
+    },
+  },
+  {
     id: 'spark_love_partner',
     category: 'love',
     title: 'Falling in Love',
@@ -302,7 +349,7 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
       pa: 'ਪਿਆਰ ਵਿੱਚ ਪੈਣਾ',
       hi: 'प्यार में पड़ना',
     },
-    linkedSceneId: 'part-4-scene-1',
+    linkedSceneId: 'part-3-scene-3',
     suggestedMediaMode: 'video',
     sparks: {
       en: 'Tell the story of how you and your partner first crossed paths. Was it arranged by family or a serendipitous meeting, and what first caught your eye?',

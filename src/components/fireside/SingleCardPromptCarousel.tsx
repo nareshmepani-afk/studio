@@ -666,6 +666,10 @@ export function SingleCardPromptCarousel({
 
   const activePartRoman = activePartHeading.split(':')[0]?.trim() || `Part ${linkedScene?.partNumber ?? 1}`;
   const activeSceneNumInPart = linkedScene?.sceneNumber ?? 1;
+  const totalScenesInActivePart = useMemo(() => {
+    const pNum = linkedScene?.partNumber ?? 1;
+    return spineScenes.filter((s) => s.partNumber === pNum).length || 1;
+  }, [linkedScene?.partNumber, spineScenes]);
 
   return (
     <div
@@ -709,7 +713,7 @@ export function SingleCardPromptCarousel({
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
                 className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
               >
-                {activePartRoman} - Scene {activeSceneNumInPart} • Story {currentIndex + 1} of {sparkDeck.length} • {primaryCardTitle}
+                {activePartRoman} - Scene {activeSceneNumInPart} of {totalScenesInActivePart} • Story {currentIndex + 1} of {sparkDeck.length} • {primaryCardTitle}
               </span>
             </div>
             <button

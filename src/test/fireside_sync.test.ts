@@ -2247,6 +2247,16 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toMatch(/(Scene|Story) 5 of/);
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('5 ·');
 
+    // MW-114: Step forward to Part II Scene 3 (Crossroads and Choices)
+    fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 3');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Crossroads and Choices');
+
+    // MW-114: Step forward to Part II Scene 4 (Learning the Hard Way)
+    fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 4');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Learning the Hard Way');
+
     // Jump backward to previous Part Scene 1 via PRODUCTION STAGE Header Prev Chevron (Part II -> Part I - Scene 1)
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_PREV_SCENE'));
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part I - Scene 1');
