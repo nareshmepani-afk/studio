@@ -1041,8 +1041,8 @@ export function SingleCardPromptCarousel({
                 <div className="flex items-center justify-between gap-2 pt-0.5">
                   <button
                     type="button"
-                    data-testid="HS_FIRESIDE_INPLACE_PROGRESS_BTN"
-                    data-hotspot-id="HS_FIRESIDE_INPLACE_PROGRESS_BTN"
+                    data-testid="HS_FIRESIDE_SPINE_PROGRESS_BTN"
+                    data-hotspot-id="HS_FIRESIDE_SPINE_PROGRESS_BTN"
                     onClick={() => {
                       if (stageProgression.nextTab === 'act4') {
                         handleSelectActTab('act4');
@@ -1367,8 +1367,8 @@ export function SingleCardPromptCarousel({
 
                       <button
                         type="button"
-                        data-testid="HS_FIRESIDE_VIEW_SPARK_PILL"
-                        data-hotspot-id="fireside-script-toggle-btn"
+                        data-testid="HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN"
+                        data-hotspot-id="HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN"
                         onClick={() => setViewMode((prev) => (prev === 'script' ? 'spark' : 'script'))}
                         className="min-h-[48px] sm:min-h-[44px] px-3.5 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-sky-950/60 hover:bg-sky-900/70 active:scale-98 text-sky-400 border border-sky-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
                         aria-label="Toggle between active script and original prompt spark"
@@ -1380,8 +1380,8 @@ export function SingleCardPromptCarousel({
 
                       <button
                         type="button"
-                        data-testid="HS_FIRESIDE_EDIT_SCRIPT_PILL"
-                        data-hotspot-id="HS_FIRESIDE_EDIT_SCRIPT_BTN"
+                        data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
+                        data-hotspot-id="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
                         onClick={handleStartEditScript}
                         className="min-h-[48px] sm:min-h-[44px] px-3.5 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-950/60 hover:bg-amber-900/70 active:scale-98 text-amber-400 border border-amber-500/30 transition-all cursor-pointer shrink-0"
                       >
@@ -1427,12 +1427,12 @@ export function SingleCardPromptCarousel({
                   <div className="flex items-center justify-end">
                     <button
                       type="button"
-                      data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"
-                      data-hotspot-id="HS_FIRESIDE_EDIT_SCRIPT_BTN"
+                      data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
+                      data-hotspot-id="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
                       onClick={handleStartEditScript}
                       className="min-h-[48px] sm:min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 text-amber-200 border border-amber-500/40 transition-all cursor-pointer"
                     >
-                      [ ✏️ Edit Script ]
+                      <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">[ ✏️ Edit Script ]</span>
                     </button>
                   </div>
                 </div>

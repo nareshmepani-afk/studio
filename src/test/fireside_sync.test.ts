@@ -1156,8 +1156,9 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(actSpine.textContent).toContain('Act III: Record');
       expect(actSpine.textContent).toContain('Act IV: Screening');
 
-      // In-Place Progression Button renders with zero external redirect
-      const inPlaceBtn = document.querySelector('[data-testid="HS_FIRESIDE_INPLACE_PROGRESS_BTN"]') as HTMLButtonElement;
+      // In-Place Progression Button renders with zero external redirect (MW-112 canonical grammar)
+      const inPlaceBtn = (document.querySelector('[data-testid="HS_FIRESIDE_SPINE_PROGRESS_BTN"]') ||
+        document.querySelector('[data-testid="HS_FIRESIDE_INPLACE_PROGRESS_BTN"]')) as HTMLButtonElement;
       expect(inPlaceBtn).toBeTruthy();
       expect(inPlaceBtn.textContent).toContain('[ ✨ Progress to Act II: Sensory Weave → ]');
       expect(inPlaceBtn.getAttribute('href')).toBeNull();
@@ -1382,8 +1383,9 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         })
       );
 
-      // 1. Click ✏️ EDIT SCRIPT pill
-      const editBtn = document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]') as HTMLElement;
+      // 1. Click ✏️ EDIT SCRIPT pill (MW-112 canonical grammar)
+      const editBtn = (document.querySelector('[data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"]') ||
+        document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]')) as HTMLElement;
       expect(editBtn).toBeTruthy();
       expect(editBtn.textContent).toContain('✏️ EDIT SCRIPT');
       fireEvent.click(editBtn);
@@ -1409,7 +1411,10 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
 
       // 4. Re-open editor, modify prose, and click [ ✓ Save Script ]
-      fireEvent.click(document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]') as HTMLElement);
+      fireEvent.click(
+        (document.querySelector('[data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"]') ||
+          document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]')) as HTMLElement
+      );
       const textareaReopened = document.querySelector('[data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"]') as HTMLTextAreaElement;
       fireEvent.change(textareaReopened, {
         target: { value: 'Refined mobile armchair prose with sensory warmth.' },
@@ -1555,15 +1560,15 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(weavePill).toBeTruthy();
       expect(weavePill.textContent).toContain('🎬 CINEMATIC WEAVE: THE MEMORY WEAVE');
 
-      const sparkPill = document.querySelector(
-        '[data-testid="HS_FIRESIDE_VIEW_SPARK_PILL"]'
-      ) as HTMLElement;
+      const sparkPill = (document.querySelector(
+        '[data-testid="HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN"]'
+      ) || document.querySelector('[data-testid="HS_FIRESIDE_VIEW_SPARK_PILL"]')) as HTMLElement;
       expect(sparkPill).toBeTruthy();
       expect(sparkPill.textContent).toContain('👁️ VIEW ORIGINAL SPARK');
 
-      const editPill = document.querySelector(
-        '[data-testid="HS_FIRESIDE_EDIT_SCRIPT_PILL"]'
-      ) as HTMLElement;
+      const editPill = (document.querySelector(
+        '[data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"]'
+      ) || document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_PILL"]')) as HTMLElement;
       expect(editPill).toBeTruthy();
       expect(editPill.textContent).toContain('✏️ EDIT SCRIPT');
 
@@ -2382,7 +2387,10 @@ describe('15. MW-105-A: Mobile Sign-In Parity & Fireside Profile Drawer', () => 
     // Guest state
     mockCurrentUser = null;
     const { getByTestId: getByTestIdGuest, unmount: unmountGuest } = render(React.createElement(FiresideAuthHeader));
-    expect(getByTestIdGuest('HS_FIRESIDE_SIGNIN_BTN')).toBeTruthy();
+    expect(
+      document.querySelector('[data-testid="HS_FIRESIDE_HEADER_SIGNIN_BTN"]') ||
+      document.querySelector('[data-testid="HS_FIRESIDE_SIGNIN_BTN"]')
+    ).toBeTruthy();
     expect(getByTestIdGuest('HS_FIRESIDE_USER_PROFILE_BTN')).toBeTruthy();
     unmountGuest();
   });

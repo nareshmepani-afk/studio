@@ -262,6 +262,54 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
   2. `🗺️ Journey Route Flow` (Grouped by Route URL, Act I → Act III sequence)
   3. `📦 Milestone Sprints` (Grouped by MW milestone/sprint release)
 
+# 30.4. Canonical Hotspot (HS_) Taxonomy, Panel-Based QA Indexing & Deep-Linking Protocol
+
+To prevent syntax drift, fragmented test identifiers, and cognitive search friction between staging overlays and the interactive verification harness, all testable UI elements MUST adhere to the canonical 4-segment hotspot grammar and panel indexing standards:
+
+## 30.4.1 Canonical 4-Segment Grammar
+Every interactive element, input container, modal trigger, or lifecycle badge MUST define its `data-hotspot-id` (and matching `data-testid`) using this strict 4-segment structure:
+
+$$\mathbf{HS\_[SURFACE]\_[PANEL/VIEW]\_[ELEMENT/ACTION]\_[TYPE]}$$
+
+1. **Namespace Prefix**:
+   - Always `HS_` in uppercase snake_case.
+   - **Strict Prohibition**: Kebab-case (e.g. `fireside-script-toggle-btn`) and unprefixed identifiers are strictly forbidden.
+2. **Surface Scope (`[SURFACE]`)**:
+   - `DESKTOP_`: Act I–V Theatrical Soundstage (`/studio`, `/studio/production/[id]`).
+   - `FIRESIDE_`: Mobile Armchair Experience (`/studio/fireside`).
+   - `SHARED_`: Cross-surface universal components (Global Modals, Auth Sheets, Drawers).
+3. **View / Panel Container (`[PANEL/VIEW]`)**:
+   - `HEADER_`: Top navigation HUD, user account badge, language tray, staging environment indicator.
+   - `SPINE_`: Chapter Spine Rail, Part steppers, scene tokens, and Act progress tabs.
+   - `CAROUSEL_`: Prompt spark storytelling card deck, narrative script body, armchair editor.
+   - `RECORDER_`: Video viewfinder, audio waveform meters, capture slates, retake docks.
+   - `DRAWER_`: Slide-over sheets, selection room, bonus recollection forms, follow-up inquiries.
+   - `MODAL_`: Full-screen dialogs, confirmation interlocks, soundcheck sandboxes.
+4. **Element & Action Descriptor (`[ELEMENT/ACTION]`)**:
+   - Concise, intent-based naming (e.g. `SCRIPT_EDIT`, `SPARK_TOGGLE`, `DOCK_MINIMISE`, `STAGE_PROGRESSION`, `NAV_DESKTOP`).
+5. **Semantic Type Suffix (`[TYPE]`)**:
+   - `_BTN`: Clickable interactive button or link action.
+   - `_TAB`: Navigational tab or stepper pill.
+   - `_DRAWER` / `_MODAL`: Flyout containers and modal dialogs.
+   - `_INPUT` / `_TEXTAREA`: User input and text entry surfaces.
+   - `_SLATE` / `_CARD`: Content cards or state wrappers.
+   - `_BADGE`: Read-only indicators, status chips, or lifecycle pills.
+
+## 30.4.2 Interactive Checklist Panel Indexing & Hotspot Cloud
+In `qa_checklist_interactive.html`:
+1. **Tier 3 Panel-Based Filtering**: The header HUD MUST provide physical UI panel filter buttons:
+   - `[ 🌐 All Panels ]`
+   - `[ 🧭 Top Dock & Auth ]` (Filters cards validating Header, Auth, and Dock components)
+   - `[ 📜 Spine & Stepper ]` (Filters cards validating ChapterSpineRail and Steppers)
+   - `[ 🃏 Story Card & Prose ]` (Filters cards validating Carousel, Scriptorium, and Script Editor)
+   - `[ 🎙️ Studio Recorder ]` (Filters cards validating Act III Viewfinder and Audio Recorders)
+   - `[ 🎞️ Selection Reel ]` (Filters cards validating Darkroom and Selection Drawers)
+2. **Visual Hotspot Chip Cloud on Every QA Card**:
+   - Each test card MUST render a dedicated **Covered Hotspots** chip cloud in Zone 1.
+   - Clicking any chip copies its `data-testid` directly to the tester's clipboard and displays an instant confirmation toast.
+3. **Staging-to-Checklist Deep-Linking (`#hotspot-HS_...`)**:
+   - When given a URL hash matching a hotspot ID (e.g. `#hotspot-HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN`), the checklist MUST automatically locate the card testing that component, open the Verified Reel Archive if collapsed, clear route filters if hidden, smooth-scroll to the card, and pulse an amber highlight halo (`ring-4 ring-amber-400`).
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)

@@ -36,11 +36,13 @@ describe('Fireside Hotspots & Telemetry Regression Shield (Ticket #261)', () => 
     it('renders canonical hotspot IDs for desktop navigation and sign-out', () => {
       render(<FiresideAuthHeader activePartTitle="Part I: Foundations" />);
       
-      const desktopNav = document.querySelector('[data-hotspot-id="HS_FIRESIDE_NAV_DESKTOP_BTN"]');
+      const desktopNav = document.querySelector('[data-hotspot-id="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"]') ||
+                         document.querySelector('[data-hotspot-id="HS_FIRESIDE_NAV_DESKTOP_BTN"]');
       expect(desktopNav).toBeTruthy();
       expect(desktopNav?.getAttribute('href')).toBe('/studio');
 
-      const signOutBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_SIGNOUT_BTN"]');
+      const signOutBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_HEADER_SIGNOUT_BTN"]') ||
+                         document.querySelector('[data-hotspot-id="HS_FIRESIDE_SIGNOUT_BTN"]');
       expect(signOutBtn).toBeTruthy();
     });
   });

@@ -90,7 +90,8 @@ export function FiresideAuthHeader({
         <div className="w-full flex items-center justify-between gap-2.5 sm:gap-3">
           <Link
             href="/studio"
-            data-hotspot-id="HS_FIRESIDE_NAV_DESKTOP_BTN"
+            data-testid="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
+            data-hotspot-id="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
             className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
             title="Switch to Desktop Theatrical Soundstage (Acts I–IV)"
             aria-label="Switch to Desktop Theatrical Soundstage"
@@ -143,6 +144,7 @@ export function FiresideAuthHeader({
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               <div
+                data-testid="HS_FIRESIDE_HEADER_USER_BADGE"
                 className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-full shadow-sm max-w-[200px] sm:max-w-md truncate"
                 title={`Signed in as ${userEmail}. Your memories are secured in the Generational Vault.`}
               >
@@ -161,8 +163,8 @@ export function FiresideAuthHeader({
 
               <button
                 type="button"
-                data-hotspot-id="HS_FIRESIDE_SIGNOUT_BTN"
-                data-testid="HS_FIRESIDE_SIGNOUT_BTN"
+                data-hotspot-id="HS_FIRESIDE_HEADER_SIGNOUT_BTN"
+                data-testid="HS_FIRESIDE_HEADER_SIGNOUT_BTN"
                 onClick={async () => {
                   try {
                     await logout(false);
@@ -185,8 +187,8 @@ export function FiresideAuthHeader({
             <div className="flex items-center gap-2">
               <Link
                 href="/login?redirect=/studio/fireside"
-                data-testid="HS_FIRESIDE_SIGNIN_BTN"
-                data-hotspot-id="HS_FIRESIDE_SIGNIN_BTN"
+                data-testid="HS_FIRESIDE_HEADER_SIGNIN_BTN"
+                data-hotspot-id="HS_FIRESIDE_HEADER_SIGNIN_BTN"
                 className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-stone-300 hover:text-amber-200 bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 px-3 py-1.5 rounded-full transition-all shadow-sm group cursor-pointer min-h-[44px]"
                 title="Currently running in local guest session. Tap to sign in and back up to the Generational Vault."
               >

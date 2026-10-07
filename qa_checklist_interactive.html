@@ -15,12 +15,16 @@
       background: linear-gradient(135deg, rgba(17, 24, 39, 0.85) 0%, rgba(11, 15, 23, 0.96) 100%);
       backdrop-filter: blur(16px);
     }
-    .btn-pass.active { background-color: #059669 !important; color: white !important; border-color: #10B981 !important; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-    .btn-fail.active { background-color: #E11D48 !important; color: white !important; border-color: #F43F5E !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
-    .btn-backlog.active { background-color: #D97706 !important; color: white !important; border-color: #F59E0B !important; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+    button[id^="btn-pass-"].active, .btn-pass.active { background-color: #059669 !important; color: white !important; border-color: #10B981 !important; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+    button[id^="btn-fail-"].active, .btn-fail.active { background-color: #E11D48 !important; color: white !important; border-color: #F43F5E !important; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
+    button[id^="btn-retest-"].active, button[id^="btn-backlog-"].active, .btn-retest.active, .btn-backlog.active { background-color: #D97706 !important; color: white !important; border-color: #F59E0B !important; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+    button[id^="btn-pending-"].active, .btn-pending.active { background-color: #374151 !important; color: #F3F4F6 !important; border-color: #9CA3AF !important; box-shadow: 0 0 10px rgba(156, 163, 175, 0.3); }
     .filter-tab.active { background-color: rgba(245, 158, 11, 0.2) !important; border-color: #F59E0B !important; color: #FDE68A !important; }
+    .panel-tab.active { background-color: rgba(16, 185, 129, 0.25) !important; border-color: #10B981 !important; color: #6EE7B7 !important; }
+    .hotspot-chip { transition: all 0.15s ease-in-out; }
+    .hotspot-chip:hover { border-color: #F59E0B !important; background-color: rgba(245, 158, 11, 0.25) !important; color: #FEF08A !important; transform: translateY(-1px); }
     .dropzone-active { border-color: #F59E0B !important; background-color: rgba(245, 158, 11, 0.05) !important; }
-      .mode-tab.active {
+    .mode-tab.active {
       background-color: rgba(245, 158, 11, 0.25) !important;
       border-color: #f59e0b !important;
       color: #fde68a !important;
@@ -59,7 +63,7 @@
           Organised strictly by target staging route so you can open a single URL and run every test on that route in chronological order:
           <strong class="text-sky-300">1. first_flight_rehearsal</strong> (Cards 1–6: 6/6 PASS) &bull;
           <strong class="text-amber-300">2. studio/production/</strong> (Card 7: 1/1 PASS) &bull;
-          <strong class="text-emerald-300">3. studio/fireside &amp; Curriculum Lockstep Sync (MW-88, MW-100, MW-105-A, MW-106, MW-107 &amp; MW-110)</strong> (Cards 8–10 PASS; Cards 11–36 Ready for Verification).
+          <strong class="text-emerald-300">3. studio/fireside &amp; Curriculum Lockstep Sync (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110 &amp; MW-111)</strong> (Cards 8–10 PASS; Cards 11–38 Ready for Verification).
         </p>
       </div>
 
@@ -74,7 +78,7 @@
         </div>
         <div class="space-y-1">
           <div class="text-xs font-mono text-gray-400 uppercase tracking-wider">Master Suite Verification</div>
-          <div id="tally-display" class="text-sm font-bold text-gray-200">10 Pass • 0 Fail • 0 Backlog • 23 Pend</div>
+          <div id="tally-display" class="text-sm font-bold text-gray-200">10 Pass &bull; 0 Fail &bull; 0 Re-test &bull; 28 Pend</div>
           <div class="flex items-center gap-2 pt-1 flex-wrap">
             <button id="btn-ping" onclick="pingEdge()" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-400 border border-gray-700 flex items-center gap-1.5 transition whitespace-nowrap cursor-pointer shadow">
               <span id="ping-icon">⚡</span>
@@ -105,7 +109,7 @@
             🗺️ Journey Route Flow
           </button>
           <button onclick="toggleArchive()" id="mode-archive" class="mode-tab px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold transition cursor-pointer">
-            📦 Verified Archive (<span id="archive-tab-count">34</span>)
+            📦 Verified Archive (<span id="archive-tab-count">10</span>)
           </button>
         </div>
 
@@ -127,19 +131,42 @@
       <div class="flex items-center gap-2 flex-wrap text-xs font-mono pt-1">
         <span class="text-gray-500 uppercase tracking-wider text-[11px] mr-1">Filter by Route:</span>
         <button onclick="filterByRoute('all')" id="tab-all" class="filter-tab active px-3 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 transition cursor-pointer">
-          🌐 All Routes (<span id="all-routes-count">35</span>)
+          🌐 All Routes (<span id="all-routes-count">38</span>)
         </button>
         <button onclick="filterByRoute('pending')" id="tab-pending" class="filter-tab px-3 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 transition cursor-pointer">
-          ⏳ Pending Only (<span id="pending-tab-count">1</span>)
+          ⏳ Pending Only (<span id="pending-tab-count">28</span>)
         </button>
         <button onclick="filterByRoute('rehearsal')" id="tab-rehearsal" class="filter-tab px-3 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 transition cursor-pointer">
           🛫 first_flight_rehearsal (6)
         </button>
         <button onclick="filterByRoute('production')" id="tab-production" class="filter-tab px-3 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition cursor-pointer">
-          🎬 studio/production/ (2)
+          🎬 studio/production/ (1)
         </button>
         <button onclick="filterByRoute('fireside')" id="tab-fireside" class="filter-tab px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition cursor-pointer">
-          📱 studio/fireside &amp; Curriculum Sync (27)
+          📱 studio/fireside &amp; Curriculum Sync (31)
+        </button>
+      </div>
+
+      <!-- Tier 3: Filter by Panel (MW-112) -->
+      <div class="flex items-center gap-2 flex-wrap text-xs font-mono pt-1">
+        <span class="text-gray-500 uppercase tracking-wider text-[11px] mr-1">Filter by Panel:</span>
+        <button onclick="filterByPanel('all')" id="panel-tab-all" class="panel-tab active px-3 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 transition cursor-pointer">
+          🌐 All Panels (<span id="panel-all-count">38</span>)
+        </button>
+        <button onclick="filterByPanel('dock')" id="panel-tab-dock" class="panel-tab px-3 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 transition cursor-pointer">
+          🧭 Top Dock &amp; Auth (<span id="panel-dock-count">3</span>)
+        </button>
+        <button onclick="filterByPanel('spine')" id="panel-tab-spine" class="panel-tab px-3 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition cursor-pointer">
+          📜 Spine &amp; Stepper (<span id="panel-spine-count">8</span>)
+        </button>
+        <button onclick="filterByPanel('carousel')" id="panel-tab-carousel" class="panel-tab px-3 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition cursor-pointer">
+          🃏 Story Card &amp; Prose (<span id="panel-carousel-count">11</span>)
+        </button>
+        <button onclick="filterByPanel('recorder')" id="panel-tab-recorder" class="panel-tab px-3 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition cursor-pointer">
+          🎙️ Studio Recorder (<span id="panel-recorder-count">8</span>)
+        </button>
+        <button onclick="filterByPanel('selection')" id="panel-tab-selection" class="panel-tab px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition cursor-pointer">
+          🎞️ Selection Reel (<span id="panel-selection-count">8</span>)
         </button>
       </div>
     </div>
@@ -156,7 +183,7 @@
         <div class="space-y-1">
           <div class="flex items-center gap-2.5 flex-wrap">
             <span class="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-              ZONE 1 &bull; ACTIVE ACTION DECK (<span id="active-deck-count">1</span> ACTIONABLE)
+              ZONE 1 &bull; ACTIVE ACTION DECK (<span id="active-deck-count">28</span> ACTIONABLE)
             </span>
             <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Attention-First Default &bull; Rule 30.3</span>
             <span class="text-xs font-mono text-gray-400">Order: Newest First &bull; 0ms Scroll Handoff</span>
@@ -189,7 +216,7 @@
           <span class="text-xl">📦</span>
           <span id="archive-summary-label" class="text-base font-bold text-emerald-300">Verified Reel Archive (Click to expand)</span>
           <span id="archive-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            34 PASS
+            10 PASS
           </span>
         </div>
         <div class="flex items-center gap-2 text-xs font-mono text-gray-400">
@@ -224,7 +251,7 @@
       </div>
 
       <!-- TEST CARD 1: ACT I SENSORY PALETTE KEY & LUMINOUS JUMP BEACON -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-1" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 1)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-1" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 1)" data-panel="carousel">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -324,7 +351,7 @@
       </div>
 
       <!-- TEST CARD 2: ACT I DIRECT TEXT-HOVER TOOLTIPS & SUBTLE UNDERLINES -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-2" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 2)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-2" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 2)" data-panel="carousel">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -420,7 +447,7 @@
       </div>
 
       <!-- TEST CARD 3: ACT I -> ACT II DYNAMIC WEAVE SYNTHESIS -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-3" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 3)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-3" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 3)" data-panel="carousel">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -515,7 +542,7 @@
       </div>
 
       <!-- TEST CARD 4: ACT II SELECTIONDECK DIRECT 1-CLICK SELECTION & CTA SYNC -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-4" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 4)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-4" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 4)" data-panel="selection">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -612,7 +639,7 @@
       </div>
 
       <!-- TEST CARD 5: ACT III SOUNDSTAGE DIRECT IMMERSION, DRAGGABLE TELEPROMPTER SIDEBARS & AI DIRECTOR MINIMISE -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-5" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 5)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-5" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 5)" data-panel="recorder">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -705,7 +732,7 @@
       </div>
 
       <!-- TEST CARD 6: SEQUENTIAL ACT COMPLETION GATING, ACT STATUS BADGES & REHEARSAL ISOLATION -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-6" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 6)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-6" data-canonical-parent="group-rehearsal" data-route="rehearsal" tabindex="0" onpaste="handleCardPaste(event, 6)" data-panel="recorder">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -828,7 +855,7 @@
       </div>
 
       <!-- TEST CARD 7: ACT II INSTANT UNLOCK NAVIGATION, ZERO FLOATING SENSORY ICONS & 1-CLICK HIGHLIGHT TOGGLE -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-7" data-canonical-parent="group-production" data-route="production" tabindex="0" onpaste="handleCardPaste(event, 7)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-7" data-canonical-parent="group-production" data-route="production" tabindex="0" onpaste="handleCardPaste(event, 7)" data-panel="carousel">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -946,7 +973,7 @@
       </div>
 
       <!-- TEST CARD 8: FIRESIDE MOBILE SURFACE & WHATSAPP/FACETIME LABEL -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-8" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 8)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-8" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 8)" data-panel="dock">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -960,6 +987,16 @@
               2) <strong class="text-emerald-400">UPDATED (1436cf44) &mdash; &ldquo;WhatsApp/FaceTime style:&rdquo; Label</strong>: Click <strong>[ 🎥 Video Memo ]</strong> in the top mode switch &mdash; confirm the subtext reads <strong class="text-emerald-300">&ldquo;WhatsApp/FaceTime style: Intimate selfie video memo with the prompt pinned near the front camera.&rdquo;</strong> and the studio heading reads <strong class="text-emerald-300">&ldquo;WHATSAPP / FACETIME VIDEO MEMO&rdquo;</strong>.<br/>
               3) Confirm responsive banner behaviour on Desktop (&ge; 600px) vs Mobile (&lt; 600px) with zero horizontal overflow.
             </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-8">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN', this)" data-hotspot="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN" id="hotspot-HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HEADER_SIGNOUT_BTN', this)" data-hotspot="HS_FIRESIDE_HEADER_SIGNOUT_BTN" id="hotspot-HS_FIRESIDE_HEADER_SIGNOUT_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HEADER_SIGNOUT_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HEADER_USER_BADGE', this)" data-hotspot="HS_FIRESIDE_HEADER_USER_BADGE" id="hotspot-HS_FIRESIDE_HEADER_USER_BADGE" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HEADER_USER_BADGE</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_LANG_EN', this)" data-hotspot="HS_FIRESIDE_LANG_EN" id="hotspot-HS_FIRESIDE_LANG_EN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_LANG_EN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_LANG_GU', this)" data-hotspot="HS_FIRESIDE_LANG_GU" id="hotspot-HS_FIRESIDE_LANG_GU" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_LANG_GU</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_LANG_PA', this)" data-hotspot="HS_FIRESIDE_LANG_PA" id="hotspot-HS_FIRESIDE_LANG_PA" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_LANG_PA</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_LANG_HI', this)" data-hotspot="HS_FIRESIDE_LANG_HI" id="hotspot-HS_FIRESIDE_LANG_HI" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_LANG_HI</button>
+            </div>
           </div>
           <div class="flex items-center gap-2 shrink-0 flex-wrap">
             <button onclick="copySingleTestReport(8, this)" id="copy-test-btn-8" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -1038,7 +1075,7 @@
       </div>
 
       <!-- TEST CARD 9: FIRESIDE TAB-SWITCH CAMERA RECOVERY, <3S RECORDING RULE, 5X FASTER VAULT SYNC & FINITE DURATION (MW-286 / MW-287) -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-9" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 9)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-9" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 9)" data-panel="recorder">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1126,7 +1163,7 @@
       </div>
 
       <!-- TEST CARD 10: VOICE & PHOTOS VINTAGE PHOTO + VOICE PLAYBACK & TOAST JUMP ANCHOR (MW-286 / MW-287) -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-10" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 10)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-10" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 10)" data-panel="recorder">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1142,6 +1179,10 @@
               4) <strong>Cinema Lightbox Vintage Photo Slideshow (`localUri` Resolved)</strong>: Click <strong>[ 🎬 Play in Cinema Lightbox ]</strong> &mdash; confirm your uploaded vintage photo now renders full-frame on screen with a warm Ken Burns zoom while your voice recording plays!<br/>
               5) <strong class="text-emerald-400">FIXED (7823b0c2 / MW-287) &mdash; Toast Jump Anchor [ Open Studio &darr; ]</strong>: When selecting Voice &amp; Photos mode or choosing a story spark, tap the floating confirmation toast link <strong>[ Open Studio &darr; ]</strong> &mdash; confirm it mounts the recording surface and smoothly scrolls directly to the <strong>Heirloom Photo Digitisation tray</strong> or <strong>Tactile Voice Recorder</strong> even if a completed reel is present!
             </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-10">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_PHOTO_DIGITISE_BTN', this)" data-hotspot="HS_FIRESIDE_PHOTO_DIGITISE_BTN" id="hotspot-HS_FIRESIDE_PHOTO_DIGITISE_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_PHOTO_DIGITISE_BTN</button>
+            </div>
           </div>
           <div class="flex items-center gap-2 shrink-0 flex-wrap">
             <button onclick="copySingleTestReport(10, this)" id="copy-test-btn-10" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -1224,7 +1265,7 @@
       </div>
 
       <!-- TEST CARD 11: COMPLETED REEL CARD, ACTUAL DURATION (NO 0M 30S), BONUS MEMORY DRAWER & /STUDIO SYNC (MW-287) -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-11" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 11)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-11" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 11)" data-panel="selection">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1322,7 +1363,7 @@
       </div>
 
       <!-- TEST CARD 12: DESKTOP SOUNDSTAGE ELEVATION RATCHET (MW-88-T2) -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-12" data-canonical-parent="group-production" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 12)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-12" data-canonical-parent="group-production" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 12)" data-panel="spine">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1415,7 +1456,7 @@
       </div>
 
       <!-- TEST CARD 13: MOBILE FIRESIDE STUDIO MASTER GUARDRAILS & REASSURANCE DRAWER (MW-88-T2) -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-13" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 13)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-13" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 13)" data-panel="dock">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1508,7 +1549,7 @@
       </div>
 
       <!-- TEST CARD 14: MW-88-T3 GOLDEN THREAD BILINGUAL CHAPTER TYPOGRAPHY & IDENTICAL STORY SEQUENCE + SCENE NUMBERING -->
-      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition shadow-lg shadow-emerald-950/20" id="card-14" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 14)">
+      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition shadow-lg shadow-emerald-950/20" id="card-14" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 14)" data-panel="spine">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1526,6 +1567,10 @@
               3) Tap <strong>[ Next Story &rarr; ]</strong> to advance to Card 2 (<strong class="text-amber-300">Part I &bull; Scene 2</strong>: <strong class="text-white">The House I Grew Up In</strong> / <strong class="text-amber-200">હું જે ઘરમાં મોટો થયો</strong>) and Card 3 (<strong class="text-amber-300">Part I &bull; Scene 3</strong>: <strong class="text-white">Innocence and Curiosity</strong> / <strong class="text-amber-200">નિર્દોષતા અને જિજ્ઞાસા</strong>).<br/>
               4) Open <code class="text-emerald-300">https://dev.memoryweaver.studio/studio</code> on Desktop and verify the Part I cards display matching Scene numbering badges (<code class="text-amber-300">Part I &bull; Scene 1</code>: A Child of Two Worlds, <code class="text-amber-300">Part I &bull; Scene 2</code>: The House I Grew Up In, <code class="text-amber-300">Part I &bull; Scene 3</code>: Innocence and Curiosity).
             </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-14">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_PROGRESS_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_PROGRESS_BTN" id="hotspot-HS_FIRESIDE_SPINE_PROGRESS_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_PROGRESS_BTN</button>
+            </div>
           </div>
           <div class="flex items-center gap-2 shrink-0 flex-wrap">
             <button onclick="copySingleTestReport(14, this)" id="copy-test-btn-14" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -1604,7 +1649,7 @@
       </div>
 
       <!-- TEST CARD 15: MW-88-T3 3-STEP FIRESIDE WARMUP & SOUNDCHECK SANDBOX + VAULT CONTAMINATION SHIELD -->
-      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition shadow-lg shadow-emerald-950/20" id="card-15" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 15)">
+      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition shadow-lg shadow-emerald-950/20" id="card-15" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 15)" data-panel="recorder">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1698,7 +1743,7 @@
       </div>
 
       <!-- TEST CARD 16: MW-88-T4 ACT I WOVEN SCRIPT PARITY, SENSORY COUNTERS & RECORDING TELEPROMPTER -->
-      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition shadow-lg shadow-emerald-950/20" id="card-16" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 16)">
+      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition shadow-lg shadow-emerald-950/20" id="card-16" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 16)" data-panel="carousel">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1806,7 +1851,7 @@
       </div>
 
       <!-- TEST CARD 17: FIRESIDE REHEARSAL SANDBOX & MULTI-TAKE DISCARD LIFECYCLE (MW-88-T5) -->
-      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-17" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 17)">
+      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-17" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 17)" data-panel="recorder">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1902,7 +1947,7 @@
       </div>
 
       <!-- TEST CARD 18: MW-88-T6 UNBLOCK ACT I DESKTOP DRAFT CAPTURE, HYBRID MODE, 4-ACT SPINE & FOLLOW-UP ACTIONS -->
-      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition" id="card-18" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 18)">
+      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition" id="card-18" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 18)" data-panel="carousel">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1917,6 +1962,15 @@
               3) <strong>Verify 4-Act Spine, Badge Tooltips &amp; Centred Card Geometry:</strong> Confirm the <strong>Free Walkthrough</strong> card and <strong>Story Spark Carousel</strong> card share identical <code class="text-sky-300">max-w-xl mx-auto</code> geometry and snap smoothly back to centre if dragged left/right (<code class="text-sky-300">dragSnapToOrigin</code>). Hover over <code class="text-amber-300">ORIGINS &amp; ROOTS</code>, <code class="text-amber-300">PART I &bull; SCENE 1</code>, <code class="text-amber-300">🔒 STUDIO MASTER</code>, and <code class="text-amber-300">VIDEO MEMO &bull; RECOMMENDED</code> to verify UK English explanatory tooltips, and verify the 4-Act Spine (<code class="text-emerald-300">Act I: Script Woven</code> &rarr; <code class="text-amber-300">Act II: Sensory Weave</code> &rarr; <code class="text-gray-300">Act III: Soundstage Take</code> &rarr; <code class="text-gray-300">Act IV: Master Reel</code>) plus <code class="text-amber-300">[ 🎬 Progress to Act II (Sensory Weave) in Desktop Studio ↗ ]</code>.<br/>
               4) <strong>Verify Unblocked Act I Capture &amp; Follow-Up Questions:</strong> Expand <strong>Follow-Up Questions (Deepen This Memory)</strong>, click <code class="text-amber-300">[ 📌 Pin to Prompter ]</code> on a question to pin it beneath the active Act I teleprompter script below, or click <code class="text-amber-300">[ ✍️ Answer / Add Note ]</code> to open the Bonus Memory Drawer pre-seeded with that prompt. Confirm that an unrecorded Desktop Act I draft (<code class="text-emerald-300">takes.length === 0</code>) unlocks the live mobile Video/Voice recorder below while keeping the woven prose safely read-only.
             </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-18">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HYBRID_TOGGLE_BTN', this)" data-hotspot="HS_FIRESIDE_HYBRID_TOGGLE_BTN" id="hotspot-HS_FIRESIDE_HYBRID_TOGGLE_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HYBRID_TOGGLE_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN', this)" data-hotspot="HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN" id="hotspot-HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN', this)" data-hotspot="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN" id="hotspot-HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN', this)" data-hotspot="HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN" id="hotspot-HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_RANDOM_SPARK_BTN', this)" data-hotspot="HS_FIRESIDE_RANDOM_SPARK_BTN" id="hotspot-HS_FIRESIDE_RANDOM_SPARK_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_RANDOM_SPARK_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_PROGRESS_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_PROGRESS_BTN" id="hotspot-HS_FIRESIDE_SPINE_PROGRESS_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_PROGRESS_BTN</button>
+            </div>
           </div>
 
           <div class="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 shrink-0">
@@ -1969,7 +2023,7 @@
       </div>
 
       <!-- TEST 19 (MW-88-T7: Responsive Ergonomic Specialisation, Armchair Script Editor & Universal Cross-Editing) -->
-      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition shadow-lg shadow-emerald-500/5" id="card-19" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 19)">
+      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 transition shadow-lg shadow-emerald-500/5" id="card-19" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 19)" data-panel="carousel">
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
           <div class="space-y-2">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1980,6 +2034,12 @@
             <h3 class="text-lg font-bold text-white">Responsive Ergonomic Specialisation: Armchair Script Editor, Sensory Preservation &amp; Universal Retake/Discard</h3>
             <div class="text-xs text-gray-300 space-y-1.5 leading-relaxed">
               <p><strong>1) Provenance Badges &amp; Universal Access:</strong> Open <code class="text-emerald-300">https://dev.memoryweaver.studio/studio/fireside</code> on Scene 1 (<em>"A Child of Two Worlds"</em>). Hover/tap the <code class="text-amber-300">✨ Studio Master</code> badge and confirm tooltip reads <code class="text-emerald-300">"Authored in Desktop Studio • Full cross-device editing enabled"</code> (or <code class="text-emerald-300">"Captured on Fireside Mobile • Full cross-device editing enabled"</code> on mobile-originated scenes).</p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-19">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN', this)" data-hotspot="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN" id="hotspot-HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN', this)" data-hotspot="HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN" id="hotspot-HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_RANDOM_SPARK_BTN', this)" data-hotspot="HS_FIRESIDE_RANDOM_SPARK_BTN" id="hotspot-HS_FIRESIDE_RANDOM_SPARK_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_RANDOM_SPARK_BTN</button>
+            </div>
               <p><strong>2) Inline Armchair Script Editor (<code class="text-amber-300">HS_FIRESIDE_EDIT_SCRIPT_BTN</code>):</strong> Click <code class="text-amber-300">[ ✏️ Edit Script ]</code> on the prompt card. Confirm the card transitions into the <code class="text-emerald-300">ARMCHAIR SCRIPT EDITOR</code> panel displaying reassurance line <code class="text-emerald-300">"Changes made here sync automatically to your Desktop Studio."</code>, high-contrast textarea (<code class="text-amber-300">HS_FIRESIDE_SCRIPT_TEXTAREA</code>), <code class="text-emerald-300">[ ✓ Save Script ]</code> (<code class="text-amber-300">HS_FIRESIDE_SAVE_SCRIPT_BTN</code>), and <code class="text-gray-300">[ Cancel ]</code> (<code class="text-amber-300">HS_FIRESIDE_CANCEL_SCRIPT_BTN</code>).</p>
               <p><strong>3) 0ms Optimistic Save &amp; Sensory Preservation:</strong> Edit a phrase in the textarea and click <code class="text-emerald-300">[ ✓ Save Script ]</code>. Confirm the card prose updates immediately at 0ms latency (Rule 12), the toast confirms <code class="text-emerald-300">"Script saved and synchronised with Desktop Studio."</code>, and opening <code class="text-amber-300">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp</code> shows the updated prose with all pre-existing sensory anchors preserved.</p>
               <p><strong>4) Universal Retake &amp; 2-Step Discard on Desktop-Originated Scenes:</strong> On any recorded scene (including <code class="text-amber-300">desktop_locked</code> Studio Masters), confirm <code class="text-emerald-300">Record an additional take for this scene</code> and the 2-step <code class="text-rose-300">[ 🗑️ Discard Current Take ]</code> / <code class="text-rose-300">[ 🗑️ Discard Take ]</code> buttons are unlocked and functional in both the Completed Reel Card and the Cinema Lightbox.</p>
@@ -2046,7 +2106,7 @@
       </div>
 
       <!-- CARD 20: MW-88-T8 Cross-Surface Nomenclature, CTA & Sensory Lockstep -->
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-20" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 20)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-20" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 20)" data-panel="carousel">
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
           <div class="space-y-2">
             <div class="flex items-center gap-2 flex-wrap">
@@ -2123,7 +2183,7 @@
       </div>
 
       <!-- TEST CARD 21: MW-88-T9 SURFACE CONTAINMENT, IN-PLACE 4-ACT FIRESIDE SPINE, SENSORY WORD-PULSE & OPTICS PRIVACY SHIELD PARITY -->
-      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition shadow-lg shadow-emerald-950/30" id="card-21" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 21)">
+      <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition shadow-lg shadow-emerald-950/30" id="card-21" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 21)" data-panel="spine">
         <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2 flex-wrap">
@@ -2139,6 +2199,14 @@
               4) <strong>Mobile-Lite Act II Sensory Weave Inspector &amp; Word-Pulse Highlighting</strong>: Tap <strong class="text-amber-300">[ ● Act II: Weave ]</strong> (or <strong class="text-amber-300">[ ✨ Progress to Act II: Sensory Weave &rarr; ]</strong>). Confirm the helper cue <em class="text-amber-200">&ldquo;Tap a sensory pill to highlight anchor cues in your script.&rdquo;</em> appears. Tap <strong class="text-emerald-300">[ 👁️ Visual (1) ]</strong> (<code class="text-emerald-300">data-testid="HS_FIRESIDE_PULSE_PILL_VISUAL"</code>): verify the inline status banner <em class="text-amber-200">&ldquo;Highlighting visual atmosphere cues.&rdquo;</em> appears and matching sensory words inside the script body pulse in warm amber (<code class="text-amber-300">animate-pulse</code>).<br/>
               5) <strong>In-Place Act IV Screening Room</strong>: Tap <strong class="text-emerald-300">[ ○ Act IV: Screening ]</strong> and click <strong class="text-emerald-300">[ 🎞️ Watch Master Reel in Screening Room ▶ ]</strong> (<code class="text-emerald-300">data-testid="HS_FIRESIDE_INPLACE_SCREENING_BTN"</code>). Confirm the 2.39:1 <code class="text-emerald-300">FiresideCinemaLightbox</code> opens directly in-place on <code class="text-emerald-300">/studio/fireside</code>.
             </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-21">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_PROGRESS_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_PROGRESS_BTN" id="hotspot-HS_FIRESIDE_SPINE_PROGRESS_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_PROGRESS_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT1_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT1_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT1_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT1_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT2_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT2_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT2_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT2_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT3_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT3_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT3_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT3_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT4_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT4_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT4_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT4_TAB</button>
+            </div>
           </div>
           <div class="flex items-center gap-2 shrink-0 flex-wrap">
             <button onclick="copySingleTestReport(21, this)" id="copy-test-btn-21" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -2223,7 +2291,7 @@
 
     <!-- ═══════════════════════════════════════════════════════════ CARD 22 ══ -->
     <section class="mb-8">
-      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-22" data-canonical-parent="group-fireside" tabindex="0" onpaste="handleCardPaste(event, 22)">
+      <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-22" data-canonical-parent="group-fireside" tabindex="0" onpaste="handleCardPaste(event, 22)" data-panel="spine">
 
         <!-- Zone 1: Header & Route Trigger -->
         <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
@@ -2235,6 +2303,13 @@
             </div>
             <h3 class="text-base font-bold text-white mb-1">Fireside 4-Act Spine Tabs, Camera Auto-Release & Optics Privacy Shield Parity</h3>
             <p class="text-xs text-gray-400 mb-3">Validates that the interactive 4-Act spine tabs switch views in-place, that the camera and microphone are automatically released when leaving Act III, and that the Optics Privacy Shield compact badge renders in the header with correct INACTIVE / SEVERED slates inside the viewfinder.</p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-22">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT1_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT1_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT1_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT1_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT2_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT2_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT2_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT2_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT3_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT3_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT3_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT3_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT4_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT4_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT4_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT4_TAB</button>
+            </div>
 
             <!-- Step-by-step instructions -->
             <ol class="text-xs text-gray-300 space-y-1.5 list-decimal list-inside mb-4">
@@ -2322,7 +2397,7 @@
       <section id="group-fireside-t10" class="space-y-6">
 
         <!-- Card 23: Spine Pill Overflow Fix -->
-        <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-23" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 23)">
+        <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-23" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 23)" data-panel="spine">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -2339,6 +2414,13 @@
                 3) On desktop (<strong class="text-amber-300">≥ 640px viewport</strong>), verify full labels show: <strong class="text-amber-300">Act I: Script &nbsp;/&nbsp; Act II: Weave &nbsp;/&nbsp; Act III: Record &nbsp;/&nbsp; Act IV: Screening</strong>.<br/>
                 &bull; Tap / click each tab and confirm active state styling (highlight ring) moves cleanly to the selected pill.
               </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-23">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT1_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT1_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT1_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT1_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT2_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT2_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT2_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT2_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT3_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT3_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT3_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT3_TAB</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_ACT4_TAB', this)" data-hotspot="HS_FIRESIDE_SPINE_ACT4_TAB" id="hotspot-HS_FIRESIDE_SPINE_ACT4_TAB" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_ACT4_TAB</button>
+            </div>
             </div>
             <div class="flex items-center gap-2 shrink-0 flex-wrap">
               <button onclick="copySingleTestReport(23, this)" id="copy-test-btn-23" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -2421,7 +2503,7 @@
         </div>
 
         <!-- Card 24: Act III Take-Aware Branching -->
-        <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-24" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 24)">
+        <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-24" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 24)" data-panel="recorder">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -2530,7 +2612,7 @@
         </div>
 
         <!-- Card 25: MW-100 Chapter Spine Rail & Orphaned Button Removal -->
-        <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-25" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 25)">
+        <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-25" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 25)" data-panel="spine">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -2548,6 +2630,12 @@
                 3) Scroll to the bottom of the story card (above the Dual-Action Footer Dock).<br/>
                 &bull; Confirm the orphaned mid-panel <strong>&ldquo;&larr; Previous Story&rdquo;</strong> and <strong>&ldquo;Next Story &rarr;&rdquo;</strong> buttons are completely removed, leaving only the clean 2-button primary action dock.
               </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-25">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_PROGRESS_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_PROGRESS_BTN" id="hotspot-HS_FIRESIDE_SPINE_PROGRESS_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_PROGRESS_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_CHEVRON_PREV_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_CHEVRON_PREV_BTN" id="hotspot-HS_FIRESIDE_SPINE_CHEVRON_PREV_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_CHEVRON_PREV_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_CHEVRON_NEXT_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_CHEVRON_NEXT_BTN" id="hotspot-HS_FIRESIDE_SPINE_CHEVRON_NEXT_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_CHEVRON_NEXT_BTN</button>
+            </div>
             </div>
             <div class="flex items-center gap-2 shrink-0 flex-wrap">
               <button onclick="copySingleTestReport(25, this)" id="copy-test-btn-25" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -2633,7 +2721,7 @@
         </div>
 
         <!-- TEST CARD 26: MW-100-BRUTAL CROSS-SURFACE STREAMLINE & 1:1 TAXONOMY LOCKSTEP -->
-        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-26" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 26)">
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-26" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 26)" data-panel="spine">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -2647,6 +2735,10 @@
                 2) <strong class="text-emerald-400">1:1 Desktop Lifecycle Status Badges &amp; Crown Banner</strong>: On the active story card, confirm arbitrary tags (<code class="text-gray-300">FESTIVE TRADITIONS</code>, <code class="text-gray-300">FIRESIDE MOBILE</code>) are replaced by Desktop <code class="text-amber-300">/studio</code> lifecycle pills: <code class="text-emerald-300">✨ NEXT RECOMMENDED</code> crown badge on the first uncompleted scene, <code class="text-sky-300">🎬 READY FOR ACTION</code> on unstarted scenes, <code class="text-amber-300">📹 CAPTURED</code> + <code class="text-amber-300">✍️ STUDIO DRAFT</code> on draft scenes, and <code class="text-teal-300">📹 CAPTURED</code> + <code class="text-indigo-300">🎞️ PRE-RELEASE</code> on scenes with recorded takes.<br/>
                 3) <strong class="text-emerald-400">Action Verb CTA Lockstep</strong>: Verify the primary footer CTA (<code class="text-sky-300">HS_FIRESIDE_DIRECT_RECORD_BTN</code>) reads <strong class="text-sky-300">[ 🎬 Action: Enter Soundstage &rarr; ]</strong> on unrecorded scenes (0 takes) and <strong class="text-sky-300">[ ✏️ Edit Scene / Audition Take &rarr; ]</strong> on recorded scenes (1+ takes).
               </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-26">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_PROGRESS_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_PROGRESS_BTN" id="hotspot-HS_FIRESIDE_SPINE_PROGRESS_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_PROGRESS_BTN</button>
+            </div>
             </div>
             <div class="flex items-center gap-2 shrink-0 flex-wrap">
               <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition">
@@ -2725,7 +2817,7 @@
         </div>
 
         <!-- TEST CARD 27: MW-100-C UNIFIED ORIENTATION DOCK, CHEVRON STEPPERS & ROUTE REDIRECT -->
-        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-27" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 27)">
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-27" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 27)" data-panel="spine">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -2739,6 +2831,12 @@
                 2) <strong class="text-emerald-400">PRODUCTION STAGE Part-Jumping Header Stepper &amp; Scrollbar-Free Spine Rail Chevrons</strong>: Inspect the <code class="text-amber-300">PRODUCTION STAGE</code> Part heading (<code class="text-emerald-300">‹ Part I: Roots and Foundations ›</code>) and live scene subtitle (<code class="text-amber-300">Part I - Scene 1 &bull; Scene 1 of 8 &bull; A Child of Two Worlds</code>). Click the flanking <code class="text-emerald-300">›</code> / <code class="text-emerald-300">‹</code> buttons (<code class="text-emerald-300">HS_FIRESIDE_HEADER_NEXT_SCENE</code> / <code class="text-emerald-300">HS_FIRESIDE_HEADER_PREV_SCENE</code>) and confirm they jump directly to <strong class="text-emerald-300">Scene 1 of the next/previous Part</strong> (<code class="text-amber-300">Part II: Crossroads and Identity</code> &rarr; <code class="text-emerald-300">Part II - Scene 1 &bull; Scene 4 of 8 &bull; Formative Friendships</code>), while clicking the Chapter Spine Rail bookend chevrons (<code class="text-emerald-300">HS_SPINE_PREV_BTN</code> / <code class="text-emerald-300">HS_SPINE_NEXT_BTN</code>) steps scene-by-scene in 1:1 lockstep with zero raw Windows/Chrome scrollbars.<br/>
                 3) <strong class="text-emerald-400">Bare <code class="text-emerald-300">/studio/production</code> Redirect</strong>: Open <code class="text-emerald-300">https://dev.memoryweaver.studio/studio/production</code> and confirm it redirects cleanly to <code class="text-emerald-300">https://dev.memoryweaver.studio/studio</code> without a 404.
               </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-27">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_CHEVRON_PREV_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_CHEVRON_PREV_BTN" id="hotspot-HS_FIRESIDE_SPINE_CHEVRON_PREV_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_CHEVRON_PREV_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_SPINE_CHEVRON_NEXT_BTN', this)" data-hotspot="HS_FIRESIDE_SPINE_CHEVRON_NEXT_BTN" id="hotspot-HS_FIRESIDE_SPINE_CHEVRON_NEXT_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_SPINE_CHEVRON_NEXT_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN', this)" data-hotspot="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN" id="hotspot-HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN</button>
+            </div>
             </div>
             <div class="flex items-center gap-2 shrink-0 flex-wrap">
               <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition">
@@ -2821,7 +2919,7 @@
         </div>
 
         <!-- TEST CARD 28: MOBILE SIGN-IN ERGONOMICS & FIRESIDE PROFILE DRAWER PARITY (MW-105-A) -->
-        <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-28" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 28)">
+        <div class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-28" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 28)" data-panel="dock">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -2839,6 +2937,13 @@
                 &bull; <strong>Elder-Ergonomic Touch Targets (&ge; 48px height)</strong>: Links to <em>Desktop Soundstage (Acts I–IV)</em>, <em>Settings</em> (with <code class="text-emerald-300">?returnTo=/studio/fireside</code>), <em>How It Works</em>, <em>Pricing &amp; Plans</em>, <em>Gift a Memoir</em>, <em>Director Support</em>, and <em>Sign Out / Sign In</em>.<br/>
                 &bull; Tap any link or the close button &mdash; drawer dismisses cleanly.
               </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-28">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HEADER_SIGNIN_BTN', this)" data-hotspot="HS_FIRESIDE_HEADER_SIGNIN_BTN" id="hotspot-HS_FIRESIDE_HEADER_SIGNIN_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HEADER_SIGNIN_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HEADER_SIGNOUT_BTN', this)" data-hotspot="HS_FIRESIDE_HEADER_SIGNOUT_BTN" id="hotspot-HS_FIRESIDE_HEADER_SIGNOUT_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HEADER_SIGNOUT_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HEADER_USER_BADGE', this)" data-hotspot="HS_FIRESIDE_HEADER_USER_BADGE" id="hotspot-HS_FIRESIDE_HEADER_USER_BADGE" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HEADER_USER_BADGE</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN', this)" data-hotspot="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN" id="hotspot-HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN</button>
+            </div>
             </div>
             <div class="flex items-center gap-2 shrink-0 flex-wrap">
               <button onclick="copySingleTestReport(28, this)" id="copy-test-btn-28" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -2917,7 +3022,7 @@
         </div>
 
         <!-- TEST CARD 29: MW-106 DESKTOP SOUNDSTAGE DARKROOM VIDEO SELECTION ROOM (ACT IV & V) -->
-        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-29" data-canonical-parent="group-fireside" data-route="desktop" tabindex="0" onpaste="handleCardPaste(event, 29)">
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-29" data-canonical-parent="group-fireside" data-route="desktop" tabindex="0" onpaste="handleCardPaste(event, 29)" data-panel="selection">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -3020,7 +3125,7 @@
         </div>
 
         <!-- TEST CARD 30: MW-106 FIRESIDE MOBILE VIDEO SELECTION ROOM DRAWER -->
-        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-30" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 30)">
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-30" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 30)" data-panel="selection">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -3123,7 +3228,7 @@
         </div>
 
         <!-- TEST CARD 31: MW-106 GUARDRAIL 1 MASTER REEL PROTECTION WARNING MODAL -->
-        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-31" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 31)">
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-31" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 31)" data-panel="selection">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -3226,7 +3331,7 @@
         </div>
 
         <!-- TEST CARD 32: MW-106 GUARDRAIL 2 NON-DESTRUCTIVE AUDITION TAKE DEFAULT -->
-        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-32" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 32)">
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-32" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 32)" data-panel="selection">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -3325,7 +3430,7 @@
         </div>
 
         <!-- TEST CARD 33: MW-106 AMENDMENTS 1 & 3: SELF-HEALING HYDRATION & ACTIVE MASTER DISCARD INTERLOCK -->
-        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-33" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 33)">
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-33" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 33)" data-panel="selection">
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2 flex-wrap">
@@ -3424,7 +3529,7 @@
         </div>
 
         <!-- TEST CARD 34: MW-107: UNIVERSAL TAKE STATUS MACHINE & CUTTING ROOM FLOOR -->
-        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-34" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 34)">
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-34" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 34)" data-panel="selection">
           <!-- ZONE 1: HEADER & DIRECT ROUTE TRIGGER -->
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
@@ -3539,7 +3644,7 @@
         </div>
 
         <!-- TEST CARD 35: MW-108: UNIVERSAL ORTHOGRAPHY, SPELL-CHECK & NON-DESTRUCTIVE AI GRAMMAR POLISH -->
-        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-35" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 35)">
+        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-35" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 35)" data-panel="carousel">
           <!-- ZONE 1: HEADER & DIRECT ROUTE TRIGGER -->
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
@@ -3560,6 +3665,11 @@
               <p class="text-xs text-gray-400 leading-relaxed">
                 Verifies platform-wide orthography and spellcheck baseline per <strong class="text-amber-300">Rule 42</strong> and <strong class="text-amber-300">Rule 20</strong>. Shared UI primitives (<code class="text-emerald-300">Textarea</code>, <code class="text-emerald-300">Input</code>) default to active spellcheck, autocorrect, sentence autocapitalisation, and British English (<code class="text-emerald-300">lang="en-GB"</code>) while type-aware discrimination disables them for credentials. In Fireside, the Bonus Memory Drawer and Armchair Script Editor provide non-destructive in-app AI proofreading (<code class="text-amber-300">checkAndPolishGrammar</code>), dynamic diaspora locale binding (<code class="text-emerald-300">gu</code>, <code class="text-emerald-300">pa</code>, <code class="text-emerald-300">hi</code>), zero-data-loss network failure shielding, and single-click original draft revert.
               </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-35">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN', this)" data-hotspot="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN" id="hotspot-HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_CAROUSEL_PROSE_TEXTAREA', this)" data-hotspot="HS_FIRESIDE_CAROUSEL_PROSE_TEXTAREA" id="hotspot-HS_FIRESIDE_CAROUSEL_PROSE_TEXTAREA" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_CAROUSEL_PROSE_TEXTAREA</button>
+            </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
               <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
@@ -3658,7 +3768,7 @@
         </div>
 
         <!-- TEST CARD 36: MW-110: BONUS MEMORY RECOLLECTIONS: CENTERED PANEL ERGONOMICS & IN-PLACE EDIT/DELETE -->
-        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-36" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 36)">
+        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-36" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 36)" data-panel="carousel">
           <!-- ZONE 1: HEADER & DIRECT ROUTE TRIGGER -->
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
@@ -3773,7 +3883,7 @@
         </div>
 
         <!-- TEST CARD 37: MW-110: NON-DESTRUCTIVE SENSORY NOTE WEAVING ENGINE ([ 🧶 WEAVE NOTE ]) & COMPARE TRAY -->
-        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-37" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 37)">
+        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-37" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 37)" data-panel="carousel">
           <!-- ZONE 1: HEADER & DIRECT ROUTE TRIGGER -->
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
@@ -3794,6 +3904,11 @@
               <p class="text-xs text-gray-400 leading-relaxed">
                 Verifies that the Bonus Memory Drawer features dual actions beneath the recollection textarea: conservative copyediting (<code class="text-stone-300">[ ✨ Polish ]</code>) and creative sensory memoirist expansion (<code class="text-amber-300">[ 🧶 Weave Note ]</code>, min 44px touch height). Clicking <code class="text-amber-300">[ 🧶 Weave Note ]</code> generates a poetic sensory monologue honoring the author's primary question or observation while enriching atmospheric, tactile, and generational depth (enforcing <strong class="text-amber-300">Rule 11</strong> screenplay &amp; AI trope bans and <strong class="text-amber-300">Rule 20</strong> British English). An inline compare tray renders below with 3 options: <code class="text-amber-300">[ ✨ Replace Note ]</code>, <code class="text-emerald-300">[ ➕ Append to Note ]</code> (with divider), and <code class="text-stone-400">[ ✕ Keep Original ]</code>. Revert button preserves 100% zero-data-loss protection per <strong class="text-amber-300">Rule 42</strong>.
               </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-37">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN', this)" data-hotspot="HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN" id="hotspot-HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_CAROUSEL_WEAVE_NOTE_BTN', this)" data-hotspot="HS_FIRESIDE_CAROUSEL_WEAVE_NOTE_BTN" id="hotspot-HS_FIRESIDE_CAROUSEL_WEAVE_NOTE_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_CAROUSEL_WEAVE_NOTE_BTN</button>
+            </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
               <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
@@ -3866,7 +3981,7 @@
         </div>
 
         <!-- TEST CARD 38: MW-111: ELIMINATING PREMATURE RECORDING MODE DECISIONS & ACT III JUST-IN-TIME SLATE -->
-        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-38" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 38)">
+        <div class="obsidian-card rounded-2xl p-6 border border-amber-500/50 transition" id="card-38" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 38)" data-panel="recorder">
           <!-- ZONE 1: HEADER & DIRECT ROUTE TRIGGER -->
           <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
             <div class="space-y-1">
@@ -3887,6 +4002,11 @@
               <p class="text-xs text-gray-400 leading-relaxed">
                 Verifies that the premature top-level <code class="text-stone-300">FiresideModeSwitch</code> has been removed between the Chapter Header Stepper and the Scene Carousel, restoring contiguous alignment and reclaiming over 100px of vertical space so prompt text is visible above the fold. In Act III (<code class="text-amber-300">takes.length === 0</code>), the unrecorded capture slate (<code class="text-amber-300">HS_FIRESIDE_ACT3_CAPTURE_SLATE</code>) embeds the mode selector (<code class="text-amber-300">HS_ACT3_MODE_SELECTOR</code>) featuring minimum 56px touch targets (<code class="text-amber-300">HS_ACT3_MODE_VOICE_BTN</code> &amp; <code class="text-amber-300">HS_ACT3_MODE_VIDEO_BTN</code>) and an active <code class="text-emerald-400">ring-2 ring-emerald-400</code> indicator. Launch CTA dynamically adapts (<code class="text-amber-300">[ 🎬 Ignite Camera &amp; Prompter → ]</code> vs <code class="text-amber-300">[ 🎙️ Open Voice Studio &amp; Prompter → ]</code>). Inside the active studio, a compact switch pill (<code class="text-amber-300">HS_ACT3_VIEWFINDER_SWITCH_MODE</code>) allows switching format in 0ms without resetting the scene. Mode persists to <code class="text-stone-300">localStorage['mw_fireside_preferred_mode']</code>.
               </p>
+            <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-38">
+              <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Hotspots:</span>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_RECORDER_MODE_SELECT_BTN', this)" data-hotspot="HS_FIRESIDE_RECORDER_MODE_SELECT_BTN" id="hotspot-HS_FIRESIDE_RECORDER_MODE_SELECT_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_RECORDER_MODE_SELECT_BTN</button>
+              <button type="button" onclick="copyHotspotId('HS_FIRESIDE_RECORDER_RECORD_BTN', this)" data-hotspot="HS_FIRESIDE_RECORDER_RECORD_BTN" id="hotspot-HS_FIRESIDE_RECORDER_RECORD_BTN" class="hotspot-chip text-[11px] font-mono bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5 transition cursor-pointer" title="Click to copy testid">HS_FIRESIDE_RECORDER_RECORD_BTN</button>
+            </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
               <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
@@ -4002,6 +4122,9 @@
     const TOTAL = 38;
     const STORAGE_KEY = 'MW_QA_ROUTE_GROUPED_3187cca9';
     let currentFilter = 'all';
+    let currentViewMode = 'active';
+    const canonicalParents = {};
+    const cardCache = {};
 
     const testTitles = [
       "",
@@ -4062,11 +4185,170 @@
       images[i] = [];
     }
 
+    function isActionable(cardNum) {
+      return !verdicts[cardNum] || verdicts[cardNum].verdict !== 'pass';
+    }
+
+    function insertCardInCanonicalOrder(card, cardNum) {
+      const group = canonicalParents[cardNum];
+      if (!group) return;
+      if (card.parentElement === group) return;
+
+      const children = Array.from(group.children);
+      const nextCard = children.find(child => {
+        if (child.id && child.id.startsWith('card-')) {
+          const num = parseInt(child.id.replace('card-', ''), 10);
+          return !isNaN(num) && num > cardNum;
+        }
+        return false;
+      });
+
+      if (nextCard) {
+        group.insertBefore(card, nextCard);
+      } else {
+        group.appendChild(card);
+      }
+    }
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      document.getElementById('mode-active')?.classList.toggle('active', mode === 'active');
+      document.getElementById('mode-journey')?.classList.toggle('active', mode === 'journey');
+      renderDeckAndArchive();
+      showToast(mode === 'active' ? 'Active & Newest First View' : 'Journey Route Flow View');
+    }
+
+    function toggleArchive() {
+      const archive = document.getElementById('verified-reel-archive');
+      if (!archive) return;
+      archive.open = !archive.open;
+      if (archive.open) {
+        if (typeof archive.scrollIntoView === 'function') archive.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast('Verified Reel Archive opened');
+      } else {
+        showToast('Verified Reel Archive collapsed');
+      }
+    }
+
+    function renderDeckAndArchive() {
+      const activeDeck = document.getElementById('active-action-deck');
+      const activeList = document.getElementById('active-cards-list');
+      const archive = document.getElementById('verified-reel-archive');
+      if (!activeList) return;
+
+      const activeCardNums = [];
+      const passedCardNums = [];
+
+      for (let i = 1; i <= TOTAL; i++) {
+        if (isActionable(i)) {
+          activeCardNums.push(i);
+        } else {
+          passedCardNums.push(i);
+        }
+      }
+
+      const activeCountEl = document.getElementById('active-deck-count');
+      if (activeCountEl) activeCountEl.textContent = activeCardNums.length;
+      const archiveTabCount = document.getElementById('archive-tab-count');
+      if (archiveTabCount) archiveTabCount.textContent = passedCardNums.length;
+      const archiveCountBadge = document.getElementById('archive-count-badge');
+      if (archiveCountBadge) archiveCountBadge.textContent = `${passedCardNums.length} PASS`;
+
+      if (currentViewMode === 'journey') {
+        if (activeDeck) activeDeck.classList.add('hidden');
+        for (let i = 1; i <= TOTAL; i++) {
+          const card = cardCache[i];
+          if (card) insertCardInCanonicalOrder(card, i);
+        }
+        if (archive) archive.open = true;
+      } else {
+        if (activeDeck) activeDeck.classList.remove('hidden');
+
+        passedCardNums.forEach(num => {
+          const card = cardCache[num];
+          if (card) insertCardInCanonicalOrder(card, num);
+        });
+
+        const sortedActive = [...activeCardNums].sort((a, b) => b - a);
+        activeList.innerHTML = '';
+        if (sortedActive.length === 0) {
+          activeList.innerHTML = `
+            <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/40 bg-emerald-950/20 text-center text-emerald-300 font-bold text-sm">
+              🎉 All ${TOTAL} verification tests passed! Full test reel verified. Check the archive below.
+            </div>
+          `;
+        } else {
+          sortedActive.forEach(num => {
+            const card = cardCache[num];
+            if (card) activeList.appendChild(card);
+          });
+        }
+      }
+
+      applyFilters();
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+      for (let i = 1; i <= TOTAL; i++) {
+        const card = document.getElementById(`card-${i}`);
+        if (card) {
+          cardCache[i] = card;
+          if (card.parentElement) {
+            canonicalParents[i] = card.parentElement;
+          }
+        }
+      }
+
       loadState();
+      renderDeckAndArchive();
       updateTally();
       pingEdge();
+      handleHotspotHash();
     });
+
+    window.addEventListener('hashchange', handleHotspotHash);
+
+    const cardPanels = {
+      1: 'carousel',
+      2: 'carousel',
+      3: 'carousel',
+      4: 'selection',
+      5: 'recorder',
+      6: 'recorder',
+      7: 'carousel',
+      8: 'dock',
+      9: 'recorder',
+      10: 'recorder',
+      11: 'selection',
+      12: 'spine',
+      13: 'dock',
+      14: 'spine',
+      15: 'recorder',
+      16: 'carousel',
+      17: 'recorder',
+      18: 'carousel',
+      19: 'carousel',
+      20: 'carousel',
+      21: 'spine',
+      22: 'spine',
+      23: 'spine',
+      24: 'recorder',
+      25: 'spine',
+      26: 'spine',
+      27: 'spine',
+      28: 'dock',
+      29: 'selection',
+      30: 'selection',
+      31: 'selection',
+      32: 'selection',
+      33: 'selection',
+      34: 'selection',
+      35: 'carousel',
+      36: 'carousel',
+      37: 'carousel',
+      38: 'recorder'
+    };
+    let currentPanel = 'all';
 
     function filterByRoute(mode) {
       currentFilter = mode;
@@ -4074,43 +4356,112 @@
         document.getElementById(`tab-${t}`)?.classList.remove('active');
       });
       document.getElementById(`tab-${mode}`)?.classList.add('active');
+      applyFilters();
+    }
 
-      const sections = {
-        rehearsal: document.getElementById('group-rehearsal'),
-        production: document.getElementById('group-production'),
-        fireside: document.getElementById('group-fireside')
-      };
+    function filterByPanel(panel) {
+      currentPanel = panel;
+      ['all', 'dock', 'spine', 'carousel', 'recorder', 'selection'].forEach(p => {
+        document.getElementById(`panel-tab-${p}`)?.classList.remove('active');
+      });
+      document.getElementById(`panel-tab-${panel}`)?.classList.add('active');
+      applyFilters();
+    }
 
-      if (mode === 'all') {
-        Object.values(sections).forEach(s => s?.classList.remove('hidden'));
-        for (let i = 1; i <= TOTAL; i++) {
-          document.getElementById(`card-${i}`)?.classList.remove('hidden');
+    function applyFilters() {
+      const allSecs = [
+        document.getElementById('group-rehearsal'),
+        document.getElementById('group-production'),
+        document.getElementById('group-fireside'),
+        document.getElementById('group-fireside-t10')
+      ];
+
+      for (let i = 1; i <= TOTAL; i++) {
+        const card = cardCache[i] || document.getElementById(`card-${i}`);
+        if (!card) continue;
+
+        // Panel check
+        const panelMatch = (currentPanel === 'all' || cardPanels[i] === currentPanel);
+
+        // Route check
+        let routeMatch = true;
+        if (currentFilter === 'pending') {
+          routeMatch = isActionable(i);
+        } else if (currentFilter === 'rehearsal') {
+          routeMatch = (i >= 1 && i <= 6);
+        } else if (currentFilter === 'production') {
+          routeMatch = (i === 7 || i === 12);
+        } else if (currentFilter === 'fireside') {
+          routeMatch = (i >= 8 && i !== 12);
         }
-      } else if (mode === 'pending') {
-        Object.values(sections).forEach(s => s?.classList.remove('hidden'));
-        for (let i = 1; i <= TOTAL; i++) {
-          const card = document.getElementById(`card-${i}`);
-          if (verdicts[i]?.verdict === 'pass') {
-            card?.classList.add('hidden');
-          } else {
-            card?.classList.remove('hidden');
+
+        if (panelMatch && routeMatch) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      }
+
+      // Check route sections in archive
+      allSecs.forEach(sec => {
+        if (!sec) return;
+        const visibleCards = sec.querySelectorAll('[id^="card-"]:not(.hidden)');
+        if (visibleCards.length === 0) {
+          sec.classList.add('hidden');
+        } else {
+          sec.classList.remove('hidden');
+        }
+      });
+    }
+
+    function copyHotspotId(id, btn) {
+      copyTextToClipboard(id, btn);
+      showToast(`Copied Hotspot ID: ${id}`);
+    }
+
+    function handleHotspotHash() {
+      if (!window.location.hash) return;
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+
+      let targetCard = null;
+
+      if (rawHash.startsWith('hotspot-')) {
+        const hsId = rawHash.replace('hotspot-', '');
+        const chip = document.querySelector(`[data-hotspot="${hsId}"]`) || 
+                     document.querySelector(`button[onclick*="'${hsId}'"]`);
+        if (chip) {
+          targetCard = chip.closest('[id^="card-"]');
+        }
+        if (!targetCard) {
+          for (let i = 1; i <= TOTAL; i++) {
+            const c = cardCache[i] || document.getElementById(`card-${i}`);
+            if (c && c.innerHTML.includes(hsId)) {
+              targetCard = c;
+              break;
+            }
           }
         }
-        // Hide route group section if all its cards are hidden
-        Object.entries(sections).forEach(([key, sec]) => {
-          if (!sec) return;
-          const visibleCards = sec.querySelectorAll('[data-route]:not(.hidden)');
-          if (visibleCards.length === 0) sec.classList.add('hidden');
-        });
-      } else {
-        Object.entries(sections).forEach(([key, sec]) => {
-          if (key === mode) {
-            sec?.classList.remove('hidden');
-            sec?.querySelectorAll('[data-route]').forEach(c => c.classList.remove('hidden'));
-          } else {
-            sec?.classList.add('hidden');
+      } else if (rawHash.startsWith('card-')) {
+        targetCard = document.getElementById(rawHash);
+      }
+
+      if (targetCard) {
+        filterByRoute('all');
+        filterByPanel('all');
+        const archive = document.getElementById('verified-reel-archive');
+        if (archive && archive.contains(targetCard)) {
+          archive.open = true;
+        }
+        targetCard.classList.remove('hidden');
+        setTimeout(() => {
+          if (typeof targetCard.scrollIntoView === 'function') {
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
-        });
+          targetCard.classList.add('ring-4', 'ring-amber-400', 'border-amber-400');
+          setTimeout(() => targetCard.classList.remove('ring-4', 'ring-amber-400', 'border-amber-400'), 2500);
+          showToast(`Jumped to target: ${rawHash}`);
+        }, 250);
       }
     }
 
@@ -4132,39 +4483,40 @@
         return;
       }
       verdicts[cardNum] = { verdict, timestamp: new Date().toISOString() };
-      ['pass', 'fail', 'backlog'].forEach(v => {
+      ['pass', 'fail', 'retest', 'pending'].forEach(v => {
         document.getElementById(`btn-${v}-${cardNum}`)?.classList.remove('active');
       });
       document.getElementById(`btn-${verdict}-${cardNum}`)?.classList.add('active');
       saveState();
       updateTally();
-      if (currentFilter === 'pending') filterByRoute('pending');
+      renderDeckAndArchive();
       showToast(`Test ${cardNum} marked ${verdict.toUpperCase()} (Click again to unclick)`);
     }
 
     function resetCardVerdict(cardNum) {
       delete verdicts[cardNum];
-      ['pass', 'fail', 'backlog'].forEach(v => {
+      ['pass', 'fail', 'retest', 'pending'].forEach(v => {
         document.getElementById(`btn-${v}-${cardNum}`)?.classList.remove('active');
       });
       saveState();
       updateTally();
-      if (currentFilter === 'pending') filterByRoute('pending');
+      renderDeckAndArchive();
       showToast(`Test ${cardNum} verdict cleared (Pending)`);
     }
 
     function updateTally() {
       const pass = Object.values(verdicts).filter(v => v.verdict === 'pass').length;
       const fail = Object.values(verdicts).filter(v => v.verdict === 'fail').length;
-      const backlog = Object.values(verdicts).filter(v => v.verdict === 'backlog').length;
-      const pending = TOTAL - (pass + fail + backlog);
+      const retest = Object.values(verdicts).filter(v => v.verdict === 'retest' || v.verdict === 'backlog').length;
+      const evaluated = pass + fail + retest;
+      const pending = TOTAL - evaluated;
 
       const tallyEl = document.getElementById('tally-display');
       if (tallyEl) {
         tallyEl.innerHTML = `
           <span class="text-emerald-400">${pass} Pass</span> &bull; 
           <span class="text-rose-400">${fail} Fail</span> &bull; 
-          <span class="text-amber-400">${backlog} Backlog</span> &bull; 
+          <span class="text-amber-400">${retest} Re-test</span> &bull; 
           <span class="text-gray-400">${pending} Pend</span>
         `;
       }
@@ -4172,7 +4524,10 @@
       const pendingTabEl = document.getElementById('pending-tab-count');
       if (pendingTabEl) pendingTabEl.textContent = pending;
 
-      const pct = Math.round(((TOTAL - pending) / TOTAL) * 100);
+      const allRoutesCountEl = document.getElementById('all-routes-count');
+      if (allRoutesCountEl) allRoutesCountEl.textContent = TOTAL;
+
+      const pct = Math.round((pass / TOTAL) * 100);
       const pctText = document.getElementById('progress-text');
       const pctCircle = document.getElementById('progress-circle');
       if (pctText) pctText.textContent = `${pct}%`;
@@ -4185,17 +4540,59 @@
     }
 
     function scrollToNextPending() {
-      for (let i = 1; i <= TOTAL; i++) {
-        if (!verdicts[i]) {
-          const el = document.getElementById(`card-${i}`);
-          if (el && el.classList.contains('hidden')) {
-            filterByRoute('all');
-          }
-          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
+      let candidates = [];
+      if (currentViewMode === 'active') {
+        for (let i = TOTAL; i >= 1; i--) {
+          if (isActionable(i)) candidates.push(i);
+        }
+      } else {
+        for (let i = 1; i <= TOTAL; i++) {
+          if (isActionable(i)) candidates.push(i);
         }
       }
-      showToast('All tests have been evaluated!');
+
+      if (candidates.length === 0) {
+        showToast('All tests have been evaluated!');
+        return;
+      }
+
+      let targetNum = candidates[0];
+      const scrollThreshold = 180;
+
+      for (let i = 0; i < candidates.length; i++) {
+        const el = document.getElementById(`card-${candidates[i]}`);
+        if (el) {
+          const rect = typeof el.getBoundingClientRect === 'function' ? el.getBoundingClientRect() : { top: 200 };
+          if (rect.top > scrollThreshold) {
+            targetNum = candidates[i];
+            break;
+          }
+        }
+      }
+
+      const targetEl = document.getElementById(`card-${targetNum}`);
+      if (!targetEl) return;
+
+      const archive = document.getElementById('verified-reel-archive');
+      if (archive && archive.contains(targetEl)) {
+        archive.open = true;
+      }
+
+      if (targetEl.classList.contains('hidden')) {
+        filterByRoute('all');
+        filterByPanel('all');
+      }
+
+      if (typeof targetEl.scrollIntoView === 'function') {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      targetEl.classList.add('ring-4', 'ring-amber-400', 'border-amber-400');
+      setTimeout(() => {
+        targetEl.classList.remove('ring-4', 'ring-amber-400', 'border-amber-400');
+      }, 2500);
+
+      const titleSnippet = testTitles[targetNum] ? testTitles[targetNum].replace(/\[.*?\]\s*/g, '').slice(0, 45) + '...' : '';
+      showToast(`Jumped to Test ${targetNum}: ${titleSnippet}`);
     }
 
     async function pingEdge() {
@@ -4357,12 +4754,12 @@
     function generateMarkdownReport() {
       const pass = Object.values(verdicts).filter(v => v.verdict === 'pass').length;
       const fail = Object.values(verdicts).filter(v => v.verdict === 'fail').length;
-      const backlog = Object.values(verdicts).filter(v => v.verdict === 'backlog').length;
-      const pending = TOTAL - (pass + fail + backlog);
+      const retest = Object.values(verdicts).filter(v => v.verdict === 'retest' || v.verdict === 'backlog').length;
+      const pending = TOTAL - (pass + fail + retest);
 
       let report = `# Master QA Verification Report (Grouped by Route)
 Target Commit SHA: 3187cca9 | Edge Commit SHA: 3187cca | Environment: dev.memoryweaver.studio
-Summary: ${pass} Passed | ${fail} Failed | ${backlog} Backlog | ${pending} Pending | Total: ${TOTAL}
+Summary: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
 `;
@@ -4371,7 +4768,7 @@ Summary: ${pass} Passed | ${fail} Failed | ${backlog} Backlog | ${pending} Pendi
         if (i === 7) {
           report += `\n## 🎬 Route Group 2: https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp\n`;
         } else if (i === 8) {
-          report += `\n## 📱 Route Group 3: https://dev.memoryweaver.studio/studio/fireside, Studio Elevation Ratchet (MW-88-T2) & Curriculum Sync (MW-88-T3 / T4 / T5 / T6 / T7 / T8 / T9 / T10, MW-100, MW-105-A, MW-106 & MW-107)\n`;
+          report += `\n## 📱 Route Group 3: https://dev.memoryweaver.studio/studio/fireside, Studio Elevation Ratchet (MW-88-T2) & Curriculum Sync (MW-88-T3 to T10, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110 & MW-111)\n`;
         }
 
         report += `
@@ -4443,7 +4840,7 @@ Screenshots: ${images[cardNum].length}`;
             Object.keys(verdicts).forEach(k => {
               const cardNum = parseInt(k, 10);
               const v = verdicts[k].verdict;
-              ['pass', 'fail', 'backlog'].forEach(vt => {
+              ['pass', 'fail', 'retest', 'pending'].forEach(vt => {
                 document.getElementById(`btn-${vt}-${cardNum}`)?.classList.remove('active');
               });
               document.getElementById(`btn-${v}-${cardNum}`)?.classList.add('active');
@@ -4469,6 +4866,7 @@ Screenshots: ${images[cardNum].length}`;
           }
           saveState();
           updateTally();
+          renderDeckAndArchive();
           showToast('JSON state imported successfully');
         } catch(err) {
           alert('Failed to parse JSON file');
@@ -4532,6 +4930,9 @@ Screenshots: ${images[cardNum].length}`;
         Object.keys(verdicts).forEach(k => {
           const cardNum = parseInt(k, 10);
           const v = verdicts[k].verdict;
+          ['pass', 'fail', 'retest', 'pending'].forEach(vt => {
+            document.getElementById(`btn-${vt}-${cardNum}`)?.classList.remove('active');
+          });
           document.getElementById(`btn-${v}-${cardNum}`)?.classList.add('active');
         });
       } catch(e) {
@@ -4541,10 +4942,21 @@ Screenshots: ${images[cardNum].length}`;
 
     function resetAll() {
       if (!confirm('Are you sure you want to reset all test verdicts, notes, and screenshots?')) return;
-      verdicts = {};
+      verdicts = {
+        1: { verdict: 'pass', timestamp: new Date().toISOString() },
+        2: { verdict: 'pass', timestamp: new Date().toISOString() },
+        3: { verdict: 'pass', timestamp: new Date().toISOString() },
+        4: { verdict: 'pass', timestamp: new Date().toISOString() },
+        5: { verdict: 'pass', timestamp: new Date().toISOString() },
+        6: { verdict: 'pass', timestamp: new Date().toISOString() },
+        7: { verdict: 'pass', timestamp: new Date().toISOString() },
+        8: { verdict: 'pass', timestamp: new Date().toISOString() },
+        9: { verdict: 'pass', timestamp: new Date().toISOString() },
+        10: { verdict: 'pass', timestamp: new Date().toISOString() }
+      };
       for (let i = 1; i <= TOTAL; i++) {
         images[i] = [];
-        ['pass', 'fail', 'backlog'].forEach(v => {
+        ['pass', 'fail', 'retest', 'pending'].forEach(v => {
           document.getElementById(`btn-${v}-${i}`)?.classList.remove('active');
         });
         const n = document.getElementById(`notes-${i}`); if (n) n.value = '';
@@ -4552,10 +4964,14 @@ Screenshots: ${images[cardNum].length}`;
         const t = document.getElementById(`telemetry-${i}`); if (t) t.value = '';
         renderGallery(i);
       }
+      for (let i = 1; i <= 10; i++) {
+        document.getElementById(`btn-pass-${i}`)?.classList.add('active');
+      }
       try {
         localStorage.removeItem(STORAGE_KEY);
       } catch(e) {}
       updateTally();
+      renderDeckAndArchive();
       showToast('All checklist state reset.');
     }
   </script>
