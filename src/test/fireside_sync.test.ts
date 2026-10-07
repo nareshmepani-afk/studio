@@ -2230,27 +2230,27 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
 
     const subtitle = getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE');
     expect(subtitle.textContent).toContain('Part I - Scene 1');
-    expect(subtitle.textContent).toContain('Scene 1 of');
+    expect(subtitle.textContent).toMatch(/(Scene|Story) 1 of/);
     expect(subtitle.textContent).toContain('A Child of Two Worlds');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · A Child of Two Worlds');
 
     // Jump to next Part Scene 1 via PRODUCTION STAGE Header Next Chevron (Part I -> Part II - Scene 1)
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_NEXT_SCENE'));
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 1');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 4 of');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toMatch(/(Scene|Story) 4 of/);
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Formative Friendships');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Formative Friendships');
 
     // Step forward 1 scene via Spine Rail Next Chevron (Part II - Scene 1 -> Part II - Scene 2)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 2');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 5 of');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toMatch(/(Scene|Story) 5 of/);
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('5 ·');
 
     // Jump backward to previous Part Scene 1 via PRODUCTION STAGE Header Prev Chevron (Part II -> Part I - Scene 1)
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_PREV_SCENE'));
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part I - Scene 1');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Scene 1 of');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toMatch(/(Scene|Story) 1 of/);
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('A Child of Two Worlds');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · A Child of Two Worlds');
 

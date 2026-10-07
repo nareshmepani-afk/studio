@@ -292,6 +292,26 @@
     background: rgba(255, 255, 255, 0.5);
     background-clip: padding-box;
   }
+
+  /* ChapterSpineRail Micro-Scrollbar — MW-113: Filmic Horizontal Track Affordance */
+  .spine-micro-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(245, 158, 11, 0.4) rgba(28, 25, 23, 0.4);
+  }
+  .spine-micro-scrollbar::-webkit-scrollbar {
+    height: 4px;
+  }
+  .spine-micro-scrollbar::-webkit-scrollbar-track {
+    background: rgba(28, 25, 23, 0.5);
+    border-radius: 9999px;
+  }
+  .spine-micro-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(245, 158, 11, 0.45);
+    border-radius: 9999px;
+  }
+  .spine-micro-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(245, 158, 11, 0.8);
+  }
 }
 
 

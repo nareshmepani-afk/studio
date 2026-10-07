@@ -120,9 +120,9 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
         className={[
           containerBase,
           containerActive,
-          'flex-col gap-0.5 px-2.5 py-1',
-          'min-h-[44px] min-w-[44px]',
-          isActive ? 'min-w-[80px]' : 'min-w-[44px]',
+          'flex-col gap-0.5 px-3 py-1',
+          'min-h-[44px]',
+          isActive ? 'min-w-[120px] max-w-[200px]' : 'min-w-[44px]',
         ].join(' ')}
         style={{ minHeight: 44 }}
       >
@@ -136,11 +136,12 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
           ].join(' ')}
           strokeWidth={isActive ? 2.5 : 2}
         />
-        {/* Scene number + short label on active only */}
+        {/* Scene number + short label on active only (MW-113 anti-truncation geometry) */}
         {isActive && (
           <span
             data-testid="HS_SPINE_ACTIVE_SCENE"
-            className="text-[10px] font-mono font-bold text-emerald-300 leading-tight text-center whitespace-nowrap max-w-[72px] truncate"
+            title={`${scene.index + 1} · ${scene.title}`}
+            className="text-[10px] font-mono font-bold text-emerald-300 leading-tight text-center whitespace-nowrap max-w-[170px] truncate px-1"
           >
             {scene.index + 1} · {scene.title}
           </span>
@@ -311,7 +312,7 @@ export function ChapterSpineRail({
         data-testid="HS_SPINE_PREV_BTN"
         onClick={handleStepPrev}
         aria-label="Previous scene in chapter spine"
-        title="Step to previous scene"
+        title="Step to previous scene (‹)"
         style={{ minHeight: 44, minWidth: 44 }}
         className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-800 text-stone-300 hover:text-amber-300 flex items-center justify-center text-lg font-mono font-bold transition-colors cursor-pointer select-none"
       >
@@ -321,7 +322,7 @@ export function ChapterSpineRail({
       <div
         ref={railRef}
         data-testid="HS_CHAPTER_SPINE_TRACK"
-        className="flex-1 flex flex-row items-center gap-0.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        className="flex-1 flex flex-row items-center gap-1 overflow-x-auto py-1 spine-micro-scrollbar scroll-smooth"
       >
         {partGroups.map((group, gi) => (
           <React.Fragment key={group.partNumber}>
@@ -355,7 +356,7 @@ export function ChapterSpineRail({
         data-testid="HS_SPINE_NEXT_BTN"
         onClick={handleStepNext}
         aria-label="Next scene in chapter spine"
-        title="Step to next scene"
+        title="Step to next scene (›)"
         style={{ minHeight: 44, minWidth: 44 }}
         className="min-h-[44px] min-w-[44px] shrink-0 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-800 text-stone-300 hover:text-amber-300 flex items-center justify-center text-lg font-mono font-bold transition-colors cursor-pointer select-none"
       >

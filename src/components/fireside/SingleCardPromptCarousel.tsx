@@ -709,7 +709,7 @@ export function SingleCardPromptCarousel({
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
                 className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
               >
-                {activePartRoman} - Scene {activeSceneNumInPart} • Scene {currentIndex + 1} of {sparkDeck.length} • {primaryCardTitle}
+                {activePartRoman} - Scene {activeSceneNumInPart} • Story {currentIndex + 1} of {sparkDeck.length} • {primaryCardTitle}
               </span>
             </div>
             <button
@@ -927,8 +927,12 @@ export function SingleCardPromptCarousel({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-neutral-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">
-                    {currentIndex + 1} of {sparkDeck.length}
+                  <span
+                    data-testid="carousel-story-progress-pill"
+                    title={`Story ${currentIndex + 1} of ${sparkDeck.length} in your family memoir`}
+                    className="text-xs font-mono text-neutral-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/10"
+                  >
+                    Story {currentIndex + 1} of {sparkDeck.length}
                   </span>
                   <button
                     type="button"
