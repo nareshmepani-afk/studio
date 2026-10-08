@@ -12,13 +12,13 @@
 
 - **Active Sprint:** Sprint 5 — Fireside Video Studio & Theatrical Multi-Take Darkroom Suite
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `f140128`, Head: `f140128`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `43f8d4c`, Head: `43f8d4c0`)
 
-- **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 30 Codified)
+- **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 44 Codified)
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 699 / 699 Vitest Tests Passing (55 Test Files)
+- **Current Invariant Test Baseline:** 731 / 731 Vitest Tests Passing (57 Test Files)
 
 - **Interactive Verification Suite:** qa_checklist_interactive.html (33 Test Cards Active)
 
@@ -981,10 +981,22 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `npm.cmd run test`: 57/57 test files passing (731/731 tests passed)
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0
 
+---
 
+## Checkpoint #041 — Codified Rule 43 (Consensus Before Mutation) into AGENTS.md (2026-10-08)
 
-
-
+- **Target Ref**: `GOV-RULE-43 (Governance Invariant)`
+- **Architectural & Governance Deliverables**:
+  - **Codified Rule 43: Brainstorm, Exploration & Planning Invariant ("Consensus Before Mutation")**:
+    - **Trigger Recognition**: Any prompt containing exploration or consultative intent (`BRAINSTORM`, `AUDIT`, `RFC`, `PROPOSAL`, `EXPLORE`, `WHAT DO YOU THINK`, `SHOULD I`, `SHOULD WE`, `CAN WE`, `TRADE-OFFS`) automatically places the agent into Read-Only Consultation Mode.
+    - **Binding Operational Invariants**: Strictly prohibits file modifications, state mutations, git operations (`git add`, `git commit`, `git push`), and automated executor handoffs during consultation mode.
+    - **Permitted Operations**: Restricted to read-only diagnostics, structured trade-off presentations, and explicit proposal artifacts upon direct user request.
+    - **Resumption Gate**: Requires unambiguous human-in-the-loop authorization before altering code or state.
+- **Files Modified**:
+  - `C:\Users\home\studio\.agents\AGENTS.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+- **Verification**:
+  - `powershell -Command "Select-String -Path 'C:\Users\home\studio\.agents\AGENTS.md' -Pattern '43. Brainstorm' -Context 0, 4"` verified with exit code 0.
 
 
 
