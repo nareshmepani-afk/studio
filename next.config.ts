@@ -10,6 +10,17 @@ if (!commitSha) {
   }
 }
 
+let commitTimestamp = process.env.NEXT_PUBLIC_COMMIT_TIME || '';
+if (!commitTimestamp) {
+  try {
+    commitTimestamp = execSync('git log -1 --format=%cI').toString().trim();
+  } catch (e) {
+    commitTimestamp = '';
+  }
+}
+
+const buildTimestamp = process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString();
+
 const nextConfig: NextConfig = {
   eslint: {
     // TypeScript type-checking (tsc --noEmit) is our primary compile-time safety gate.
@@ -19,6 +30,8 @@ const nextConfig: NextConfig = {
   },
   env: {
     NEXT_PUBLIC_COMMIT_SHA: commitSha,
+    NEXT_PUBLIC_COMMIT_TIME: commitTimestamp,
+    NEXT_PUBLIC_BUILD_TIME: buildTimestamp,
   },
   // Simplified for stability in dev mode
   images: {

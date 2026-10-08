@@ -6,6 +6,11 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+// Module-level static capture fallback: ensures that even if NEXT_PUBLIC_BUILD_TIME
+// is unset during dev mode or testing, the timestamp remains strictly immutable
+// across requests within the process lifecycle.
+const PROCESS_START_TIMESTAMP = new Date().toISOString();
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
@@ -21,12 +26,16 @@ export async function GET() {
     process.env.VERCEL_GIT_COMMIT_SHA || 
     process.env.BUILD_ID || 
     'dev';
-  const buildTimestamp = process.env.NEXT_PUBLIC_BUILD_TIME || new Date().toISOString();
+  const commitTimestamp = process.env.NEXT_PUBLIC_COMMIT_TIME || null;
+  // Immutable build timestamp: baked at compile-time via next.config.ts env,
+  // falling back to module initialization time. Never evaluates new Date() per-request.
+  const buildTimestamp = process.env.NEXT_PUBLIC_BUILD_TIME || PROCESS_START_TIMESTAMP;
 
   return NextResponse.json(
     {
       version,
       commitSha,
+      commitTimestamp,
       buildTimestamp,
     },
     {

@@ -27,4 +27,23 @@ describe('MW-9 & MW-10 Infrastructure Verification', () => {
       expect(typeof proxyModule.PATCH).toBe('function');
     });
   });
+
+  describe('MW-118: Immutable Build Timestamp & Edge Version Parity', () => {
+    it('returns an immutable buildTimestamp across consecutive requests to /api/version', async () => {
+      const versionRoute = await import('@/app/api/version/route');
+      const res1 = await versionRoute.GET();
+      const data1 = await res1.json();
+
+      // Delay to simulate multiple incoming requests over time
+      await new Promise((resolve) => setTimeout(resolve, 25));
+
+      const res2 = await versionRoute.GET();
+      const data2 = await res2.json();
+
+      expect(data1.buildTimestamp).toBeDefined();
+      expect(typeof data1.buildTimestamp).toBe('string');
+      // Invariant: buildTimestamp must NEVER change per-request
+      expect(data1.buildTimestamp).toBe(data2.buildTimestamp);
+    });
+  });
 });
