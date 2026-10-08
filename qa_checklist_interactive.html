@@ -50,9 +50,13 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong class="text-emerald-300">3187cca9</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong class="text-emerald-300">cf282aa0</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">3187cca</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">cf282aa</strong></span>
+          <span class="text-xs font-mono text-gray-500">•</span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">08 Oct 2026, 08:52 BST</strong></span>
+          <span class="text-xs font-mono text-gray-500">•</span>
+          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">07 Oct 2026, 22:44 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Environment: <strong class="text-amber-300">dev.memoryweaver.studio</strong></span>
         </div>
@@ -63,7 +67,7 @@
           Organised strictly by target staging route so you can open a single URL and run every test on that route in chronological order:
           <strong class="text-sky-300">1. first_flight_rehearsal</strong> (Cards 1–6: 6/6 PASS) &bull;
           <strong class="text-amber-300">2. studio/production/</strong> (Card 7: 1/1 PASS) &bull;
-          <strong class="text-emerald-300">3. studio/fireside &amp; Curriculum Lockstep Sync (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110 &amp; MW-111)</strong> (Cards 8–10 PASS; Cards 11–38 Ready for Verification).
+          <strong class="text-emerald-300">3. studio/fireside &amp; Curriculum Lockstep Sync (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111 &amp; MW-114)</strong> (Cards 8–10 PASS; Cards 11–40 Ready for Verification).
         </p>
       </div>
 
@@ -4839,6 +4843,24 @@
         if (shaEl && data.commitSha) {
           shaEl.textContent = data.commitSha;
         }
+        if (data.buildTimestamp) {
+          try {
+            const deployDate = new Date(data.buildTimestamp);
+            const formattedDeploy = deployDate.toLocaleString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZone: 'Europe/London',
+              timeZoneName: 'short'
+            });
+            const deployEl = document.getElementById('header-edge-deploy-time');
+            if (deployEl) deployEl.textContent = formattedDeploy;
+          } catch(e) {
+            console.warn('Error formatting buildTimestamp:', e);
+          }
+        }
       } catch(e) {
         if (latency) latency.textContent = 'ERR';
         if (icon) icon.textContent = '🔴';
@@ -4984,9 +5006,21 @@
       const retest = Object.values(verdicts).filter(v => v.verdict === 'retest' || v.verdict === 'backlog').length;
       const pending = TOTAL - (pass + fail + retest);
 
-      let report = `# Master QA Verification Report (Grouped by Route)
-Target Commit SHA: 3187cca9 | Edge Commit SHA: 3187cca | Environment: dev.memoryweaver.studio
-Summary: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
+      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 08:52 BST';
+      const edgeDeploy = document.getElementById('header-edge-deploy-time')?.textContent || '07 Oct 2026, 22:44 BST';
+      const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'cf282aa';
+      const nowFormatted = new Date().toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        timeZone: 'Europe/London', timeZoneName: 'short'
+      });
+
+      let report = `# 📋 Memory Weaver Staging QA Verification Report (Grouped by Route)
+- **Checklist Template Version**: ${templateUpdated}
+- **Report Exported At**: ${nowFormatted}
+- **Active Edge Deployment**: ${edgeDeploy}
+- **Target Commit SHA**: cf282aa0 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
 `;
@@ -4995,7 +5029,7 @@ Summary: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pendin
         if (i === 7) {
           report += `\n## 🎬 Route Group 2: https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp\n`;
         } else if (i === 8) {
-          report += `\n## 📱 Route Group 3: https://dev.memoryweaver.studio/studio/fireside, Studio Elevation Ratchet (MW-88-T2) & Curriculum Sync (MW-88-T3 to T10, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110 & MW-111)\n`;
+          report += `\n## 📱 Route Group 3: https://dev.memoryweaver.studio/studio/fireside, Studio Elevation Ratchet (MW-88-T2) & Curriculum Sync (MW-88-T3 to T10, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111 & MW-114)\n`;
         }
 
         report += `
@@ -5017,22 +5051,41 @@ Summary: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pendin
     }
 
     function copySingleTestReport(cardNum, btn) {
+      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 08:52 BST';
+      const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'cf282aa';
+      const nowFormatted = new Date().toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        timeZone: 'Europe/London', timeZoneName: 'short'
+      });
       const report = `### [Test ${cardNum}: ${testTitles[cardNum]}]
-Verdict: ${getVerdict(cardNum)}
-Console Error Log: ${getConsoleLog(cardNum) || 'None provided'}
-Telemetry Trace: ${getTelemetry(cardNum) || 'None provided'}
-Narrative Feedback / Notes: ${getNotes(cardNum) || 'None provided'}
-Screenshots: ${images[cardNum].length}`;
+- Audit: Exported at ${nowFormatted} | Checklist Version: ${templateUpdated} | Active SHA: ${edgeSha}
+- Verdict: ${getVerdict(cardNum)}
+- Console Error Log: ${getConsoleLog(cardNum) || 'None provided'}
+- Telemetry Trace: ${getTelemetry(cardNum) || 'None provided'}
+- Narrative Feedback / Notes: ${getNotes(cardNum) || 'None provided'}
+- Screenshots: ${images[cardNum].length}`;
       copyTextToClipboard(report, btn);
     }
 
     function exportJSON() {
+      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 08:52 BST';
+      const edgeDeploy = document.getElementById('header-edge-deploy-time')?.textContent || '07 Oct 2026, 22:44 BST';
+      const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'cf282aa';
+      const nowFormatted = new Date().toLocaleString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        timeZone: 'Europe/London', timeZoneName: 'short'
+      });
       const payload = {
         meta: {
-          commit: '3187cca9',
-          edgeCommitSha: '3187cca',
+          commit: 'cf282aa0',
+          edgeCommitSha: edgeSha,
+          checklistTemplateUpdated: templateUpdated,
+          edgeDeployed: edgeDeploy,
           env: 'dev.memoryweaver.studio',
           generated: new Date().toISOString(),
+          generatedFormatted: nowFormatted,
           totalTests: TOTAL
         },
         verdicts,
@@ -5050,7 +5103,7 @@ Screenshots: ${images[cardNum].length}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_3187cca9_${Date.now()}.json`;
+      a.download = `qa_master_checklist_cf282aa0_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }
