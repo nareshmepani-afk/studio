@@ -476,16 +476,16 @@ export const AlbumPhotoCaptureTray = forwardRef<AlbumPhotoCaptureTrayRef, AlbumP
               }}
               disabled={isProcessing}
               data-hotspot-id="HS_FIRESIDE_PHOTO_CAMERA_BTN"
-              className="flex-1 min-h-[56px] px-5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-lg shadow-amber-950/40 transition-all active:scale-98 disabled:opacity-60"
+              className="flex-1 min-h-[56px] px-5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800/80 border border-zinc-700/80 hover:border-amber-500/40 text-zinc-200 hover:text-amber-300 font-semibold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-sm transition-all active:scale-98 disabled:opacity-60 cursor-pointer"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin text-stone-950" />
+                  <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
                   <span>Digitising & compressing heirloom photo...</span>
                 </>
               ) : (
                 <>
-                  <Camera className="w-5 h-5 text-stone-950" />
+                  <Camera className="w-5 h-5 text-amber-400" />
                   <span>Photograph Vintage Album Print</span>
                 </>
               )}

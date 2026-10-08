@@ -1151,10 +1151,10 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // 4-Act Status Spine renders all 4 interactive in-place Act tabs (MW-88-T9)
       const actSpine = document.querySelector('[data-testid="HS_FIRESIDE_ACT_SPINE"]') as HTMLElement;
       expect(actSpine).toBeTruthy();
-      expect(actSpine.textContent).toContain('Act I: Script');
-      expect(actSpine.textContent).toContain('Act II: Weave');
-      expect(actSpine.textContent).toContain('Act III: Record');
-      expect(actSpine.textContent).toContain('Act IV: Screening');
+      expect(actSpine.textContent).toContain('I • SCRIPT');
+      expect(actSpine.textContent).toContain('II • WEAVE');
+      expect(actSpine.textContent).toContain('III • RECORD');
+      expect(actSpine.textContent).toContain('IV • REEL');
 
       // In-Place Progression Button renders with zero external redirect (MW-112 canonical grammar)
       const inPlaceBtn = (document.querySelector('[data-testid="HS_FIRESIDE_SPINE_PROGRESS_BTN"]') ||
@@ -1166,7 +1166,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // Primary CTA is NOT locked to "Watch Studio Master Reel" — it enables recording the performance!
       const primaryCta = document.querySelector('[data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"]') as HTMLElement;
       expect(primaryCta).toBeTruthy();
-      expect(primaryCta.textContent).toContain('[ 🎬 Action: Enter Soundstage → ]');
+      expect(primaryCta.textContent).toContain('[ 🎬 Action: Record Scene → ]');
       fireEvent.click(primaryCta);
       expect(onSelectPrompt).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0], 'en');
 
@@ -1383,11 +1383,11 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         })
       );
 
-      // 1. Click ✏️ EDIT SCRIPT pill (MW-112 canonical grammar)
+      // 1. Click ✏️ EDIT SCENE pill (MW-112 canonical grammar)
       const editBtn = (document.querySelector('[data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"]') ||
         document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]')) as HTMLElement;
       expect(editBtn).toBeTruthy();
-      expect(editBtn.textContent).toContain('✏️ EDIT SCRIPT');
+      expect(editBtn.textContent).toContain('✏️ EDIT SCENE');
       fireEvent.click(editBtn);
 
       // 2. Verify Armchair Script Editor eyebrow, reassurance copy, textarea, and buttons
@@ -1481,6 +1481,8 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       const badge1 = document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]') as HTMLElement;
       expect(badge1).toBeTruthy();
       expect(badge1.textContent).toBe('🎬 ACT I: SCRIPTORIUM');
+      expect(badge1.className).toContain('text-sky-400');
+      expect(badge1.className).not.toContain('text-emerald-300');
       u1();
 
       // Component render check for Stage 2 memory
@@ -1489,9 +1491,9 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
           activeStage: 2,
         })
       );
-      expect(document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]')?.textContent).toBe(
-        '✨ ACT II: THE WEAVE'
-      );
+      const badge2 = document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]') as HTMLElement;
+      expect(badge2?.textContent).toBe('✨ ACT II: THE WEAVE');
+      expect(badge2?.className).toContain('text-amber-300');
       u2();
 
       // Component render check for Stage 3 memory
@@ -1500,9 +1502,9 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
           activeStage: 3,
         })
       );
-      expect(document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]')?.textContent).toBe(
-        '🎙️ ACT III: SOUNDSTAGE'
-      );
+      const badge3 = document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]') as HTMLElement;
+      expect(badge3?.textContent).toBe('🎙️ ACT III: SOUNDSTAGE');
+      expect(badge3?.className).toContain('text-amber-300');
       u3();
 
       // Component render check for Stage 4 memory
@@ -1511,9 +1513,9 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
           activeStage: 4,
         })
       );
-      expect(document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]')?.textContent).toBe(
-        '🎞️ ACT IV: SCREENING ROOM'
-      );
+      const badge4 = document.querySelector('[data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"]') as HTMLElement;
+      expect(badge4?.textContent).toBe('🎞️ ACT IV: SCREENING ROOM');
+      expect(badge4?.className).toContain('text-emerald-300');
       u4();
     });
 
@@ -1570,7 +1572,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         '[data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"]'
       ) || document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_PILL"]')) as HTMLElement;
       expect(editPill).toBeTruthy();
-      expect(editPill.textContent).toContain('✏️ EDIT SCRIPT');
+      expect(editPill.textContent).toContain('✏️ EDIT SCENE');
 
       unmount();
     });
@@ -1600,8 +1602,10 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(prog1).toBeTruthy();
       expect(prog1.textContent).toBe('[ ✨ Progress to Act II: Sensory Weave → ]');
       expect(prog1.getAttribute('href')).toBeNull();
+      expect(prog1.className).toContain('text-amber-300');
+      expect(prog1.className).not.toContain('text-emerald-300');
       expect(rec1).toBeTruthy();
-      expect(rec1.textContent).toBe('[ 🎬 Action: Enter Soundstage → ]');
+      expect(rec1.textContent).toBe('[ 🎬 Action: Record Scene → ]');
       u1();
 
       // Stage 2: [ 🎬 Progress to Act III: Record Performance → ]
@@ -1681,10 +1685,10 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(tab2).toBeTruthy();
       expect(tab3).toBeTruthy();
       expect(tab4).toBeTruthy();
-      expect(tab1.textContent).toContain('✓ Act I: Script');
-      expect(tab2.textContent).toContain('● Act II: Weave');
-      expect(tab3.textContent).toContain('○ Act III: Record');
-      expect(tab4.textContent).toContain('○ Act IV: Screening');
+      expect(tab1.textContent).toContain('✓ I • SCRIPT');
+      expect(tab2.textContent).toContain('● II • WEAVE');
+      expect(tab3.textContent).toContain('○ III • RECORD');
+      expect(tab4.textContent).toContain('○ IV • REEL');
       expect(tab1.className).not.toContain('truncate');
       expect(tab2.className).not.toContain('truncate');
       expect(tab3.className).not.toContain('truncate');
@@ -1885,19 +1889,19 @@ describe('11. MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branchi
     unmount();
   });
 
-  it('Mobile compact labels present in sm:hidden spans — no whitespace-nowrap on any tab button', () => {
+  it('Mobile compact tokens present in sm:hidden spans — no whitespace-nowrap on any tab button (MW-119 Option A)', () => {
     const { container, unmount } = render(
       React.createElement(SingleCardPromptCarousel, { activeSceneMemory: baseMemory })
     );
     // All 4 mobile spans present
     const mobileSpans = container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"] span.sm\\:hidden');
     expect(mobileSpans.length).toBe(4);
-    // Check each span contains the compact label substring (use includes, not regex-strip, to preserve spaces)
+    // Check each span contains the compact token substring
     const texts = Array.from(mobileSpans).map((s) => s.textContent ?? '');
-    expect(texts.some((t) => t.includes('I: Script'))).toBe(true);
-    expect(texts.some((t) => t.includes('II: Weave'))).toBe(true);
-    expect(texts.some((t) => t.includes('III: Record'))).toBe(true);
-    expect(texts.some((t) => t.includes('IV: Reel'))).toBe(true);
+    expect(texts.some((t) => t.includes('I • SCRIPT'))).toBe(true);
+    expect(texts.some((t) => t.includes('II • WEAVE'))).toBe(true);
+    expect(texts.some((t) => t.includes('III • RECORD'))).toBe(true);
+    expect(texts.some((t) => t.includes('IV • REEL'))).toBe(true);
     // No button carries whitespace-nowrap
     container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"]').forEach((tab) => {
       expect(tab.className).not.toContain('whitespace-nowrap');
@@ -1905,17 +1909,17 @@ describe('11. MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branchi
     unmount();
   });
 
-  it('Desktop full labels present in hidden sm:inline spans', () => {
+  it('Desktop compact tokens present in hidden sm:inline spans (MW-119 Option A Zero-Truncation)', () => {
     const { container, unmount } = render(
       React.createElement(SingleCardPromptCarousel, { activeSceneMemory: baseMemory })
     );
     const desktopSpans = container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"] span.hidden');
     expect(desktopSpans.length).toBe(4);
     const texts = Array.from(desktopSpans).map((s) => s.textContent ?? '');
-    expect(texts.some((t) => t.includes('Act I: Script'))).toBe(true);
-    expect(texts.some((t) => t.includes('Act II: Weave'))).toBe(true);
-    expect(texts.some((t) => t.includes('Act III: Record'))).toBe(true);
-    expect(texts.some((t) => t.includes('Act IV: Screening'))).toBe(true);
+    expect(texts.some((t) => t.includes('I • SCRIPT'))).toBe(true);
+    expect(texts.some((t) => t.includes('II • WEAVE'))).toBe(true);
+    expect(texts.some((t) => t.includes('III • RECORD'))).toBe(true);
+    expect(texts.some((t) => t.includes('IV • REEL'))).toBe(true);
     unmount();
   });
 });
@@ -2065,7 +2069,7 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     unmount();
   });
 
-  it('13.3 SingleCardPromptCarousel renders HS_FIRESIDE_CROWN_NEXT_RECOMMENDED and [ 🎬 Ready for Action ] (Sky Blue) on first uncompleted scene', () => {
+  it('13.3 SingleCardPromptCarousel renders HS_FIRESIDE_CROWN_NEXT_RECOMMENDED and [ 🎬 READY FOR ACTION ] (Sky Blue) on first uncompleted scene', () => {
     const { queryByTestId, getByTestId, unmount } = render(
       React.createElement(SingleCardPromptCarousel, {
         activeLanguage: 'en',
@@ -2075,13 +2079,13 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     const crown = getByTestId('HS_FIRESIDE_CROWN_NEXT_RECOMMENDED');
     expect(crown.textContent).toContain('NEXT RECOMMENDED');
     const readyBadge = getByTestId('HS_FIRESIDE_BADGE_READY_FOR_ACTION');
-    expect(readyBadge.textContent).toContain('Ready for Action');
+    expect(readyBadge.textContent).toContain('READY FOR ACTION');
     expect(readyBadge.className).toContain('text-sky-400');
     expect(readyBadge.className).toContain('border-sky-500/30');
     expect(readyBadge.className).not.toContain('text-emerald-400');
     expect(queryByTestId('HS_FIRESIDE_BADGE_CAPTURED')).toBeNull();
     const cta = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
-    expect(cta.textContent).toContain('[ 🎬 Action: Enter Soundstage → ]');
+    expect(cta.textContent).toContain('[ 🎬 Action: Record Scene → ]');
     unmount();
   });
 
@@ -2217,21 +2221,23 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     // Invariant B: Act IV Screening Room panel MUST NOT be visible
     expect(queryByTestId('fireside-act4-screening-panel')).toBeNull();
 
-    // Invariant C: Badge must show [ 🎬 Ready for Action ] in Sky Blue
+    // Invariant C: Badge must show [ 🎬 READY FOR ACTION ] in Sky Blue
     const readyBadge = getByTestId('HS_FIRESIDE_BADGE_READY_FOR_ACTION');
     expect(readyBadge).toBeInTheDocument();
-    expect(readyBadge.textContent).toContain('Ready for Action');
+    expect(readyBadge.textContent).toContain('READY FOR ACTION');
     expect(readyBadge.className).toContain('text-sky-400');
     expect(readyBadge.className).toContain('border-sky-500/30');
     expect(readyBadge.className).not.toContain('text-emerald-400');
 
-    // Invariant D: Stage progression CTA must show Progress to Act II (not Watch Master Reel)
+    // Invariant D: Stage progression CTA must show Progress to Act II (not Watch Master Reel) and have amber outline
     const stageProgBtn = getByTestId('HS_FIRESIDE_STAGE_PROGRESSION_BTN');
     expect(stageProgBtn.textContent).toContain('[ ✨ Progress to Act II: Sensory Weave → ]');
+    expect(stageProgBtn.className).toContain('text-amber-300');
+    expect(stageProgBtn.className).not.toContain('text-emerald-300');
 
-    // Invariant E: Direct record CTA must show Action: Enter Soundstage
+    // Invariant E: Direct record CTA must show Action: Record Scene
     const directActionBtn = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
-    expect(directActionBtn.textContent).toContain('[ 🎬 Action: Enter Soundstage → ]');
+    expect(directActionBtn.textContent).toContain('[ 🎬 Action: Record Scene → ]');
 
     unmount();
   });
@@ -2613,6 +2619,120 @@ describe('16. MW-111: Eliminating Premature Recording Mode Decisions & Act III J
 
     // 4. Preferred storage key imported and used
     expect(clientSrc).toContain('FIRESIDE_PREFERRED_MODE_STORAGE_KEY');
+  });
+});
+
+// =========================================================================
+// 17. MW-119: Fireside Chromatic Lockstep & Zero-Truncation Ergonomics (Option A)
+// =========================================================================
+describe('17. MW-119: Fireside Chromatic Lockstep & Zero-Truncation Ergonomics (Option A)', () => {
+  it('17.1 enforces Sky Blue Act I stepper tab styling with zero emerald bleed on unrecorded draft', () => {
+    const mockDoc = {
+      id: 'test-act1-scene',
+      sceneId: 'part-1-scene-1',
+      prose: 'A vibrant recollection of youth.',
+      takes: [],
+      productionStage: 1,
+    };
+
+    const { getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeSceneMemory: mockDoc,
+        getSceneMemory: () => mockDoc,
+      })
+    );
+
+    const tab1 = getByTestId('HS_FIRESIDE_ACT_TAB_1');
+    expect(tab1).toBeTruthy();
+    // Active Act I Tab is Sky Blue
+    expect(tab1.className).toContain('text-sky-300');
+    expect(tab1.className).toContain('border-sky-500/50');
+    expect(tab1.className).not.toContain('text-emerald-300');
+    expect(tab1.className).not.toContain('border-emerald-500/50');
+
+    // Tab 1 contains compact token I • SCRIPT
+    expect(tab1.textContent).toContain('I • SCRIPT');
+
+    unmount();
+  });
+
+  it('17.2 renders compact zero-truncation tokens across all 4 spine tabs without text overflow', () => {
+    const mockBaseMemory = {
+      id: 'test-spine-tokens',
+      sceneId: 'part-1-scene-1',
+      prose: '',
+      takes: [],
+    };
+
+    const { getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeSceneMemory: mockBaseMemory,
+        getSceneMemory: () => mockBaseMemory,
+      })
+    );
+
+    const tab1 = getByTestId('HS_FIRESIDE_ACT_TAB_1');
+    const tab2 = getByTestId('HS_FIRESIDE_ACT_TAB_2');
+    const tab3 = getByTestId('HS_FIRESIDE_ACT_TAB_3');
+    const tab4 = getByTestId('HS_FIRESIDE_ACT_TAB_4');
+
+    expect(tab1.textContent).toContain('I • SCRIPT');
+    expect(tab2.textContent).toContain('II • WEAVE');
+    expect(tab3.textContent).toContain('III • RECORD');
+    expect(tab4.textContent).toContain('IV • REEL');
+
+    // Zero whitespace-nowrap overflow on buttons
+    [tab1, tab2, tab3, tab4].forEach((t) => {
+      expect(t.className).not.toContain('whitespace-nowrap');
+    });
+
+    unmount();
+  });
+
+  it('17.3 renders [ 🎬 READY FOR ACTION ] in Sky Blue and CTA [ 🎬 Action: Record Scene → ]', () => {
+    const { getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        mediaMode: 'video',
+      })
+    );
+
+    const badge = getByTestId('HS_FIRESIDE_BADGE_READY_FOR_ACTION');
+    expect(badge.textContent).toBe('[ 🎬 READY FOR ACTION ]');
+    expect(badge.className).toContain('text-sky-400');
+    expect(badge.className).toContain('border-sky-500/30');
+
+    const cta = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
+    expect(cta.textContent).toBe('[ 🎬 Action: Record Scene → ]');
+    expect(cta.className).toContain('bg-sky-500');
+
+    unmount();
+  });
+
+  it('17.4 demotes stage progression button to secondary amber outline on Act I scene', () => {
+    const mockDoc = {
+      id: 'test-progression-amber',
+      sceneId: 'part-1-scene-1',
+      prose: 'Draft text for scene progression test.',
+      takes: [],
+      productionStage: 1,
+    };
+
+    const { getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeSceneMemory: mockDoc,
+        getSceneMemory: () => mockDoc,
+      })
+    );
+
+    const progBtn = getByTestId('HS_FIRESIDE_STAGE_PROGRESSION_BTN');
+    expect(progBtn.textContent).toContain('[ ✨ Progress to Act II: Sensory Weave → ]');
+    // Secondary amber outline, zero emerald
+    expect(progBtn.className).toContain('text-amber-300');
+    expect(progBtn.className).toContain('border-amber-500/40');
+    expect(progBtn.className).not.toContain('text-emerald-300');
+
+    unmount();
   });
 });
 

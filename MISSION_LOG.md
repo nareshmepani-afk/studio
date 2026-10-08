@@ -1042,6 +1042,36 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `npm.cmd run test`: 57/57 test files passed (732/732 tests passed).
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
 
+---
+
+## Checkpoint #044 — MW-119: Fireside Chromatic Lockstep & Zero-Truncation Ergonomics (Option A) (2026-10-08)
+
+- **Target Ref**: `MW-119` (Plane.so Seq #329) / `MW-115` Option A
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Architectural & UX Deliverables**:
+  - **Chromatic Correction & Emerald False-Positive Elimination**:
+    - Shifted Fireside Act I stepper tabs and top Scriptorium badge (`FiresideAuthHeader.tsx` & `SingleCardPromptCarousel.tsx`) from Emerald Green to Sky Blue (`text-sky-400 bg-sky-500/10 border-sky-500/30`).
+    - Reserved Emerald strictly for Act IV (Reel Mastered) completed states across both Desktop and Fireside surfaces.
+    - Demoted stage progression button (`HS_FIRESIDE_STAGE_PROGRESSION_BTN`) from emerald to secondary amber outline (`text-amber-300 border-amber-500/40`) when advancing to Act II or III.
+  - **Button Hierarchy & Photo De-escalation**:
+    - Demoted `[ Photograph Vintage Album Print ]` in `AlbumPhotoCaptureTray.tsx` from solid `bg-amber-500` to subtle slate outline (`bg-zinc-900/80 border-zinc-700/80 hover:border-amber-500/40 text-zinc-200 hover:text-amber-300`) with amber icon.
+    - Demoted desktop `[ Open Studio Photobooth ]` in `SoloStage.tsx` from solid `bg-amber-400` to matching subtle slate outline (`bg-zinc-900/80 border-zinc-700/80 hover:border-amber-500/40 text-zinc-200 hover:text-amber-300`) with amber icon.
+    - Restored solid Sky Blue (`bg-sky-500`) primary CTA as the undisputed visual anchor across all screen widths.
+  - **Action CTA Unification & Taxonomy Parity**:
+    - Updated Fireside primary CTA to solid Sky Blue `[ 🎬 Action: Record Scene → ]`.
+    - Standardised badge casing to `[ 🎬 READY FOR ACTION ]` (1:1 lockstep with Desktop).
+    - Unified editing verbs across Desktop and Fireside to `[ ✏️ Edit Scene ]` and `✏️ EDIT SCENE`.
+  - **Zero-Truncation Stepper Ergonomics**:
+    - Replaced long labels in the mobile 4-act spine with compact tokens: `"I • SCRIPT"`, `"II • WEAVE"`, `"III • RECORD"`, `"IV • REEL"`, permanently eliminating `Rec...` and `Scre...` ellipsis clipping on 390px mobile viewports.
+  - **Governance & Regression Shield**:
+    - Codified Rule 45 updates into `.agents/AGENTS.md`.
+    - Expanded `src/test/fireside_sync.test.ts` with Suite 17 (70/70 tests passing).
+    - 57/57 Vitest suites passing (738/738 tests passing).
+- **Verification**:
+  - `npm.cmd run type-check`: exit code 0.
+  - `npm.cmd run test`: 57/57 test files passed (738/738 tests passed).
+
+
 
 
 

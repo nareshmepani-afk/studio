@@ -912,7 +912,7 @@ export function SingleCardPromptCarousel({
                         data-testid="HS_FIRESIDE_BADGE_READY_FOR_ACTION"
                         className="bg-sky-500/10 text-sky-400 border border-sky-500/30 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
                       >
-                        [ 🎬 Ready for Action ]
+                        [ 🎬 READY FOR ACTION ]
                       </span>
                     )}
                   </div>
@@ -995,14 +995,14 @@ export function SingleCardPromptCarousel({
                     title="Act I: Script — Review or edit your story hook and narrative prose in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
                       selectedActTab === 'act1'
-                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
+                        ? 'border-sky-500/50 bg-sky-950/40 text-sky-300 font-bold ring-1 ring-sky-400/40'
                         : activeProse
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
-                        : 'bg-amber-500/15 border-amber-500/40 text-amber-200 font-semibold hover:bg-amber-500/20'
+                        ? 'bg-sky-500/10 border-sky-500/30 text-sky-400 font-bold hover:bg-sky-500/20'
+                        : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    <span className="sm:hidden truncate">{activeProse ? '✓ ' : '● '}I: Script</span>
-                    <span className="hidden sm:inline truncate">{activeProse ? '✓ ' : '● '}Act I: Script</span>
+                    <span className="sm:hidden truncate">{activeProse ? '✓ ' : '● '}I • SCRIPT</span>
+                    <span className="hidden sm:inline truncate">{activeProse ? '✓ ' : '● '}I • SCRIPT</span>
                   </button>
                   <button
                     type="button"
@@ -1013,19 +1013,19 @@ export function SingleCardPromptCarousel({
                     title="Act II: Weave — Inspect and pulse-highlight sensory anchor cues in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
                       selectedActTab === 'act2'
-                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
+                        ? 'border-amber-500/50 bg-amber-950/40 text-amber-300 font-bold ring-1 ring-amber-400/40'
                         : hasSceneCompletedReel || activeProductionStage >= 2
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/20'
                         : activeProse
                         ? 'bg-amber-500/20 border-amber-400/50 text-amber-200 font-bold hover:bg-amber-500/25'
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
                     <span className="sm:hidden truncate">
-                      {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II: Weave
+                      {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II • WEAVE
                     </span>
                     <span className="hidden sm:inline truncate">
-                      {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}Act II: Weave
+                      {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II • WEAVE
                     </span>
                   </button>
                   <button
@@ -1037,17 +1037,17 @@ export function SingleCardPromptCarousel({
                     title="Act III: Record — Capture your spoken voice or selfie video performance in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
                       selectedActTab === 'act3'
-                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
+                        ? 'border-amber-500/50 bg-amber-950/40 text-amber-300 font-bold ring-1 ring-amber-400/40'
                         : hasSceneCompletedReel || activeProductionStage >= 3
-                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/20'
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
                     <span className="sm:hidden truncate">
-                      {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III: Record
+                      {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III • RECORD
                     </span>
                     <span className="hidden sm:inline truncate">
-                      {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}Act III: Record
+                      {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III • RECORD
                     </span>
                   </button>
                   <button
@@ -1066,10 +1066,10 @@ export function SingleCardPromptCarousel({
                     }`}
                   >
                     <span className="sm:hidden truncate">
-                      {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV: Reel
+                      {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV • REEL
                     </span>
                     <span className="hidden sm:inline truncate">
-                      {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}Act IV: Screening
+                      {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV • REEL
                     </span>
                   </button>
                 </div>
@@ -1421,7 +1421,7 @@ export function SingleCardPromptCarousel({
                         onClick={handleStartEditScript}
                         className="min-h-[48px] sm:min-h-[44px] px-3.5 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-950/60 hover:bg-amber-900/70 active:scale-98 text-amber-400 border border-amber-500/30 transition-all cursor-pointer shrink-0"
                       >
-                        <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">✏️ EDIT SCRIPT</span>
+                        <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">✏️ EDIT SCENE</span>
                       </button>
                     </div>
                   </div>
@@ -1468,7 +1468,7 @@ export function SingleCardPromptCarousel({
                       onClick={handleStartEditScript}
                       className="min-h-[48px] sm:min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 text-amber-200 border border-amber-500/40 transition-all cursor-pointer"
                     >
-                      <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">[ ✏️ Edit Script ]</span>
+                      <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">[ ✏️ Edit Scene ]</span>
                     </button>
                   </div>
                 </div>
@@ -1617,7 +1617,11 @@ export function SingleCardPromptCarousel({
             }}
             title={stageProgression.title}
             style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-            className="w-full min-h-[56px] px-4 py-3 rounded-2xl bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-500/50 text-emerald-300 font-mono font-bold text-xs sm:text-sm shadow-lg shadow-emerald-950/30 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer"
+            className={`w-full min-h-[56px] px-4 py-3 rounded-2xl font-mono font-bold text-xs sm:text-sm active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer ${
+              stageProgression.nextTab === 'act4'
+                ? 'bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-950/30'
+                : 'bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-sm'
+            }`}
           >
             {stageProgression.label}
           </button>
@@ -1649,7 +1653,7 @@ export function SingleCardPromptCarousel({
           >
             {hasCurrentTake
               ? '[ ✏️ Edit Scene / Audition Take → ]'
-              : '[ 🎬 Action: Enter Soundstage → ]'}
+              : '[ 🎬 Action: Record Scene → ]'}
           </button>
         </div>
       </div>

@@ -1271,12 +1271,15 @@ Across both Desktop Studio (`/studio`, `PromptCard.tsx`) and Mobile Fireside (`/
 
 | Story / Scene State | Status Badge Copy | Status Badge Chromatic Styling | Primary CTA Button Label | Primary CTA Styling |
 | :--- | :--- | :--- | :--- | :--- |
-| **Draft / Not Recorded** | `[ 🎬 Ready for Action ]` | **Sky Blue**: `bg-sky-500/10 text-sky-400 border border-sky-500/30` | **Desktop**: `▶ Action`<br/>**Fireside**: `[ 🎬 Action: Enter Soundstage → ]` | **Sky Blue**: `bg-sky-500 hover:bg-sky-400 text-gray-950` / `bg-primary` |
-| **In Progress / Act II-III Draft** | `[ ✍️ Studio Draft ]` | **Amber**: `bg-amber-950/80 text-amber-300 border border-amber-500/40` | `▶ Action` / `[ 🎬 Action: Enter Soundstage → ]` | **Sky Blue** or **Amber** (when actively resuming draft) |
-| **Captured Take / Pre-Release** | `[ 📹 Captured ]` + `[ 🎞️ Pre-Release ]` | **Teal**: `bg-teal-950/80 text-teal-300 border border-teal-500/40` + **Purple**: `bg-purple-950/80 text-purple-300 border border-purple-500/40` | `[ ✏️ Edit Scene / Audition Take → ]` | **Muted Sky**: `border border-sky-500/40 bg-sky-950/30 text-sky-300` |
-| **Master Reel Sealed** | `[ 🔒 Reel Mastered ]` | **Emerald Green**: `bg-emerald-950/60 text-emerald-400 border border-emerald-500/30` | `[ 🎬 Watch Master Reel in Screening Room ↗ ]` | **Emerald Green**: `bg-emerald-500 hover:bg-emerald-400 text-stone-950` |
+| **Draft / Not Recorded** | `[ 🎬 READY FOR ACTION ]` | **Sky Blue**: `bg-sky-500/10 text-sky-400 border border-sky-500/30` | **Desktop**: `▶ Action`<br/>**Fireside**: `[ 🎬 Action: Record Scene → ]` | **Sky Blue**: `bg-sky-500 hover:bg-sky-400 text-gray-950` / `bg-primary` |
+| **In Progress / Act II-III Draft** | `[ ✍️ STUDIO DRAFT ]` | **Amber**: `bg-amber-950/80 text-amber-300 border border-amber-500/40` | `▶ Action` / `[ 🎬 Action: Record Scene → ]` | **Sky Blue** or **Amber** (when actively resuming draft) |
+| **Captured Take / Pre-Release** | `[ 📹 CAPTURED ]` + `[ 🎞️ PRE-RELEASE ]` | **Teal**: `bg-teal-950/80 text-teal-300 border border-teal-500/40` + **Purple**: `bg-purple-950/80 text-purple-300 border border-purple-500/40` | `[ ✏️ Edit Scene / Audition Take → ]` | **Muted Sky**: `border border-sky-500/40 bg-sky-950/30 text-sky-300` |
+| **Master Reel Sealed** | `[ 🔒 REEL MASTERED ]` | **Emerald Green**: `bg-emerald-950/60 text-emerald-400 border border-emerald-500/30` | `[ 🎬 Watch Master Reel in Screening Room ↗ ]` | **Emerald Green**: `bg-emerald-500 hover:bg-emerald-400 text-stone-950` |
 
-## 45.3 Device-Aware Ergonomic Form Factors
-- **Desktop Cards**: High density in 3-column grids requires concise labels (`▶ Action`, `Ready for Action`) to prevent multi-line button wrapping and card height jitter.
-- **Fireside Mobile**: Touch screens used by elder narrators require prominent, descriptive, full-width touch targets (`[ 🎬 Action: Enter Soundstage → ]`, minimum 48px height) for immediate, self-explanatory navigation.
+## 45.3 Device-Aware Ergonomic Form Factors & Zero-Truncation Stepper
+- **Desktop Cards**: High density in 3-column grids requires concise labels (`▶ Action`, `READY FOR ACTION`) to prevent multi-line button wrapping and card height jitter.
+- **Fireside Mobile**: Touch screens used by elder narrators require prominent, descriptive, full-width touch targets (`[ 🎬 Action: Record Scene → ]`, minimum 48px height) for immediate, self-explanatory navigation.
+- **Zero-Truncation 4-Act Spine Tokens**: In the mobile 4-act progression bar, avoid long labels like `Act III: Record` or `Act IV: Screening` that truncate to `Rec...` or `Scre...` on 390px viewports. Use compact tokens: `I • SCRIPT`, `II • WEAVE`, `III • RECORD`, `IV • REEL`.
+- **Button Hierarchy & Photo De-escalation**: Primary workflow CTA (`Action: Record Scene →`) MUST remain the undisputed chromatic focal point (solid Sky Blue). Ancillary actions like heirloom photo capture (`[ Photograph Vintage Album Print ]`) and photobooth buttons MUST use subtle slate outlines (`bg-zinc-900/80 border-zinc-700/80 hover:border-amber-500/40 text-zinc-200`) to prevent overpowering primary navigation.
+
 

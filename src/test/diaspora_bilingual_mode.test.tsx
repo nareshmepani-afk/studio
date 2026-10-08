@@ -124,7 +124,7 @@ describe('Diaspora Bilingual Hybrid Engine Tests', () => {
       />
     );
 
-    const badge = screen.getByText('Ready for Action');
+    const badge = screen.getByText('READY FOR ACTION');
     expect(badge).toBeDefined();
     expect(badge.className).toContain('text-sky-400');
     expect(badge.className).toContain('border-sky-500/30');

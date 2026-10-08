@@ -5833,9 +5833,9 @@ export default function SoloStage({
                           data-hotspot-id="HS_ACT4_OPEN_PHOTOBOOTH_BTN"
                           onClick={handleOpenSelfiePhotobooth} 
                           disabled={isCapturingThumbnail} 
-                          className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(245,158,11,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                          className="px-6 py-3.5 bg-zinc-900/80 hover:bg-zinc-800/80 border border-zinc-700/80 hover:border-amber-500/40 text-zinc-200 hover:text-amber-300 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-2"
                        >
-                          <Sparkles className="w-4 h-4 text-slate-950" />
+                          <Sparkles className="w-4 h-4 text-amber-400" />
                           <span>Open Studio Photobooth</span>
                        </button>
                      </div>

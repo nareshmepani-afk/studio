@@ -68,6 +68,16 @@ export function resolveHeaderActBadge(
   return '🎬 ACT I: SCRIPTORIUM';
 }
 
+export function resolveHeaderActBadgeStyle(headerActBadge: string): string {
+  if (headerActBadge.includes('ACT IV')) {
+    return 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300';
+  }
+  if (headerActBadge.includes('ACT II') || headerActBadge.includes('ACT III')) {
+    return 'bg-amber-500/10 border-amber-500/30 text-amber-300';
+  }
+  return 'bg-sky-500/10 border-sky-500/30 text-sky-400';
+}
+
 export function FiresideAuthHeader({
   className = '',
   activePartTitle,
@@ -115,10 +125,10 @@ export function FiresideAuthHeader({
               Dev Staging{commitSha ? ` • ${commitSha.slice(0, 7)}` : ''}
             </span>
 
-            {/* Dynamic Production Stage Context Badge Synchronised with Desktop Studio (MW-88-T8 / MW-88-T9) */}
+            {/* Dynamic Production Stage Context Badge Synchronised with Desktop Studio (MW-88-T8 / MW-88-T9 / MW-119) */}
             <span
               data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"
-              className="inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 font-semibold shrink-0"
+              className={`inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full font-semibold shrink-0 border ${resolveHeaderActBadgeStyle(headerActBadge)}`}
               title={`Active Production Stage: ${headerActBadge}`}
             >
               {headerActBadge}
