@@ -231,8 +231,8 @@ export function PromptCard(props: PromptCardProps) {
                       )}
                    </div>
                 ) : (
-                  <div className="flex items-center text-white/30 text-[9px] font-black uppercase tracking-[0.2em]">
-                    <Clapperboard className="h-3 w-3 mr-1.5 opacity-50" />
+                  <div className="flex items-center text-sky-400 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-[0.2em]">
+                    <Clapperboard className="h-3 w-3 mr-1.5 opacity-70" />
                     Ready for Action
                   </div>
                 )}

@@ -1259,3 +1259,24 @@ In asynchronous pair programming sessions, the user frequently queues multiple m
 ## 44.4 Multi-Message Triage & Numbered Breakdown
 - When the user queues or combines multiple questions or directives in a single turn, the agent MUST explicitly itemise them (`[Item 1]`, `[Item 2]`, `[Item 3]`), addressing each item point-by-point without skipping any sub-bullet or inquiry.
 
+# 45. Universal Lifecycle & Chromatic Taxonomy Standard ("The Chromatic Lockstep Rule")
+
+Across both Desktop Studio (`/studio`, `PromptCard.tsx`) and Mobile Fireside (`/studio/fireside`, `SingleCardPromptCarousel.tsx`), status badges and primary call-to-action (CTA) buttons MUST maintain strict functional and chromatic lockstep to prevent semantic confusion:
+
+## 45.1 Elimination of the Emerald False Positive
+- **Emerald Green Invariant**: **Emerald Green** (`bg-emerald-500`, `text-emerald-400`, `border-emerald-500/30`) is **STRICTLY RESERVED** for verified, completed, and sealed master states (e.g. Master Reel Recorded, 100% Curriculum Milestones, Audition Take Screened).
+- **Prohibition on Unrecorded States**: Under NO circumstances may an unrecorded prompt card, draft scene, or empty slate render in Emerald Green. Doing so misleads narrators into believing a story or take has already been recorded.
+
+## 45.2 Chromatic & Text Lockstep Matrix
+
+| Story / Scene State | Status Badge Copy | Status Badge Chromatic Styling | Primary CTA Button Label | Primary CTA Styling |
+| :--- | :--- | :--- | :--- | :--- |
+| **Draft / Not Recorded** | `[ 🎬 Ready for Action ]` | **Sky Blue**: `bg-sky-500/10 text-sky-400 border border-sky-500/30` | **Desktop**: `▶ Action`<br/>**Fireside**: `[ 🎬 Action: Enter Soundstage → ]` | **Sky Blue**: `bg-sky-500 hover:bg-sky-400 text-gray-950` / `bg-primary` |
+| **In Progress / Act II-III Draft** | `[ ✍️ Studio Draft ]` | **Amber**: `bg-amber-950/80 text-amber-300 border border-amber-500/40` | `▶ Action` / `[ 🎬 Action: Enter Soundstage → ]` | **Sky Blue** or **Amber** (when actively resuming draft) |
+| **Captured Take / Pre-Release** | `[ 📹 Captured ]` + `[ 🎞️ Pre-Release ]` | **Teal**: `bg-teal-950/80 text-teal-300 border border-teal-500/40` + **Purple**: `bg-purple-950/80 text-purple-300 border border-purple-500/40` | `[ ✏️ Edit Scene / Audition Take → ]` | **Muted Sky**: `border border-sky-500/40 bg-sky-950/30 text-sky-300` |
+| **Master Reel Sealed** | `[ 🔒 Reel Mastered ]` | **Emerald Green**: `bg-emerald-950/60 text-emerald-400 border border-emerald-500/30` | `[ 🎬 Watch Master Reel in Screening Room ↗ ]` | **Emerald Green**: `bg-emerald-500 hover:bg-emerald-400 text-stone-950` |
+
+## 45.3 Device-Aware Ergonomic Form Factors
+- **Desktop Cards**: High density in 3-column grids requires concise labels (`▶ Action`, `Ready for Action`) to prevent multi-line button wrapping and card height jitter.
+- **Fireside Mobile**: Touch screens used by elder narrators require prominent, descriptive, full-width touch targets (`[ 🎬 Action: Enter Soundstage → ]`, minimum 48px height) for immediate, self-explanatory navigation.
+

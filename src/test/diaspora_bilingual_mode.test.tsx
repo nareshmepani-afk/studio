@@ -109,4 +109,28 @@ describe('Diaspora Bilingual Hybrid Engine Tests', () => {
     expect(screen.getByText('A Child of Two Worlds')).toBeDefined();
     expect(screen.getByText('બે દુનિયાનું બાળક')).toBeDefined();
   });
+
+  it('renders PromptCard with Sky Blue [ Ready for Action ] badge and compact Action CTA when unrecorded (Rule 45 Lockstep)', () => {
+    render(
+      <PromptCard
+        promptId="p-test-lockstep"
+        promptText="Childhood Summers"
+        storyScript="A memory about childhood summers"
+        isCompleted={false}
+        isFlaggedForReuse={false}
+        onStartChapter={vi.fn()}
+        onToggleFlagPrompt={vi.fn()}
+        canAccess={true}
+      />
+    );
+
+    const badge = screen.getByText('Ready for Action');
+    expect(badge).toBeDefined();
+    expect(badge.className).toContain('text-sky-400');
+    expect(badge.className).toContain('border-sky-500/30');
+    expect(badge.className).not.toContain('text-emerald-400');
+
+    const actionBtn = screen.getByText('Action');
+    expect(actionBtn).toBeDefined();
+  });
 });

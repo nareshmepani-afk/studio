@@ -2065,7 +2065,7 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     unmount();
   });
 
-  it('13.3 SingleCardPromptCarousel renders HS_FIRESIDE_CROWN_NEXT_RECOMMENDED and [ 🎬 READY FOR ACTION ] on first uncompleted scene', () => {
+  it('13.3 SingleCardPromptCarousel renders HS_FIRESIDE_CROWN_NEXT_RECOMMENDED and [ 🎬 Ready for Action ] (Sky Blue) on first uncompleted scene', () => {
     const { queryByTestId, getByTestId, unmount } = render(
       React.createElement(SingleCardPromptCarousel, {
         activeLanguage: 'en',
@@ -2075,7 +2075,10 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     const crown = getByTestId('HS_FIRESIDE_CROWN_NEXT_RECOMMENDED');
     expect(crown.textContent).toContain('NEXT RECOMMENDED');
     const readyBadge = getByTestId('HS_FIRESIDE_BADGE_READY_FOR_ACTION');
-    expect(readyBadge.textContent).toContain('READY FOR ACTION');
+    expect(readyBadge.textContent).toContain('Ready for Action');
+    expect(readyBadge.className).toContain('text-sky-400');
+    expect(readyBadge.className).toContain('border-sky-500/30');
+    expect(readyBadge.className).not.toContain('text-emerald-400');
     expect(queryByTestId('HS_FIRESIDE_BADGE_CAPTURED')).toBeNull();
     const cta = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
     expect(cta.textContent).toContain('[ 🎬 Action: Enter Soundstage → ]');
@@ -2214,10 +2217,13 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     // Invariant B: Act IV Screening Room panel MUST NOT be visible
     expect(queryByTestId('fireside-act4-screening-panel')).toBeNull();
 
-    // Invariant C: Badge must show [ 🎬 READY FOR ACTION ]
+    // Invariant C: Badge must show [ 🎬 Ready for Action ] in Sky Blue
     const readyBadge = getByTestId('HS_FIRESIDE_BADGE_READY_FOR_ACTION');
     expect(readyBadge).toBeInTheDocument();
-    expect(readyBadge.textContent).toContain('READY FOR ACTION');
+    expect(readyBadge.textContent).toContain('Ready for Action');
+    expect(readyBadge.className).toContain('text-sky-400');
+    expect(readyBadge.className).toContain('border-sky-500/30');
+    expect(readyBadge.className).not.toContain('text-emerald-400');
 
     // Invariant D: Stage progression CTA must show Progress to Act II (not Watch Master Reel)
     const stageProgBtn = getByTestId('HS_FIRESIDE_STAGE_PROGRESSION_BTN');

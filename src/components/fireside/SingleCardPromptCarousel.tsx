@@ -910,9 +910,9 @@ export function SingleCardPromptCarousel({
                     ) : (
                       <span
                         data-testid="HS_FIRESIDE_BADGE_READY_FOR_ACTION"
-                        className="bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                        className="bg-sky-500/10 text-sky-400 border border-sky-500/30 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
                       >
-                        [ 🎬 READY FOR ACTION ]
+                        [ 🎬 Ready for Action ]
                       </span>
                     )}
                   </div>
