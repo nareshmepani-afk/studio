@@ -2329,40 +2329,79 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     const { getByTestId, unmount } = render(React.createElement(ControlledHarness));
 
     const subtitle = getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE');
-    expect(subtitle.textContent).toContain('Part I - Scene 1');
-    expect(subtitle.textContent).toMatch(/(Scene|Story) 1 of/);
+    expect(subtitle.textContent).toContain('Part I • Scene 1 of 4');
+    expect(subtitle.textContent).not.toMatch(/Story \d+ of/);
     expect(subtitle.textContent).toContain('A Child of Two Worlds');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · A Child of Two Worlds');
 
     // Jump to next Part Scene 1 via PRODUCTION STAGE Header Next Chevron (Part I -> Part II - Scene 1)
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_NEXT_SCENE'));
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 1');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toMatch(/(Scene|Story) 4 of/);
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II • Scene 1 of 4');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toMatch(/Story \d+ of/);
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Formative Friendships');
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Formative Friendships');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · Formative Friendships');
 
     // Step forward 1 scene via Spine Rail Next Chevron (Part II - Scene 1 -> Part II - Scene 2)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 2');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toMatch(/(Scene|Story) 5 of/);
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('5 ·');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II • Scene 2 of 4');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toMatch(/Story \d+ of/);
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('2 ·');
 
     // MW-114: Step forward to Part II Scene 3 (Crossroads and Choices)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 3');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II • Scene 3 of 4');
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Crossroads and Choices');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('3 · Crossroads and Choices');
 
     // MW-114: Step forward to Part II Scene 4 (Learning the Hard Way)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II - Scene 4');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II • Scene 4 of 4');
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Learning the Hard Way');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Learning the Hard Way');
 
-    // Jump backward to previous Part Scene 1 via PRODUCTION STAGE Header Prev Chevron (Part II -> Part I - Scene 1)
-    fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_PREV_SCENE'));
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part I - Scene 1');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toMatch(/(Scene|Story) 1 of/);
+    // Jump forward to Part III Scene 1 via Header Stepper
+    fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_NEXT_SCENE'));
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part III • Scene 1 of 4');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · Journeys Within and Without');
+
+    // Step to Part III Scene 3 (Falling in Love)
+    fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN')); // Scene 2: Facing Reality
+    fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN')); // Scene 3: Falling in Love
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part III • Scene 3 of 4');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toContain('Scene 1 of 1');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toMatch(/Story \d+ of/);
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('3 · Falling in Love');
+
+    // Jump backward to Part I Scene 1 via Header Stepper
+    fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_PREV_SCENE')); // Part II
+    fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_PREV_SCENE')); // Part I
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part I • Scene 1 of 4');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toMatch(/Story \d+ of/);
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('A Child of Two Worlds');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · A Child of Two Worlds');
+
+    unmount();
+  });
+
+  it('14.5 ARCH-MW-122: asserts 24-scene universal parity across Parts I–VI with local 1..4 indexing and zero Story X of Y', () => {
+    const { getByTestId, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        mediaMode: 'video',
+        activePromptId: 'spark_legacy_blessing', // Part VI Scene 4
+      })
+    );
+
+    const subtitle = getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE');
+    expect(subtitle.textContent).toContain('Part VI • Scene 4 of 4');
+    expect(subtitle.textContent).not.toMatch(/Story \d+ of/);
+    expect(subtitle.textContent).toContain('The Story Continuing');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Words to Remember Me By');
+
+    // Verify card story progress pill also shows canonical Scene X of Total
+    const progressPill = getByTestId('carousel-story-progress-pill');
+    expect(progressPill.textContent).toBe('Scene 4 of 4');
+    expect(progressPill.textContent).not.toMatch(/Story \d+ of/);
 
     unmount();
   });

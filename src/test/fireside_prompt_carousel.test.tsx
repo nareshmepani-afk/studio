@@ -70,7 +70,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       render(<SingleCardPromptCarousel mediaMode="audio" />);
 
       // Counter check
-      expect(screen.getByTestId('carousel-story-progress-pill')).toHaveTextContent(`Story 1 of ${FIRESIDE_PROMPT_SPARKS.length}`);
+      expect(screen.getByTestId('carousel-story-progress-pill')).toHaveTextContent('Scene 1 of 4');
 
       // Title and prose check (Part I - Scene 1 is index 0: A Child of Two Worlds; Gujarati subtitle hidden when HYBRID: OFF)
       expect(screen.getByText('A Child of Two Worlds')).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
 
       // Card 2 check (Part I - Scene 2: The House I Grew Up In)
       await waitFor(() => {
-        expect(screen.getByTestId('carousel-story-progress-pill')).toHaveTextContent(`Story 2 of ${FIRESIDE_PROMPT_SPARKS.length}`);
+        expect(screen.getByTestId('carousel-story-progress-pill')).toHaveTextContent('Scene 2 of 4');
         expect(screen.getByText('The House I Grew Up In')).toBeInTheDocument();
         expect(screen.getByTestId('carousel-scene-number-badge')).toHaveTextContent('Part I • Scene 2');
       });
@@ -129,7 +129,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
 
       // Back to Card 1
       await waitFor(() => {
-        expect(screen.getByTestId('carousel-story-progress-pill')).toHaveTextContent(`Story 1 of ${FIRESIDE_PROMPT_SPARKS.length}`);
+        expect(screen.getByTestId('carousel-story-progress-pill')).toHaveTextContent('Scene 1 of 4');
         expect(screen.getByText('A Child of Two Worlds')).toBeInTheDocument();
         expect(screen.getByTestId('carousel-scene-number-badge')).toHaveTextContent('Part I • Scene 1');
       });

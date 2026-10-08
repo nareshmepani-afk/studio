@@ -83,13 +83,40 @@ export const mockPromptGroups: PromptGroup[] = [
           },
           {
                     id: "sense3",
-                    label: "Texture of your favorite toy",
+                    label: "Texture of your favourite toy",
                     placeholder: "e.g. Soft plush, hard plastic..."
           }
 ],
         isFlaggedForReuse: false,
       },
-    ],
+         {
+        id: 'p3_b',
+        title: 'Traditions, Feasts & Sacred Days',
+        description: 'The great festivals, family gatherings, blessings, and customs that bound you together.',
+        text: {
+          en: 'Traditions, Feasts & Sacred Days – Family festivals and customs',
+          gu: 'પરંપરાઓ, તહેવારો અને પવિત્ર દિવસો – કૌટુંબિક ઉત્સવો અને રીતો',
+        },
+        sensoryPrompts: [
+          {
+            id: 'sense1',
+            label: 'Aroma of festive sweets and savoury dishes',
+            placeholder: 'e.g. Cardamom, ghee, roasting spices...',
+          },
+          {
+            id: 'sense2',
+            label: 'Sound of celebration and family greetings',
+            placeholder: 'e.g. Laughter, music, blessings...',
+          },
+          {
+            id: 'sense3',
+            label: 'Glow of festive oil lamps or clothes',
+            placeholder: 'e.g. Silk fabric, oil lamps, sparklers...',
+          },
+        ],
+        isFlaggedForReuse: false,
+      },
+     ],
   },
   {
     id: 'part-ii',

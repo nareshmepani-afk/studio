@@ -1282,4 +1282,21 @@ Across both Desktop Studio (`/studio`, `PromptCard.tsx`) and Mobile Fireside (`/
 - **Zero-Truncation 4-Act Spine Tokens**: In the mobile 4-act progression bar, avoid long labels like `Act III: Record` or `Act IV: Screening` that truncate to `Rec...` or `Scre...` on 390px viewports. Use compact tokens: `I • SCRIPT`, `II • WEAVE`, `III • RECORD`, `IV • REEL`.
 - **Button Hierarchy & Photo De-escalation**: Primary workflow CTA (`Action: Record Scene →`) MUST remain the undisputed chromatic focal point (solid Sky Blue). Ancillary actions like heirloom photo capture (`[ Photograph Vintage Album Print ]`) and photobooth buttons MUST use subtle slate outlines (`bg-zinc-900/80 border-zinc-700/80 hover:border-amber-500/40 text-zinc-200`) to prevent overpowering primary navigation.
 
+# 46. Universal Curriculum SSOT Invariant & Part-Parity Engine
 
+To eliminate curriculum drift, fragmented prompt decks, and counting discrepancies between Desktop Studio (`/studio`) and Mobile Fireside (`/studio/fireside`):
+
+## 46.1 Canonical Single Source of Truth (`masterStoryStructure.ts`)
+- **Strict SSOT Invariant**: The canonical curriculum definition in `src/lib/curriculum/masterStoryStructure.ts` (`MASTER_STORY_STRUCTURE`) is the SOLE authoritative source of truth for:
+  - Part identifiers, roman numerals, titles, and themes (Parts I through VI).
+  - Canonical scene order, titles, descriptions, and scene identifiers.
+  - Scene count per part (`totalScenesInActivePart = MASTER_STORY_STRUCTURE[partId].scenes.length`).
+- **Prohibition on Local Array Counting**: Under NO circumstances may headers, progress counters, or spine rails calculate total scene count or local scene indices from local prompt arrays (e.g., `FIRESIDE_PROMPT_SPARKS.length` or array `.filter()`).
+- **Universal 24-Scene Completeness**: All 6 parts contain exactly 4 canonical scenes (6 x 4 = 24 scenes total). Every prompt deck (including `FIRESIDE_PROMPT_SPARKS`) MUST provide complete coverage for all 24 canonical scenes with authentic multi-script diaspora translations (EN, GU, PA, HI).
+
+## 46.2 Universal 1..N Part-Relative Scene Numbering
+- **Part-Relative Invariant**: Narrators experience their memoirs part by part. Every scene indicator, progress pill, and spine token MUST display the local part-relative scene number (1..N, typically 1..4), NOT an arbitrary global array index or dataset position (e.g. NEVER `Story 8 of 9` or `8 · Falling in Love`).
+- **Standardised Subtitle Syntax**: Header scene subtitles across both platforms MUST adhere to the universal format:
+  `Part [Roman] • Scene [X] of [Total] • [Canonical Scene Title]`
+  Example: `Part III • Scene 3 of 4 • Falling in Love`
+- **Chapter Spine Token Anchoring**: In `ChapterSpineRail.tsx`, every scene pill MUST anchor its display number to `scene.sceneNumber ?? (scene.index + 1)`, ensuring pills consistently render 1, 2, 3, 4 across all 6 parts.

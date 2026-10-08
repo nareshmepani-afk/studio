@@ -22,6 +22,7 @@ import { CheckCircle2, Circle, Disc } from 'lucide-react';
 export interface ChapterSpineScene {
   id: string;
   index: number;
+  sceneNumber?: number;
   title: string;
   partNumber: number;
   partTitle?: string;
@@ -84,6 +85,7 @@ interface SceneTokenProps {
 
 function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect }: SceneTokenProps) {
   const state = resolveSceneState(scene, isActive);
+  const displaySceneNum = scene.sceneNumber ?? (scene.index + 1);
 
   // Dot icon and colour per state (Desktop /studio lockstep: Teal = Captured, Amber = Studio Draft)
   const dotStyles: Record<typeof state, string> = {
@@ -114,7 +116,7 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
         type="button"
         data-testid={`HS_SPINE_SCENE_${scene.id}`}
         data-recommended={isNextRecommended ? 'true' : undefined}
-        aria-label={`Navigate to scene ${scene.index + 1}: ${scene.title}${isNextRecommended ? ' (Next Recommended)' : ''}`}
+        aria-label={`Navigate to scene ${displaySceneNum}: ${scene.title}${isNextRecommended ? ' (Next Recommended)' : ''}`}
         aria-current={isActive ? 'true' : undefined}
         onClick={() => onSelect(scene.id)}
         className={[
@@ -140,15 +142,15 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
         {isActive && (
           <span
             data-testid="HS_SPINE_ACTIVE_SCENE"
-            title={`${scene.index + 1} · ${scene.title}`}
+            title={`${displaySceneNum} · ${scene.title}`}
             className="text-[10px] font-mono font-bold text-emerald-300 leading-tight text-center whitespace-nowrap max-w-[170px] truncate px-1"
           >
-            {scene.index + 1} · {scene.title}
+            {displaySceneNum} · {scene.title}
           </span>
         )}
         {!isActive && (
           <span className={`text-[9px] font-mono leading-none ${isNextRecommended ? 'text-emerald-300 font-bold' : 'text-stone-500'}`}>
-            {scene.index + 1}
+            {displaySceneNum}
           </span>
         )}
       </button>
@@ -161,7 +163,7 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
       type="button"
       data-testid={`HS_SPINE_SCENE_${scene.id}`}
       data-recommended={isNextRecommended ? 'true' : undefined}
-      aria-label={`Navigate to scene ${scene.index + 1}: ${scene.title}${isNextRecommended ? ' (Next Recommended)' : ''}`}
+      aria-label={`Navigate to scene ${displaySceneNum}: ${scene.title}${isNextRecommended ? ' (Next Recommended)' : ''}`}
       aria-current={isActive ? 'true' : undefined}
       onClick={() => onSelect(scene.id)}
       className={[
@@ -187,7 +189,7 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
           {scene.title}
         </span>
         <span className="text-[10px] font-mono text-stone-500 leading-none mt-0.5">
-          Sc {scene.index + 1} · Pt {scene.partNumber}
+          Sc {displaySceneNum} · Pt {scene.partNumber}
           {scene.takesCount > 0 ? ` · ${scene.takesCount} take${scene.takesCount > 1 ? 's' : ''}` : ''}
         </span>
       </div>

@@ -1071,7 +1071,34 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `npm.cmd run type-check`: exit code 0.
   - `npm.cmd run test`: 57/57 test files passed (738/738 tests passed).
 
+---
 
+## Checkpoint #046 — ARCH-MW-122: Global Curriculum Bridge & Universal Part Parity Engine (2026-10-08)
 
-
-
+- **Target Ref**: `ARCH-MW-122` (Global Curriculum Bridge & Universal Part Parity Engine)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Architectural & Invariant Deliverables**:
+  - **Canonical Curriculum SSOT Extension (`masterStoryStructure.ts`)**:
+    - Expanded `MASTER_STORY_STRUCTURE` to complete 24-scene canonical coverage (exactly 4 canonical scenes per part across all 6 Parts: Parts I through VI).
+    - Guaranteed immutable mathematical invariants: `totalScenesInActivePart = 4` across all parts.
+  - **Global 24-Scene Fireside Prompt Spark Deck (`firesidePrompts.ts`)**:
+    - Expanded `FIRESIDE_PROMPT_SPARKS` from legacy 9-prompt subset to all 24 canonical prompt sparks matching `masterStoryStructure.ts` 1:1.
+    - Fully populated each prompt spark with authentic multi-script diaspora translations (English, Gujarati, Punjabi, Hindi), sensory anchors, reflective follow-up questions, and photo prompts.
+  - **Universal Part-Relative Scene Numbering (`ChapterSpineRail.tsx`)**:
+    - Added `sceneNumber?: number` to `ChapterSpineScene` interface.
+    - Anchored horizontal and vertical scene pills to `scene.sceneNumber ?? (scene.index + 1)`, ensuring pills render `1, 2, 3, 4` in every part rather than arbitrary global dataset indices (`8 · Falling in Love`).
+  - **Header Subtitle & Progress Pill Harmonisation**:
+    - Permanently eradicated `Story X of Y` array counter tokens.
+    - Standardised header scene subtitles across `FiresideStudioClient.tsx` and `SingleCardPromptCarousel.tsx` to `Part [Roman] • Scene [X] of [Total] • [Title]`.
+    - Updated carousel story progress pill to `Scene [X] of [Total]` (e.g., `Scene 3 of 4`).
+  - **Chromatic Alignment (Rule 45)**:
+    - Aligned Fireside `fireside-production-stage-label` to Sky Blue (`text-sky-400/80 font-black tracking-[0.3em]`) across all 6 parts to maintain 1:1 chromatic lockstep with Desktop.
+  - **Mock Data Alignment (`mockData.ts`)**:
+    - Added missing prompt `p3_b` to `part-i` in `MOCK_MEMORIES`, guaranteeing 4 prompts per part across Parts I–V and 5 in Part VI.
+    - Enforced UK English orthography (`favourite`, `honourable`).
+  - **Governance & Regression Shield**:
+    - Codified **Rule 46: Universal Curriculum SSOT Invariant & Part-Parity Engine** into `.agents/AGENTS.md`.
+    - Expanded `src/test/fireside_sync.test.ts` to assert universal part parity, subtitle formats, and scene numbering across all 24 scenes (71/71 tests passing).
+- **Verification**:
+  - `npx.cmd vitest run src/test/fireside_sync.test.ts`: 71/71 tests passed.
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.

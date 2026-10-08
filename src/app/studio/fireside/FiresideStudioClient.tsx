@@ -764,27 +764,18 @@ export default function FiresideStudioClient() {
 
   const activePartTitle = activePart.title;
   const activePartRoman = activePart.title.split(':')[0] || `Part ${activePart.partNumber}`;
-  const activeSceneNumInPart = useMemo(() => {
-    let count = 0;
-    for (let i = 0; i <= activeSparkIdx; i++) {
-      const p = getPartForScene(FIRESIDE_PROMPT_SPARKS[i]?.linkedSceneId);
-      if (p.partNumber === activePart.partNumber) {
-        count++;
-      }
-    }
-    return count || 1;
-  }, [activeSparkIdx, activePart.partNumber]);
+  const canonicalScene = useMemo(() => {
+    return resolvedActiveSpark.linkedSceneId
+      ? getSceneById(resolvedActiveSpark.linkedSceneId)
+      : undefined;
+  }, [resolvedActiveSpark.linkedSceneId]);
 
-  const totalScenesInActivePart = useMemo(() => {
-    let count = 0;
-    for (let i = 0; i < FIRESIDE_PROMPT_SPARKS.length; i++) {
-      const p = getPartForScene(FIRESIDE_PROMPT_SPARKS[i]?.linkedSceneId);
-      if (p.partNumber === activePart.partNumber) {
-        count++;
-      }
-    }
-    return count || 1;
-  }, [activePart.partNumber]);
+  const canonicalPart = useMemo(() => {
+    return getPartForScene(canonicalScene?.id);
+  }, [canonicalScene?.id]);
+
+  const activeSceneNumInPart = canonicalScene?.sceneNumber ?? 1;
+  const totalScenesInActivePart = canonicalPart?.scenes?.length || 4;
 
   const englishPartHeading = activePart.localizedTitles?.en || activePart.title;
   const motherTonguePartLang: FiresideLanguage = activeLanguage === 'en' ? 'gu' : activeLanguage;
@@ -901,7 +892,7 @@ export default function FiresideStudioClient() {
           </div>
           <p
             data-testid="fireside-production-stage-label"
-            className="text-[10px] uppercase tracking-widest text-amber-400/90 font-semibold mb-1"
+            className="text-[10px] uppercase tracking-[0.3em] text-sky-400/80 font-black mb-1"
           >
             PRODUCTION STAGE
           </p>
@@ -938,7 +929,7 @@ export default function FiresideStudioClient() {
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
                 className="text-[11px] font-mono text-amber-300/90 mt-1 leading-snug"
               >
-                {activePartRoman} - Scene {activeSceneNumInPart} of {totalScenesInActivePart} • Story {activeSparkIdx + 1} of {FIRESIDE_PROMPT_SPARKS.length} • {activeSceneTitle}
+                {activePartRoman} • Scene {activeSceneNumInPart} of {totalScenesInActivePart} • {activeSceneTitle}
               </p>
             </div>
 

@@ -588,6 +588,7 @@ export function SingleCardPromptCarousel({
       return {
         id: sceneId,
         index: idx,
+        sceneNumber: linked?.sceneNumber ?? ((idx % 4) + 1),
         title: spark.title,
         partNumber: linked?.partNumber ?? 1,
         partTitle: linked?.partTitle ?? 'Part I: Roots and Foundations',
@@ -692,12 +693,11 @@ export function SingleCardPromptCarousel({
     onActivePromptChange?.(sparkDeck[targetIdx]);
   }, [partFirstSceneIndices, linkedScene?.partNumber, activePart.partNumber, handlePrev, sparkDeck, onActivePromptChange]);
 
-  const activePartRoman = activePartHeading.split(':')[0]?.trim() || `Part ${linkedScene?.partNumber ?? 1}`;
-  const activeSceneNumInPart = linkedScene?.sceneNumber ?? 1;
-  const totalScenesInActivePart = useMemo(() => {
-    const pNum = linkedScene?.partNumber ?? 1;
-    return spineScenes.filter((s) => s.partNumber === pNum).length || 1;
-  }, [linkedScene?.partNumber, spineScenes]);
+  const canonicalScene = linkedScene || (currentSpark.linkedSceneId ? getSceneById(currentSpark.linkedSceneId) : undefined);
+  const canonicalPart = getPartForScene(canonicalScene?.id);
+  const activePartRoman = activePartHeading.split(':')[0]?.trim() || `Part ${canonicalScene?.partNumber ?? 1}`;
+  const activeSceneNumInPart = canonicalScene?.sceneNumber ?? 1;
+  const totalScenesInActivePart = canonicalPart?.scenes?.length || 4;
 
   return (
     <div
@@ -741,7 +741,7 @@ export function SingleCardPromptCarousel({
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
                 className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
               >
-                {activePartRoman} - Scene {activeSceneNumInPart} of {totalScenesInActivePart} • Story {currentIndex + 1} of {sparkDeck.length} • {primaryCardTitle}
+                {activePartRoman} • Scene {activeSceneNumInPart} of {totalScenesInActivePart} • {primaryCardTitle}
               </span>
             </div>
             <button
@@ -961,10 +961,10 @@ export function SingleCardPromptCarousel({
                 <div className="flex items-center gap-2">
                   <span
                     data-testid="carousel-story-progress-pill"
-                    title={`Story ${currentIndex + 1} of ${sparkDeck.length} in your family memoir`}
+                    title={`Scene ${activeSceneNumInPart} of ${totalScenesInActivePart} in ${activePartRoman}`}
                     className="text-xs font-mono text-neutral-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/10"
                   >
-                    Story {currentIndex + 1} of {sparkDeck.length}
+                    Scene {activeSceneNumInPart} of {totalScenesInActivePart}
                   </span>
                   <button
                     type="button"
