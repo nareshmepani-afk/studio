@@ -214,8 +214,15 @@ export function SingleCardPromptCarousel({
   const currentLanguage = controlledLanguage || internalLanguage;
   const effectiveHybrid = typeof controlledHybrid === 'boolean' ? controlledHybrid : internalHybrid;
   const showSecondarySubtitle = effectiveHybrid || currentLanguage !== 'en';
+  const effectiveIndex = useMemo(() => {
+    if (activePromptId) {
+      const found = sparkDeck.findIndex((p) => p.id === activePromptId || p.linkedSceneId === activePromptId);
+      if (found !== -1) return found;
+    }
+    return currentIndex;
+  }, [activePromptId, sparkDeck, currentIndex]);
 
-  const currentSpark = sparkDeck[currentIndex] || sparkDeck[0];
+  const currentSpark = sparkDeck[effectiveIndex] || sparkDeck[0];
   const onActivePromptChangeRef = React.useRef(onActivePromptChange);
   onActivePromptChangeRef.current = onActivePromptChange;
 
@@ -236,8 +243,16 @@ export function SingleCardPromptCarousel({
       const mem = getSceneMemory(currentSpark.linkedSceneId);
       if (mem) return mem;
     }
-    return activeSceneMemory;
-  }, [getSceneMemory, currentSpark.linkedSceneId, activeSceneMemory]);
+    // Only fall back to activeSceneMemory if its sceneId or promptId actually matches this spark!
+    if (
+      activeSceneMemory &&
+      (activeSceneMemory.sceneId === currentSpark.linkedSceneId ||
+        (activeSceneMemory as any).promptId === currentSpark.id)
+    ) {
+      return activeSceneMemory;
+    }
+    return undefined;
+  }, [getSceneMemory, currentSpark.linkedSceneId, currentSpark.id, activeSceneMemory]);
 
   useEffect(() => {
     setLocalProseOverride(null);
@@ -261,12 +276,25 @@ export function SingleCardPromptCarousel({
     return 1;
   }, [currentSceneMemory?.productionStage, isMasteredScene, hasSceneCompletedReel]);
 
+  // Synchronise selectedActTab when selectedActStage prop changes or when active spark/scene changes
   useEffect(() => {
-    if (selectedActStage === 4) setSelectedActTab('act4');
-    else if (selectedActStage === 3) setSelectedActTab('act3');
-    else if (selectedActStage === 2) setSelectedActTab('act2');
-    else if (selectedActStage === 1) setSelectedActTab('act1');
-  }, [selectedActStage]);
+    if (selectedActStage === 4) {
+      setSelectedActTab('act4');
+    } else if (selectedActStage === 3) {
+      setSelectedActTab('act3');
+    } else if (selectedActStage === 2) {
+      setSelectedActTab('act2');
+    } else if (selectedActStage === 1) {
+      setSelectedActTab('act1');
+    } else {
+      // When selectedActStage is undefined (e.g. on spark/scene switch),
+      // default selectedActTab to the current scene's actual production stage
+      if (activeProductionStage === 4) setSelectedActTab('act4');
+      else if (activeProductionStage === 3) setSelectedActTab('act3');
+      else if (activeProductionStage === 2) setSelectedActTab('act2');
+      else setSelectedActTab('act1');
+    }
+  }, [selectedActStage, activeProductionStage, currentSpark.id]);
 
   const handleSelectActTab = useCallback(
     (tab: 'act1' | 'act2' | 'act3' | 'act4') => {

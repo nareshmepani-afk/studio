@@ -21,7 +21,7 @@ import { FiresideCompletedReelCard } from '@/components/fireside/FiresideComplet
 import { FiresideCinemaLightbox } from '@/components/fireside/FiresideCinemaLightbox';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
 import { BonusMemoryDrawer } from '@/components/fireside/BonusMemoryDrawer';
-import { isSceneCompleted as isSceneCompletedType } from '@/types/curriculum';
+import { isSceneCompleted as isSceneCompletedType, DEFAULT_DIRECTORIAL_POLISH, UnifiedCurriculumMemory } from '@/types/curriculum';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 import { getPartForScene, getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import { FiresideWarmupModal, WARMUP_CHAI_SCRIPTS } from '@/components/fireside/FiresideWarmupModal';
@@ -2139,6 +2139,94 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     expect(queryByTestId('HS_FIRESIDE_CROWN_NEXT_RECOMMENDED')).toBeNull();
     expect(getByTestId('HS_FIRESIDE_BADGE_CAPTURED').textContent).toContain('CAPTURED');
     expect(getByTestId('HS_FIRESIDE_BADGE_STUDIO_DRAFT').textContent).toContain('STUDIO DRAFT');
+    unmount();
+  });
+
+  it('13.6 SingleCardPromptCarousel resets Act Stepper to Act I & READY FOR ACTION when switching to unrecorded scene (Part II Crossroads & Identity parity)', async () => {
+    // 1. Initial state: Completed scene (Part I Scene 1) with Act IV selected
+    const completedScene1: Partial<UnifiedCurriculumMemory> = {
+      id: 'mem-completed-1',
+      sceneId: 'part-1-scene-1',
+      currentStatus: 'mastered' as const,
+      prose: 'A completed legacy from roots.',
+      productionStage: 4,
+      takes: [
+        {
+          id: 'take-1',
+          takeNumber: 1,
+          source: 'fireside_mobile' as const,
+          mediaMode: 'video' as const,
+          label: 'Master Take',
+          isPreferred: true,
+          mediaUrl: 'https://storage.googleapis.com/test/part1.mp4',
+          durationSeconds: 60,
+          createdAt: '2026-10-01T10:00:00Z',
+        },
+      ],
+      directorialPolish: {
+        ...DEFAULT_DIRECTORIAL_POLISH,
+        masterReelUrl: 'https://storage.googleapis.com/test/master.mp4',
+      },
+    };
+
+    const getSceneMemoryMock = (id?: string) => {
+      if (id === 'part-1-scene-1') return completedScene1;
+      // For Part II Scene 1 (part-2-scene-1), return empty skeleton (unrecorded)
+      return undefined;
+    };
+
+    // Render on Part I Scene 1 with selectedActStage: 4
+    const { getByTestId, queryByTestId, rerender, unmount } = render(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        mediaMode: 'video',
+        activePromptId: 'spark_roots_journey', // Part I Scene 1
+        activeSceneMemory: completedScene1,
+        getSceneMemory: getSceneMemoryMock,
+        selectedActStage: 4,
+      })
+    );
+
+    // Verify Scene 1 is in Act IV Screening state
+    expect(getByTestId('HS_FIRESIDE_ACT_TAB_4').getAttribute('aria-pressed')).toBe('true');
+    expect(getByTestId('fireside-act4-screening-panel')).toBeInTheDocument();
+
+    // 2. Now switch to Part II Scene 1 ("spark_humour_mishap" / part-2-scene-1)
+    // selectedActStage is reset to undefined by FiresideStudioClient
+    // activeSceneMemory is NOT passed (or is an unrecorded memory)
+    rerender(
+      React.createElement(SingleCardPromptCarousel, {
+        activeLanguage: 'en',
+        mediaMode: 'video',
+        activePromptId: 'spark_humour_mishap', // Part II Scene 1: Formative Friendships
+        activeSceneMemory: completedScene1, // Test leaking prevention: passing stale Part I memory should NOT leak into Part II
+        getSceneMemory: getSceneMemoryMock,
+        selectedActStage: undefined,
+      })
+    );
+
+    // Invariant A: Act Stepper MUST reset to Act I: Script
+    await waitFor(() => {
+      expect(getByTestId('HS_FIRESIDE_ACT_TAB_1').getAttribute('aria-pressed')).toBe('true');
+      expect(getByTestId('HS_FIRESIDE_ACT_TAB_4').getAttribute('aria-pressed')).toBe('false');
+    });
+
+    // Invariant B: Act IV Screening Room panel MUST NOT be visible
+    expect(queryByTestId('fireside-act4-screening-panel')).toBeNull();
+
+    // Invariant C: Badge must show [ 🎬 READY FOR ACTION ]
+    const readyBadge = getByTestId('HS_FIRESIDE_BADGE_READY_FOR_ACTION');
+    expect(readyBadge).toBeInTheDocument();
+    expect(readyBadge.textContent).toContain('READY FOR ACTION');
+
+    // Invariant D: Stage progression CTA must show Progress to Act II (not Watch Master Reel)
+    const stageProgBtn = getByTestId('HS_FIRESIDE_STAGE_PROGRESSION_BTN');
+    expect(stageProgBtn.textContent).toContain('[ ✨ Progress to Act II: Sensory Weave → ]');
+
+    // Invariant E: Direct record CTA must show Action: Enter Soundstage
+    const directActionBtn = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
+    expect(directActionBtn.textContent).toContain('[ 🎬 Action: Enter Soundstage → ]');
+
     unmount();
   });
 });

@@ -356,14 +356,10 @@ export default function FiresideStudioClient() {
 
   const handleActivePromptChange = useCallback((spark: FiresidePromptSpark) => {
     setSelectedSpark(spark);
-    setActivePromptSpark((prev) => {
-      if (prev && prev.id !== spark.id) {
-        setForceRecordMode(false);
-        setPinnedPrompterQuestion(null);
-        setSelectedActStage(undefined);
-      }
-      return spark;
-    });
+    setForceRecordMode(false);
+    setPinnedPrompterQuestion(null);
+    setSelectedActStage(undefined);
+    setActivePromptSpark(spark);
   }, []);
 
   const handlePinQuestionToPrompter = useCallback((question: string) => {

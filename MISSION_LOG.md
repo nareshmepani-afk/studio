@@ -998,5 +998,26 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
 - **Verification**:
   - `powershell -Command "Select-String -Path 'C:\Users\home\studio\.agents\AGENTS.md' -Pattern '43. Brainstorm' -Context 0, 4"` verified with exit code 0.
 
+---
+
+## Checkpoint #042 — Cross-Surface State Synchronisation: Desktop vs Fireside Part II Parity (2026-10-08)
+
+- **Target Systems**: `src/components/fireside/SingleCardPromptCarousel.tsx`, `src/app/studio/fireside/FiresideStudioClient.tsx`, `src/test/fireside_sync.test.ts`
+- **Architectural & Cross-Surface Parity Deliverables**:
+  - **Isolated Cross-Scene Memory Leak**:
+    - Guarded `currentSceneMemory` resolution in `SingleCardPromptCarousel.tsx` to prevent completed memory objects from preceding scenes (e.g. Part I Scene 1) from erroneously falling back onto unrecorded scenes in Part II.
+    - Added explicit scene ID equality matching (`activeSceneMemory.sceneId === currentSpark.linkedSceneId`) before falling back.
+  - **Synchronised Act Stepper on Spark/Scene Transitions**:
+    - Automatically aligned `selectedActTab` with the target scene's actual `activeProductionStage` whenever `selectedActStage` is `undefined` (or upon switching sparks/scenes via carousel, chevron, or rail).
+    - Unrecorded scenes (stage 0/1) cleanly default to `'act1'` (`Act I: Script`), preventing stale Act IV or Screening Room states from lingering on new scenes.
+    - Synchronised with Desktop Studio's `READY FOR ACTION` badge and `▶ Action` flow.
+  - **Dynamic Card Spark Derivation**:
+    - Derived `effectiveIndex` and `currentSpark` synchronously from `activePromptId` when provided, eliminating multi-pass effect delays.
+  - **Automated Regression Shield**:
+    - Added Invariant 13.6 to `src/test/fireside_sync.test.ts`, asserting that switching from a completed scene with Act IV selected to an unrecorded scene (Part II Scene 1: Formative Friendships) immediately resets the Act Stepper to Act I, suppresses the screening room panel, displays the `[ 🎬 READY FOR ACTION ]` badge, and configures the direct entry CTA.
+- **Verification**:
+  - `vitest run src/test/fireside`: 6/6 test files passing (129/129 tests passed).
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
+
 
 
