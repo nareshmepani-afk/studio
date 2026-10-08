@@ -1239,5 +1239,22 @@ In asynchronous pair programming sessions, the user frequently queues multiple m
 ## 43.4 Multi-Message Triage & Numbered Breakdown
 - When the user queues or combines multiple questions or directives in a single turn, the agent MUST explicitly itemise them (`[Item 1]`, `[Item 2]`, `[Item 3]`), addressing each item point-by-point without skipping any sub-bullet or inquiry.
 
+# 44. Brainstorm, Exploration & Planning Invariant ("Consensus Before Mutation")
 
+## 44.1 Trigger Recognition
+Any prompt containing exploration or consultative intent—whether explicitly marked with keywords (`BRAINSTORM`, `AUDIT`, `RFC`, `PROPOSAL`, `EXPLORE`, `WHAT DO YOU THINK`, `SHOULD I`, `SHOULD WE`, `CAN WE`, `TRADE-OFFS`) or framed as an open-ended architectural evaluation—automatically places the agent into **Read-Only Consultation Mode**.
 
+## 44.2 Binding Operational Invariants
+While in Read-Only Consultation Mode, agents are strictly forbidden from:
+1. **Modifying Any Workspace Files**: No file creation, editing, patching, or deletion tools may be invoked.
+2. **State Mutations & Git Operations**: Zero `git add`, `git commit`, `git push`, or deployment scripts.
+3. **Automated Handoffs to Executors**: The agent must NOT self-approve an architectural brainstorm and immediately start executing steps.
+
+## 44.3 Permitted Operations
+The agent is explicitly restricted to:
+- Read-only diagnostics (`cat`, `Select-String`, searching existing files, inspecting schemas).
+- Presenting clear, structured trade-offs, visual diagrams, and concrete recommendations.
+- Writing standalone proposal documentation solely if the user explicitly requested a written artifact (e.g. `brainstorm_*.md`).
+
+## 44.4 Resumption Gate (Human-in-the-Loop Sign-Off)
+An agent MUST stop and wait for explicit confirmation before altering code or state. Execution may ONLY begin after the user or Lead Architect provides unambiguous authorization (e.g. *"Proceed with implementation"*, *"Execute Directive MW-XXX"*, *"Approved"*).
