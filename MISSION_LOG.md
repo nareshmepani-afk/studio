@@ -1019,5 +1019,29 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `vitest run src/test/fireside`: 6/6 test files passing (129/129 tests passed).
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
 
+---
+
+## Checkpoint #043 — Google Cloud Storage Automated End-to-End Checksumming SDK Upgrades (2026-10-08)
+
+- **Target Ref**: `GCS-CHECKSUM-INTEGRITY (Google Cloud Platform Notice)`
+- **Affected Projects**: `memory-weaver-8rk9t` (Production) & `memory-weaver-dev` (Staging)
+- **Architectural & Security Deliverables**:
+  - **Automated Client-Side CRC32c Checksumming**:
+    - Addressed Google Cloud Platform advisory requiring Node.js SDK `>= 7.19.0` for automated end-to-end data integrity validation and bit-flip protection on GCS write operations.
+  - **Root Application Dependency Lock**:
+    - Explicitly declared `"@google-cloud/storage": "^7.19.0"` in `package.json` (resolving to `@google-cloud/storage@7.19.0` via `firebase-admin@13.7.0`).
+  - **Cloud Functions Modernisation (`functions/`)**:
+    - Upgraded `functions/package.json` from legacy `firebase-admin@^11.9.0` (which used `@google-cloud/storage@6.12.0`) to `firebase-admin@^13.7.0` and `@google-cloud/storage@^7.19.0` (installed `@google-cloud/storage@7.22.0`).
+    - Upgraded `firebase-functions` to `^6.6.0`.
+    - Added `"build": "tsc"` script to `functions/package.json`.
+    - Updated `functions/src/index.ts` to import from `"firebase-functions/v1"` ensuring 100% backward-compatible function signatures for `createUserProfile`, `stitchPerformanceReel`, and `purgeExpiredLogs`.
+    - Enabled automatic CRC32c validation on all cloud video stitching uploads (`users/${uid}/memories/${memoryId}/final.webm` and `users-reels/${inviteId}/${jobId}-complete.webm`).
+- **Verification**:
+  - `npm.cmd --prefix functions run build`: exit code 0.
+  - `npm.cmd run type-check`: exit code 0.
+  - `npm.cmd run test`: 57/57 test files passed (732/732 tests passed).
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
+
+
 
 
