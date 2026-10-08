@@ -50,13 +50,13 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong class="text-emerald-300">cf49a0be</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong class="text-emerald-300">9bb6c490</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">cf49a0b</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">9bb6c49</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">08 Oct 2026, 09:44 BST</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">08 Oct 2026, 13:58 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">08 Oct 2026, 09:41 BST</strong></span>
+          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">08 Oct 2026, 13:57 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Environment: <strong class="text-amber-300">dev.memoryweaver.studio</strong></span>
         </div>
@@ -67,7 +67,7 @@
           Organised strictly by target staging route so you can open a single URL and run every test on that route in chronological order:
           <strong class="text-sky-300">1. first_flight_rehearsal</strong> (Cards 1–6: 6/6 PASS) &bull;
           <strong class="text-amber-300">2. studio/production/</strong> (Card 7: 1/1 PASS) &bull;
-          <strong class="text-emerald-300">3. studio/fireside &amp; Curriculum Lockstep Sync (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114 &amp; MW-115)</strong> (Cards 8–10 PASS; Cards 11–41 Ready for Verification).
+          <strong class="text-emerald-300">3. studio/fireside, Curriculum Lockstep Sync &amp; Cloud Storage Integrity (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115 &amp; OPS-116)</strong> (Cards 8–10 PASS; Cards 11–42 Ready for Verification).
         </p>
       </div>
 
@@ -135,10 +135,10 @@
       <div class="flex items-center gap-2 flex-wrap text-xs font-mono pt-1">
         <span class="text-gray-500 uppercase tracking-wider text-[11px] mr-1">Filter by Route:</span>
         <button onclick="filterByRoute('all')" id="tab-all" class="filter-tab active px-3 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 transition cursor-pointer">
-          🌐 All Routes (<span id="all-routes-count">41</span>)
+          🌐 All Routes (<span id="all-routes-count">42</span>)
         </button>
         <button onclick="filterByRoute('pending')" id="tab-pending" class="filter-tab px-3 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 transition cursor-pointer">
-          ⏳ Pending Only (<span id="pending-tab-count">31</span>)
+          ⏳ Pending Only (<span id="pending-tab-count">32</span>)
         </button>
         <button onclick="filterByRoute('rehearsal')" id="tab-rehearsal" class="filter-tab px-3 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 transition cursor-pointer">
           🛫 first_flight_rehearsal (6)
@@ -147,7 +147,7 @@
           🎬 studio/production/ (1)
         </button>
         <button onclick="filterByRoute('fireside')" id="tab-fireside" class="filter-tab px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition cursor-pointer">
-          📱 studio/fireside &amp; Curriculum Sync (34)
+          📱 studio/fireside &amp; Curriculum Sync (35)
         </button>
       </div>
 
@@ -155,10 +155,10 @@
       <div class="flex items-center gap-2 flex-wrap text-xs font-mono pt-1">
         <span class="text-gray-500 uppercase tracking-wider text-[11px] mr-1">Filter by Panel:</span>
         <button onclick="filterByPanel('all')" id="panel-tab-all" class="panel-tab active px-3 py-1 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-700 transition cursor-pointer">
-          🌐 All Panels (<span id="panel-all-count">41</span>)
+          🌐 All Panels (<span id="panel-all-count">42</span>)
         </button>
         <button onclick="filterByPanel('dock')" id="panel-tab-dock" class="panel-tab px-3 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 transition cursor-pointer">
-          🧭 Top Dock &amp; Auth (<span id="panel-dock-count">3</span>)
+          🧭 Top Dock &amp; Auth (<span id="panel-dock-count">4</span>)
         </button>
         <button onclick="filterByPanel('spine')" id="panel-tab-spine" class="panel-tab px-3 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition cursor-pointer">
           📜 Spine &amp; Stepper (<span id="panel-spine-count">11</span>)
@@ -187,7 +187,7 @@
         <div class="space-y-1">
           <div class="flex items-center gap-2.5 flex-wrap">
             <span class="px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-              ZONE 1 &bull; ACTIVE ACTION DECK (<span id="active-deck-count">31</span> ACTIONABLE)
+              ZONE 1 &bull; ACTIVE ACTION DECK (<span id="active-deck-count">32</span> ACTIONABLE)
             </span>
             <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Attention-First Default &bull; Rule 30.3</span>
             <span class="text-xs font-mono text-gray-400">Order: Newest First &bull; 0ms Scroll Handoff</span>
@@ -4420,6 +4420,117 @@
           </div>
         </div>
 
+        <!-- TEST CARD 42: OPS-116 GOOGLE CLOUD STORAGE AUTOMATED END-TO-END CHECKSUMMING SDK UPGRADE -->
+        <div class="obsidian-card rounded-2xl p-6 border border-emerald-500/50 transition" id="card-42" data-canonical-parent="group-fireside" data-route="fireside" tabindex="0" onpaste="handleCardPaste(event, 42)" data-panel="dock">
+          <!-- ZONE 1: HEADER & DIRECT ROUTE TRIGGER -->
+          <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  TEST 42 &bull; OPS-116
+                </span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono text-purple-300 bg-purple-500/10 border border-purple-500/20">
+                  GCS STORAGE INTEGRITY
+                </span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/20">
+                  AUTOMATED CRC32C CHECKSUMMING
+                </span>
+              </div>
+              <h2 class="text-lg font-bold text-white tracking-tight">
+                [ops/storage] OPS-116: Google Cloud Storage Client SDK Upgrade for Automated End-to-End CRC32c Checksumming
+              </h2>
+              <p class="text-xs text-gray-400 leading-relaxed">
+                Verifies the Google Cloud Platform security advisory requiring Cloud Storage client SDKs <code class="text-emerald-300">&ge; 7.19.0</code> for automated client-side CRC32c checksumming and bit-flip protection across <strong class="text-amber-300">memory-weaver-8rk9t</strong> and <strong class="text-amber-300">memory-weaver-dev</strong>:
+                <br/>1) <strong>Root App Dependency Lock</strong>: Explicitly locked <code class="text-stone-300">@google-cloud/storage@^7.19.0</code> alongside <code class="text-stone-300">firebase-admin@13.7.0</code> in root <code class="text-stone-300">package.json</code>.
+                <br/>2) <strong>Cloud Functions Modernisation</strong>: Upgraded <code class="text-stone-300">functions/package.json</code> from legacy <code class="text-rose-400">firebase-admin@^11.9.0</code> (which used <code class="text-rose-400">@google-cloud/storage@6.12.0</code>) to <strong class="text-emerald-300">firebase-admin@^13.7.0</strong> and <strong class="text-emerald-300">@google-cloud/storage@^7.19.0</strong> (resolving to <code class="text-emerald-300">7.22.0</code>).
+                <br/>3) <strong>Seamless Write Validation</strong>: Automated CRC32c data validation is active by default across video stitching uploads (<code class="text-stone-300">final.webm</code>, <code class="text-stone-300">complete.webm</code>) without breaking changes or manual validation code.
+              </p>
+              <div class="flex items-center gap-1.5 flex-wrap pt-2" data-testid="hotspot-chip-cloud-42">
+                <span class="text-[10px] font-mono text-gray-500 uppercase font-semibold">Covered Artifacts:</span>
+                <span class="text-[11px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded px-2 py-0.5">@google-cloud/storage@7.22.0</span>
+                <span class="text-[11px] font-mono bg-purple-500/10 text-purple-300 border border-purple-500/30 rounded px-2 py-0.5">firebase-admin@13.10.0</span>
+                <span class="text-[11px] font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 rounded px-2 py-0.5">functions/src/index.ts (v1 shim)</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
+              <a href="https://dev.memoryweaver.studio/api/version" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+                <span>🔗 Verify Edge /api/version ↗</span>
+              </a>
+              <button onclick="copySingleTestReport(42, this)" id="copy-test-btn-42" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Card Report</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ZONE 2: LIVE INVARIANT STATE INSPECTOR -->
+          <div class="bg-gray-900/60 rounded-xl p-3 border border-gray-800/80 text-xs space-y-1 font-mono text-gray-400 mb-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span>Governance: <strong class="text-gray-300">package.json &amp; functions/package.json</strong></span>
+              <span>Milestone: <strong class="text-emerald-400">OPS-116</strong></span>
+            </div>
+            <div class="text-[11px] text-gray-500 break-all">
+              Target Projects: memory-weaver-8rk9t (Production) &bull; memory-weaver-dev (Staging)
+            </div>
+          </div>
+
+          <!-- ZONE 3: VERIFICATION CHECKPOINTS -->
+          <div class="space-y-2 mb-4 bg-gray-950/40 p-3.5 rounded-xl border border-gray-800/60">
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Root Storage SDK Version</strong>: Confirm root <code class="text-stone-300">package.json</code> explicitly declares <code class="text-emerald-300">@google-cloud/storage@^7.19.0</code> and resolves to <code class="text-emerald-300">&ge; 7.19.0</code> via <code class="text-stone-300">firebase-admin@13.7.0</code>.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Cloud Functions Storage SDK Version</strong>: Confirm <code class="text-stone-300">functions/package.json</code> is upgraded to <code class="text-emerald-300">firebase-admin@^13.7.0</code> and <code class="text-emerald-300">@google-cloud/storage@^7.19.0</code> (installed <code class="text-emerald-300">7.22.0</code>), replacing legacy 6.12.0.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Cloud Functions TypeScript Compilation</strong>: Confirm <code class="text-stone-300">npm --prefix functions run build</code> executes <code class="text-stone-300">tsc</code> with zero errors and cleanly compiles all v1 and v2 triggers.</span>
+            </label>
+          </div>
+
+          <!-- ZONE 4: VERDICT BUTTONS & AUDIT LOGS -->
+          <div class="flex items-center justify-between gap-4 pt-2 border-t border-gray-800/80 flex-wrap">
+            <div class="flex items-center gap-2">
+              <button onclick="setVerdict(42, 'pass')" id="btn-pass-42" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+                ✅ PASS
+              </button>
+              <button onclick="setVerdict(42, 'fail')" id="btn-fail-42" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-300 border border-transparent transition cursor-pointer">
+                ❌ FAIL
+              </button>
+              <button onclick="setVerdict(42, 'retest')" id="btn-retest-42" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-amber-300 border border-transparent transition cursor-pointer">
+                🔄 RE-TEST
+              </button>
+            </div>
+            <button onclick="resetCardVerdict(42)" class="text-[11px] font-mono text-gray-500 hover:text-gray-300 transition">
+              Reset
+            </button>
+          </div>
+
+          <!-- ZONE 5: VAULT SCREENSHOTS & NOTES -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Audit Notes / Narrative Feedback</label>
+                <textarea id="notes-42" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500" placeholder="Observations, package audits, or verification notes..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
+                <textarea id="console-log-42" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
+              </div>
+            </div>
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-42" ondragover="event.preventDefault()" ondrop="handleDrop(event, 42)">
+              <input type="file" id="file-input-42" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(42, f))" />
+              <div onclick="document.getElementById('file-input-42').click()" class="space-y-1">
+                <span class="text-sm">📸</span>
+                <div class="text-xs text-gray-400">Drag &amp; drop screenshot, <span class="text-amber-400 underline font-medium">browse</span>, or paste (Ctrl+V) directly while card is active</div>
+                <div id="img-count-42" class="text-[10px] text-gray-500 font-mono">0 screenshots attached</div>
+              </div>
+            </div>
+            <div id="image-gallery-42" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+          </div>
+        </div>
+
       </section>
       </div>
     </details>
@@ -4457,11 +4568,11 @@
   </div>
 
   <footer class="max-w-6xl mx-auto mt-12 text-center text-xs text-gray-500 font-mono py-6 border-t border-gray-800/60">
-    Memory Weaver Studio &bull; Master QA Interactive Verification Suite (Grouped by Route) &bull; Target: cf49a0be &bull; dev.memoryweaver.studio
+    Memory Weaver Studio &bull; Master QA Interactive Verification Suite (Grouped by Route) &bull; Target: 9bb6c490 &bull; dev.memoryweaver.studio
   </footer>
 
   <script>
-    const TOTAL = 41;
+    const TOTAL = 42;
     const STORAGE_KEY = 'MW_QA_ROUTE_GROUPED_3187cca9';
     let currentFilter = 'all';
     let currentViewMode = 'active';
@@ -4510,7 +4621,8 @@
       "[studio/fireside] MW-111: Eliminating Premature Recording Mode Decisions & Act III Just-in-Time Capture Slate",
       "[studio/fireside] MW-113: Scene Numbering Parity (Part II • Scene 1 Lockstep), Disambiguated Story Progress & ChapterSpineRail Micro-Scrollbar",
       "[studio/fireside] MW-114: Desktop Studio & Fireside 1:1 Curriculum Parity, Part II Scene 1-4 Synchronisation & Auto-Centred Spine Rail",
-      "[studio/fireside] MW-115: Desktop Studio & Fireside Act Stepper Synchronisation on Scene Switch (Part II Scene 1 Reset to Act I • Ready for Action)"
+      "[studio/fireside] MW-115: Desktop Studio & Fireside Act Stepper Synchronisation on Scene Switch (Part II Scene 1 Reset to Act I • Ready for Action)",
+      "[ops/storage] OPS-116: Google Cloud Storage Client SDK Upgrade for Automated End-to-End CRC32c Checksumming"
     ];
 
     let verdicts = {
@@ -4694,7 +4806,8 @@
       38: 'recorder',
       39: 'spine',
       40: 'spine',
-      41: 'spine'
+      41: 'spine',
+      42: 'dock'
     };
     let currentPanel = 'all';
 
@@ -5123,9 +5236,9 @@
       const retest = Object.values(verdicts).filter(v => v.verdict === 'retest' || v.verdict === 'backlog').length;
       const pending = TOTAL - (pass + fail + retest);
 
-      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 09:44 BST';
-      const edgeDeploy = document.getElementById('header-edge-deploy-time')?.textContent || '08 Oct 2026, 09:41 BST';
-      const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'cf49a0b';
+      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 13:58 BST';
+      const edgeDeploy = document.getElementById('header-edge-deploy-time')?.textContent || '08 Oct 2026, 13:57 BST';
+      const edgeSha = document.getElementById('header-edge-sha')?.textContent || '9bb6c49';
       const nowFormatted = new Date().toLocaleString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -5136,7 +5249,7 @@
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: cf49a0be | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 9bb6c490 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -5146,7 +5259,7 @@
         if (i === 7) {
           report += `\n## 🎬 Route Group 2: https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp\n`;
         } else if (i === 8) {
-          report += `\n## 📱 Route Group 3: https://dev.memoryweaver.studio/studio/fireside, Studio Elevation Ratchet (MW-88-T2) & Curriculum Sync (MW-88-T3 to T10, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114 & MW-115)\n`;
+          report += `\n## 📱 Route Group 3: https://dev.memoryweaver.studio/studio/fireside, Studio Elevation Ratchet (MW-88-T2) & Curriculum Sync (MW-88-T3 to T10, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115 & OPS-116)\n`;
         }
 
         report += `
@@ -5168,8 +5281,8 @@
     }
 
     function copySingleTestReport(cardNum, btn) {
-      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 09:44 BST';
-      const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'cf49a0b';
+      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 13:58 BST';
+      const edgeSha = document.getElementById('header-edge-sha')?.textContent || '9bb6c49';
       const nowFormatted = new Date().toLocaleString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -5186,9 +5299,9 @@
     }
 
     function exportJSON() {
-      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 09:44 BST';
-      const edgeDeploy = document.getElementById('header-edge-deploy-time')?.textContent || '08 Oct 2026, 09:41 BST';
-      const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'cf49a0b';
+      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 13:58 BST';
+      const edgeDeploy = document.getElementById('header-edge-deploy-time')?.textContent || '08 Oct 2026, 13:57 BST';
+      const edgeSha = document.getElementById('header-edge-sha')?.textContent || '9bb6c49';
       const nowFormatted = new Date().toLocaleString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -5196,7 +5309,7 @@
       });
       const payload = {
         meta: {
-          commit: 'cf49a0be',
+          commit: '9bb6c490',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -5220,7 +5333,7 @@
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_cf49a0be_${Date.now()}.json`;
+      a.download = `qa_master_checklist_9bb6c490_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }
