@@ -23,10 +23,10 @@ describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => 
   it('renders high-visibility Desktop Soundstage (Acts I–IV) ingress link', () => {
     render(<FiresideAuthHeader />);
 
-    const desktopLink = screen.getByRole('link', { name: /switch to desktop theatrical soundstage/i });
+    const desktopLink = screen.getByRole('link', { name: /return to production board/i });
     expect(desktopLink).toBeInTheDocument();
     expect(desktopLink).toHaveAttribute('href', '/studio');
-    expect(desktopLink).toHaveTextContent(/Desktop Soundstage \(Acts I–IV\)/i);
+    expect(desktopLink).toHaveTextContent(/Production Board/i);
   });
 
   it('renders unambiguous "Dev Staging" environment badge to avoid confusion with production stages', () => {

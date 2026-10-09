@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Memory, PromptGroup, StoryRequest } from '@/types';
-import { mockPromptGroups } from '@/lib/mockData';
+import { MASTER_STORY_STRUCTURE } from '@/lib/curriculum/masterStoryStructure';
 import { useLanguage } from '@/hooks/useLanguage';
 import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
@@ -110,14 +110,13 @@ export function useStudioData(userId: string | undefined) {
   }, [userId, user?.uid]);
 
   const chapters = useMemo(() => {
-    return mockPromptGroups.map((group): UnifiedChapter => {
-      const correlatedPrompts = group.prompts.map((p): CorrelatedPrompt => {
-        const sceneDef = resolveSceneFromPromptId(p.id);
+    return MASTER_STORY_STRUCTURE.map((part): UnifiedChapter => {
+      const correlatedPrompts = part.scenes.map((scene): CorrelatedPrompt => {
         // Trace forward: Follow the chain of memory pointer documents to find the latest leaf memory.
         // CANDIDATE RESOLUTION SHIELD: If multiple memory documents exist matching the prompt,
         // prioritise authentic non-test memories and completed/in-progress takes over unrecorded stage-0 test drafts.
         const candidateMemories = memories.filter(
-          m => m.promptId === p.id || (sceneDef && (m as any).sceneId === sceneDef.id)
+          m => m.promptId === scene.promptId || (m as any).sceneId === scene.id || m.promptId === scene.id
         );
         let memory: Memory | undefined = candidateMemories.slice().sort((a, b) => {
           const aIsTest = a.id.includes('test') || (a as any).isTestFixture ? 1 : 0;
@@ -145,23 +144,23 @@ export function useStudioData(userId: string | undefined) {
             }
           }
         }
-        const promptRequests = requests.filter(r => r.promptId === p.id);
+        const promptRequests = requests.filter(r => r.promptId === scene.promptId || r.promptId === scene.id);
         
-        let promptTitle = p.title;
+        let promptTitle = scene.title;
         let promptSubtitle: string | undefined = undefined;
-        let promptDescription = p.description;
+        let promptDescription = scene.subtitle;
 
         if (mode === 'gu') {
-          promptTitle = p.text.gu.split(' – ')[0] || p.title;
-          promptDescription = p.text.gu.split(' – ')[1] || p.description;
+          promptTitle = scene.localizedTitles?.gu || scene.title;
+          promptDescription = scene.subtitle;
         } else if (mode === 'dual') {
-          promptTitle = p.title;
-          promptSubtitle = p.text.gu.split(' – ')[0] || undefined;
-          promptDescription = p.description;
+          promptTitle = scene.title;
+          promptSubtitle = scene.localizedTitles?.gu || undefined;
+          promptDescription = scene.subtitle;
         }
 
         return {
-          id: p.id,
+          id: scene.promptId || scene.id,
           title: promptTitle,
           subtitle: promptSubtitle,
           description: promptDescription,
@@ -171,25 +170,25 @@ export function useStudioData(userId: string | undefined) {
       });
 
       const publishedCount = correlatedPrompts.filter(p => p.memory?.status === 'published' || p.memory?.status === 'pre-release').length;
-      const isCompleted = publishedCount === group.prompts.length && group.prompts.length > 0;
+      const isCompleted = publishedCount === part.scenes.length && part.scenes.length > 0;
 
       // Dynamic Title Logic
-      let title = group.title.en;
-      let subtitle: string | undefined = group.title.gu;
+      let title = part.title;
+      let subtitle: string | undefined = part.localizedTitles?.gu;
 
       if (mode === 'en') {
-        title = group.title.en;
+        title = part.title;
         subtitle = undefined;
       } else if (mode === 'gu') {
-        title = group.title.gu;
+        title = part.localizedTitles?.gu || part.title;
         subtitle = undefined;
       } else if (mode === 'dual') {
-        title = group.title.en;
-        subtitle = group.title.gu;
+        title = part.title;
+        subtitle = part.localizedTitles?.gu;
       }
 
       return {
-        id: group.id,
+        id: part.id,
         title,
         subtitle,
         prompts: correlatedPrompts,
@@ -204,14 +203,14 @@ export function useStudioData(userId: string | undefined) {
     const published = memories.filter(m => m.status === 'published').length;
     const preRelease = memories.filter(m => m.status === 'pre-release').length;
     const drafts = memories.filter(m => m.status === 'draft').length;
-    const totalPossible = mockPromptGroups.reduce((acc, g) => acc + g.prompts.length, 0);
+    const totalPossible = MASTER_STORY_STRUCTURE.reduce((acc, part) => acc + part.scenes.length, 0);
 
     return {
       published,
       preRelease,
       drafts,
       totalPossible,
-      completionPercentage: Math.round((published / totalPossible) * 100),
+      completionPercentage: totalPossible > 0 ? Math.round((published / totalPossible) * 100) : 0,
       totalRequests: requests.length
     };
   }, [memories, requests]);

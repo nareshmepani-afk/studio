@@ -23,7 +23,8 @@ import { stripScreenplayCues } from '@/lib/sanitizer';
 
 // Icons
 import { 
-  Film, 
+  Film,
+  Mic, 
   Loader2, 
   Plus, 
   Lock, 
@@ -116,7 +117,14 @@ export function StudioDashboard({
         targetId = cp?.memory?.id || promptId;
     }
     const actParam = isCompleted ? '?act=1' : '';
-    router.push(`/studio/production/${targetId}${actParam}`);
+    // DEVICE-AWARE ROUTING (ARCH-MW-126 Option A):
+    // On mobile viewports (< 768px), route to Fireside Recording Booth
+    // On desktop viewports (>= 768px), route to Desktop Production Deck
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      router.push(`/studio/fireside?id=${targetId}`);
+    } else {
+      router.push(`/studio/production/${targetId}${actParam}`);
+    }
   }, [chapters, router]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
@@ -186,7 +194,30 @@ export function StudioDashboard({
             </p>
           </div>
 
-          <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
+            {/* Fireside Recording Studio Quick-Launch */}
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/studio/fireside')}
+                    data-hotspot-id="HS_STUDIO_FIRESIDE_BOOTH_BTN"
+                    className="flex-1 sm:flex-none border border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:text-white hover:border-amber-400/60 transition-all font-bold tracking-tight shadow-[0_0_15px_rgba(245,158,11,0.15)]"
+                  >
+                    <Mic className="w-4 h-4 mr-2 text-amber-400 shrink-0" />
+                    <span className="hidden sm:inline">🎙️ Fireside Studio Booth</span>
+                    <span className="inline sm:hidden">🎙️ Fireside</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">
+                  <div className="flex gap-2">
+                    <Mic className="w-4 h-4 text-amber-400 shrink-0" />
+                    <p>Enter the distraction-free 4-Act Fireside recording booth with teleprompter and video recording.</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {/* Einstein Demo Quick-Start Button */}
             <TooltipProvider>
               <Tooltip delayDuration={300}>
@@ -407,7 +438,7 @@ export function StudioDashboard({
                               }
                             }}
                             className={cn(
-                              "relative flex flex-col items-center justify-center p-8 rounded-[32px] border-2 border-dashed transition-all cursor-pointer min-h-[300px] text-center shadow-2xl group overflow-hidden bg-white/5 hover:bg-white/10",
+                              "relative flex flex-col items-center justify-center p-8 rounded-[32px] border-2 border-dashed transition-all cursor-pointer min-h-[220px] sm:min-h-[300px] text-center shadow-2xl group overflow-hidden bg-white/5 hover:bg-white/10",
                               canAccessGroup 
                                 ? "border-primary/20 hover:border-primary/60" 
                                 : "opacity-40 grayscale border-muted-foreground/20"

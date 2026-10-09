@@ -103,12 +103,12 @@ export function FiresideAuthHeader({
             data-testid="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
             data-hotspot-id="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
             className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
-            title="Switch to Desktop Theatrical Soundstage (Acts I–IV)"
-            aria-label="Switch to Desktop Theatrical Soundstage"
+            title="Return to Production Board"
+            aria-label="Return to Production Board"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-amber-400" />
-            <span className="hidden sm:inline">Desktop Soundstage (Acts I–IV)</span>
-            <span className="sm:hidden">Desktop Stage</span>
+            <span className="hidden sm:inline">← Back to Production Board</span>
+            <span className="sm:hidden">← Production Board</span>
           </Link>
 
           <div className="flex items-center gap-2 text-amber-400 flex-wrap justify-end">

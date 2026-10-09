@@ -1300,3 +1300,20 @@ To eliminate curriculum drift, fragmented prompt decks, and counting discrepanci
   `Part [Roman] • Scene [X] of [Total] • [Canonical Scene Title]`
   Example: `Part III • Scene 3 of 4 • Falling in Love`
 - **Chapter Spine Token Anchoring**: In `ChapterSpineRail.tsx`, every scene pill MUST anchor its display number to `scene.sceneNumber ?? (scene.index + 1)`, ensuring pills consistently render 1, 2, 3, 4 across all 6 parts.
+
+# 47. Unified Production Board & Routing Invariant (Option A Architecture)
+
+To guarantee seamless user journeys, cross-device parity, and eliminate the "linear trapping" antipattern across Desktop and Mobile:
+
+## 47.1 The Board vs The Booth Separation
+- **The Universal Production Board (`/studio`)**: The sole canonical landing home for both Desktop and Mobile viewports.
+  - Desktop Viewports (>= 768px): High-density 3-column overview grid of all 6 Parts and canonical scenes, plus `[ + Add Scene ]` (Personal Production).
+  - Mobile Viewports (< 768px): Single-column vertical card feed grouped by Part with full-width cards, clear status badges, and an accessible, elder-friendly `[ + Add Scene ]` affordance (`min-h-[220px]`).
+- **The Focused Recording Booth (`/studio/fireside?id=...`)**: A distraction-free 4-Act recording studio (Script -> Weave -> Teleprompter/Video -> Reel).
+  - Initiated when tapping `[ 🎬 Action: Record Scene → ]` or `[ ✏️ Edit Scene ]` on mobile viewports (< 768px).
+  - Must accept any scene identifier (`promptId`, `sceneId`, `sparkId`, or `memoryId`) via `?id=...` and immediately focus the target scene.
+  - Must display a prominent top navigation button: `[ ← Back to Production Board ]` linking directly back to `/studio`.
+
+## 47.2 Single Source of Truth Invariant (`useStudioData.ts`)
+- All chapters, scenes, and completion statistics rendered on `/studio` and `/cinema` MUST derive dynamically from `MASTER_STORY_STRUCTURE` in `src/lib/curriculum/masterStoryStructure.ts`.
+- Divergent mock prompt groups in `mockData.ts` are deprecated. Both Desktop `/studio` and Mobile `/studio/fireside` MUST consume identical in-memory canonical structures (exactly 6 Parts x 4 scenes = 24 total scenes).

@@ -43,6 +43,7 @@ export interface MasterStoryScene {
 }
 
 export interface MasterStoryPart {
+  id: string; // e.g. "part-i", "part-ii"
   partNumber: number;
   title: string;
   localizedTitles: {
@@ -62,6 +63,7 @@ export interface MasterStoryPart {
  */
 export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
   {
+    id: 'part-i',
     partNumber: 1,
     title: 'Part I: Roots and Foundations',
     localizedTitles: {
@@ -198,6 +200,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     ],
   },
   {
+    id: 'part-ii',
     partNumber: 2,
     title: 'Part II: Formative Years & Early Echoes',
     localizedTitles: {
@@ -304,6 +307,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     ],
   },
   {
+    id: 'part-iii',
     partNumber: 3,
     title: 'Part III: Love, Partnership & Commitment',
     localizedTitles: {
@@ -410,6 +414,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     ],
   },
   {
+    id: 'part-iv',
     partNumber: 4,
     title: 'Part IV: Trials, Triumphs & Milestones',
     localizedTitles: {
@@ -516,6 +521,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     ],
   },
   {
+    id: 'part-v',
     partNumber: 5,
     title: 'Part V: Wisdom, Hard-Won Truths & Values',
     localizedTitles: {
@@ -622,6 +628,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     ],
   },
   {
+    id: 'part-vi',
     partNumber: 6,
     title: 'Part VI: The Continuing Story & Heirloom Legacy',
     localizedTitles: {
@@ -759,15 +766,18 @@ export function getPartForScene(sceneId?: string): MasterStoryPart {
  */
 export function resolveSceneFromPromptId(promptId: string): MasterStoryScene | undefined {
   if (!promptId) return undefined;
+  // Pass 1: Exact match on promptId or scene id
+  for (const part of MASTER_STORY_STRUCTURE) {
+    const exact = part.scenes.find((s) => s.promptId === promptId || s.id === promptId);
+    if (exact) return exact;
+  }
+  // Pass 2: Base prefix fallback (e.g. "p1_take2" -> "p1")
   const basePromptId = promptId.split('_')[0];
   for (const part of MASTER_STORY_STRUCTURE) {
-    const matched = part.scenes.find(
-      (s) =>
-        s.promptId === promptId ||
-        s.id === promptId ||
-        s.promptId.split('_')[0] === basePromptId
+    const prefixMatch = part.scenes.find(
+      (s) => s.promptId === basePromptId || s.promptId.split('_')[0] === basePromptId
     );
-    if (matched) return matched;
+    if (prefixMatch) return prefixMatch;
   }
   return undefined;
 }

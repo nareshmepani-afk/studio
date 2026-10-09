@@ -1102,3 +1102,31 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
 - **Verification**:
   - `npx.cmd vitest run src/test/fireside_sync.test.ts`: 71/71 tests passed.
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
+
+---
+
+## Checkpoint #048 — ARCH-MW-126: Option A — Unified Responsive Production Board & SSOT Data Bridge (2026-10-09)
+
+- **Target Ref**: `ARCH-MW-126` (Option A — Unified Responsive Production Board & SSOT Bridge)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Architectural & Invariant Deliverables**:
+  - **Single Source of Truth Curriculum Bridge (`useStudioData.ts`)**:
+    - Eliminated reliance on divergent `mockPromptGroups` in `useStudioData.ts`.
+    - Dynamically derived all chapters and prompts from `MASTER_STORY_STRUCTURE` in `src/lib/curriculum/masterStoryStructure.ts`.
+    - Fixed exact-match pass in `resolveSceneFromPromptId` so `p3_b` correctly maps to Part I Scene 4 ("Traditions, Feasts & Sacred Days") rather than colliding with `p3`.
+    - Bound `totalPossible` and completion stats strictly to 24 canonical scenes (6 x 4 = 24).
+  - **Universal Responsive Production Board (`/studio`)**:
+    - Maintained high-density 3-column overview grid on desktop (>= 768px).
+    - Established elder-friendly single-column vertical card feed on mobile (< 768px).
+    - Enhanced `[ + Add Scene ]` (Personal Production) card ergonomics on touch viewports (`min-h-[220px]`).
+    - Implemented device-aware routing: clicking `[ 🎬 Action: Record Scene → ]` or `[ ✏️ Edit Scene ]` on mobile (< 768px) routes to `/studio/fireside?id=${targetId}`; on desktop (>= 768px) routes to `/studio/production/${targetId}`.
+    - Added quick-launch button `[ 🎙️ Fireside Studio Booth ]` in header.
+  - **Fireside Booth Entry & Navigation (`/studio/fireside`)**:
+    - Upgraded `autoSparkId` resolution in `FiresideStudioClient.tsx` to accept and resolve `?id=...` across prompt IDs (`p1`), scene IDs (`part-1-scene-1`), spark IDs, and memory IDs. Defaults to first unrecorded scene if no ID is provided.
+    - Updated top navigation in `FiresideAuthHeader.tsx` to `[ ← Back to Production Board ]` linking back to `/studio`.
+  - **Governance & Regression Shield**:
+    - Codified **Rule 47: Unified Production Board & Routing Invariant** into `.agents/AGENTS.md`.
+    - Added invariant suite `src/test/fireside_booth_entry.test.tsx` (5/5 tests passing).
+- **Verification**:
+  - Vitest: All invariant test suites passing.
+  - Local Production Build Gate: `npm.cmd run build` passes with exit code 0.

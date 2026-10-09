@@ -52,7 +52,7 @@ import {
   Sparkles,
   RotateCcw,
 } from 'lucide-react';
-import { getSceneById, getPartForScene } from '@/lib/curriculum/masterStoryStructure';
+import { getSceneById, getPartForScene, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
 export default function FiresideStudioClient() {
   const searchParams = useSearchParams();
@@ -74,6 +74,7 @@ export default function FiresideStudioClient() {
   // Resolve URL parameters
   const initialLangParam = searchParams.get('lang') as FiresideLanguage | null;
   const initialPromptParam = searchParams.get('prompt') || undefined;
+  const initialIdParam = searchParams.get('id') || undefined;
 
   const validLangs: FiresideLanguage[] = ['en', 'gu', 'pa', 'hi'];
   const resolvedLang: FiresideLanguage = initialLangParam && validLangs.includes(initialLangParam)
@@ -271,13 +272,38 @@ export default function FiresideStudioClient() {
   }, [activeSceneMemory]);
 
   const autoSparkId = useMemo(() => {
-    if (initialPromptParam) return initialPromptParam;
+    const targetParam = initialIdParam || initialPromptParam;
+    if (targetParam) {
+      // 1. Direct match on spark id (e.g. "spark_roots_two_worlds")
+      const bySparkId = FIRESIDE_PROMPT_SPARKS.find((p) => p.id === targetParam);
+      if (bySparkId) return bySparkId.id;
+
+      // 2. Direct match on linkedSceneId (e.g. "part-1-scene-1")
+      const bySceneId = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === targetParam);
+      if (bySceneId) return bySceneId.id;
+
+      // 3. Resolve canonical scene from desktop promptId (e.g. "p1", "p4", "p3_b")
+      const resolvedScene = resolveSceneFromPromptId(targetParam);
+      if (resolvedScene) {
+        const byCanonicalScene = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === resolvedScene.id);
+        if (byCanonicalScene) return byCanonicalScene.id;
+      }
+
+      // 4. If targetParam matches activeSceneMemory id or sceneId
+      if (activeSceneMemory && (activeSceneMemory.id === targetParam || (activeSceneMemory as any).sceneId === targetParam)) {
+        const sceneId = activeSceneMemory.sceneId;
+        if (sceneId) {
+          const byMemScene = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === sceneId);
+          if (byMemScene) return byMemScene.id;
+        }
+      }
+    }
     if (nextPendingSceneId) {
       const matched = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === nextPendingSceneId);
       if (matched) return matched.id;
     }
     return undefined;
-  }, [initialPromptParam, nextPendingSceneId]);
+  }, [initialIdParam, initialPromptParam, nextPendingSceneId, activeSceneMemory]);
 
   const handleMoodChange = useCallback(
     (mood: StoryMoodTag) => {
