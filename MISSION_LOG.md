@@ -1197,6 +1197,7 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
 
 - **Target Ref**: `UX-MW-131` (Fireside Inspiration Deck Decoupling & Dedicated Sensory Seeds Tray)
 - **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Commit SHA**: `d61a0ed6` (Edge: `d61a0ed`)
 - **Architectural & Governance Deliverables**:
   - **Sensory Seeds Architecture (`src/lib/firesidePrompts.ts`)**:
     - Decoupled sensory prompt cues from plain string questions into rich canonical sensory seeds (`getSensorySeedsForSpark`).
@@ -1215,6 +1216,7 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
 - **Verification**:
   - Unit Tests: 19/19 in `fireside_prompt_carousel.test.tsx`, 71/71 in `fireside_sync.test.ts`, 12/12 in `qa_template.test.ts` (all passing).
   - Local Production Build Gate (Rule 5): `npm.cmd run build` compiled all 46 routes with exit code 0.
+  - Live Staging Edge Verification Gate (Rule 5): `https://dev.memoryweaver.studio/api/version` confirmed active `commitSha: "d61a0ed"`.
 
 
 
