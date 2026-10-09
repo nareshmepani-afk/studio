@@ -341,6 +341,23 @@ function generateQAChecklistHtml(config) {
         </div>
       </div>` : ''}
 
+      <!-- IN-FLIGHT PUNCH-LIST RESOLUTIONS SECTION -->
+      <div id="punchlist-container-${num}" class="mt-3 mb-4 p-3.5 border border-amber-500/25 bg-amber-950/20 rounded-xl space-y-2">
+        <div class="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+          <span class="flex items-center gap-1.5">🥊 In-Flight Punch-List Resolutions (Test ${num})</span>
+          <span id="punchlist-badge-${num}" class="text-[10px] text-amber-300/70 font-mono">0/0 verified</span>
+        </div>
+        <div id="punchlist-items-${num}" class="space-y-1.5">
+          <div class="text-[11px] text-gray-500 font-mono italic">No in-flight snags recorded. Add a punch-list fix below if a micro-defect is batched during sweep.</div>
+        </div>
+        <div class="pt-1 flex items-center gap-2">
+          <input type="text" id="punchlist-new-input-${num}" placeholder="Record in-flight punch-list fix for Test ${num}..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1 text-xs text-amber-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 font-mono" onkeydown="if(event.key==='Enter') addPunchListItem(${num})" />
+          <button onclick="addPunchListItem(${num})" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-gray-950 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition shrink-0">
+            + Add Fix
+          </button>
+        </div>
+      </div>
+
       <!-- STATUS BUTTONS TRIPLET -->
       <div class="flex items-center justify-between gap-2 pt-2 pb-4 border-b border-gray-800/60 flex-wrap">
         <div class="flex items-center gap-2 flex-1 sm:flex-initial">
@@ -435,7 +452,8 @@ function generateQAChecklistHtml(config) {
       statuses: {},
       notes: {},
       telemetry: {},
-      screenshots: {} // { [testNum]: [{ id, dataUrl, name, timestamp }] }
+      screenshots: {}, // { [testNum]: [{ id, dataUrl, name, timestamp }] }
+      punchLists: {} // { [testNum]: [{ id, text, url, checked }] }
     };
 
     function init() {
@@ -483,6 +501,7 @@ function generateQAChecklistHtml(config) {
                 if (loaded.notes?.[matchedPriorNum]) state.notes[num] = loaded.notes[matchedPriorNum];
                 if (loaded.telemetry?.[matchedPriorNum]) state.telemetry[num] = loaded.telemetry[matchedPriorNum];
                 if (loaded.screenshots?.[matchedPriorNum]) state.screenshots[num] = loaded.screenshots[matchedPriorNum];
+                if (loaded.punchLists?.[matchedPriorNum]) state.punchLists[num] = loaded.punchLists[matchedPriorNum];
               } else if (t.defaultStatus && t.defaultStatus !== 'UNTESTED') {
                 state.statuses[num] = t.defaultStatus;
                 if (t.defaultNotes) state.notes[num] = t.defaultNotes;
@@ -500,12 +519,16 @@ function generateQAChecklistHtml(config) {
           if (!state.notes[num] && t.defaultNotes) {
             state.notes[num] = t.defaultNotes;
           }
+          if (!state.punchLists[num] && t.punchList && t.punchList.length > 0) {
+            state.punchLists[num] = JSON.parse(JSON.stringify(t.punchList));
+          }
         });
 
         if (!state.screenshots) state.screenshots = {};
         if (!state.notes) state.notes = {};
         if (!state.telemetry) state.telemetry = {};
         if (!state.statuses) state.statuses = {};
+        if (!state.punchLists) state.punchLists = {};
       } catch (e) {
         console.error('State load error:', e);
       }
@@ -526,6 +549,7 @@ function generateQAChecklistHtml(config) {
         if (state.screenshots[i]) {
           renderThumbnails(i);
         }
+        renderPunchList(i);
       }
       updateHUD();
 
@@ -578,6 +602,76 @@ function generateQAChecklistHtml(config) {
           else btn.classList.remove('active');
         }
       });
+    }
+
+    /* IN-FLIGHT PUNCH-LIST RESOLUTION ENGINE */
+    function renderPunchList(cardNum) {
+      const container = document.getElementById(\`punchlist-container-\${cardNum}\`);
+      if (!container) return;
+
+      const items = state.punchLists?.[cardNum] || [];
+      const verifiedCount = items.filter(it => it.checked).length;
+      const badge = document.getElementById(\`punchlist-badge-\${cardNum}\`);
+      if (badge) {
+        badge.textContent = \`\${verifiedCount}/\${items.length} verified\`;
+      }
+
+      const itemsContainer = document.getElementById(\`punchlist-items-\${cardNum}\`);
+      if (!itemsContainer) return;
+
+      if (items.length === 0) {
+        itemsContainer.innerHTML = '<div class="text-[11px] text-gray-500 font-mono italic">No in-flight snags recorded. Add a punch-list fix below if a micro-defect is batched during sweep.</div>';
+        return;
+      }
+
+      let itemsHtml = '';
+      items.forEach((item, idx) => {
+        const urlLink = item.url ? \`<a href="\${item.url}" target="_blank" class="text-amber-300 underline font-semibold ml-1">🔗 Open ↗</a>\` : '';
+        itemsHtml += \`
+          <div class="flex items-start justify-between gap-2 text-xs text-amber-200">
+            <label class="flex items-start gap-2.5 cursor-pointer flex-1">
+              <input type="checkbox" id="punchlist-item-\${cardNum}-\${idx}" class="mt-0.5 rounded border-amber-700 text-amber-500 focus:ring-0 bg-gray-900" \${item.checked ? 'checked' : ''} onchange="togglePunchListItem(\${cardNum}, \${idx})" />
+              <span>\${item.text} \${urlLink}</span>
+            </label>
+            <button onclick="removePunchListItem(\${cardNum}, \${idx})" title="Remove item" class="text-gray-500 hover:text-rose-400 text-xs px-1 cursor-pointer transition">✕</button>
+          </div>
+        \`;
+      });
+      itemsContainer.innerHTML = itemsHtml;
+    }
+
+    function addPunchListItem(cardNum) {
+      const input = document.getElementById(\`punchlist-new-input-\${cardNum}\`);
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      if (!state.punchLists) state.punchLists = {};
+      if (!state.punchLists[cardNum]) state.punchLists[cardNum] = [];
+      const itemNum = state.punchLists[cardNum].length + 1;
+      state.punchLists[cardNum].push({
+        id: \`pl-\${cardNum}-\${Date.now()}\`,
+        text: \`Punch-List \${cardNum}.\${itemNum}: \${text}\`,
+        checked: false
+      });
+      input.value = '';
+      renderPunchList(cardNum);
+      saveState();
+    }
+
+    function togglePunchListItem(cardNum, idx) {
+      if (state.punchLists?.[cardNum]?.[idx]) {
+        state.punchLists[cardNum][idx].checked = !state.punchLists[cardNum][idx].checked;
+        renderPunchList(cardNum);
+        saveState();
+      }
+    }
+
+    function removePunchListItem(cardNum, idx) {
+      if (state.punchLists?.[cardNum]?.[idx]) {
+        state.punchLists[cardNum].splice(idx, 1);
+        renderPunchList(cardNum);
+        saveState();
+      }
     }
 
     function saveNotes(testNum) {
@@ -932,7 +1026,15 @@ function generateQAChecklistHtml(config) {
       if (telemetry) {
         snippet += 'Telemetry Vector: ' + telemetry + '\\n';
       }
-      snippet += 'Screenshots Attached: ' + imgCount + '\\n\\n';
+      snippet += 'Screenshots Attached: ' + imgCount + '\\n';
+      const plItems = state.punchLists?.[testNum] || [];
+      if (plItems.length > 0) {
+        snippet += 'In-Flight Punch-List Resolutions:\\n';
+        plItems.forEach(it => {
+          snippet += '  - [' + (it.checked ? 'x' : ' ') + '] ' + it.text + '\\n';
+        });
+      }
+      snippet += '\\n';
       snippet += '═══════════════════════════════════════════════════════════════════════════════\\n';
 
       navigator.clipboard.writeText(snippet).then(() => {
@@ -1001,6 +1103,13 @@ function generateQAChecklistHtml(config) {
         if (imgCount > 0) {
           md += \`- **Screenshots Attached**: \${imgCount}\\n\`;
         }
+        const plItems = state.punchLists?.[i] || [];
+        if (plItems.length > 0) {
+          md += \`- **In-Flight Punch-List Resolutions**:\\n\`;
+          plItems.forEach(it => {
+            md += \`  - [\${it.checked ? 'x' : ' '}] \${it.text}\\n\`;
+          });
+        }
         md += \`\\n\`;
       }
 
@@ -1029,6 +1138,7 @@ function generateQAChecklistHtml(config) {
         try {
           state = JSON.parse(event.target.result);
           if (!state.screenshots) state.screenshots = {};
+          if (!state.punchLists) state.punchLists = {};
           saveState();
           location.reload();
         } catch (err) {
@@ -1041,7 +1151,7 @@ function generateQAChecklistHtml(config) {
     function resetAll() {
       if (confirm('Reset all QA verification responses for this test run?')) {
         localStorage.removeItem(STORAGE_KEY);
-        state = { statuses: {}, notes: {}, telemetry: {}, screenshots: {} };
+        state = { statuses: {}, notes: {}, telemetry: {}, screenshots: {}, punchLists: {} };
         location.reload();
       }
     }

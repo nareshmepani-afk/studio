@@ -157,5 +157,44 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     expect(idxC).toBeGreaterThan(idxA);
     expect(idxB).toBeGreaterThan(idxC);
   });
+
+  it('enforces Rule 30.5 In-Flight Punch-List Resolutions Engine & Controls across all cards', () => {
+    expect(html).toContain('id="punchlist-container-1"');
+    expect(html).toContain('id="punchlist-badge-1"');
+    expect(html).toContain('id="punchlist-new-input-1"');
+    expect(html).toContain('addPunchListItem(1)');
+    expect(html).toContain('renderPunchList');
+    expect(html).toContain('togglePunchListItem');
+    expect(html).toContain('removePunchListItem');
+    expect(html).toContain('🥊 In-Flight Punch-List Resolutions (Test 1)');
+    expect(html).toContain('In-Flight Punch-List Resolutions');
+
+    // Test suite with pre-populated punchList item
+    const suiteWithPunchList = {
+      commitSha: '277fe477',
+      environmentUrl: 'https://dev.memoryweaver.studio',
+      suiteTitle: 'Punch-List Suite Test',
+      passcode: 'MW-STAGE-2026',
+      tests: [
+        {
+          category: 'Fireside',
+          title: 'Deep-Link Resolution',
+          instructions: 'Verify ?id=p4_1 navigation',
+          url: 'https://dev.memoryweaver.studio/studio/fireside?id=p4_1',
+          punchList: [
+            {
+              id: 'pl-1-1',
+              text: 'Punch-List 1.1: Deep-Link ?id=p4_1 Initial Mount Synchronisation',
+              url: 'https://dev.memoryweaver.studio/studio/fireside?id=p4_1',
+              checked: true
+            }
+          ]
+        }
+      ]
+    };
+    const htmlWithPunchList = generateQAChecklistHtml(suiteWithPunchList);
+    expect(htmlWithPunchList).toContain('punchlist-container-1');
+    expect(htmlWithPunchList).toContain('Punch-List 1.1: Deep-Link ?id=p4_1 Initial Mount Synchronisation');
+  });
 });
 

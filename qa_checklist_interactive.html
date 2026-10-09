@@ -50,13 +50,13 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">323bf43d</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">277fe477</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">323bf43</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">277fe47</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">09 Oct 2026, 16:24 BST</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">09 Oct 2026, 17:10 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">09 Oct 2026, 16:19 BST</strong></span>
+          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">09 Oct 2026, 17:09 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Environment: <strong class="text-amber-300">dev.memoryweaver.studio</strong></span>
         </div>
@@ -5329,6 +5329,29 @@
               <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
               <span><strong>British English Orthography Standard (Rule 20)</strong>: Verify all user-facing labels across both surfaces strictly adhere to UK English (<code class="text-sky-300">favourite</code>, <code class="text-sky-300">organise</code>, <code class="text-sky-300">honourable</code>, <code class="text-sky-300">colour</code>).</span>
             </label>
+
+            <!-- PUNCH-LIST SUB-SECTION (CARD 49 EXAMPLE) -->
+            <div id="punchlist-container-49" class="mt-3 pt-3 border-t border-amber-500/25 bg-amber-950/20 rounded-xl p-3 space-y-2">
+              <div class="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+                <span class="flex items-center gap-1.5">🥊 In-Flight Punch-List Resolutions (Test 49)</span>
+                <span id="punchlist-badge-49" class="text-[10px] text-amber-300/70 font-mono">1/1 verified</span>
+              </div>
+              <div id="punchlist-items-49" class="space-y-1.5">
+                <div class="flex items-start justify-between gap-2 text-xs text-amber-200">
+                  <label class="flex items-start gap-2.5 cursor-pointer flex-1">
+                    <input type="checkbox" id="punchlist-item-49-0" class="mt-0.5 rounded border-amber-700 text-amber-500 focus:ring-0 bg-gray-900" checked onchange="togglePunchListItem(49, 0)" />
+                    <span><strong>Punch-List 49.1 — Deep-Link ?id=p4_1 Initial Mount Synchronisation (Commit <code class="text-emerald-300">277fe477</code>)</strong>: Verified that navigating directly to <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4_1" target="_blank" class="text-amber-300 underline font-semibold"><code>?id=p4_1</code></a> or <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4" target="_blank" class="text-amber-300 underline font-semibold"><code>?id=p4</code></a> immediately locks onto Part II Scene 1 (<em>Formative Friendships</em>) without falling back to Part I Scene 1. <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4_1" target="_blank" class="text-amber-300 underline font-semibold ml-1">🔗 Open ↗</a></span>
+                  </label>
+                  <button onclick="removePunchListItem(49, 0)" title="Remove item" class="text-gray-500 hover:text-rose-400 text-xs px-1 cursor-pointer transition">✕</button>
+                </div>
+              </div>
+              <div class="pt-1 flex items-center gap-2">
+                <input type="text" id="punchlist-new-input-49" placeholder="Record additional punch-list fix for Test 49..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1 text-xs text-amber-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 font-mono" onkeydown="if(event.key==='Enter') addPunchListItem(49)" />
+                <button onclick="addPunchListItem(49)" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-gray-950 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition shrink-0">
+                  + Add Fix
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- ZONE 4: VERDICT CONTROLS -->
@@ -5491,6 +5514,17 @@
     for (let i = 1; i <= TOTAL; i++) {
       images[i] = [];
     }
+
+    let punchLists = {
+      49: [
+        {
+          id: 'pl-49-1',
+          text: 'Punch-List 49.1 — Deep-Link Initial Mount Synchronisation (Commit 277fe477): ?id=p4_1 and ?id=p4 lock immediately onto Part II Scene 1 (Formative Friendships) without defaulting to Part I Scene 1.',
+          url: 'https://dev.memoryweaver.studio/studio/fireside?id=p4_1',
+          checked: true
+        }
+      ]
+    };
 
     function isActionable(cardNum) {
       return !verdicts[cardNum] || verdicts[cardNum].verdict !== 'pass';
@@ -6008,6 +6042,103 @@
     function getTelemetry(cardNum) { return document.getElementById(`telemetry-${cardNum}`)?.value.trim() || ''; }
     function getVerdict(cardNum) { return verdicts[cardNum] ? verdicts[cardNum].verdict.toUpperCase() : 'PENDING'; }
 
+    function getPunchList(cardNum) { return punchLists[cardNum] || []; }
+
+    function initPunchLists() {
+      for (let i = 1; i <= TOTAL; i++) {
+        renderPunchList(i);
+      }
+    }
+
+    function renderPunchList(cardNum) {
+      const card = document.getElementById(`card-${cardNum}`);
+      if (!card) return;
+
+      let container = document.getElementById(`punchlist-container-${cardNum}`);
+      if (!container) {
+        const passBtn = document.getElementById(`btn-pass-${cardNum}`);
+        const verdictRow = passBtn ? (passBtn.closest('div.flex') || passBtn.parentElement) : null;
+
+        container = document.createElement('div');
+        container.id = `punchlist-container-${cardNum}`;
+        container.className = 'mt-3 pt-3 border-t border-amber-500/25 bg-amber-950/20 rounded-xl p-3 space-y-2 mb-4';
+
+        if (verdictRow && verdictRow.parentElement) {
+          verdictRow.parentElement.insertBefore(container, verdictRow);
+        } else {
+          card.appendChild(container);
+        }
+      }
+
+      const items = punchLists[cardNum] || [];
+      const verifiedCount = items.filter(it => it.checked).length;
+
+      let itemsHtml = '';
+      items.forEach((item, idx) => {
+        const urlLink = item.url ? `<a href="${item.url}" target="_blank" class="text-amber-300 underline font-semibold ml-1">🔗 Open ↗</a>` : '';
+        itemsHtml += `
+          <div class="flex items-start justify-between gap-2 text-xs text-amber-200">
+            <label class="flex items-start gap-2.5 cursor-pointer flex-1">
+              <input type="checkbox" id="punchlist-item-${cardNum}-${idx}" class="mt-0.5 rounded border-amber-700 text-amber-500 focus:ring-0 bg-gray-900" ${item.checked ? 'checked' : ''} onchange="togglePunchListItem(${cardNum}, ${idx})" />
+              <span>${item.text} ${urlLink}</span>
+            </label>
+            <button onclick="removePunchListItem(${cardNum}, ${idx})" title="Remove item" class="text-gray-500 hover:text-rose-400 text-xs px-1 cursor-pointer transition">✕</button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = `
+        <div class="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+          <span class="flex items-center gap-1.5">🥊 In-Flight Punch-List Resolutions (Test ${cardNum})</span>
+          <span class="text-[10px] text-amber-300/70 font-mono">${verifiedCount}/${items.length} verified</span>
+        </div>
+        <div id="punchlist-items-${cardNum}" class="space-y-1.5">
+          ${itemsHtml || '<div class="text-[11px] text-gray-500 font-mono italic">No in-flight snags recorded. Add a punch-list fix below if a micro-defect is batched during sweep.</div>'}
+        </div>
+        <div class="pt-1 flex items-center gap-2">
+          <input type="text" id="punchlist-new-input-${cardNum}" placeholder="Record in-flight punch-list fix for Test ${cardNum}..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1 text-xs text-amber-100 placeholder-gray-500 focus:outline-none focus:border-amber-400 font-mono" onkeydown="if(event.key==='Enter') addPunchListItem(${cardNum})" />
+          <button onclick="addPunchListItem(${cardNum})" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-gray-950 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition shrink-0">
+            + Add Fix
+          </button>
+        </div>
+      `;
+    }
+
+    function addPunchListItem(cardNum) {
+      const input = document.getElementById(`punchlist-new-input-${cardNum}`);
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+      if (!punchLists[cardNum]) punchLists[cardNum] = [];
+      const itemNum = punchLists[cardNum].length + 1;
+      punchLists[cardNum].push({
+        id: `pl-${cardNum}-${Date.now()}`,
+        text: `Punch-List ${cardNum}.${itemNum}: ${text}`,
+        checked: false
+      });
+      renderPunchList(cardNum);
+      saveState();
+      showToast(`Added Punch-List item to Test ${cardNum}`);
+    }
+
+    function togglePunchListItem(cardNum, idx) {
+      if (punchLists[cardNum] && punchLists[cardNum][idx]) {
+        punchLists[cardNum][idx].checked = !punchLists[cardNum][idx].checked;
+        renderPunchList(cardNum);
+        saveState();
+        showToast(`Punch-List item updated for Test ${cardNum}`);
+      }
+    }
+
+    function removePunchListItem(cardNum, idx) {
+      if (punchLists[cardNum] && punchLists[cardNum][idx]) {
+        punchLists[cardNum].splice(idx, 1);
+        renderPunchList(cardNum);
+        saveState();
+        showToast(`Removed Punch-List item from Test ${cardNum}`);
+      }
+    }
+
     function copyTextToClipboard(text, btn) {
       const originalHtml = btn ? btn.innerHTML : '';
       const onCopied = () => {
@@ -6126,6 +6257,13 @@
 - Narrative Feedback / Notes: ${getNotes(i) || 'None provided'}
 - Screenshots in Vault: ${images[i].length}
 `;
+        const plItems = punchLists[i] || [];
+        if (plItems.length > 0) {
+          report += `- In-Flight Punch-List Resolutions:\n`;
+          plItems.forEach(it => {
+            report += `  - [${it.checked ? 'x' : ' '}] ${it.text}\n`;
+          });
+        }
       }
 
       return report;
@@ -6144,13 +6282,18 @@
         hour: '2-digit', minute: '2-digit', second: '2-digit',
         timeZone: 'Europe/London', timeZoneName: 'short'
       });
+      const plItems = punchLists[cardNum] || [];
+      let plText = '';
+      if (plItems.length > 0) {
+        plText = `\n- In-Flight Punch-List Resolutions:\n` + plItems.map(it => `  - [${it.checked ? 'x' : ' '}] ${it.text}`).join('\n');
+      }
       const report = `### [Test ${cardNum}: ${testTitles[cardNum]}]
 - Audit: Exported at ${nowFormatted} | Checklist Version: ${templateUpdated} | Active SHA: ${edgeSha}
 - Verdict: ${getVerdict(cardNum)}
 - Console Error Log: ${getConsoleLog(cardNum) || 'None provided'}
 - Telemetry Trace: ${getTelemetry(cardNum) || 'None provided'}
 - Narrative Feedback / Notes: ${getNotes(cardNum) || 'None provided'}
-- Screenshots: ${images[cardNum].length}`;
+- Screenshots: ${images[cardNum].length}${plText}`;
       copyTextToClipboard(report, btn);
     }
 
@@ -6247,6 +6390,7 @@
         notes: {},
         consoleLogs: {},
         telemetry: {},
+        punchLists,
         images
       };
       for (let i = 1; i <= TOTAL; i++) {
@@ -6267,6 +6411,9 @@
         if (raw) {
           const state = JSON.parse(raw);
           if (state.verdicts) verdicts = state.verdicts;
+          if (state.punchLists) {
+            punchLists = { ...punchLists, ...state.punchLists };
+          }
           if (state.notes) {
             Object.keys(state.notes).forEach(k => {
               const el = document.getElementById(`notes-${k}`);
@@ -6293,6 +6440,7 @@
             }
           }
         }
+        initPunchLists();
         Object.keys(verdicts).forEach(k => {
           const cardNum = parseInt(k, 10);
           const v = verdicts[k].verdict;

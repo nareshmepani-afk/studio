@@ -171,8 +171,8 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Strict Prohibition of Raw Text / Chat Step Lists**: The agent is **STRICTLY FORBIDDEN** from presenting testing checklists, QA step lists, or verification questionnaires as plain chat text or raw markdown bullet lists in chat mode.
 - **Exclusive Interactive Artifact Handoff**: ALL staging verification handoffs MUST be delivered exclusively via the standalone interactive HTML artifact: `qa_checklist_interactive.html` generated in the active artifact directory (`<appDataDir>\brain\<conversation-id>/qa_checklist_interactive.html`).
 - **Canonical Gold-Standard Archetype**: Every generated `qa_checklist_interactive.html` MUST strictly adhere to the layout, styling, and functionality established in archetype `404e609c-deb4-4f50-ad10-9ecb37719a78/qa_checklist_interactive.html`.
-- **Mandatory 8-Zone Test Card Architecture (`#card-N`)**:
-  Every test card MUST render all 8 visual zones in this exact order:
+- **Mandatory 9-Zone Test Card Architecture (`#card-N`)**:
+  Every test card MUST render all 9 visual zones in this exact order:
   1. **Zone 1: Header & Direct Route Trigger**:
      - Card container: `class="obsidian-card rounded-2xl p-6 border border-gray-800 transition" id="card-N" tabindex="0" onpaste="handleCardPaste(event, N)"`
      - Test badge (`TEST N`) + functional subcategory tag + bold descriptive title.
@@ -185,17 +185,23 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
      - Every single parameter card MUST render an inline `[ 📋 Copy ]` button calling `copyToClipboard(...)` providing 0ms clipboard copy and visual `✅ Copied!` confirmation.
   4. **Zone 4: 🛡️ Status Attribution & Rationale Banner**:
      - Dedicated banner showing **Status Attribution** (e.g. `Naresh Mepani / Antigravity Lead`) and **Status Rationale** explaining technical justification and test evidence.
-  5. **Zone 5: Evaluation Strip with Toggle-Off & Per-Card Reset**:
+  5. **Zone 5: 🥊 In-Flight Punch-List Resolutions Section**:
+     - Dedicated container (`#punchlist-container-N`) with amber glow styling (`border-amber-500/25 bg-amber-950/20 rounded-xl p-3.5`).
+     - Real-time verification tally badge (`#punchlist-badge-N`, e.g. `1/1 verified`).
+     - Granular checklist items for in-flight micro-fixes and edge-case synchronisations batched during test sweeps.
+     - Interactive `+ Add Fix` input bar (`#punchlist-new-input-N`) with Enter-key trigger, toggleable verification checkboxes (`togglePunchListItem(N, idx)`), and item removal triggers (`✕`).
+     - Full `localStorage` persistence and automatic inclusion in both single-test copy and suite-level Markdown reports.
+  6. **Zone 6: Evaluation Strip with Toggle-Off & Per-Card Reset**:
      - `[ ✅ PASS ]`, `[ ❌ FAIL ]`, `[ ⚠️ BACKLOG ]`, and `[ ↺ Reset ]` buttons calling `setStatus(N, 'PASS')` / `setVerdict(N, 'pass')` with active glow states and live HUD updating.
      - **Toggle-Off / Unclick Support**: Clicking an already active verdict button (e.g. clicking PASS when already marked PASS) immediately deselects / unclicks it, reverting the card back to PENDING.
      - **Per-Card Reset Button**: Clicking `[ ↺ Reset ]` immediately clears the card's verdict back to PENDING without requiring a full suite reset. All actions update the live HUD ring, tally strip, and storage in 0ms.
-  6. **Zone 6: Observations & Telemetry Vector Ingestion (2-Column Grid)**:
+  7. **Zone 7: Observations & Telemetry Vector Ingestion (2-Column Grid)**:
      - Left: `Feedback & Observations` textarea (`#notes-N`) with `oninput="saveNotes(N)"`.
      - Right: `Per-Test Telemetry Vector Ingestion` textarea (`#telemetry-N`) with `oninput="parseTelemetry(N)"` auto-generating live visual chips (`🏷️ Trace`, `👤 Email`, `🆔 UID`, `📍 Path`, `🔖 Ver`) with 0ms targeted DOM updating without losing textarea focus.
-  7. **Zone 7: 📷 Screenshot & Evidence Engine**:
+  8. **Zone 8: 📷 Screenshot & Evidence Engine**:
      - Dropzone (`#dropzone-N`) supporting drag-and-drop, file browser trigger, and card-level clipboard paste (`Ctrl+V` on card).
      - Responsive thumbnail gallery with lightbox zoom, image download link, and individual delete `×` button.
-  8. **Zone 8: Global Lightbox Modal**:
+  9. **Zone 9: Global Lightbox Modal**:
      - Fixed image overlay with zoom preview, download button, and `Esc` / click-to-close handler.
 - **Mandatory Top HUD Header Architecture**:
   - Glow blur accent backdrop.
@@ -309,6 +315,17 @@ In `qa_checklist_interactive.html`:
    - Clicking any chip copies its `data-testid` directly to the tester's clipboard and displays an instant confirmation toast.
 3. **Staging-to-Checklist Deep-Linking (`#hotspot-HS_...`)**:
    - When given a URL hash matching a hotspot ID (e.g. `#hotspot-HS_FIRESIDE_CAROUSEL_SPARK_TOGGLE_BTN`), the checklist MUST automatically locate the card testing that component, open the Verified Reel Archive if collapsed, clear route filters if hidden, smooth-scroll to the card, and pulse an amber highlight halo (`ring-4 ring-amber-400`).
+
+# 30.5. In-Flight Punch-List Resolution Protocol & Micro-Defect Triage
+- **Zero-Backlog In-Flight Resolution**: When a tester identifies a focused snag, edge-case bug, or alignment defect during live staging testing of an active test card (e.g. Test 49 initial deep-link query parameter synchronisation), the engineering lead may resolve it in-flight via a targeted micro-commit rather than forcing premature backlog deferral or abandoning the ongoing verification cycle.
+- **Dedicated Punch-List Section per Test Card**:
+  - Every test card in `qa_checklist_interactive.html` renders a dedicated **`🥊 In-Flight Punch-List Resolutions (Test N)`** container (`#punchlist-container-N`) with amber warning glow and verification tally badge (`#punchlist-badge-N`, e.g. `1/1 verified`).
+  - Contains an interactive `+ Add Fix` input bar (`#punchlist-new-input-N`) allowing testers and agents to record granular micro-defects (`Punch-List N.M: [Description]`) on the fly.
+  - Each item renders an interactive verification checkbox calling `togglePunchListItem(N, idx)`, a direct route link (`🔗 Open ↗`), and an item removal trigger `✕` (`removePunchListItem(N, idx)`).
+- **Persistent State & Multi-Channel Export**:
+  - Punch-list entries are saved into `state.punchLists` and persisted to browser `localStorage` under both the commit key and `mw_qa_state_v1_latest`.
+  - When new commits are deployed, punch-list resolutions migrate seamlessly across versions alongside notes, telemetry, and screenshots.
+  - Both Single Test Copy (`[ 📋 Copy Test N ]`) and Suite-Level Markdown Reports (`[ 📋 Copy Markdown Report ]`) automatically include verified punch-list line items (`- [x] Punch-List N.M: [Description]`), providing an immutable verification trail.
 
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
