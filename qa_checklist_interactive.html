@@ -50,13 +50,13 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">5bb0be38</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">c3f4f38a</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">5bb0be3</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">c3f4f38</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">08 Oct 2026, 18:37 BST</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">09 Oct 2026, 15:05 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">08 Oct 2026, 18:30 BST</strong></span>
+          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">09 Oct 2026, 14:52 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Environment: <strong class="text-amber-300">dev.memoryweaver.studio</strong></span>
         </div>
@@ -67,7 +67,7 @@
           Organised strictly by target staging route so you can open a single URL and run every test on that route in chronological order:
           <strong class="text-sky-300">1. first_flight_rehearsal</strong> (Cards 1–6: 6/6 PASS) &bull;
           <strong class="text-amber-300">2. studio/production/</strong> (Card 7: 1/1 PASS) &bull;
-          <strong class="text-emerald-300">3. studio/fireside, Curriculum Lockstep Sync, Cloud Storage, Chromatic Lockstep &amp; Build Immutability (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115, OPS-116, MW-117, MW-118 &amp; MW-119)</strong> (Cards 8–10 PASS; Cards 11–45 Ready for Verification).
+          <strong class="text-emerald-300">3. studio/fireside, Curriculum Lockstep Sync, Cloud Storage, Chromatic Lockstep &amp; Build Immutability (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115, OPS-116, MW-117, MW-118 &amp; MW-119)</strong> (Cards 8–10 PASS; Cards 11–48 Ready for Verification).
         </p>
       </div>
 
@@ -4997,8 +4997,383 @@
             </div>
             <div id="image-gallery-46" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
           </div>
+        
+        <!-- CARD 47: FIRESIDE CURRICULUM JUMP MATRIX DRAWER (PARTS I–VI) (FEAT-MW-125 — BACKLOG / SIZING) -->
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-gray-800 shadow-xl transition-all opacity-80" id="card-47" data-category="fireside">
+          <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
+          <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  CARD 47
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/10 text-purple-300 border border-purple-500/30">
+                  BACKLOG SIZING
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/10 text-sky-300 border border-sky-500/30">
+                  FEAT-MW-125
+                </span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                Test 47: Fireside Curriculum Jump Matrix Drawer (Parts I–VI) (FEAT-MW-125 — Backlog / Sizing)
+              </h3>
+            </div>
+            <a
+              href="https://dev.memoryweaver.studio/studio/fireside?id=ey96djU6qR1BrDGnvZwp"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 hover:text-purple-200 transition flex items-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
+            >
+              <span>🔗 Open Test Route ↗</span>
+            </a>
+          </div>
+
+          <!-- ZONE 2: TARGET ROUTE & METADATA -->
+          <div class="bg-gray-900/60 p-3 rounded-xl border border-gray-800 text-xs font-mono text-gray-400 space-y-1 mb-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span>Governance: <strong class="text-gray-300">Rule 46 &bull; Rule 20 &bull; CurriculumJumpMatrixDrawer.tsx &bull; SingleCardPromptCarousel.tsx</strong></span>
+              <span>Milestone: <strong class="text-purple-400">FEAT-MW-125 (Backlog Sizing)</strong></span>
+            </div>
+            <div class="text-[11px] text-gray-500 break-all">
+              Route: https://dev.memoryweaver.studio/studio/fireside?id=ey96djU6qR1BrDGnvZwp
+            </div>
+          </div>
+
+          <!-- ZONE 3: VERIFICATION CHECKPOINTS -->
+          <div class="space-y-2 mb-4 bg-gray-950/40 p-3.5 rounded-xl border border-gray-800/60">
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-purple-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Plane.so Backlog Registration</strong>: Confirm ticket Sequence #332 / FEAT-MW-125 is filed in Plane.so with complete specification.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-purple-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Elder-Friendly Bottom Sheet Specification</strong>: Feature designed to provide a 6-part grid matrix bottom sheet allowing rapid jumping across all 24 canonical scenes without requiring 20+ sequential swipes.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-purple-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Trigger Chevron Affordance</strong>: Header active part title scheduled to receive touch-friendly chevron indicator (<code class="text-purple-300">▾</code>) to toggle the matrix sheet.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-purple-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>WCAG Focus &amp; Escape Trap</strong>: Planned accessible focus trap and escape key restoration to trigger button.</span>
+            </label>
+          </div>
+
+          <!-- ZONE 4: VERDICT CONTROLS -->
+          <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <button onclick="setVerdict(47, 'pass')" id="btn-pass-47" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+                PASS
+              </button>
+              <button onclick="setVerdict(47, 'fail')" id="btn-fail-47" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
+                FAIL
+              </button>
+              <button onclick="setVerdict(47, 'retest')" id="btn-retest-47" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-amber-300 border border-transparent transition cursor-pointer">
+                RE-TEST
+              </button>
+            </div>
+            <button onclick="resetCardVerdict(47)" class="text-[11px] font-mono text-gray-500 hover:text-gray-300 transition">
+              Reset
+            </button>
+          </div>
+
+          <!-- ZONE 5: VAULT SCREENSHOTS & NOTES -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Audit Notes / Narrative Feedback</label>
+                <textarea id="notes-47" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500" placeholder="Sprint planning notes or design considerations..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
+                <textarea id="console-log-47" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
+              </div>
+            </div>
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-47" ondragover="event.preventDefault()" ondrop="handleDrop(event, 47)">
+              <input type="file" id="file-input-47" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(47, f))" />
+              <div onclick="document.getElementById('file-input-47').click()" class="space-y-1">
+                <span class="text-sm">📸</span>
+                <div class="text-xs text-gray-400">Drag &amp; drop screenshot, <span class="text-amber-400 underline font-medium">browse</span>, or paste (Ctrl+V) directly while card is active</div>
+                <div id="img-count-47" class="text-[10px] text-gray-500 font-mono">0 screenshots attached</div>
+              </div>
+            </div>
+            <div id="image-gallery-47" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+          </div>
         </div>
 
+        <!-- CARD 48: OPTION A — UNIFIED RESPONSIVE PRODUCTION BOARD & SSOT CURRICULUM BRIDGE (ARCH-MW-126) -->
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-sky-500/50 shadow-xl transition-all" id="card-48" data-category="fireside">
+          <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
+          <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                  CARD 48
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  OPTION A LOCKSTEP
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                  ARCH-MW-126
+                </span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                Test 48: Option A — Unified Responsive Production Board &amp; SSOT Curriculum Bridge (ARCH-MW-126)
+              </h3>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <a
+                href="https://dev.memoryweaver.studio/studio"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Production Board (/studio) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-4"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Fireside Booth (?id=part-1-scene-4) ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ZONE 2: TARGET ROUTE & METADATA -->
+          <div class="bg-gray-900/60 p-3 rounded-xl border border-gray-800 text-xs font-mono text-gray-400 space-y-1 mb-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span>Governance: <strong class="text-gray-300">Rule 47 &bull; Rule 46 &bull; Rule 20 &bull; masterStoryStructure.ts &bull; useStudioData.ts &bull; StudioDashboard.tsx &bull; FiresideStudioClient.tsx</strong></span>
+              <span>Milestone: <strong class="text-emerald-400">ARCH-MW-126 (Option A)</strong></span>
+            </div>
+            <div class="text-[11px] text-gray-500 break-all space-y-0.5">
+              <div>Board Route: https://dev.memoryweaver.studio/studio</div>
+              <div>Booth Deep-Link: https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-4</div>
+            </div>
+          </div>
+
+          <!-- ZONE 3: VERIFICATION CHECKPOINTS -->
+          <div class="space-y-2 mb-4 bg-gray-950/40 p-3.5 rounded-xl border border-gray-800/60">
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Universal 24-Scene Production Board SSOT Parity</strong>: Open <code class="text-stone-300">https://dev.memoryweaver.studio/studio</code> on desktop and mobile. Confirm all 6 Parts (Parts I through VI) render with exact 4-scene arrays derived directly from <code class="text-sky-300">MASTER_STORY_STRUCTURE</code> (24 canonical scenes total), with the total scenes count showing <strong class="text-emerald-300">24</strong>.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Part I 4-Scene Parity Alignment</strong>: Specifically inspect Part I ("Roots and Foundations") on <code class="text-stone-300">/studio</code>. Confirm all 4 canonical scenes appear (<code class="text-sky-300">Scene 1: A Child of Two Worlds</code>, <code class="text-sky-300">Scene 2: The House I Grew Up In</code>, <code class="text-sky-300">Scene 3: Innocence &amp; Curiosity</code>, <code class="text-sky-300">Scene 4: Traditions, Feasts &amp; Sacred Days</code>), establishing 1:1 mathematical parity with Fireside.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Mobile 1-Column Responsive Ergonomics</strong>: On a mobile device or responsive simulator (390px viewport width), verify <code class="text-stone-300">/studio</code> renders an elder-friendly single-column vertical card feed grouped cleanly by Part with progress badges, eliminating horizontal card overflow or clipped text.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Device-Aware Smart Routing (Option A)</strong>:
+                <br/>&bull; On mobile viewport (&lt; 768px): Tapping <code class="text-sky-300">[ 🎬 Action: Record Scene → ]</code> or <code class="text-amber-300">[ ✏️ Edit Scene ]</code> routes directly to the focused 4-act Fireside recording booth: <code class="text-emerald-300">/studio/fireside?id=[sceneId]</code>.
+                <br/>&bull; On desktop viewport (&ge; 768px): Clicking the same actions routes to the desktop workstation: <code class="text-sky-300">/studio/production/[sceneId]</code>.
+              </span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Persistent Return Path Navigation (/studio/fireside)</strong>: In the Fireside recording booth, verify the top left button reads <strong class="text-white">[ ← Back to Production Board ]</strong> (or <strong class="text-white">[ ← Production Board ]</strong> on mobile) and clicks back directly to <code class="text-stone-300">https://dev.memoryweaver.studio/studio</code>, eliminating isolated dead-end navigation.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Query Parameter ?id= Resolution Invariant</strong>: Open <code class="text-stone-300">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-4</code> or <code class="text-stone-300">?id=p3_b</code>. Verify Fireside immediately locks onto Part I Scene 4 ("Traditions, Feasts &amp; Sacred Days") rather than resetting to Scene 1 or colliding with Scene 3 (<code class="text-rose-300">p3</code>).</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Touch-Ergonomic [+ Add Scene] Card</strong>: On <code class="text-stone-300">/studio</code> mobile, confirm the <code class="text-amber-300">[ + Add Scene ]</code> (Personal Production) card renders with accessible touch min-height (<code class="text-amber-300">min-h-[220px]</code>), allowing narrators to easily compose custom recollections on the go.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Quick-Launch Header Action</strong>: On <code class="text-stone-300">/studio</code>, confirm the header actions bar provides a direct <code class="text-sky-300">[ 🎙️ Fireside Studio Booth ]</code> button linking directly to <code class="text-stone-300">/studio/fireside</code>.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-sky-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>British English Orthography (Rule 20)</strong>: Verify all user-facing labels across both <code class="text-stone-300">/studio</code> and <code class="text-stone-300">/studio/fireside</code> adhere strictly to UK English (<code class="text-sky-300">favourite</code>, <code class="text-sky-300">honourable</code>, <code class="text-sky-300">organise</code>, <code class="text-sky-300">colour</code>).</span>
+            </label>
+          </div>
+
+          <!-- ZONE 4: VERDICT CONTROLS -->
+          <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <button onclick="setVerdict(48, 'pass')" id="btn-pass-48" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+                PASS
+              </button>
+              <button onclick="setVerdict(48, 'fail')" id="btn-fail-48" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
+                FAIL
+              </button>
+              <button onclick="setVerdict(48, 'retest')" id="btn-retest-48" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-amber-300 border border-transparent transition cursor-pointer">
+                RE-TEST
+              </button>
+            </div>
+            <button onclick="resetCardVerdict(48)" class="text-[11px] font-mono text-gray-500 hover:text-gray-300 transition">
+              Reset
+            </button>
+          </div>
+
+          <!-- ZONE 5: VAULT SCREENSHOTS & NOTES -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Audit Notes / Narrative Feedback</label>
+                <textarea id="notes-48" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500" placeholder="Observations, responsive layout behaviour, or routing feedback..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
+                <textarea id="console-log-48" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
+              </div>
+            </div>
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-48" ondragover="event.preventDefault()" ondrop="handleDrop(event, 48)">
+              <input type="file" id="file-input-48" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(48, f))" />
+              <div onclick="document.getElementById('file-input-48').click()" class="space-y-1">
+                <span class="text-sm">📸</span>
+                <div class="text-xs text-gray-400">Drag &amp; drop screenshot, <span class="text-amber-400 underline font-medium">browse</span>, or paste (Ctrl+V) directly while card is active</div>
+                <div id="img-count-48" class="text-[10px] text-gray-500 font-mono">0 screenshots attached</div>
+              </div>
+            </div>
+            <div id="image-gallery-48" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+          </div>
+        </div>
+
+        <!-- CARD 49: UNIFIED MASTER CURRICULUM SSOT & ANTHOLOGY INTEGRATION (ARCH-MW-127) -->
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-49" data-category="fireside">
+          <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
+          <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  CARD 49
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                  SSOT CURRICULUM &amp; ANTHOLOGY
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/10 text-sky-300 border border-sky-500/30">
+                  ARCH-MW-127
+                </span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                Test 49: Unified Master Curriculum SSOT &amp; Anthology Integration (ARCH-MW-127)
+              </h3>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <a
+                href="https://dev.memoryweaver.studio/studio"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Production Board (/studio) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-5"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Part VI Scene 5 (Time Travel) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/fireside?id=family-scene-1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Family Anthology Scene 1 ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ZONE 2: TARGET ROUTE & METADATA -->
+          <div class="bg-gray-900/60 p-3 rounded-xl border border-gray-800 text-xs font-mono text-gray-400 space-y-1 mb-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span>Governance: <strong class="text-gray-300">Rule 47 &bull; Rule 46 &bull; Rule 43 &bull; Rule 20 &bull; masterStoryStructure.ts &bull; firesidePrompts.ts &bull; useStudioData.ts</strong></span>
+              <span>Milestone: <strong class="text-emerald-400">ARCH-MW-127 (SSOT Master Curriculum)</strong></span>
+            </div>
+            <div class="text-[11px] text-gray-500 break-all space-y-0.5">
+              <div>Board Route: https://dev.memoryweaver.studio/studio</div>
+              <div>Part VI Scene 5 Route: https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-5</div>
+              <div>Anthology Route: https://dev.memoryweaver.studio/studio/fireside?id=family-scene-1</div>
+            </div>
+          </div>
+
+          <!-- ZONE 3: VERIFICATION CHECKPOINTS -->
+          <div class="space-y-2 mb-4 bg-gray-950/40 p-3.5 rounded-xl border border-gray-800/60">
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Part VI 5-Scene Expansion (Time Travel - p24)</strong>: Open <code class="text-stone-300">https://dev.memoryweaver.studio/studio</code> and verify Part VI renders 5 scenes. Open <code class="text-amber-300">https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-5</code> and verify the header reads <strong class="text-emerald-300">Part VI • Scene 5 of 5 • Time Travel: The Power of Looking Back</strong> with Gujarati translation (<code class="text-sky-300">સમય પ્રવાસ</code>), sensory anchors, and teleprompter scripts.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Anthology: Family Storytelling 6-Scene Parity</strong>: Verify Chapter 7 renders as <strong class="text-amber-300">ANTHOLOGY: FAMILY STORYTELLING</strong> (કૌટુંબિક વાર્તાલાપ) across both Desktop (<code class="text-stone-300">/studio</code>) and Fireside (<code class="text-stone-300">/studio/fireside?id=family-scene-1</code>), with all 6 authentic scenes (<code class="text-sky-300">fs1_1</code> through <code class="text-sky-300">fs6_1</code>) fully accessible.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Canonical Prompt ID Standardisation &amp; Two-Pass Normalisation</strong>: Verify base prompt tokens in Parts II and III (<code class="text-sky-300">p4..p7</code>, <code class="text-sky-300">p8..p11</code>) resolve cleanly. Test deep-linking with legacy suffixed tokens (<code class="text-stone-300">https://dev.memoryweaver.studio/studio/fireside?id=p4_1</code>) and confirm two-pass fallback normaliser resolves to Part II Scene 1 with 100% fidelity.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Custom Scenes [+ Add Scene] Dynamic Retention</strong>: Verify custom memories created via <code class="text-amber-300">[+ Add Scene]</code> (Personal Production) are retained and dynamically appended directly into the active chapter prompts array in <code class="text-sky-300">useStudioData.ts</code>, preventing disappearances from the production board.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Historical Showcase Sandbox Isolation</strong>: Verify Einstein demo (<code class="text-stone-300">historical-showcase</code>, <code class="text-sky-300">p_einstein</code>) is registered with <code class="text-emerald-300">isDemo: true</code>, allowing <strong class="text-white">✨ Try Einstein Demo</strong> to resolve while safely excluding it from personal memoir progress statistics (<strong class="text-emerald-300">31 total possible memoir scenes</strong>: 25 core + 6 anthology).</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>Device-Aware Smart Routing &amp; Touch Ergonomics</strong>: Confirm touch-friendly <code class="text-amber-300">min-h-[220px] sm:min-h-[300px]</code> on <code class="text-stone-300">[+ Add Scene]</code> card. Confirm tapping record/edit on mobile (&lt; 768px) routes to Fireside (<code class="text-emerald-300">/studio/fireside?id=...</code>) and desktop (&ge; 768px) routes to <code class="text-sky-300">/studio/production/...</code>.</span>
+            </label>
+            <label class="flex items-start gap-2.5 text-xs text-gray-300 cursor-pointer">
+              <input type="checkbox" class="mt-0.5 rounded border-gray-700 text-amber-500 focus:ring-0 bg-gray-900" onchange="updateProgress()" />
+              <span><strong>British English Orthography Standard (Rule 20)</strong>: Verify all user-facing labels across both surfaces strictly adhere to UK English (<code class="text-sky-300">favourite</code>, <code class="text-sky-300">organise</code>, <code class="text-sky-300">honourable</code>, <code class="text-sky-300">colour</code>).</span>
+            </label>
+          </div>
+
+          <!-- ZONE 4: VERDICT CONTROLS -->
+          <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <button onclick="setVerdict(49, 'pass')" id="btn-pass-49" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+                PASS
+              </button>
+              <button onclick="setVerdict(49, 'fail')" id="btn-fail-49" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
+                FAIL
+              </button>
+              <button onclick="setVerdict(49, 'retest')" id="btn-retest-49" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-amber-300 border border-transparent transition cursor-pointer">
+                RE-TEST
+              </button>
+            </div>
+            <button onclick="resetCardVerdict(49)" class="text-[11px] font-mono text-gray-500 hover:text-gray-300 transition">
+              Reset
+            </button>
+          </div>
+
+          <!-- ZONE 5: VAULT SCREENSHOTS & NOTES -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Audit Notes / Narrative Feedback</label>
+                <textarea id="notes-49" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500" placeholder="Observations, curriculum parity behaviour, or routing feedback..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
+                <textarea id="console-log-49" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
+              </div>
+            </div>
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-49" ondragover="event.preventDefault()" ondrop="handleDrop(event, 49)">
+              <input type="file" id="file-input-49" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(49, f))" />
+              <div onclick="document.getElementById('file-input-49').click()" class="space-y-1">
+                <span class="text-sm">📸</span>
+                <div class="text-xs text-gray-400">Drag &amp; drop screenshot, <span class="text-amber-400 underline font-medium">browse</span>, or paste (Ctrl+V) directly while card is active</div>
+                <div id="img-count-49" class="text-[10px] text-gray-500 font-mono">0 screenshots attached</div>
+              </div>
+            </div>
+            <div id="image-gallery-49" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+          </div>
+        </div>
+
+        </div>
       </section>
       </div>
     </details>
@@ -5036,11 +5411,11 @@
   </div>
 
   <footer class="max-w-6xl mx-auto mt-12 text-center text-xs text-gray-500 font-mono py-6 border-t border-gray-800/60">
-    Memory Weaver Studio &bull; Master QA Interactive Verification Suite (Grouped by Route) &bull; Target: 5bb0be38 &bull; dev.memoryweaver.studio
+    Memory Weaver Studio &bull; Master QA Interactive Verification Suite (Grouped by Route) &bull; Target: c3f4f38a &bull; dev.memoryweaver.studio
   </footer>
 
   <script>
-    const TOTAL = 46;
+    const TOTAL = 49;
     const STORAGE_KEY = 'MW_QA_ROUTE_GROUPED_3187cca9';
     let currentFilter = 'all';
     let currentViewMode = 'active';
@@ -5094,7 +5469,10 @@
       "[studio/fireside • Desktop Studio] MW-117: Universal Lifecycle & Chromatic Taxonomy Standard (Option A Sky Blue Lockstep, Rule 45)",
       "[ops/version • Staging API] MW-118: Immutable Build Timestamp & Edge Version Parity (/api/version)",
       "[studio/fireside • Desktop Studio] MW-119: Fireside Chromatic Lockstep, Zero-Truncation Ergonomics & Photo De-escalation (Option A)",
-      "[studio/fireside • Desktop Studio] ARCH-MW-122: Global Curriculum Bridge & Universal Part Parity Engine (Parts I–VI 1:1 Parity)"
+      "[studio/fireside • Desktop Studio] ARCH-MW-122: Global Curriculum Bridge & Universal Part Parity Engine (Parts I–VI 1:1 Parity)",
+      "[studio/fireside] FEAT-MW-125: Fireside Curriculum Jump Matrix Drawer (Parts I–VI) (Backlog / Sizing)",
+      "[studio <-> studio/fireside] ARCH-MW-126: Option A — Unified Responsive Production Board & SSOT Curriculum Bridge",
+      "[studio <-> studio/fireside] ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration"
     ];
 
     let verdicts = {
@@ -5281,7 +5659,11 @@
       41: 'spine',
       42: 'dock',
       43: 'dock',
-      44: 'dock'
+      44: 'dock',
+      45: 'carousel',
+      46: 'spine',
+      47: 'spine',
+      48: 'dock'
     };
     let currentPanel = 'all';
 

@@ -5,9 +5,8 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Memory, PromptGroup, StoryRequest } from '@/types';
-import { MASTER_STORY_STRUCTURE } from '@/lib/curriculum/masterStoryStructure';
+import { MASTER_STORY_STRUCTURE, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 import { useLanguage } from '@/hooks/useLanguage';
-import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
 export interface UnifiedChapter {
   id: string;
@@ -111,13 +110,22 @@ export function useStudioData(userId: string | undefined) {
 
   const chapters = useMemo(() => {
     return MASTER_STORY_STRUCTURE.map((part): UnifiedChapter => {
-      const correlatedPrompts = part.scenes.map((scene): CorrelatedPrompt => {
+      // 1. Correlate canonical scenes defined in the master curriculum
+      const canonicalPrompts = part.scenes.map((scene): CorrelatedPrompt => {
         // Trace forward: Follow the chain of memory pointer documents to find the latest leaf memory.
         // CANDIDATE RESOLUTION SHIELD: If multiple memory documents exist matching the prompt,
         // prioritise authentic non-test memories and completed/in-progress takes over unrecorded stage-0 test drafts.
-        const candidateMemories = memories.filter(
-          m => m.promptId === scene.promptId || (m as any).sceneId === scene.id || m.promptId === scene.id
-        );
+        const candidateMemories = memories.filter((m) => {
+          if (m.promptId === scene.promptId || (m as any).sceneId === scene.id || m.promptId === scene.id) {
+            return true;
+          }
+          if (m.promptId) {
+            const resolved = resolveSceneFromPromptId(m.promptId);
+            if (resolved && resolved.id === scene.id) return true;
+          }
+          return false;
+        });
+
         let memory: Memory | undefined = candidateMemories.slice().sort((a, b) => {
           const aIsTest = a.id.includes('test') || (a as any).isTestFixture ? 1 : 0;
           const bIsTest = b.id.includes('test') || (b as any).isTestFixture ? 1 : 0;
@@ -169,8 +177,31 @@ export function useStudioData(userId: string | undefined) {
         };
       });
 
+      // 2. Correlate custom scenes created via [+ Add Scene] (Personal Production)
+      const customMemories = memories.filter((m) => {
+        const isCustom = m.promptId === 'custom' || (m as any).isCustom;
+        const matchesGroup = (m as any).groupId === part.id;
+        return isCustom && matchesGroup;
+      });
+
+      const customPrompts: CorrelatedPrompt[] = customMemories.map((cm) => {
+        const promptRequests = requests.filter(
+          (r) => (r as any).memoryId === cm.id || r.promptId === cm.id || r.promptId === 'custom'
+        );
+        return {
+          id: cm.id,
+          title: cm.title || 'Personal Production',
+          subtitle: undefined,
+          description: cm.description || (cm.prose ? cm.prose.replace(/<[^>]*>/g, '').slice(0, 100) : 'Personal Memoir Scene'),
+          memory: cm,
+          requests: promptRequests,
+        };
+      });
+
+      const correlatedPrompts = [...canonicalPrompts, ...customPrompts];
+
       const publishedCount = correlatedPrompts.filter(p => p.memory?.status === 'published' || p.memory?.status === 'pre-release').length;
-      const isCompleted = publishedCount === part.scenes.length && part.scenes.length > 0;
+      const isCompleted = publishedCount >= part.scenes.length && part.scenes.length > 0;
 
       // Dynamic Title Logic
       let title = part.title;
@@ -203,7 +234,8 @@ export function useStudioData(userId: string | undefined) {
     const published = memories.filter(m => m.status === 'published').length;
     const preRelease = memories.filter(m => m.status === 'pre-release').length;
     const drafts = memories.filter(m => m.status === 'draft').length;
-    const totalPossible = MASTER_STORY_STRUCTURE.reduce((acc, part) => acc + part.scenes.length, 0);
+    // Exclude demo module from total possible personal memoir scenes (31 narrative scenes)
+    const totalPossible = MASTER_STORY_STRUCTURE.filter(p => !p.isDemo).reduce((acc, part) => acc + part.scenes.length, 0);
 
     return {
       published,

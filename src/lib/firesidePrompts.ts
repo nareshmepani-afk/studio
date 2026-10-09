@@ -1149,6 +1149,335 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
       hi: 'अपने बच्चों या नाती-पोतों के साथ ली गई कोई खूबसूरत पारिवारिक तस्वीर निकालिए।',
     },
   },
+  {
+    id: 'spark_time_travel',
+    category: 'legacy',
+    title: 'Time Travel: The Power of Looking Back',
+    localizedTitles: {
+      en: 'Time Travel',
+      gu: 'સમય પ્રવાસ',
+      pa: 'ਸਮੇਂ ਦੀ ਯਾਤਰਾ',
+      hi: 'समय की यात्रा',
+    },
+    linkedSceneId: 'part-6-scene-5',
+    suggestedMediaMode: 'video',
+    sparks: {
+      en: 'Consider this entire journey as time travel for your soul. Why is it vital to revisit older memories, reflect on the person you used to be, and understand how far you have come?',
+      gu: 'આ સમગ્ર જીવનયાત્રાને તમારી આત્મા માટે સમય પ્રવાસ તરીકે જુઓ. જૂની યાદોને ફરી વાગોળવી, તમે અગાઉ કેવા હતા તેનું ચિંતન કરવું અને તમે ક્યાં સુધી પહોંચ્યા તે સમજવું કેમ મહત્વપૂર્ણ છે?',
+      pa: 'ਇਸ ਸਾਰੇ ਸਫ਼ਰ ਨੂੰ ਆਪਣੇ ਮਨ ਲਈ ਇੱਕ ਸਮੇਂ ਦੀ ਯਾਤਰਾ ਸਮਝੋ। ਪੁਰਾਣੀਆਂ ਯਾਦਾਂ ਨੂੰ ਮੁੜ ਚੇਤੇ ਕਰਨਾ ਅਤੇ ਇਹ ਵੇਖਣਾ ਕਿ ਤੁਸੀਂ ਕਿੰਨਾ ਲੰਮਾ ਪੈਂਡਾ ਤੈਅ ਕੀਤਾ ਹੈ, ਕਿਉਂ ਜ਼ਰੂਰੀ ਹੈ?',
+      hi: 'इस पूरी जीवन यात्रा को अपनी रूह के लिए समय की एक यात्रा समझिए। पुरानी यादों को फिर से जीना, अपने बीते कल को समझना और यह महसूस करना कि आप कितनी दूर आ चुके हैं, क्यों जरूरी है?',
+    },
+    followUpQuestions: {
+      en: [
+        'What value do you find in looking back and appreciating your evolution as a person?',
+        'How does reflecting upon the past help you embrace the present with peace?',
+        'What would you say to the younger version of yourself who once worried so much?',
+      ],
+      gu: [
+        'પાછળ વળીને જોવાથી અને તમારા પોતાના આંતરિક વિકાસની કદર કરવાથી તમને શું સંતોષ મળે છે?',
+        'ભૂતકાળનું ચિંતન કરવાથી વર્તમાનને શાંતિથી સ્વીકારવામાં કેવી મદદ મળે છે?',
+        'તમે તમારા એ નાના સ્વરૂપને શું કહેશો જે એક સમયે ખૂબ ચિંતા કરતું હતું?',
+      ],
+      pa: [
+        'ਪਿੱਛੇ ਮੁੜ ਕੇ ਵੇਖਣ ਅਤੇ ਆਪਣੇ ਵਿਕਾਸ ਦੀ ਕਦਰ ਕਰਨ ਨਾਲ ਤੁਹਾਨੂੰ ਕੀ ਸਕੂਨ ਮਿਲਦਾ ਹੈ?',
+        'ਬੀਤੇ ਸਮੇਂ ਨੂੰ ਸਮਝਣ ਨਾਲ ਅੱਜ ਦੀ ਜ਼ਿੰਦਗੀ ਨੂੰ ਸ਼ਾਂਤੀ ਨਾਲ ਜਿਊਣ ਵਿੱਚ ਕਿਵੇਂ ਮਦਦ ਮਿਲਦੀ ਹੈ?',
+        'ਤੁਸੀਂ ਆਪਣੇ ਉਸ ਬਚਪਨ ਜਾਂ ਜਵਾਨੀ ਦੇ ਰੂਪ ਨੂੰ ਕੀ ਕਹੋਗੇ ਜੋ ਬਹੁਤ ਫ਼ਿਕਰ ਕਰਦਾ ਹੁੰਦਾ ਸੀ?',
+      ],
+      hi: [
+        'पीछे मुड़कर देखने और अपनी जीवन यात्रा को सराहने से आपको क्या संतोष मिलता है?',
+        'अतीत को समझने से आज के पलों को शांति और सहजता से जीने में कैसे मदद मिलती है?',
+        'अपने उस पुराने रूप से आप आज क्या कहेंगे जो कभी बहुत परेशान रहता था?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Find a vintage snapshot of you in your youth placed beside a present-day photograph.',
+      gu: 'તમારી યુવાનીની જૂની તસવીર સાથે આજની કોઈ તાજી તસવીર સાથે રાખીને શોધો.',
+      pa: 'ਆਪਣੀ ਜਵਾਨੀ ਵੇਲੇ ਦੀ ਕੋਈ ਪੁਰਾਣੀ ਤਸਵੀਰ ਅੱਜ ਦੀ ਤਸਵੀਰ ਦੇ ਨਾਲ ਰੱਖ ਕੇ ਲੱਭੋ।',
+      hi: 'अपनी जवानी के दिनों की कोई पुरानी तस्वीर आज की तस्वीर के साथ रखकर निकालिए।',
+    },
+  },
+  {
+    id: 'spark_family_elders',
+    category: 'roots',
+    title: 'Memories of Elders',
+    localizedTitles: {
+      en: 'Memories of Elders',
+      gu: 'વડીલોની યાદો',
+      pa: 'ਵੱਡਿਆਂ ਦੀਆਂ ਯਾਦਾਂ',
+      hi: 'बुजुर्गों की यादें',
+    },
+    linkedSceneId: 'family-scene-1',
+    suggestedMediaMode: 'audio',
+    sparks: {
+      en: 'Share a cherished memory of a grandparent, elder, or revered ancestor. What was their voice, their presence, and the special quality that made them unforgettable?',
+      gu: 'દાદા-દાદી કે પરિવારના કોઈ પૂજ્ય વડીલની વહાલી યાદ જણાવો. તેમનો અવાજ, તેમનું વ્યક્તિત્વ અને એવું શું ખાસ હતું જેણે તેમને તમારા હૃદયમાં અમર બનાવી દીધા?',
+      pa: 'ਦਾਦਾ-ਦਾਦੀ ਜਾਂ ਪਰਿਵਾਰ ਦੇ ਕਿਸੇ ਬਜ਼ੁਰਗ ਦੀ ਪਿਆਰੀ ਯਾਦ ਸਾਂਝੀ ਕਰੋ। ਉਹਨਾਂ ਦਾ ਬੋਲ-ਚਾਲ, ਉਹਨਾਂ ਦਾ ਸੁਭਾਅ ਅਤੇ ਕਿਹੜੀ ਖਾਸ ਗੱਲ ਸੀ ਜਿਸ ਨੇ ਉਹਨਾਂ ਨੂੰ ਹਮੇਸ਼ਾ ਲਈ ਯਾਦਗਾਰ ਬਣਾ ਦਿੱਤਾ?',
+      hi: 'दादा-दादी या परिवार के किसी आदरणीय बुजुर्ग की प्यारी याद साझा कीजिए। उनकी आवाज, उनका सानिध्य और वह कौन सी खास बात थी जिसने उन्हें सदा के लिए यादगार बना दिया?',
+    },
+    followUpQuestions: {
+      en: [
+        'What was the scent, warmth, or tactile feeling of sitting beside them?',
+        'What proverb, song, or story did they repeat that echoes in your mind today?',
+        'In what ways do you see their spirit living on in your own actions or family?',
+      ],
+      gu: [
+        'તેમની બાજુમાં બેસતી વખતે કઈ સુગંધ, હૂંફ કે લાગણી અનુભવાતી હતી?',
+        'કઈ કહેવત, ભજન કે વાર્તા તેઓ વારંવાર કહેતા જે આજે પણ તમારા કાનમાં ગૂંજે છે?',
+        'તમે તમારા પોતાના સ્વભાવમાં કે સંતાનોમાં તેમનો કયો અંશ જીવંત જુઓ છો?',
+      ],
+      pa: [
+        'ਉਹਨਾਂ ਦੇ ਕੋਲ ਬੈਠਿਆਂ ਕਿਹੋ ਜਿਹਾ ਨਿੱਘ ਅਤੇ ਸਕੂਨ ਮਹਿਸੂਸ ਹੁੰਦਾ ਸੀ?',
+        'ਕਿਹੜੀ ਅਖਾਣ, ਗੀਤ ਜਾਂ ਕਹਾਣੀ ਉਹ ਅਕਸਰ ਸੁਣਾਉਂਦੇ ਹੁੰਦੇ ਸਨ ਜੋ ਅੱਜ ਵੀ ਯਾਦ ਹੈ?',
+        'ਤੁਹਾਨੂੰ ਆਪਣੇ ਵਿੱਚ ਜਾਂ ਆਪਣੇ ਬੱਚਿਆਂ ਵਿੱਚ ਉਹਨਾਂ ਦਾ ਕਿਹੜਾ ਗੁਣ ਨਜ਼ਰ ਆਉਂਦਾ ਹੈ?',
+      ],
+      hi: [
+        'उनके पास बैठने पर कैसा अपनापन, महक और शांति महसूस होती थी?',
+        'कौन सी कहावत, प्रार्थना या कहानी वे अक्सर दोहराते थे जो आज भी आपकी यादों में गूंजती है?',
+        'अपने स्वभाव में या परिवार में आप उनकी कौन सी झलक आज भी जिंदा देखते हैं?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Find an heirloom photograph of your grandparents or great-grandparents, in sepia or monochrome.',
+      gu: 'તમારા દાદા-દાદી કે વડીલોની જૂની શ્યામ-શ્વેત કે સેપિયા તસવીર શોધો.',
+      pa: 'ਆਪਣੇ ਦਾਦਾ-ਦਾਦੀ ਜਾਂ ਬਜ਼ੁਰਗਾਂ ਦੀ ਕੋਈ ਪੁਰਾਣੀ ਬਲੈਕ-ਐਂਡ-ਵਾਈਟ ਤਸਵੀਰ ਲੱਭੋ।',
+      hi: 'अपने दादा-दादी या बुजुर्गों की कोई पुरानी ब्लैक-एंड-व्हाइट या सेपिया तस्वीर तलाशिए।',
+    },
+  },
+  {
+    id: 'spark_family_traditions',
+    category: 'traditions',
+    title: 'Family Traditions',
+    localizedTitles: {
+      en: 'Family Traditions',
+      gu: 'કૌટુંબિક પરંપરાઓ',
+      pa: 'ਪਰਿਵਾਰਕ ਰੀਤਾਂ',
+      hi: 'पारिवारिक परंपराएं',
+    },
+    linkedSceneId: 'family-scene-2',
+    suggestedMediaMode: 'audio',
+    sparks: {
+      en: 'What unique customs, celebrations, or holiday rituals defined your family? Describe the annual gatherings, secret recipes, or blessings handed down unbroken across generations.',
+      gu: 'કઈ ખાસ પરંપરાઓ, ઉત્સવો કે તહેવારોની રીતો તમારા પરિવારની સાચી ઓળખ હતી? વાર્ષિક મિલન, સ્વાદિષ્ટ વાનગીઓ કે પેઢી દર પેઢી ચાલ્યા આવતા આશીર્વાદ જણાવો.',
+      pa: 'ਕਿਹੜੀਆਂ ਵਿਲੱਖਣ ਰੀਤਾਂ, ਤਿਉਹਾਰ ਅਤੇ ਪਰਿਵਾਰਕ ਇਕੱਠ ਤੁਹਾਡੇ ਘਰ ਦੀ ਸ਼ਾਨ ਸਨ? ਪੀੜ੍ਹੀ-ਦਰ-ਪੀੜ੍ਹੀ ਚੱਲਦੇ ਆ ਰਹੇ ਪਕਵਾਨ ਅਤੇ ਅਸੀਸਾਂ ਬਾਰੇ ਦੱਸੋ।',
+      hi: 'कौन से खास रीति-रिवाज, उत्सव या त्योहार आपके परिवार की पहचान रहे हैं? साल भर के मिलन, खान-पान की खास विधियां और पीढ़ी-दर-पीढ़ी चले आ रहे संस्कारों का वर्णन कीजिए।',
+    },
+    followUpQuestions: {
+      en: [
+        'What specific aroma or feast in the kitchen immediately signaled that the celebration had begun?',
+        'Which family tradition did you fight to preserve when the world around you became modern and hurried?',
+        'How did you pass that ritual on to your own children?',
+      ],
+      gu: [
+        'રસોડામાંથી આવતી કઈ સુગંધ કે વાનગી ઉત્સવની શરૂઆતનો અહેસાસ કરાવતી હતી?',
+        'આધુનિક સમયમાં પણ તમે કઈ કૌટુંબિક પરંપરાને જતનપૂર્વક સાચવી રાખી છે?',
+        'તમે તમારા સંતાનોને તે પરંપરા કેવી રીતે શીખવી?',
+      ],
+      pa: [
+        'ਰਸੋਈ ਵਿੱਚੋਂ ਆਉਂਦੀ ਕਿਹੜੀ ਖੁਸ਼ਬੂ ਦੱਸਦੀ ਸੀ ਕਿ ਤਿਉਹਾਰ ਦੀ ਰੌਣਕ ਸ਼ੁਰੂ ਹੋ ਗਈ ਹੈ?',
+        'ਅੱਜ ਦੇ ਰੁਝੇਵਿਆਂ ਭਰੇ ਜ਼ਮਾਨੇ ਵਿੱਚ ਵੀ ਤੁਸੀਂ ਕਿਹੜੀ ਪਰਿਵਾਰਕ ਰੀਤ ਨੂੰ ਸੰਭਾਲ ਕੇ ਰੱਖਿਆ?',
+        'ਤੁਸੀਂ ਆਪਣੇ ਬੱਚਿਆਂ ਨੂੰ ਇਹ ਰੀਤ ਕਿਵੇਂ ਸਿਖਾਈ?',
+      ],
+      hi: [
+        'रसोई से आती कौन सी खुशबू यह बता देती थी कि त्योहार की खुशियां शुरू हो चुकी हैं?',
+        'आज के तेज रफ्तार दौर में भी आपने परिवार की कौन सी परंपरा को संजोकर रखा है?',
+        'अपने बच्चों को आपने यह परंपरा किस तरह सिखाई?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Look for a picture of a crowded family holiday table or festival gathering.',
+      gu: 'પરિવાર સાથે બેસીને ભોજન લેતા કે તહેવાર ઉજવતા હોવ તેવી સુંદર તસવીર શોધો.',
+      pa: 'ਪਰਿਵਾਰ ਨਾਲ ਮਿਲ ਕੇ ਤਿਉਹਾਰ ਮਨਾਉਂਦਿਆਂ ਦੀ ਕੋਈ ਰੌਣਕ ਭਰੀ ਤਸਵੀਰ ਲੱਭੋ।',
+      hi: 'परिवार के साथ त्योहार मनाते या मिलकर खाना खाते हुए किसी उत्सव की तस्वीर निकालिए।',
+    },
+  },
+  {
+    id: 'spark_family_history',
+    category: 'roots',
+    title: 'Historical Events',
+    localizedTitles: {
+      en: 'Historical Events',
+      gu: 'ઐતિહાસિક ઘટનાઓ',
+      pa: 'ਇਤਿਹਾਸਕ ਘਟਨਾਵਾਂ',
+      hi: 'ऐतिहासिक घटनाएं',
+    },
+    linkedSceneId: 'family-scene-3',
+    suggestedMediaMode: 'video',
+    sparks: {
+      en: 'What major historical events, migrations, wars, or national upheavals altered your family\'s path? Where were you, and how did your family weather that turning point?',
+      gu: 'કઈ મોટી ઐતિહાસિક ઘટના, સ્થળાંતર કે રાષ્ટ્રીય પરિવર્તને તમારા પરિવારની દિશા બદલી નાખી? તે સમયે તમે ક્યાં હતા અને તમારા પરિવારે તે કસોટી કેવી રીતે પાર કરી?',
+      pa: 'ਕਿਸ ਵੱਡੀ ਇਤਿਹਾਸਕ ਘਟਨਾ, ਹਿਜਰਤ ਜਾਂ ਮੁਸ਼ਕਿਲ ਦੌਰ ਨੇ ਤੁਹਾਡੇ ਪਰਿਵਾਰ ਦੀ ਤਕਦੀਰ ਬਦਲੀ? ਉਸ ਸਮੇਂ ਤੁਸੀਂ ਕਿੱਥੇ ਸੀ ਅਤੇ ਪਰਿਵਾਰ ਨੇ ਉਸ ਵੇਲੇ ਕਿਵੇਂ ਹੌਸਲਾ ਰੱਖਿਆ?',
+      hi: 'किस बड़ी ऐतिहासिक घटना, विस्थापन या दौर ने आपके परिवार के जीवन की दिशा बदल दी? उस समय आप कहां थे और आपके परिवार ने उस मोड़ को कैसे संभाला?',
+    },
+    followUpQuestions: {
+      en: [
+        'What was the mood, the sounds from the radio or television, when that historic moment broke?',
+        'What sacrifices did the family make to relocate and rebuild safety and stability?',
+        'Looking back, how did that world event forge your resilience?',
+      ],
+      gu: [
+        'તે ઐતિહાસિક ક્ષણે રેડિયો કે ટીવી પરથી સમાચાર સાંભળતી વખતે ઘરનું વાતાવરણ કેવું હતું?',
+        'નવી જગ્યાએ સલામતી અને સ્થિરતા ઊભી કરવા માટે પરિવારે કેવો ત્યાગ કરવો પડ્યો?',
+        'પાછળ જોતાં, તે ઘટનાએ તમારી સહનશક્તિને કેવી રીતે ઘડી?',
+      ],
+      pa: [
+        'ਉਸ ਇਤਿਹਾਸਕ ਵੇਲੇ ਖ਼ਬਰਾਂ ਸੁਣਦਿਆਂ ਘਰ ਦਾ ਮਾਹੌਲ ਕਿਹੋ ਜਿਹਾ ਸੀ?',
+        'ਨਵੇਂ ਸਿਰਿਓਂ ਘਰ ਵਸਾਉਣ ਲਈ ਪਰਿਵਾਰ ਨੂੰ ਕੀ-ਕੀ ਕੁਰਬਾਨੀਆਂ ਦੇਣੀਆਂ ਪਈਆਂ?',
+        'ਉਸ ਵੱਡੀ ਘਟਨਾ ਨੇ ਤੁਹਾਡੇ ਹੌਸਲੇ ਨੂੰ ਕਿਵੇਂ ਮਜ਼ਬੂਤ ਕੀਤਾ?',
+      ],
+      hi: [
+        'उस ऐतिहासिक पल में जब खबरें मिलीं, तब घर का माहौल कैसा था?',
+        'नई जगह पर जीवन को संवारने के लिए परिवार को क्या-क्या त्याग करना पड़ा?',
+        'पीछे मुड़कर देखने पर, उस दौर ने आपके हौसले को किस तरह तराशा?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Find an old passport, travel document, migration ticket, or photograph from that historic relocation era.',
+      gu: 'તે ઐતિહાસિક સ્થળાંતર સમયનો જૂનો પાસપોર્ટ, ટિકિટ કે તસવીર શોધો.',
+      pa: 'ਉਸ ਦੌਰ ਦਾ ਕੋਈ ਪੁਰਾਣਾ ਪਾਸਪੋਰਟ, ਸਫ਼ਰ ਦਾ ਦਸਤਾਵੇਜ਼ ਜਾਂ ਤਸਵੀਰ ਲੱਭੋ।',
+      hi: 'उस ऐतिहासिक विस्थापन या यात्रा के दौर का कोई पुराना पासपोर्ट, टिकट या यादगार तस्वीर निकालिए।',
+    },
+  },
+  {
+    id: 'spark_family_values',
+    category: 'wisdom',
+    title: 'Parental Values',
+    localizedTitles: {
+      en: 'Parental Values',
+      gu: 'માતાપિતાના મૂલ્યો',
+      pa: 'ਮਾਪਿਆਂ ਦੇ ਸੰਸਕਾਰ',
+      hi: 'माता-पिता के संस्कार',
+    },
+    linkedSceneId: 'family-scene-4',
+    suggestedMediaMode: 'audio',
+    sparks: {
+      en: 'What core principles and unbending moral truths did your parents instill in you? How was integrity, hard work, generosity, and respect demonstrated in their daily actions?',
+      gu: 'તમારા માતાપિતાએ તમારામાં કયા મૂળભૂત મૂલ્યો અને સંસ્કારોનું સિંચન કર્યું? પ્રામાણિકતા, સખત મહેનત, ઉદારતા અને સન્માન તેમના રોજિંદા વર્તનમાં કેવી રીતે દેખાતા હતા?',
+      pa: 'ਤੁਹਾਡੇ ਮਾਪਿਆਂ ਨੇ ਤੁਹਾਡੇ ਅੰਦਰ ਕਿਹੜੇ ਨੇਕ ਅਸੂਲ ਅਤੇ ਸੰਸਕਾਰ ਭਰੇ? ਇਮਾਨਦਾਰੀ, ਮਿਹਨਤ ਅਤੇ ਇੱਜ਼ਤ ਉਹਨਾਂ ਦੀ ਰੋਜ਼ਾਨਾ ਜ਼ਿੰਦਗੀ ਵਿੱਚ ਕਿਵੇਂ ਝਲਕਦੀ ਸੀ?',
+      hi: 'आपके माता-पिता ने आपके भीतर कौन से बुनियादी संस्कार और जीवन मूल्य रोपे? ईमानदारी, मेहनत, दरियादिली और सम्मान उनके रोजाना के आचरण में कैसे दिखाई देता था?',
+    },
+    followUpQuestions: {
+      en: [
+        'What was a specific sacrifice your parents made to ensure you had an education or opportunities?',
+        'When you face a moral crossroad today, what advice of theirs immediately comes to mind?',
+        'What lesson did you learn more from watching them live than from any speech?',
+      ],
+      gu: [
+        'તમને સારું શિક્ષણ કે તકો મળે તે માટે માતાપિતાએ કયો મોટો ત્યાગ કર્યો હતો?',
+        'આજે જ્યારે તમે કોઈ દ્વિધામાં હોવ, ત્યારે તેમની કઈ સલાહ તરત જ યાદ આવે છે?',
+        'તેમના ઉપદેશ કરતાં તેમના જીવન જીવવાની રીત પરથી તમે કયો મોટો પાઠ શીખ્યા?',
+      ],
+      pa: [
+        'ਤੁਹਾਨੂੰ ਪੜ੍ਹਾਉਣ-ਲਿਖਾਉਣ ਲਈ ਮਾਪਿਆਂ ਨੇ ਕਿਹੜੀ ਵੱਡੀ ਕੁਰਬਾਨੀ ਦਿੱਤੀ ਸੀ?',
+        'ਅੱਜ ਕਿਸੇ ਔਖੇ ਫੈਸਲੇ ਵੇਲੇ ਉਹਨਾਂ ਦੀ ਕਿਹੜੀ ਗੱਲ ਤੁਹਾਡੇ ਮਨ ਵਿੱਚ ਸਭ ਤੋਂ ਪਹਿਲਾਂ ਆਉਂਦੀ ਹੈ?',
+        'ਉਹਨਾਂ ਦੇ ਕਹਿਣ ਨਾਲੋਂ ਉਹਨਾਂ ਦੇ ਰਹਿਣ-ਸਹਿਣ ਤੋਂ ਤੁਸੀਂ ਕਿਹੜੀ ਵੱਡੀ ਸਿੱਖਿਆ ਲਈ?',
+      ],
+      hi: [
+        'आपको अच्छी शिक्षा और अवसर दिलाने के लिए आपके माता-पिता ने कौन सा बड़ा त्याग किया था?',
+        'आज किसी दुविधा भरे मोड़ पर उनकी कौन सी सीख सबसे पहले याद आती है?',
+        'उनकी बातों से ज्यादा, उनके जीने के ढंग से आपने कौन सा सबसे बड़ा सबक सीखा?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Find a picture of your mother or father looking purposeful, working, or smiling warmly.',
+      gu: 'તમારા માતા કે પિતાની કાર્યરત, ગંભીર કે સ્નેહભરી કોઈ સુંદર તસવીર શોધો.',
+      pa: 'ਆਪਣੇ ਮਾਤਾ ਜੀ ਜਾਂ ਪਿਤਾ ਜੀ ਦੀ ਕੋਈ ਪਿਆਰੀ ਤੇ ਸਤਿਕਾਰਯੋਗ ਤਸਵੀਰ ਲੱਭੋ।',
+      hi: 'अपनी मां या पिता जी की कोई सौम्य, काम में मग्न या स्नेह से मुस्कुराती तस्वीर ढूंढिए।',
+    },
+  },
+  {
+    id: 'spark_family_ancestors',
+    category: 'roots',
+    title: 'Admired Ancestors',
+    localizedTitles: {
+      en: 'Admired Ancestors',
+      gu: 'પ્રશંસનીય પૂર્વજો',
+      pa: 'ਸਤਿਕਾਰਯੋਗ ਪੁਰਖੇ',
+      hi: 'आदरणीय पूर्वज',
+    },
+    linkedSceneId: 'family-scene-5',
+    suggestedMediaMode: 'audio',
+    sparks: {
+      en: 'Tell the story of an ancestor you deeply admire—perhaps someone from generations ago whose legendary courage, kindness, or eccentricity is still spoken of by the elders.',
+      gu: 'તમે જેને ખૂબ આદર આપો છો તેવા કોઈ પૂર્વજની ગાથા કહો—જેમની અસાધારણ હિંમત, દયાભાવ કે અનોખી વાતો આજે પણ વડીલો ગર્વથી યાદ કરે છે.',
+      pa: 'ਕਿਸੇ ਅਜਿਹੇ ਪੁਰਖੇ ਦੀ ਗੱਲ ਸੁਣਾਓ ਜਿਨ੍ਹਾਂ ਦਾ ਤੁਸੀਂ ਬਹੁਤ ਸਤਿਕਾਰ ਕਰਦੇ ਹੋ—ਜਿਨ੍ਹਾਂ ਦੀ ਬਹਾਦਰੀ ਜਾਂ ਨੇਕਦਿਲੀ ਦੀਆਂ ਕਹਾਣੀਆਂ ਅੱਜ ਵੀ ਪਰਿਵਾਰ ਵਿੱਚ ਚੇਤੇ ਕੀਤੀਆਂ ਜਾਂਦੀਆਂ ਹਨ।',
+      hi: 'अपने किसी ऐसे पूर्वज की दास्तान सुनाइए जिनका आप बहुत सम्मान करते हैं—जिनके साहस, दरियादिली या खास व्यक्तित्व की चर्चा आज भी परिवार में बड़े आदर से की जाती है।',
+    },
+    followUpQuestions: {
+      en: [
+        'What tale of that ancestor’s grit or resilience has become part of your family mythology?',
+        'What tangible relic, heirloom, or letter of theirs still survives?',
+        'What debt of gratitude do you feel you owe to that ancestor’s choices?',
+      ],
+      gu: [
+        'તે પૂર્વજની હિંમત કે સંઘર્ષની કઈ વાર્તા તમારા પરિવારની ગૌરવગાથા બની ગઈ છે?',
+        'તેમની કઈ વસ્તુ, સ્મૃતિચિહ્ન કે કાગળ આજે પણ ઘરમાં સચવાયેલો છે?',
+        'તેમના નિર્ણયો બદલ તમે તેમનો કેવો આભાર માનો છો?',
+      ],
+      pa: [
+        'ਉਹਨਾਂ ਦੇ ਹੌਸਲੇ ਦੀ ਕਿਹੜੀ ਕਹਾਣੀ ਪਰਿਵਾਰ ਦੀ ਮਾਣਮੱਤੀ ਵਿਰਾਸਤ ਬਣ ਚੁੱਕੀ ਹੈ?',
+        'ਉਹਨਾਂ ਦੀ ਕਿਹੜੀ ਨਿਸ਼ਾਨੀ ਜਾਂ ਚਿੱਠੀ ਅੱਜ ਵੀ ਸੰਭਾਲ ਕੇ ਰੱਖੀ ਹੋਈ ਹੈ?',
+        'ਉਹਨਾਂ ਵੱਲੋਂ ਲਏ ਫੈਸਲਿਆਂ ਲਈ ਤੁਸੀਂ ਉਹਨਾਂ ਦਾ ਕਿੰਨਾ ਸ਼ੁਕਰਾਨਾ ਕਰਦੇ ਹੋ?',
+      ],
+      hi: [
+        'उनके संघर्ष और साहस की कौन सी कहानी परिवार की धरोहर बन चुकी है?',
+        'उनकी कौन सी निशानी, चीज या पत्र आज भी परिवार के पास सुरक्षित है?',
+        'उनके द्वारा लिए गए फैसलों के लिए आप उनका कितना आभार मानते हैं?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Find an antique framed portrait or treasured heirloom item that belonged to an ancestor.',
+      gu: 'કોઈ પૂર્વજની જૂની ફ્રેમવાળી તસવીર કે તેમની માલિકીની કોઈ પ્રાચીન વસ્તુ શોધો.',
+      pa: 'ਕਿਸੇ ਪੁਰਖੇ ਦੀ ਪੁਰਾਣੀ ਫਰੇਮ ਵਾਲੀ ਤਸਵੀਰ ਜਾਂ ਉਹਨਾਂ ਦੀ ਕੋਈ ਕੀਮਤੀ ਨਿਸ਼ਾਨੀ ਲੱਭੋ।',
+      hi: 'किसी पूर्वज की पुरानी फ्रेम की हुई तस्वीर या उनकी कोई धरोहर तलाशिए।',
+    },
+  },
+  {
+    id: 'spark_family_future',
+    category: 'legacy',
+    title: 'A Message for the Future',
+    localizedTitles: {
+      en: 'A Message for the Future',
+      gu: 'ભવિષ્ય માટે સંદેશ',
+      pa: 'ਭਵਿੱਖ ਲਈ ਸੁਨੇਹਾ',
+      hi: 'भविष्य के लिए संदेश',
+    },
+    linkedSceneId: 'family-scene-6',
+    suggestedMediaMode: 'video',
+    sparks: {
+      en: 'Speak directly to your descendants—the children, grandchildren, and great-grandchildren yet to walk this earth. What blessing, prayer, and unchanging truth do you leave for their journeys?',
+      gu: 'તમારી આવનારી પેઢીઓ સાથે સીધી વાત કરો—સંતાનો, પૌત્રો અને પ્રપૌત્રો. તેમના જીવનના સફર માટે તમે કયો આશીર્વાદ, પ્રાર્થના અને શાશ્વત સત્ય મૂકી જવા માંગો છો?',
+      pa: 'ਆਪਣੀਆਂ ਆਉਣ ਵਾਲੀਆਂ ਪੀੜ੍ਹੀਆਂ ਨਾਲ ਸਿੱਧੀ ਗੱਲ ਕਰੋ—ਬੱਚਿਆਂ ਅਤੇ ਪੋਤੇ-ਪੜਪੋਤਿਆਂ ਨਾਲ। ਉਹਨਾਂ ਦੇ ਜੀਵਨ-ਸਫ਼ਰ ਲਈ ਤੁਸੀਂ ਕਿਹੜੀ ਅਸੀਸ, ਅਰਦਾਸ ਅਤੇ ਸੱਚਾਈ ਛੱਡ ਕੇ ਜਾਣਾ ਚਾਹੁੰਦੇ ਹੋ?',
+      hi: 'अपनी आने वाली नस्लों से सीधे रूबरू होइए—अपने बच्चों, नाती-पोतों और उनके बाद आने वालों से। उनके जीवन के सफर के लिए आप कौन सा आशीर्वाद, दुआ और अटूट सच छोड़ना चाहते हैं?',
+    },
+    followUpQuestions: {
+      en: [
+        'What do you want them to know about who they are and where they came from?',
+        'When they face dark nights and trials, where should they look for hope?',
+        'How do you hope your voice and love will accompany them across time?',
+      ],
+      gu: [
+        'તેઓ કોણ છે અને તેમના મૂળ ક્યાં છે તે વિશે તેઓ શું સમજે તેવી તમારી ઇચ્છા છે?',
+        'જ્યારે તેઓ મુશ્કેલ સમયનો સામનો કરે, ત્યારે તેમણે ક્યાંથી આશા શોધવી?',
+        'સમયના વહેણ સાથે તમારો અવાજ અને સ્નેહ તેમને કેવી રીતે સાથ આપશે?',
+      ],
+      pa: [
+        'ਉਹਨਾਂ ਨੂੰ ਆਪਣੀ ਪਛਾਣ ਅਤੇ ਆਪਣੀਆਂ ਜੜ੍ਹਾਂ ਬਾਰੇ ਕੀ ਪਤਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ?',
+        'ਜਦੋਂ ਜ਼ਿੰਦਗੀ ਵਿੱਚ ਔਖਾ ਵੇਲਾ ਆਵੇ, ਤਾਂ ਉਹਨਾਂ ਨੂੰ ਹੌਸਲਾ ਕਿੱਥੋਂ ਲੱਭਣਾ ਚਾਹੀਦਾ ਹੈ?',
+        'ਤੁਹਾਡਾ ਇਹ ਪਿਆਰ ਅਤੇ ਅਵਾਜ਼ ਉਹਨਾਂ ਦੇ ਸਫ਼ਰ ਵਿੱਚ ਕਿਵੇਂ ਹਮਸਫ਼ਰ ਬਣੇਗੀ?',
+      ],
+      hi: [
+        'वे कौन हैं और उनकी जड़ें कहां हैं, इसके बारे में आप उन्हें क्या समझाना चाहते हैं?',
+        'जब वे किसी कठिन दौर से गुजरें, तो उन्हें उम्मीद और रोशनी कहां तलाशनी चाहिए?',
+        'समय के पार आपका यह प्यार और आपकी आवाज उनका साथ कैसे निभाएगी?',
+      ],
+    },
+    recommendedPhotoPrompt: {
+      en: 'Find a recent photograph of your family together, or a picture of you holding the youngest child.',
+      gu: 'પરિવારની તાજી સંયુક્ત તસવીર કે સૌથી નાના બાળકને રમાડતા હોવ તેવી તસવીર શોધો.',
+      pa: 'ਸਾਰੇ ਪਰਿਵਾਰ ਦੀ ਇੱਕਠਿਆਂ ਦੀ ਤਾਜ਼ਾ ਤਸਵੀਰ ਜਾਂ ਸਭ ਤੋਂ ਛੋਟੇ ਬੱਚੇ ਨੂੰ ਗੋਦੀ ਵਿੱਚ ਲਏ ਦੀ ਤਸਵੀਰ ਲੱਭੋ।',
+      hi: 'पूरे परिवार की एक साथ ली गई कोई हाल की तस्वीर या सबसे छोटे बच्चे को गोद में लिए अपनी तस्वीर निकालिए।',
+    },
+  },
 ];
 
 /**

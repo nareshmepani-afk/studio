@@ -6,16 +6,41 @@ import {
 } from '@/lib/curriculum/masterStoryStructure';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 
-describe('ARCH-MW-126: Option A — Unified Production Board & Fireside Booth Integration', () => {
-  it('1. Guarantees MASTER_STORY_STRUCTURE has exactly 6 parts with 4 scenes each (24 total scenes)', () => {
-    expect(MASTER_STORY_STRUCTURE).toHaveLength(6);
-    MASTER_STORY_STRUCTURE.forEach((part, idx) => {
+describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fireside Booth Integration', () => {
+  it('1. Guarantees MASTER_STORY_STRUCTURE has 8 parts (6 core memoir parts + Anthology + Historical Showcase) with 31 narrative memoir scenes', () => {
+    expect(MASTER_STORY_STRUCTURE).toHaveLength(8);
+
+    // Core 6 parts
+    const coreParts = MASTER_STORY_STRUCTURE.filter((p) => !p.isAnthology && !p.isDemo);
+    expect(coreParts).toHaveLength(6);
+    coreParts.forEach((part, idx) => {
       expect(part.partNumber).toBe(idx + 1);
-      expect(part.scenes).toHaveLength(4);
       expect(part.id).toBe(['part-i', 'part-ii', 'part-iii', 'part-iv', 'part-v', 'part-vi'][idx]);
     });
-    const totalScenes = MASTER_STORY_STRUCTURE.reduce((acc, p) => acc + p.scenes.length, 0);
-    expect(totalScenes).toBe(24);
+    // Parts I-V have 4 scenes each
+    coreParts.slice(0, 5).forEach((part) => {
+      expect(part.scenes).toHaveLength(4);
+    });
+    // Part VI has 5 scenes (expanded with Time Travel)
+    expect(coreParts[5].scenes).toHaveLength(5);
+
+    // Family Storytelling Anthology
+    const familyPart = MASTER_STORY_STRUCTURE.find((p) => p.id === 'family-storytelling');
+    expect(familyPart).toBeDefined();
+    expect(familyPart?.isAnthology).toBe(true);
+    expect(familyPart?.scenes).toHaveLength(6);
+
+    // Historical Showcase Demo
+    const demoPart = MASTER_STORY_STRUCTURE.find((p) => p.id === 'historical-showcase');
+    expect(demoPart).toBeDefined();
+    expect(demoPart?.isDemo).toBe(true);
+    expect(demoPart?.scenes).toHaveLength(1);
+
+    // Total non-demo memoir scenes = 25 core + 6 anthology = 31 scenes
+    const totalMemoirScenes = MASTER_STORY_STRUCTURE
+      .filter((p) => !p.isDemo)
+      .reduce((acc, p) => acc + p.scenes.length, 0);
+    expect(totalMemoirScenes).toBe(31);
   });
 
   it('2. Correctly resolves p3 and p3_b distinctly via exact-match in resolveSceneFromPromptId', () => {
@@ -30,9 +55,9 @@ describe('ARCH-MW-126: Option A — Unified Production Board & Fireside Booth In
     expect(sceneP3b?.title).toBe('Traditions, Feasts & Sacred Days');
   });
 
-  it('3. Guarantees FIRESIDE_PROMPT_SPARKS has complete 1:1 coverage for all 24 canonical scenes', () => {
-    expect(FIRESIDE_PROMPT_SPARKS).toHaveLength(24);
-    MASTER_STORY_STRUCTURE.forEach((part) => {
+  it('3. Guarantees FIRESIDE_PROMPT_SPARKS has complete 1:1 coverage for all 31 non-demo canonical scenes', () => {
+    expect(FIRESIDE_PROMPT_SPARKS).toHaveLength(31);
+    MASTER_STORY_STRUCTURE.filter((p) => !p.isDemo).forEach((part) => {
       part.scenes.forEach((scene) => {
         const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === scene.id);
         expect(spark).toBeDefined();

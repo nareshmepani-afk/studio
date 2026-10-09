@@ -2383,7 +2383,7 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     unmount();
   });
 
-  it('14.5 ARCH-MW-122: asserts 24-scene universal parity across Parts I–VI with local 1..4 indexing and zero Story X of Y', () => {
+  it('14.5 ARCH-MW-122 / ARCH-MW-127: asserts canonical scene indexing with Part VI 5-scene expansion and zero Story X of Y', () => {
     const { getByTestId, unmount } = render(
       React.createElement(SingleCardPromptCarousel, {
         activeLanguage: 'en',
@@ -2393,14 +2393,14 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     );
 
     const subtitle = getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE');
-    expect(subtitle.textContent).toContain('Part VI • Scene 4 of 4');
+    expect(subtitle.textContent).toContain('Part VI • Scene 4 of 5');
     expect(subtitle.textContent).not.toMatch(/Story \d+ of/);
     expect(subtitle.textContent).toContain('The Story Continuing');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Words to Remember Me By');
 
-    // Verify card story progress pill also shows canonical Scene X of Total
+    // Verify card story progress pill also shows canonical Scene X of Total (5 in Part VI)
     const progressPill = getByTestId('carousel-story-progress-pill');
-    expect(progressPill.textContent).toBe('Scene 4 of 4');
+    expect(progressPill.textContent).toBe('Scene 4 of 5');
     expect(progressPill.textContent).not.toMatch(/Story \d+ of/);
 
     unmount();

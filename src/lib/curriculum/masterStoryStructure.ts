@@ -55,6 +55,8 @@ export interface MasterStoryPart {
   subtitle: string;
   description: string;
   scenes: MasterStoryScene[];
+  isAnthology?: boolean;
+  isDemo?: boolean;
 }
 
 /**
@@ -225,7 +227,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: 'बचपन की दोस्ती',
         },
         subtitle: 'The elders and companions who guided your early steps',
-        promptId: 'p4_1',
+        promptId: 'p4',
         suggestedMediaMode: 'audio',
         defaultStatus: 'locked',
         keySensoryQuestions: {
@@ -248,7 +250,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: 'मुश्किलों से पहला सामना',
         },
         subtitle: 'Early grief, disappointment, and the discovery of inner resilience',
-        promptId: 'p5_1',
+        promptId: 'p5',
         suggestedMediaMode: 'audio',
         defaultStatus: 'locked',
         keySensoryQuestions: {
@@ -271,7 +273,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: 'मोड़ और फैसले',
         },
         subtitle: 'Pivotal choices that shaped the trajectory of your adult life',
-        promptId: 'p6_1',
+        promptId: 'p6',
         suggestedMediaMode: 'video',
         defaultStatus: 'locked',
         keySensoryQuestions: {
@@ -294,7 +296,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: 'कठिन राहों से सीख',
         },
         subtitle: 'Missteps that forged character, humility, and deeper understanding',
-        promptId: 'p7_1',
+        promptId: 'p7',
         suggestedMediaMode: 'audio',
         defaultStatus: 'locked',
         keySensoryQuestions: {
@@ -332,7 +334,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: 'भीतरी और बाहरी यात्राएं',
         },
         subtitle: 'Significant travels, educational experiences, and broadening horizons',
-        promptId: 'p8_1',
+        promptId: 'p8',
         suggestedMediaMode: 'audio',
         defaultStatus: 'locked',
         keySensoryQuestions: {
@@ -355,7 +357,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: 'हकीकत का सामना',
         },
         subtitle: 'The transition to full adulthood, early wages, and personal independence',
-        promptId: 'p9_1',
+        promptId: 'p9',
         suggestedMediaMode: 'audio',
         defaultStatus: 'locked',
         keySensoryQuestions: {
@@ -378,7 +380,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: 'प्यार में पड़ना',
         },
         subtitle: 'How you met your life partner and the early years of building together',
-        promptId: 'p10_1',
+        promptId: 'p10',
         suggestedMediaMode: 'video',
         defaultStatus: 'locked',
         keySensoryQuestions: {
@@ -401,7 +403,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: 'बच्चों का जन्म',
         },
         subtitle: 'The overwhelming transformation of stepping into the role of parent',
-        promptId: 'p11_1',
+        promptId: 'p11',
         suggestedMediaMode: 'audio',
         defaultStatus: 'locked',
         keySensoryQuestions: {
@@ -732,6 +734,250 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
           hi: ['सौ साल बाद जब आपकी आने वाली पीढ़ी आपकी आवाज सुने, तो आप उन्हें क्या आशीर्वाद देंगे?'],
         },
       },
+      {
+        id: 'part-6-scene-5',
+        partNumber: 6,
+        partTitle: 'Part VI: The Continuing Story & Heirloom Legacy',
+        sceneNumber: 5,
+        title: 'Time Travel: The Power of Looking Back',
+        localizedTitles: {
+          en: 'Time Travel',
+          gu: 'સમય પ્રવાસ',
+          pa: 'ਸਮੇਂ ਦੀ ਯਾਤਰਾ',
+          hi: 'समय की यात्रा',
+        },
+        subtitle: 'The importance of reflection, integration, and honouring how far you have travelled',
+        promptId: 'p24',
+        suggestedMediaMode: 'video',
+        defaultStatus: 'locked',
+        keySensoryQuestions: {
+          en: [
+            'Why is it vital to pause and reflect upon the journey and experiences of your life?',
+            'What does looking back reveal about the person you have steadily become?',
+          ],
+          gu: [
+            'જીવનની આખી મુસાફરી પર પાછળ વળીને જોવું અને તેનું મૂલ્યાંકન કરવું કેમ જરૂરી છે?',
+            'પાછળ જોવાથી તમને તમારા પોતાના વિકાસ વિશે શું સમજાય છે?',
+          ],
+          pa: [
+            'ਜ਼ਿੰਦਗੀ ਦੇ ਸਫ਼ਰ ਨੂੰ ਪਿੱਛੇ ਮੁੜ ਕੇ ਵੇਖਣਾ ਅਤੇ ਸਮਝਣਾ ਕਿਉਂ ਜ਼ਰੂਰੀ ਹੈ?',
+            'ਪਿੱਛੇ ਵੇਖਣ ਨਾਲ ਤੁਹਾਨੂੰ ਆਪਣੇ ਬਾਰੇ ਕੀ ਨਵੀਂ ਸਮਝ ਮਿਲਦੀ ਹੈ?',
+          ],
+          hi: [
+            'जिंदगी के सफर को पीछे मुड़कर देखना और उसका अनुभव करना क्यों जरूरी है?',
+            'पीछे देखने से आपको अपने व्यक्तित्व के विकास के बारे में क्या समझ आता है?',
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'family-storytelling',
+    partNumber: 7,
+    title: 'ANTHOLOGY: FAMILY STORYTELLING',
+    localizedTitles: {
+      en: 'Family Storytelling',
+      gu: 'કૌટુંબિક વાર્તાલાપ',
+      pa: 'ਪਰਿਵਾਰਕ ਕਹਾਣੀਆਂ',
+      hi: 'पारिवारिक कहानियां',
+    },
+    subtitle: 'Ancestral Lore, Traditions & Messages for the Future',
+    description: 'Cherished memories of grandparents, ancestral roots, customs, and lasting wisdom for posterity.',
+    isAnthology: true,
+    scenes: [
+      {
+        id: 'family-scene-1',
+        partNumber: 7,
+        partTitle: 'ANTHOLOGY: FAMILY STORYTELLING',
+        sceneNumber: 1,
+        title: 'Memories of Elders',
+        localizedTitles: {
+          en: 'Memories of Elders',
+          gu: 'વડીલોની યાદો',
+          pa: 'ਵੱਡਿਆਂ ਦੀਆਂ ਯਾਦਾਂ',
+          hi: 'बुजुर्गों की यादें',
+        },
+        subtitle: 'Cherished stories of grandparents and ancestors who came before',
+        promptId: 'fs1_1',
+        suggestedMediaMode: 'audio',
+        defaultStatus: 'locked',
+        keySensoryQuestions: {
+          en: ['Share a cherished memory of a grandparent or elder. What made them special to you?'],
+          gu: ['દાદા-દાદી કે કોઈ વડીલની વહાલી યાદ જણાવો. તેમનામાં શું ખાસ હતું?'],
+          pa: ['ਦਾਦਾ-ਦਾਦੀ ਜਾਂ ਕਿਸੇ ਬਜ਼ੁਰਗ ਦੀ ਪਿਆਰੀ ਯਾਦ ਸਾਂਝੀ ਕਰੋ। ਉਹਨਾਂ ਵਿੱਚ ਕੀ ਖਾਸ ਸੀ?'],
+          hi: ['दादा-दादी या किसी बुजुर्ग की प्यारी याद साझा करें। उनमें क्या खास था?'],
+        },
+      },
+      {
+        id: 'family-scene-2',
+        partNumber: 7,
+        partTitle: 'ANTHOLOGY: FAMILY STORYTELLING',
+        sceneNumber: 2,
+        title: 'Family Traditions',
+        localizedTitles: {
+          en: 'Family Traditions',
+          gu: 'કૌટુંબિક પરંપરાઓ',
+          pa: 'ਪਰਿਵਾਰਕ ਰੀਤਾਂ',
+          hi: 'पारिवारिक परंपराएं',
+        },
+        subtitle: 'Customs and celebrations passed down through the generations',
+        promptId: 'fs2_1',
+        suggestedMediaMode: 'audio',
+        defaultStatus: 'locked',
+        keySensoryQuestions: {
+          en: ['What unique custom, recipe, or holiday ritual defined your family life?'],
+          gu: ['કઈ ખાસ પરંપરા, વાનગી કે તહેવારની રીત તમારા પરિવારની ઓળખ હતી?'],
+          pa: ['ਕਿਹੜੀ ਖਾਸ ਰੀਤ, ਪਕਵਾਨ ਜਾਂ ਤਿਉਹਾਰ ਤੁਹਾਡੇ ਪਰਿਵਾਰ ਦੀ ਪਛਾਣ ਸੀ?'],
+          hi: ['कौन सी खास परंपरा, व्यंजन या त्योहार आपके परिवार की पहचान था?'],
+        },
+      },
+      {
+        id: 'family-scene-3',
+        partNumber: 7,
+        partTitle: 'ANTHOLOGY: FAMILY STORYTELLING',
+        sceneNumber: 3,
+        title: 'Historical Events',
+        localizedTitles: {
+          en: 'Historical Events',
+          gu: 'ઐતિહાસિક ઘટનાઓ',
+          pa: 'ਇਤਿਹਾਸਕ ਘਟਨਾਵਾਂ',
+          hi: 'ऐतिहासिक घटनाएं',
+        },
+        subtitle: 'Great historical moments and migrations that shaped your family’s journey',
+        promptId: 'fs3_1',
+        suggestedMediaMode: 'video',
+        defaultStatus: 'locked',
+        keySensoryQuestions: {
+          en: ['Which major historical event directly impacted your family or caused a migration?'],
+          gu: ['કઈ મોટી ઐતિહાસિક ઘટના કે સ્થળાંતરે તમારા પરિવારના જીવનને નવો વળાંક આપ્યો?'],
+          pa: ['ਕਿਸ ਵੱਡੀ ਇਤਿਹਾਸਕ ਘਟਨਾ ਨੇ ਤੁਹਾਡੇ ਪਰਿਵਾਰ ਦੇ ਜੀਵਨ ਨੂੰ ਪ੍ਰਭਾਵਿਤ ਕੀਤਾ?'],
+          hi: ['किस बड़ी ऐतिहासिक घटना या विस्थापन ने आपके परिवार के जीवन को बदला?'],
+        },
+      },
+      {
+        id: 'family-scene-4',
+        partNumber: 7,
+        partTitle: 'ANTHOLOGY: FAMILY STORYTELLING',
+        sceneNumber: 4,
+        title: 'Parental Values',
+        localizedTitles: {
+          en: 'Parental Values',
+          gu: 'માતાપિતાના મૂલ્યો',
+          pa: 'ਮਾਪਿਆਂ ਦੇ સંਸਕਾਰ',
+          hi: 'माता-पिता के संस्कार',
+        },
+        subtitle: 'The core principles, moral compass, and work ethic your parents instilled',
+        promptId: 'fs4_1',
+        suggestedMediaMode: 'audio',
+        defaultStatus: 'locked',
+        keySensoryQuestions: {
+          en: ['What core value or unbending principle did your parents pass down to you?'],
+          gu: ['તમારા માતાપિતાએ તમને કયો સૌથી મોટો સંસ્કાર કે સિદ્ધાંત આપ્યો?'],
+          pa: ['ਤੁਹਾਡੇ ਮਾਪਿਆਂ ਨੇ ਤੁਹਾਨੂੰ ਕਿਹੜਾ સਭ ਤੋਂ ਵੱਡਾ ਅਸੂਲ ਦਿੱਤਾ?'],
+          hi: ['आपके माता-पिता ने आपको कौन सा सबसे बड़ा संस्कार या सिद्धांत दिया?'],
+        },
+      },
+      {
+        id: 'family-scene-5',
+        partNumber: 7,
+        partTitle: 'ANTHOLOGY: FAMILY STORYTELLING',
+        sceneNumber: 5,
+        title: 'Admired Ancestors',
+        localizedTitles: {
+          en: 'Admired Ancestors',
+          gu: 'પ્રશંસનીય પૂર્વજો',
+          pa: 'ਸਤਿਕਾਰਯੋਗ ਪੁਰਖੇ',
+          hi: 'आदरणीय पूर्वज',
+        },
+        subtitle: 'Legends, grit, and stories of ancestors you never met but deeply revere',
+        promptId: 'fs5_1',
+        suggestedMediaMode: 'audio',
+        defaultStatus: 'locked',
+        keySensoryQuestions: {
+          en: ['Which ancestor’s story of sacrifice or courage fills you with greatest pride?'],
+          gu: ['કયા પૂર્વજની હિંમત કે ત્યાગની વાર્તા તમને ગર્વથી ભરી દે છે?'],
+          pa: ['ਕਿਸ ਪੁਰਖੇ ਦੀ ਕੁਰਬਾਨੀ ਜਾਂ ਦਲੇਰੀ ਤੁਹਾਨੂੰ સਭ ਤੋਂ ਵੱਧ ਪ੍ਰੇਰਿਤ ਕਰਦੀ ਹੈ?'],
+          hi: ['किस पूर्वज के बलिदान या साहस की कहानी आपको सबसे ज्यादा प्रेरित करती है?'],
+        },
+      },
+      {
+        id: 'family-scene-6',
+        partNumber: 7,
+        partTitle: 'ANTHOLOGY: FAMILY STORYTELLING',
+        sceneNumber: 6,
+        title: 'A Message for the Future',
+        localizedTitles: {
+          en: 'A Message for the Future',
+          gu: 'ભવિષ્ય માટે સંદેશ',
+          pa: 'ભਵਿੱਖ ਲਈ ਸੁਨੇਹਾ',
+          hi: 'भविष्य के लिए संदेश',
+        },
+        subtitle: 'Direct counsel, hope, and blessing for the generations yet to be born',
+        promptId: 'fs6_1',
+        suggestedMediaMode: 'video',
+        defaultStatus: 'locked',
+        keySensoryQuestions: {
+          en: ['What hope or eternal advice do you wish to bestow upon your family’s future generations?'],
+          gu: ['તમારા પરિવારની ભાવિ પેઢીઓને તમે કયો સંદેશ કે આશીર્વાદ આપવા માંગો છો?'],
+          pa: ['ਆਪਣੇ ਪਰਿਵਾਰ ਦੀਆਂ ਆਉਣ ਵਾਲੀਆਂ ਪੀੜ੍ਹੀਆਂ ਨੂੰ ਤੁਸੀਂ ਕੀ ਸੁਨੇਹਾ ਜਾਂ ਅਸੀਸ ਦੇਣੀ ਚਾਹੁੰਦੇ ਹੋ?'],
+          hi: ['अपने परिवार की आने वाली पीढ़ियों को आप क्या संदेश या आशीर्वाद देना चाहते हैं?'],
+        },
+      },
+    ],
+  },
+  {
+    id: 'historical-showcase',
+    partNumber: 8,
+    title: 'Historical Experiments (Demo)',
+    localizedTitles: {
+      en: 'Historical Experiments (Demo)',
+      gu: 'Historical Experiments (Demo)',
+      pa: 'Historical Experiments (Demo)',
+      hi: 'Historical Experiments (Demo)',
+    },
+    subtitle: 'Albert Einstein: Spacetime & Imagination Sandbox',
+    description: 'Test-drive the complete 5-Act Studio, teleprompter, and sensory anchors with Albert Einstein’s spacetime memoir.',
+    isDemo: true,
+    scenes: [
+      {
+        id: 'demo-einstein-scene',
+        partNumber: 8,
+        partTitle: 'Historical Experiments (Demo)',
+        sceneNumber: 1,
+        title: 'Albert Einstein: Spacetime & Imagination',
+        localizedTitles: {
+          en: 'Albert Einstein: Spacetime & Imagination',
+          gu: 'Albert Einstein: Spacetime & Imagination',
+          pa: 'Albert Einstein: Spacetime & Imagination',
+          hi: 'Albert Einstein: Spacetime & Imagination',
+        },
+        subtitle: 'Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.',
+        promptId: 'p_einstein',
+        suggestedMediaMode: 'video',
+        defaultStatus: 'ready_for_action',
+        keySensoryQuestions: {
+          en: [
+            'Cold Brass Pocket Compass: Cold metallic casing resting in a child’s trembling hand...',
+            'Trembling Magnetic Needle (Unseen North): Slender needle stubbornly pointing to the mysterious north...',
+            'Munich Bedroom Rain & Linens: Quiet rain against the glass, warmth of sickbed blankets...',
+          ],
+          gu: [
+            'Cold Brass Pocket Compass: Cold metallic casing resting in a child’s trembling hand...',
+            'Trembling Magnetic Needle (Unseen North): Slender needle stubbornly pointing to the mysterious north...',
+            'Munich Bedroom Rain & Linens: Quiet rain against the glass, warmth of sickbed blankets...',
+          ],
+          pa: [
+            'Cold Brass Pocket Compass: Cold metallic casing resting in a child’s trembling hand...',
+            'Trembling Magnetic Needle (Unseen North): Slender needle stubbornly pointing to the mysterious north...',
+            'Munich Bedroom Rain & Linens: Quiet rain against the glass, warmth of sickbed blankets...',
+          ],
+          hi: [
+            'Cold Brass Pocket Compass: Cold metallic casing resting in a child’s trembling hand...',
+            'Trembling Magnetic Needle (Unseen North): Slender needle stubbornly pointing to the mysterious north...',
+            'Munich Bedroom Rain & Linens: Quiet rain against the glass, warmth of sickbed blankets...',
+          ],
+        },
+      },
     ],
   },
 ];
@@ -818,7 +1064,7 @@ export function mapActsCompletedToProductionStage(acts: string[]): number {
  * Computes next sequential scene ID for auto-advancing mobile carousel
  */
 export function getNextSceneId(currentSceneId: string): string | null {
-  const allScenes = MASTER_STORY_STRUCTURE.flatMap((p) => p.scenes);
+  const allScenes = MASTER_STORY_STRUCTURE.filter((p) => !p.isDemo).flatMap((p) => p.scenes);
   const currentIndex = allScenes.findIndex((s) => s.id === currentSceneId);
   if (currentIndex >= 0 && currentIndex < allScenes.length - 1) {
     return allScenes[currentIndex + 1].id;

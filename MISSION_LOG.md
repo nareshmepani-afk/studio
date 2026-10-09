@@ -1130,3 +1130,38 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
 - **Verification**:
   - Vitest: All invariant test suites passing.
   - Local Production Build Gate: `npm.cmd run build` passes with exit code 0.
+
+---
+
+## Checkpoint #049 — ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration (2026-10-09)
+
+- **Target Ref**: `ARCH-MW-127` (Unified Master Curriculum SSOT & Anthology Integration)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Architectural & Invariant Deliverables**:
+  - **Single Source of Truth Curriculum SSOT (`masterStoryStructure.ts`)**:
+    - Harmonised all prompt IDs in Parts II & III to canonical base tokens (`p4`..`p7`, `p8`..`p11`).
+    - Engineered robust two-pass backward compatibility normaliser in `resolveSceneFromPromptId` supporting both canonical base IDs and legacy Firestore suffixed IDs (`p4_1`, etc.) with 100% fidelity.
+    - Expanded Part VI from 4 to 5 canonical scenes with `part-6-scene-5` (`promptId: 'p24'`, "Time Travel: The Power of Looking Back").
+    - Integrated Family Storytelling as an authentic 6-scene curriculum chapter (Part 7, `id: 'family-storytelling'`, `fs1_1` through `fs6_1`, `isAnthology: true`).
+    - Registered Historical Showcase demo module (Part 8, `id: 'historical-showcase'`, `p_einstein`, `isDemo: true`) safely excluded from personal memoir completion metrics (`totalPossible = 31`).
+  - **Fireside 31-Spark Deck Universal Parity (`firesidePrompts.ts`)**:
+    - Expanded `FIRESIDE_PROMPT_SPARKS` to 31 canonical prompt sparks matching all 31 non-demo memoir scenes 1:1.
+    - Added `spark_time_travel` with rich multilingual diaspora scripts (EN, GU, PA, HI).
+    - Added 6 generational Family Storytelling sparks (`spark_family_elders`, `spark_family_traditions`, etc.) with complete diaspora translations.
+  - **Personal Production & Custom Scenes Integration (`useStudioData.ts`)**:
+    - Filtered and dynamically appended custom memories created via `[+ Add Scene]` (`promptId === 'custom'` or `groupId === chapter.id`) into active dashboard chapters.
+    - Dynamically derived `stats.totalPossible = 31` from `MASTER_STORY_STRUCTURE` non-demo scenes.
+  - **Universal Responsive Production Board (`StudioDashboard.tsx`)**:
+    - Header quick-launch button `[ 🎙️ Fireside Studio Booth ]`.
+    - Device-aware routing: `< 768px` automatically enters `/studio/fireside?id=${targetId}`, `>= 768px` enters `/studio/production/${targetId}`.
+    - Touch ergonomics with `min-h-[220px] sm:min-h-[300px]` on `[+ Add Scene]` card.
+    - Strict UK English orthography compliance (`favourite`, `organise`, `colour`).
+  - **Governance & Regression Shield**:
+    - Codified `src/test/curriculum_ssot_arch_mw_127.test.ts` (13/13 tests passing).
+    - Updated `src/test/fireside_booth_entry.test.tsx` (5/5 tests passing).
+    - Updated `src/test/fireside_sync.test.ts` (71/71 tests passing).
+- **Verification**:
+  - `npx.cmd vitest run`: 92/92 tests passing across all targeted suites.
+  - `npx.cmd tsc --noEmit`: 0 errors.
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
+
