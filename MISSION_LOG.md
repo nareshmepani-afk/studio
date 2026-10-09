@@ -1216,8 +1216,32 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
 - **Verification**:
   - Unit Tests: 19/19 in `fireside_prompt_carousel.test.tsx`, 71/71 in `fireside_sync.test.ts`, 12/12 in `qa_template.test.ts` (all passing).
   - Local Production Build Gate (Rule 5): `npm.cmd run build` compiled all 46 routes with exit code 0.
-  - Live Staging Edge Verification Gate (Rule 5): `https://dev.memoryweaver.studio/api/version` confirmed active `commitSha: "d61a0ed"`.
+---
 
+## Checkpoint #052 — ARCH-MW-132: Shared Narrative Primitives & Cross-Surface Parity (Desktop & Fireside) (2026-10-09)
 
-
-
+- **Target Ref**: `ARCH-MW-132` (Shared Narrative Primitives & Dual-Surface Parity)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Constitutional Governance Codification (`.agents/AGENTS.md`)**:
+    - Codified **Rule 48: Shared Narrative Primitives & Dual-Surface Component Invariant** preventing duplicate component sprawl across Desktop Studio (`/studio`) and Fireside Mobile (`/studio/fireside`).
+    - Established Section 48.1 (Mandatory Primitive Extraction), Section 48.2 (Dual-Layer Highlighting & Ref Contract), Section 48.3 (Modal Chromatic Lockstep), and Section 48.4 (Single-Icon Discipline).
+  - **Shared Narrative Primitive 1: `<SensoryScriptEditor />` (`src/components/studio/shared/SensoryScriptEditor.tsx`)**:
+    - Engineered reusable dual-layer CSS Grid overlay (`gridArea: 1/1/2/2`) with underlying tokenized sensory underline layer and top transparent interactive `<textarea>`.
+    - Integrated real-time sensory anchor detection and dynamic underline coloring: Soundscape = Sky Blue (`border-sky-400/80 bg-sky-500/15 text-sky-100`), Visual = Emerald Green (`border-emerald-400/80 bg-emerald-500/15 text-emerald-100`), Aroma/Taste = Amber Gold (`border-amber-400/80 bg-amber-500/15 text-amber-100`).
+    - Exposed imperative ref contract (`SensoryScriptEditorRef`): `pulseAndSelectWord(word, modality)`, `focus()`, and `getTextarea()`.
+    - Added 1:1 scroll synchronization (`onScroll`) and multi-typography support (`typography="serif"` for Fireside, `typography="typewriter"` for Desktop).
+  - **Shared Narrative Primitive 2: `<SensoryModalityKey />` (`src/components/studio/shared/SensoryModalityKey.tsx`)**:
+    - Extracted interactive modality counter pills (`[ 🎧 Soundscape (N) ]`, `[ 👁️ Visual (N) ]`, `[ ☕ Aroma (N) ]`) with Rule 45 / Rule 48.3 chromatic lockstep.
+    - Bound click events directly to `editorRef.pulseAndSelectWord(targetWord, modality)`, focusing the editor, selecting the target word via native `setSelectionRange`, and firing the luminous pulse ring animation.
+  - **Fireside Carousel Consumption & Single-Icon Discipline (`src/components/fireside/SingleCardPromptCarousel.tsx`)**:
+    - Replaced duplicate emoji prefixes in `brainstormBadgeText` and `sensorySeedsTrayLabel` to resolve the double icon bug (`💡 💡` -> `💡`, `🌿 🌿` -> `🌿`) adhering strictly to Rule 48.4.
+    - Color-coordinated Sensory Seed chips across all views (`seed.icon === 'audio'` -> Sky Blue, `'aroma'` -> Amber Gold, `'visual'` -> Emerald Green, other -> Purple).
+    - Mounted `<SensoryModalityKey />` and `<SensoryScriptEditor />` inside Fireside Armchair Script Editor for 100% parity with Desktop Scriptorium.
+  - **Automated Regression Shield (`src/test/sensory_script_editor.test.tsx`)**:
+    - Authored 11 comprehensive unit tests covering dual-layer CSS Grid layout, token underlines, imperative ref selection range contracts, British English `lang="en-GB"`, modality counter clicks, and Fireside integration.
+  - **Verification**:
+    - Vitest Suite: 30/30 tests passing (`sensory_script_editor.test.tsx` + `fireside_prompt_carousel.test.tsx`).
+    - TypeScript Compiler Gate: `npx.cmd tsc --noEmit` passed with exit code 0.
+    - Local Production Build Gate (Rule 5): `npm.cmd run build` compiled all 46 routes with exit code 0.

@@ -14,7 +14,7 @@
  * (Rule 7 Non-Degradation, Rule 20 British English, Rule 26 Elder Ergonomics, Rule 8 Mobile Viewport)
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
@@ -61,6 +61,11 @@ import { OrientationSoundcheckDock } from '@/components/fireside/OrientationSoun
 import { ChapterSpineRail, type ChapterSpineScene } from '@/components/navigation/ChapterSpineRail';
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
 import { FiresideModeSwitch } from '@/components/fireside/FiresideModeSwitch';
+import {
+  SensoryScriptEditor,
+  type SensoryScriptEditorRef,
+} from '@/components/studio/shared/SensoryScriptEditor';
+import { SensoryModalityKey } from '@/components/studio/shared/SensoryModalityKey';
 import { toast } from 'sonner';
 
 export interface SingleCardPromptCarouselProps {
@@ -215,6 +220,7 @@ export function SingleCardPromptCarousel({
   const [highlightedSensoryType, setHighlightedSensoryType] = useState<
     'soundscape' | 'visual' | 'aroma' | null
   >(null);
+  const sensoryEditorRef = useRef<SensoryScriptEditorRef | null>(null);
 
   const currentLanguage = controlledLanguage || internalLanguage;
   const effectiveHybrid = typeof controlledHybrid === 'boolean' ? controlledHybrid : internalHybrid;
@@ -471,28 +477,41 @@ export function SingleCardPromptCarousel({
   const brainstormBadgeText = useMemo(() => {
     switch (currentLanguage) {
       case 'gu':
-        return '💡 BRAINSTORM SPARK / વિચાર બિંદુ';
+        return 'BRAINSTORM SPARK / વિચાર બિંદુ';
       case 'pa':
-        return '💡 BRAINSTORM SPARK / ਵਿਚਾਰ ਬਿੰਦੂ';
+        return 'BRAINSTORM SPARK / ਵਿਚਾਰ ਬਿੰਦੂ';
       case 'hi':
-        return '💡 BRAINSTORM SPARK / विचार बिंदु';
+        return 'BRAINSTORM SPARK / विचार बिंदु';
       case 'en':
       default:
-        return '💡 BRAINSTORM SPARK';
+        return 'BRAINSTORM SPARK';
     }
   }, [currentLanguage]);
+
+  const getSensorySeedChipClasses = (icon: string) => {
+    switch (icon) {
+      case 'audio':
+        return 'bg-sky-950/40 hover:bg-sky-900/50 border-sky-500/30 hover:border-sky-400/60 text-sky-200 hover:text-sky-100';
+      case 'aroma':
+        return 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-500/30 hover:border-amber-400/60 text-amber-200 hover:text-amber-100';
+      case 'visual':
+        return 'bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100';
+      default:
+        return 'bg-purple-950/40 hover:bg-purple-900/50 border-purple-500/30 hover:border-purple-400/60 text-purple-200 hover:text-purple-100';
+    }
+  };
 
   const sensorySeedsTrayLabel = useMemo(() => {
     switch (currentLanguage) {
       case 'gu':
-        return '🌿 SENSORY SEEDS (સંવેદનાત્મક પ્રેરણા)';
+        return 'SENSORY SEEDS (સંવેદનાત્મક પ્રેરણા)';
       case 'pa':
-        return '🌿 SENSORY SEEDS (ਸੰਵੇਦੀ ਪ੍ਰੇਰਣਾ)';
+        return 'SENSORY SEEDS (ਸੰਵੇਦੀ ਪ੍ਰੇਰਣਾ)';
       case 'hi':
-        return '🌿 SENSORY SEEDS (संवेदी प्रेरणा)';
+        return 'SENSORY SEEDS (संवेदी प्रेरणा)';
       case 'en':
       default:
-        return '🌿 SENSORY SEEDS';
+        return 'SENSORY SEEDS';
     }
   }, [currentLanguage]);
 
@@ -1418,7 +1437,7 @@ export function SingleCardPromptCarousel({
                             data-testid={`fireside-sensory-seed-chip-${seed.id}`}
                             onClick={() => handleApplySensorySeed(seed)}
                             title={`Click to inspire: Append starter "${seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en}..."`}
-                            className="min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-98 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                            className={`min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium active:scale-98 border transition-all cursor-pointer flex items-center gap-2 shadow-sm ${getSensorySeedChipClasses(seed.icon)}`}
                           >
                             <span className="text-sm">{chipIcon}</span>
                             <span className="font-semibold">{chipLabel}</span>
@@ -1428,65 +1447,30 @@ export function SingleCardPromptCarousel({
                     </div>
                   </div>
 
-                  {/* Live Sensory Modality Counters during editing (UX-MW-131 Live Cue Detection) */}
-                  <div
-                    data-testid="fireside-live-sensory-counters"
-                    className="flex items-center gap-2 flex-wrap pt-0.5 text-xs font-mono text-stone-300"
-                  >
-                    <span className="text-[11px] uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1">
-                      <span>✨</span> Live Sensory Anchors:
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span
-                        className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono flex items-center gap-1 transition-all ${
-                          sensoryCounts.soundscape > 0
-                            ? 'bg-sky-500/20 text-sky-200 border-sky-400/50 ring-1 ring-sky-400/30 font-bold'
-                            : 'bg-white/5 text-stone-400 border-white/10'
-                        }`}
-                      >
-                        <Headphones className="w-3 h-3 text-sky-400" />
-                        Soundscape ({sensoryCounts.soundscape})
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono flex items-center gap-1 transition-all ${
-                          sensoryCounts.visual > 0
-                            ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/50 ring-1 ring-emerald-400/30 font-bold'
-                            : 'bg-white/5 text-stone-400 border-white/10'
-                        }`}
-                      >
-                        <Eye className="w-3 h-3 text-emerald-400" />
-                        Visual ({sensoryCounts.visual})
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono flex items-center gap-1 transition-all ${
-                          sensoryCounts.aroma > 0
-                            ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 ring-1 ring-amber-400/30 font-bold'
-                            : 'bg-white/5 text-stone-400 border-white/10'
-                        }`}
-                      >
-                        <Coffee className="w-3 h-3 text-amber-400" />
-                        Aroma ({sensoryCounts.aroma})
-                      </span>
-                    </span>
-                  </div>
+                  {/* Shared Sensory Modality Key & Dual-Layer Underline Editor (ARCH-MW-132 / Rule 48) */}
+                  <SensoryModalityKey
+                    editorRef={sensoryEditorRef}
+                    detectedAnchors={rawDetectedAnchors}
+                    className="pt-0.5"
+                    testIdPrefix="fireside-live-sensory-counters"
+                  />
 
-                  <textarea
-                    data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"
+                  <SensoryScriptEditor
+                    ref={sensoryEditorRef}
                     value={draftProse}
-                    onChange={(e) => {
-                      setDraftProse(e.target.value);
-                      if (isScriptPolished && originalScriptDraft !== null && e.target.value !== draftProse) {
+                    onChange={(val) => {
+                      setDraftProse(val);
+                      if (isScriptPolished && originalScriptDraft !== null && val !== draftProse) {
                         setIsScriptPolished(false);
                       }
                     }}
                     rows={5}
                     placeholder={textareaPlaceholder}
-                    spellCheck={true}
-                    autoCorrect="on"
-                    autoCapitalize="sentences"
+                    typography="serif"
+                    textareaClassName="p-3.5 pr-10 pb-4"
                     lang={currentLanguage && currentLanguage !== 'en' ? currentLanguage : 'en-GB'}
-                    className="w-full rounded-xl bg-[#111111] border border-amber-500/35 focus:border-amber-400 text-base sm:text-lg font-serif text-white p-3.5 pr-10 pb-4 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-500/30 custom-scrollbar"
-                    aria-label="Edit story script"
+                    dataTestId="HS_FIRESIDE_SCRIPT_TEXTAREA"
+                    ariaLabel="Edit story script"
                   />
                   <div className="flex flex-wrap items-center gap-2.5 pt-1">
                     <button
@@ -1685,7 +1669,7 @@ export function SingleCardPromptCarousel({
                                 data-testid={`fireside-sensory-seed-chip-${seed.id}`}
                                 onClick={() => handleApplySensorySeed(seed)}
                                 title={`Click to inspire: Append starter "${seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en}..."`}
-                                className="min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-98 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                                className={`min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium active:scale-98 border transition-all cursor-pointer flex items-center gap-2 shadow-sm ${getSensorySeedChipClasses(seed.icon)}`}
                               >
                                 <span className="text-sm">{chipIcon}</span>
                                 <span className="font-semibold">{chipLabel}</span>
@@ -1749,7 +1733,7 @@ export function SingleCardPromptCarousel({
                                 data-testid={`fireside-sensory-seed-chip-${seed.id}`}
                                 onClick={() => handleApplySensorySeed(seed)}
                                 title={`Click to inspire: Append starter "${seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en}..."`}
-                                className="min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-98 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                                className={`min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium active:scale-98 border transition-all cursor-pointer flex items-center gap-2 shadow-sm ${getSensorySeedChipClasses(seed.icon)}`}
                               >
                                 <span className="text-sm">{chipIcon}</span>
                                 <span className="font-semibold">{chipLabel}</span>
@@ -1816,7 +1800,7 @@ export function SingleCardPromptCarousel({
                             data-testid={`fireside-sensory-seed-chip-${seed.id}`}
                             onClick={() => handleApplySensorySeed(seed)}
                             title={`Click to inspire: Start story with "${seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en}..."`}
-                            className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-98 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                            className={`min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium active:scale-98 border transition-all cursor-pointer flex items-center gap-2 shadow-sm ${getSensorySeedChipClasses(seed.icon)}`}
                           >
                             <span className="text-sm">{chipIcon}</span>
                             <span className="font-semibold">{chipLabel}</span>

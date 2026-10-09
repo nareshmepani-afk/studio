@@ -1334,3 +1334,28 @@ To guarantee seamless user journeys, cross-device parity, and eliminate the "lin
 ## 47.2 Single Source of Truth Invariant (`useStudioData.ts`)
 - All chapters, scenes, and completion statistics rendered on `/studio` and `/cinema` MUST derive dynamically from `MASTER_STORY_STRUCTURE` in `src/lib/curriculum/masterStoryStructure.ts`.
 - Divergent mock prompt groups in `mockData.ts` are deprecated. Both Desktop `/studio` and Mobile `/studio/fireside` MUST consume identical in-memory canonical structures (exactly 6 Parts x 4 scenes = 24 total scenes).
+
+# 48. Shared Narrative Primitives & Cross-Surface Component Invariant
+
+## 48.1 Mandatory Primitive Extraction
+Whenever core narrative interactions—such as script drafting, sensory highlighting, teleprompter displays, photo capture, or audio recording—are deployed across both Desktop Studio (`/studio`) and Fireside Mobile (`/studio/fireside`), agents are strictly forbidden from implementing parallel duplicate components. 
+
+Core interaction logic MUST be extracted into reusable primitives residing under:
+- `C:\Users\home\studio\src\components\studio\shared/`
+- `C:\Users\home\studio\src\components\shared/`
+
+## 48.2 Dual-Layer Highlighting & Ref Contract
+Text input surfaces utilizing sensory NLP detection MUST use `<SensoryScriptEditor />` with:
+1. Dual-layer CSS Grid overlay (`gridArea: 1/1/2/2`).
+2. Imperative ref contract exposing `pulseAndSelectWord(word, modality)`, `focus()`, and `getTextarea()`.
+3. Configurable typography prop (`typography: 'serif' | 'typewriter'`).
+
+## 48.3 Modal Chromatic Lockstep
+Sensory modality indicators across all surfaces must adhere strictly to Rule 45 chromas:
+- 🎧 **Soundscape:** Sky Blue (`text-sky-400 border-sky-400 bg-sky-500/15`)
+- 👁️ **Visual:** Emerald Green (`text-emerald-400 border-emerald-400 bg-emerald-500/15`)
+- ☕ **Aroma / Taste:** Amber Gold (`text-amber-400 border-amber-400 bg-amber-500/15`)
+
+## 48.4 Single-Icon Discipline
+Card headers and interactive pills must never double-render icons (e.g. `💡 💡` or `🌿 🌿`). Icons must appear exactly once as the leading glyph.
+
