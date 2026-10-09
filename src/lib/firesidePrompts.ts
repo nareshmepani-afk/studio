@@ -8,6 +8,8 @@
  */
 
 import type { FiresidePromptSpark, FiresideLanguage, PromptCategory } from '@/types/fireside';
+import { mockPromptGroups } from '@/lib/mockData';
+import { getSceneById } from '@/lib/curriculum/masterStoryStructure';
 
 export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   // ─── PART I: ROOTS AND FOUNDATIONS (Scenes 1–4) ──────────────────────────
@@ -1505,3 +1507,473 @@ export function getRandomPrompt(excludeId?: string): FiresidePromptSpark {
   const randomIndex = Math.floor(Math.random() * pool.length);
   return pool[randomIndex];
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🏛️ SENSORY SEEDS ARCHITECTURE & CANONICAL CURRICULUM BRIDGE (UX-MW-131)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type SensoryModalityType = 'soundscape' | 'visual' | 'aroma' | 'touch';
+
+export interface FiresideSensorySeed {
+  id: string;
+  type: SensoryModalityType;
+  icon: 'audio' | 'visual' | 'aroma' | 'touch';
+  label: Record<FiresideLanguage, string>;
+  sentenceStarter: Record<FiresideLanguage, string>;
+  examplePlaceholder?: string;
+}
+
+// Canonical dictionary translating English sensory labels into authentic Gujarati, Punjabi, and Hindi
+const SENSORY_SEED_DICTIONARY: Record<string, { gu: string; pa: string; hi: string }> = {
+  "Aroma of your mother's cooking": {
+    gu: 'માતાના હાથના ભોજનની સુગંધ',
+    pa: 'ਮਾਤਾ ਜੀ ਦੇ ਹੱਥ ਦੇ ਖਾਣੇ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'माँ के हाथ के खाने की महक',
+  },
+  "Smell of the living room": {
+    gu: 'બૈઠક ખંડની સુગંધ',
+    pa: 'બੈਠਕ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'बैठक की महक',
+  },
+  "Scent of old schoolbooks": {
+    gu: 'જૂનાં પુસ્તકોની મહેક',
+    pa: 'ਪੁਰਾਣੀਆਂ ਕਿਤਾਬਾਂ ਦੀ ਮਹਿਕ',
+    hi: 'पुरानी किताबों की महक',
+  },
+  "Aroma of festive sweets and savoury dishes": {
+    gu: 'તહેવારની મીઠાઈ અને વાનગીઓની સુગંધ',
+    pa: 'ਤਿਉਹਾਰ ਦੀਆਂ ਮਿਠਾਈਆਂ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'त्योहार की मिठाइयों और पकवानों की महक',
+  },
+  "Smell of your friend's house": {
+    gu: 'મિત્રના ઘરની સુગંધ',
+    pa: 'ਦੋਸਤ ਦੇ ਘਰ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'दोस्त के घर की महक',
+  },
+  "Smell of hard work": {
+    gu: 'પરિશ્રમ અને મહેનતની સુગંધ',
+    pa: 'ਮਿਹਨਤ ਅਤੇ ਮੁਸ਼ੱਕਤ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'कड़ी मेहनत की महक',
+  },
+  "Scent of a foreign city or campus": {
+    gu: 'પરદેશ કે કૉલેજ પરિસરની સુગંધ',
+    pa: 'ਨਵੇਂ ਸ਼ਹਿਰ ਜਾਂ ਕਾਲਜ ਦੀ ਮਹਿਕ',
+    hi: 'नए शहर या कॉलेज की महक',
+  },
+  "Smell of a hospital or unfamiliar place": {
+    gu: 'હૉસ્પિટલ કે અજાણી જગ્યાની ગંધ',
+    pa: 'ਹਸਪਤਾਲ ਜਾਂ ਅਣਜਾਣ ਥਾਂ ਦੀ ਖ਼ੁਸ਼બੂ',
+    hi: 'अस्पताल या अनजानी जगह की गंध',
+  },
+  "Smell of your favorite tea/coffee": {
+    gu: 'મનપસંદ ચા કે કૉફીની સુગંધ',
+    pa: 'ਮਨપਸੰਦ ਚਾਹ ਜਾਂ ਕੌਫ਼ੀ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'पसंदीदा चाय या कॉफ़ी की महक',
+  },
+  "The memory of a specific taste": {
+    gu: 'કોઈ ખાસ સ્વાદની સ્મૃતિ',
+    pa: 'ਕਿਸੇ ਖ਼ਾਸ સਵਾਦ ਦੀ ਯਾਦ',
+    hi: 'किसी ख़ास स्वाद की याद',
+  },
+  "Smell of incense or old books": {
+    gu: 'અગરબત્તી કે જૂના ધર્મગ્રંથોની સુગંધ',
+    pa: 'ਧੂਫ਼ ਜਾਂ ਪੁਰਾਣੇ ਗ੍ਰੰਥਾਂ ਦੀ ਮਹਿਕ',
+    hi: 'अगरबत्ती या पुरानी किताबों की महक',
+  },
+  "Smell of ink and stationary": {
+    gu: 'શાહી અને કાગળની સુગંધ',
+    pa: 'ਸਿਆਹੀ અને ਕਾਗ਼ਜ਼ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'स्याही और काग़ज़ की महक',
+  },
+  "Smell of the upcoming season": {
+    gu: 'આગામી ઋતુની તાજી સુગંધ',
+    pa: 'આਉਣ ਵਾਲੇ ਮੌਸਮ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'आने वाले मौसम की महक',
+  },
+  "Smell of a childhood home": {
+    gu: 'બાળપણના ઘરની સુગંધ',
+    pa: 'ਬਚਪਨ ਦੇ ਘਰ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'बचपन के घर की महक',
+  },
+  "Scent of your grandparents' home": {
+    gu: 'દાદા-દાદીના ઘરની સુગંધ',
+    pa: 'ਦਾਦਾ-ਦਾਦੀ ਦੇ ਘਰ ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'दादा-दादी के घर की महक',
+  },
+  "Smell of a holiday meal": {
+    gu: 'તહેવારના સ્વાદિષ્ટ ભોજનની સુગંધ',
+    pa: 'ਤਿਉਹਾਰ ਦੇ ਖાણે ਦੀ ਖ਼ੁਸ਼ਬੂ',
+    hi: 'त्योहार के भोजन की महक',
+  },
+  "Language spoken at dinner": {
+    gu: 'જમતી વેળાએ બોલાતી માતૃભાષા',
+    pa: 'ਰੋਟੀ ਵੇਲੇ ਬੋਲੀ ਜਾਂਦੀ ਮਾਂ ਬੋਲੀ',
+    hi: 'भोजन के समय बोली जाने वाली भाषा',
+  },
+  "Sounds from outside the window": {
+    gu: 'બારી બહારના અવાજો',
+    pa: 'ਬਾਰੀ ਬਾਹਰਲੀਆਂ ਆਵਾਜ਼ਾਂ',
+    hi: 'खिड़की के बाहर की आवाज़ें',
+  },
+  "Sounds of the playground": {
+    gu: 'મેદાનમાં બાળકોના અવાજો',
+    pa: 'ਮੈਦਾਨ ਦੀਆਂ ਆਵਾਜ਼ਾਂ',
+    hi: 'खेल के मैदान की आवाज़ें',
+  },
+  "Sound of celebration and family greetings": {
+    gu: 'ઉત્સવ અને આદરપૂર્વકના આવકારો',
+    pa: 'ਜਸ਼ਨ ਅਤੇ ਪਰਿਵਾਰਕ ਮਿਲਣੀਆਂ ਦੀਆਂ ਆਵਾਜ਼ਾਂ',
+    hi: 'उत्सव और पारिवारिक बधाइयों की आवाज़ें',
+  },
+  "A shared song or laugh": {
+    gu: 'સાથે ગાયેલું ગીત કે ખડખડાટ હાસ્ય',
+    pa: 'ਸਾਂਝਾ ਗੀਤ ਜਾਂ ਹਾਸਾ',
+    hi: 'साझा गीत या हँसी',
+  },
+  "The loudest sound you ignored": {
+    gu: 'અણગણ્યો કરેલો સૌથી મોટો અવાજ',
+    pa: 'ਸਭ ਤੋਂ ਉੱਚੀ ਆਵਾਜ਼ ਜਿਸਨੂੰ ਅਣਡਿੱਠ ਕੀਤਾ',
+    hi: 'अनसुनी की गई सबसे तेज़ आवाज़',
+  },
+  "The sound of the realization": {
+    gu: 'સત્ય સમજાયાનો આંતરિક નાદ',
+    pa: 'ਅਹਿਸਾਸ ਦੀ ਆਵਾਜ਼',
+    hi: 'सत्य के अहसास की आवाज़',
+  },
+  "The sudden silence or noise": {
+    gu: 'અચાનક છવાયેલી શાંતિ કે કોલાહલ',
+    pa: 'ਅਚਾਨਕ ਖ਼ਾਮੋਸ਼ੀ ਜਾਂ ਰੌਲਾ',
+    hi: 'अचानक छाई ख़ामोशी या शोर',
+  },
+  "The sound of their voice or laugh": {
+    gu: 'તેમનો મીઠો અવાજ કે હાસ્ય',
+    pa: 'ਉਹਨਾਂ ਦੀ ਆਵਾਜ਼ ਜਾਂ ਹਾਸਾ',
+    hi: 'उनकी आवाज़ या हँसी',
+  },
+  "The first cry": {
+    gu: 'નવજાત શિશુનું પ્રથમ રુદન',
+    pa: 'ਬੱਚੇ ਦਾ ਪਹਿਲਾ ਰੋਣਾ',
+    hi: 'नवजात का पहला रोना',
+  },
+  "The sound of chanting or silence": {
+    gu: 'મંત્રોચ્ચાર કે ગહન નીરવતા',
+    pa: 'ਮੰਤਰ ਜਾਪ ਜਾਂ ਸੰਨਾਟਾ',
+    hi: 'मंत्रोच्चार या गहरा सन्नाटा',
+  },
+  "The sound of giving advice": {
+    gu: 'સમજાવટ ભરેલો શાંત અવાજ',
+    pa: 'ਸਲਾਹ ਦੇਣ ਦੀ ਆਵਾਜ਼',
+    hi: 'सलाह देने की शांत आवाज़',
+  },
+  "The sound of a ticking clock": {
+    gu: 'ઘડિયાળના ટિક-ટિક અવાજો',
+    pa: 'ਘੜੀ ਦੀ ਟਿਕ-ਟਿਕ',
+    hi: 'घड़ी की टिक-टिक',
+  },
+  "The ambient noise of your sanctuary": {
+    gu: 'તમારા એકાંત ખંડનો શાંત અવાજ',
+    pa: 'ਸ਼ਾਂਤ ਥਾਂ ਦੀ ਹਲਕੀ ਆਵਾਜ਼',
+    hi: 'एकांत कमरे की हल्की आवाज़',
+  },
+  "The sound of your own breathing": {
+    gu: 'પોતાના જ શ્વાસોચ્છવાસનો અવાજ',
+    pa: 'ਆਪਣੇ ਸਾਹਾਂ ਦੀ ਆਵਾਜ਼',
+    hi: 'अपनी ही साँसों की आवाज़',
+  },
+  "The quiet sigh of relief": {
+    gu: 'રાહતનો શાંત નિસાસો',
+    pa: 'ਸੁੱਖ ਦਾ ਸਾਹ',
+    hi: 'राहत की शांत साँस',
+  },
+  "The sound of wind or an open road": {
+    gu: 'પવન કે ખુલ્લા રસ્તાનો સૂસવાટો',
+    pa: 'ਹਵਾ ਜਾਂ ਖੁੱਲ੍ਹੇ ਰਾਹ ਦੀ ਆਵਾਜ਼',
+    hi: 'हवा या खुली सड़क की आवाज़',
+  },
+  "The sound of a definitive statement": {
+    gu: 'દૃઢ નિર્ણયની મક્કમ વાણી',
+    pa: 'ਪੱਕੇ ਫ਼ੈਸਲੇ ਦੀ ਆਵਾਜ਼',
+    hi: 'दृढ़ निर्णय की स्पष्ट आवाज़',
+  },
+  "The sound of footsteps walking away": {
+    gu: 'દૂર જતાં પગલાંનો અવાજ',
+    pa: 'ਦੂਰ ਜਾਂਦੇ ਕਦਮਾਂ ਦੀ ਆਵਾਜ਼',
+    hi: 'दूर जाते कदमों की आवाज़',
+  },
+  "The sound of a flashback": {
+    gu: 'યાદોના ચમકારાનો અવાજ',
+    pa: 'ਪੁਰਾਣੀ ਯਾਦ ਦੀ ਗੂੰਜ',
+    hi: 'पुरानी यादों की गूंज',
+  },
+  "The sound of their stories": {
+    gu: 'વડીલોની વાર્તાઓની સ્મૃતિ',
+    pa: 'ਬਜ਼ੁਰਗਾਂ ਦੀਆਂ ਕਹਾਣੀਆਂ ਦੀ ਆਵਾਜ਼',
+    hi: 'बुजुर्गों की कहानियों की आवाज़',
+  },
+  "Sounds of a family gathering": {
+    gu: 'કૌટુંબિક મેળાવડાના ઉત્સાહી અવાજો',
+    pa: 'ਪਰਿਵਾਰਕ ਇਕੱਠ ਦੀਆਂ ਆਵਾਜ਼ਾਂ',
+    hi: 'पारिवारिक सम्मेलन की आवाज़ें',
+  },
+  "Sound of a news broadcast": {
+    gu: 'સમાચાર બુલેટિનનો ગંભીર અવાજ',
+    pa: 'ਖ਼ਬਰਾਂ ਦਾ ਗੰਭੀਰ ਬੁਲੇਟਿન',
+    hi: 'समाचार प्रसारण की गंभीर आवाज़',
+  },
+  "The tone of a stern lesson": {
+    gu: 'શિસ્તબદ્ધ શિખામણનો ગંભીર સૂર',
+    pa: 'ਸਖ਼ਤ ਸਬਕ ਦੀ ਆਵਾਜ਼',
+    hi: 'गंभीर सीख का गहरा स्वर',
+  },
+  "The legend of their voice": {
+    gu: 'તેમના અવાજની અમર ગૂંજ',
+    pa: 'ਉਹਨਾਂ ਦੀ ਅਮਰ ਆਵਾਜ਼',
+    hi: 'उनकी अमर आवाज़ की गूंज',
+  },
+  "The sound of you speaking to them": {
+    gu: 'તેમને સંબોધતા તમારા શબ્દો',
+    pa: 'ਉਹਨਾਂ ਨਾਲ ਗੱਲ ਕਰਦੇ ਤੁਹਾਡੇ ਬੋਲ',
+    hi: 'उन्हें संबोधित करते आपके शब्द',
+  },
+  "The dizzying feeling of remembering": {
+    gu: 'યાદોનો ગૂંચવાતો અહેસાસ',
+    pa: 'ਯਾਦਾਂ ਦਾ ਘੁੰਮਣਘੇਰ ਅਹਿਸਾਸ',
+    hi: 'यादों का गहरा अहसास',
+  },
+  "The look of an old photograph": {
+    gu: 'જૂની તસવીરનું દ્રશ્ય',
+    pa: 'ਪੁਰਾਣੀ ਤਸਵੀਰ ਦਾ ਰੂਪ',
+    hi: 'पुरानी तस्वीर का दृश्य',
+  },
+  "Glow of festive oil lamps or clothes": {
+    gu: 'દીવાઓ અને સુંદર વસ્ત્રોનો ચમકારો',
+    pa: 'ਦੀਵਿਆਂ ਅਤੇ ਸੋਹਣੇ ਕੱਪੜਿਆਂ ਦੀ ਚਮਕ',
+    hi: 'दीयों और सुंदर वस्त्रों की चमक',
+  },
+  "Texture of a family heirloom": {
+    gu: 'વારસાગત વસ્તુનો સ્પર્શ',
+    pa: 'ਖ਼ਾਨਦਾਨੀ ਨਿਸ਼ਾਨੀ ਦੀ ਛੋਹ',
+    hi: 'खानदानी निशानी का स्पर्श',
+  },
+  "Feeling of the front door handle": {
+    gu: 'મુખ્ય દરવાજાના હેન્ડલનો સ્પર્શ',
+    pa: 'ਮੁੱਖ ਦਰਵਾਜ਼ੇ ਦੇ ਕੁੰਡੇ ਦੀ ਛੋਹ',
+    hi: 'मुख्य द्वार के हैंडल का स्पर्श',
+  },
+  "Texture of your favourite toy": {
+    gu: 'મનપસંદ રમકડાંનો સ્પર્શ',
+    pa: 'ਮਨਪਸੰਦ ਖਿਡੌਣੇ ਦੀ ਛੋਹ',
+    hi: 'पसंदीदा खिलौने का स्पर्श',
+  },
+  "Feeling of walking side by side": {
+    gu: 'ખભે-ખભા મિલાવી ચાલવાનો અહેસાસ',
+    pa: 'ਨਾਲ-ਨਾਲ ਤੁਰਨ ਦਾ ਅਹਿਸਾਸ',
+    hi: 'कंधे से कंधा मिलाकर चलने का अहसास',
+  },
+  "The feeling of a familiar embrace": {
+    gu: 'સ્નેહભર્યા આલિંગનનો અહેસાસ',
+    pa: 'ਨਿੱਘੀ ਜੱਫੀ ਦਾ ਅਹਿਸਾਸ',
+    hi: 'स्नेह भरे आलिंगन का अहसास',
+  },
+  "The feeling of a warm smile": {
+    gu: 'હૃદયસ્પર્શી સ્મિતનો અહેસાસ',
+    pa: 'નਿੱਘી મુસકરાહਟ ਦਾ અਹਿસਾਸ',
+    hi: 'हृदयस्पर्शी मुस्कान का अहसास',
+  },
+  "The feeling of an unwritten page": {
+    gu: 'કોરા પાના જેવી અસીમ શક્યતાઓ',
+    pa: 'ਕੋਰੇ ਕਾਗ਼ਜ਼ ਵਰਗੀ ਨਵੀਂ ਸ਼ੁਰੂਆਤ',
+    hi: 'कोरे पन्ने जैसी असीम संभावनाएँ',
+  },
+  "The solid weight of conviction": {
+    gu: 'દૃઢ વિશ્વાસનું અડગ વજન',
+    pa: 'ਪੱਕੇ ઇરાਦੇ ਦਾ ਭਾਰ',
+    hi: 'दृढ़ विश्वास का अडिग वजन',
+  },
+  "The atmosphere on a historic day": {
+    gu: 'એતિહાસિક દિવસનું વાતાવરણ',
+    pa: 'ਇਤਿਹਾਸਕ ਦਿਨ ਦਾ ਮਾਹੌਲ',
+    hi: 'ऐतिहासिक दिन का वातावरण',
+  },
+  "The feeling of pride": {
+    gu: 'ગૌરવ અને સ્વાભિમાનનો અહેસાસ',
+    pa: 'ਮਾਣ અને ਫ਼ਖ਼ਰ ਦਾ ਅਹਿਸਾਸ',
+    hi: 'गर्व और स्वाभिमान का अहसास',
+  },
+  "The feeling of passing the torch": {
+    gu: 'નવી પેઢીને વારસો સોંપવાનો અહેસાસ',
+    pa: 'ਅਗਲੀ ਪੀੜ੍ਹੀ ਨੂੰ ਜ਼ਿੰਮੇਵਾਰੀ ਸੌਂਪਣ ਦਾ ਅਹਿસਾਸ',
+    hi: 'नई पीढ़ी को जिम्मेदारी सौंपने का अहसास',
+  },
+};
+
+const SENSORY_STARTERS: Record<SensoryModalityType, Record<FiresideLanguage, string>> = {
+  soundscape: {
+    en: 'I can still hear the sound of ',
+    gu: 'મને હજુ પણ તે અવાજ સંભળાય છે: ',
+    pa: 'ਮੈਨੂੰ ਅਜੇ ਵੀ ਉਹ ਆਵਾਜ਼ ਸੁਣਦੀ ਹੈ: ',
+    hi: 'मुझे अभी भी वह आवाज़ सुनाई देती है: ',
+  },
+  aroma: {
+    en: 'The aroma that takes me straight back is ',
+    gu: 'મને તે સમયની સુગંધ યાદ આવે છે: ',
+    pa: 'ਉਹ ਖ਼ੁਸ਼ਬੂ ਜੋ ਮੈਨੂੰ ਸਿੱਧਾ ਉਸ ਵੇਲੇ ਵਿੱਚ ਲੈ ਜਾਂਦੀ ਹੈ: ',
+    hi: 'वह महक जो मुझे सीधे उस पल में ले जाती है: ',
+  },
+  visual: {
+    en: 'When I picture that moment, I vividly see ',
+    gu: 'જ્યારે હું તે ક્ષણને યાદ કરું છું, ત્યારે મને સ્પષ્ટ દેખાય છે: ',
+    pa: 'ਜਦੋਂ ਮੈਂ ਉਸ ਪਲ ਨੂੰ ਯਾਦ ਕਰਦਾ ਹਾਂ, ਮੈਨੂੰ ਸਾਫ਼ ਦਿਸਦਾ ਹੈ: ',
+    hi: 'जब मैं उस पल को याद करता हूँ, मुझे साफ़ दिखता है: ',
+  },
+  touch: {
+    en: 'Looking back, what stays with me most is ',
+    gu: 'પાછળ જોતાં, મને સૌથી વધુ સ્પર્શી જાય છે કે ',
+    pa: 'ਪਿੱਛੇ ਦੇਖਦਿਆਂ, ਮੇਰੇ ਦਿਲ ਵਿੱਚ ਸਭ ਤੋਂ ਵੱਧ ਵੱਸਿਆ ਹੈ ਕਿ ',
+    hi: 'पीछे मुड़कर देखने पर, मेरे दिल को सबसे ज्यादा छू जाता है कि ',
+  },
+};
+
+function categorizeModality(label: string): { type: SensoryModalityType; icon: 'audio' | 'visual' | 'aroma' | 'touch' } {
+  const l = label.toLowerCase();
+  if (
+    l.includes('sound') ||
+    l.includes('voice') ||
+    l.includes('song') ||
+    l.includes('language') ||
+    l.includes('laughter') ||
+    l.includes('laugh') ||
+    l.includes('broadcast') ||
+    l.includes('radio') ||
+    l.includes('audio') ||
+    l.includes('sigh') ||
+    l.includes('footsteps') ||
+    l.includes('speaking') ||
+    l.includes('bell') ||
+    l.includes('flashback') ||
+    l.includes('advice') ||
+    l.includes('statement') ||
+    l.includes('cry')
+  ) {
+    return { type: 'soundscape', icon: 'audio' };
+  }
+  if (
+    l.includes('smell') ||
+    l.includes('scent') ||
+    l.includes('aroma') ||
+    l.includes('taste') ||
+    l.includes('spices') ||
+    l.includes('flavour') ||
+    l.includes('cooking') ||
+    l.includes('meal') ||
+    l.includes('baking') ||
+    l.includes('tea') ||
+    l.includes('food')
+  ) {
+    return { type: 'aroma', icon: 'aroma' };
+  }
+  if (
+    l.includes('look') ||
+    l.includes('glow') ||
+    l.includes('light') ||
+    l.includes('photograph') ||
+    l.includes('picture') ||
+    l.includes('sight') ||
+    l.includes('eyes') ||
+    l.includes('stare') ||
+    l.includes('sepia') ||
+    l.includes('colour') ||
+    l.includes('mirror') ||
+    l.includes('view') ||
+    l.includes('needle') ||
+    l.includes('compass')
+  ) {
+    return { type: 'visual', icon: 'visual' };
+  }
+  return { type: 'touch', icon: 'touch' };
+}
+
+/**
+ * Resolves 2-3 canonical sensory seeds for any prompt spark (UX-MW-131)
+ */
+export function getSensorySeedsForSpark(
+  spark: FiresidePromptSpark,
+  _language?: FiresideLanguage
+): FiresideSensorySeed[] {
+  const linkedScene = spark.linkedSceneId ? getSceneById(spark.linkedSceneId) : undefined;
+  const promptId = linkedScene ? linkedScene.promptId : spark.id;
+
+  let matchedSensoryPrompts: Array<{ id: string; label: string; placeholder: string }> = [];
+
+  for (const group of mockPromptGroups) {
+    const found = group.prompts.find((p) => p.id === promptId || p.id === spark.id);
+    if (found && found.sensoryPrompts && found.sensoryPrompts.length > 0) {
+      matchedSensoryPrompts = found.sensoryPrompts;
+      break;
+    }
+  }
+
+  if (matchedSensoryPrompts.length === 0) {
+    // Graceful fallback for custom or unmapped prompts
+    return [
+      {
+        id: 'fallback_soundscape',
+        type: 'soundscape',
+        icon: 'audio',
+        label: {
+          en: 'Voices & Ambient Sounds',
+          gu: 'અવાજ અને વાતાવરણ',
+          pa: 'ਆਵਾਜ਼ਾਂ ਅਤੇ ਮਾਹੌਲ',
+          hi: 'आवाज़ें और माहौल',
+        },
+        sentenceStarter: SENSORY_STARTERS.soundscape,
+        examplePlaceholder: 'e.g. Distant voices, ticking clock, music...',
+      },
+      {
+        id: 'fallback_aroma',
+        type: 'aroma',
+        icon: 'aroma',
+        label: {
+          en: 'Aroma of the Morning or Season',
+          gu: 'સુગંધ અને સ્વાદ',
+          pa: 'ਖ਼ੁਸ਼બੂ ਅਤੇ ਸਵਾદ',
+          hi: 'महक और स्वाद',
+        },
+        sentenceStarter: SENSORY_STARTERS.aroma,
+        examplePlaceholder: 'e.g. Cardamom tea, morning rain, incense...',
+      },
+      {
+        id: 'fallback_visual',
+        type: 'visual',
+        icon: 'visual',
+        label: {
+          en: 'Atmosphere & Vivid Memory',
+          gu: 'દ્રશ્ય વાતાવરણ અને સ્મૃતિ',
+          pa: 'દ੍ਰਿਸ਼ਟੀ ਮਾਹੌਲ ਅਤੇ ਯਾਦ',
+          hi: 'दृश्य वातावरण और याद',
+        },
+        sentenceStarter: SENSORY_STARTERS.visual,
+        examplePlaceholder: 'e.g. Golden morning light, an open doorstep...',
+      },
+    ];
+  }
+
+  return matchedSensoryPrompts.map((sp) => {
+    const { type, icon } = categorizeModality(sp.label);
+    const dict = SENSORY_SEED_DICTIONARY[sp.label];
+    return {
+      id: sp.id,
+      type,
+      icon,
+      label: {
+        en: sp.label,
+        gu: dict?.gu || sp.label,
+        pa: dict?.pa || sp.label,
+        hi: dict?.hi || sp.label,
+      },
+      sentenceStarter: SENSORY_STARTERS[type],
+      examplePlaceholder: sp.placeholder,
+    };
+  });
+}
+

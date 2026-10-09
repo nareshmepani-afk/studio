@@ -1168,4 +1168,54 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `npx.cmd tsc --noEmit`: 0 errors.
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
 
+---
+
+## Checkpoint #050 — QA-MW-128: Master QA Template 9-Zone Standard & In-Flight Punch-List Engine (2026-10-09)
+
+- **Target Ref**: `QA-MW-128` (Master QA Template 9-Zone Standard & In-Flight Punch-List Engine)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Commit SHA**: `1df4fed6` (Edge: `1df4fed`)
+- **Architectural & Governance Deliverables**:
+  - **Master Checklist Generator Template (`scripts/generate_qa_checklist.js`)**:
+    - Baked Zone 5 **`🥊 In-Flight Punch-List Resolutions`** container (`#punchlist-container-N`) with amber glow styling directly into the HTML test card synthesiser.
+    - Added interactive `+ Add Fix` input bar (`#punchlist-new-input-N`), Enter-key submission handler, toggleable verification checkboxes (`togglePunchListItem`), and removal triggers (`removePunchListItem`).
+    - Engineered `state.punchLists` persistence in browser `localStorage` across reloads and cross-commit migrations.
+    - Integrated punch-list entries into both single-test copy (`[ 📋 Copy Test N ]`) and suite-level Markdown reports (`[ 📋 Copy Markdown Report ]`).
+  - **Template Regression Shield (`src/test/qa_template.test.ts`)**:
+    - Added unit test suite asserting punch-list DOM structure, controls, and config pre-population (12/12 passing).
+  - **Architectural Standard Codification (`.agents/AGENTS.md`)**:
+    - Upgraded Rule 30 from 8-Zone to **Mandatory 9-Zone Test Card Architecture**.
+    - Formally codified **Section 30.5: In-Flight Punch-List Resolution Protocol & Micro-Defect Triage** allowing rapid resolution of micro-defects during staging sweeps without premature backlog deferral.
+- **Verification**:
+  - Full Vitest Regression Suite: 59 files, 759/759 tests passing.
+  - Local Production Build Gate: `npm.cmd run build` compiled 46 routes with exit code 0.
+  - Live Staging Edge Verification Gate (Rule 5): `https://dev.memoryweaver.studio/api/version` confirmed active `commitSha: "1df4fed"`.
+
+---
+
+## Checkpoint #051 — UX-MW-131: Fireside Inspiration Deck Decoupling & Dedicated Sensory Seeds Tray (2026-10-09)
+
+- **Target Ref**: `UX-MW-131` (Fireside Inspiration Deck Decoupling & Dedicated Sensory Seeds Tray)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Architectural & Governance Deliverables**:
+  - **Sensory Seeds Architecture (`src/lib/firesidePrompts.ts`)**:
+    - Decoupled sensory prompt cues from plain string questions into rich canonical sensory seeds (`getSensorySeedsForSpark`).
+    - Added modality mappings (`sound`, `scent`, `visual`, `tactile`, `taste`) resolving across Gujarati, Punjabi, and Hindi dictionaries.
+    - Implemented click-to-inspire sentence starter generators (`SENSORY_STARTERS`) providing localized prompts on seed selection.
+  - **Inspiration Deck Decoupling & Live Cue Illumination (`src/components/fireside/SingleCardPromptCarousel.tsx`)**:
+    - Decoupled prompt spark question from `<textarea>` placeholder into a dedicated, persistent Inspiration Deck card (`[ 💡 BRAINSTORM SPARK / વિચાર બિંદુ ]`) with subtle ambient amber ring glow (`ring-1 ring-amber-400/30 bg-amber-500/10 text-amber-300`).
+    - Engineered persistent bilingual language switcher (`EN`, `GU`, `PA`, `HI`) directly in the Inspiration Deck card allowing real-time translation toggling without wiping in-progress user prose.
+    - Integrated dedicated Sensory Seeds tray (`[ 🌿 SENSORY SEEDS (સંવેદનાત્મક પ્રેરણા) ]`) rendering tactile chips with click-to-inspire starter insertion when editor is empty.
+    - Clarified `<textarea>` placeholder to an unambiguous action call (`"✍️ Type or speak your personal memory here..." / "✍️ તમારી અંગત યાદો અહીં લખો અથવા બોલો..."`).
+    - Upgraded sensory evaluation pipeline to compute against `draftProse` during active drafting (`sensoryEvaluationText = isEditingScript ? draftProse : activeProse`), illuminating live sensory counters in real time.
+  - **Automated Regression Shield (`src/test/fireside_prompt_carousel.test.tsx`)**:
+    - Added 5 comprehensive regression tests covering inspiration deck persistence during drafting, sensory seed chips rendering, click-to-inspire starter insertion, bilingual switching without prose destruction, and live sensory counter illumination (19/19 passing).
+  - **Interactive QA Verification Suite (`qa_checklist_interactive.html`)**:
+    - Registered Card 50 under Fireside ergonomics route group with dedicated launch buttons, 7-point verification checklist, in-flight punch-list engine, and updated `TOTAL = 50`.
+- **Verification**:
+  - Unit Tests: 19/19 in `fireside_prompt_carousel.test.tsx`, 71/71 in `fireside_sync.test.ts`, 12/12 in `qa_template.test.ts` (all passing).
+  - Local Production Build Gate (Rule 5): `npm.cmd run build` compiled all 46 routes with exit code 0.
+
+
+
 

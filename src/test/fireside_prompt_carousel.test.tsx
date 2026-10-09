@@ -348,5 +348,115 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       playSpy.mockRestore();
     });
   });
+
+  describe('3. UX-MW-131: Inspiration Deck Decoupling & Sensory Seeds Tray', () => {
+    it('renders decoupled Inspiration Deck card with persistent prompt question and Sensory Seeds tray on empty scene', () => {
+      render(<SingleCardPromptCarousel mediaMode="audio" />);
+
+      // Inspiration Deck Card & Brainstorm Badge
+      expect(screen.getByTestId('fireside-inspiration-deck-card')).toBeInTheDocument();
+      expect(screen.getByTestId('fireside-brainstorm-spark-badge')).toHaveTextContent(/BRAINSTORM SPARK/i);
+      expect(screen.getByTestId('fireside-prompt-spark-body')).toBeInTheDocument();
+
+      // Sensory Seeds Tray & Chips
+      expect(screen.getByTestId('fireside-sensory-seeds-tray')).toBeInTheDocument();
+      expect(screen.getByTestId('fireside-sensory-seeds-header')).toHaveTextContent(/SENSORY SEEDS/i);
+      expect(screen.getByTestId('fireside-sensory-seeds-chips')).toBeInTheDocument();
+      expect(screen.getByTestId('fireside-sensory-seed-chip-sense1')).toBeInTheDocument();
+      expect(screen.getByTestId('fireside-sensory-seed-chip-sense2')).toBeInTheDocument();
+      expect(screen.getByTestId('fireside-sensory-seed-chip-sense3')).toBeInTheDocument();
+    });
+
+    it('keeps the Inspiration Deck and prompt question persistently mounted while typing in the script editor', () => {
+      render(<SingleCardPromptCarousel mediaMode="audio" />);
+
+      // Enter armchair script editor
+      const editBtn = screen.getByTestId('HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN');
+      fireEvent.click(editBtn);
+
+      expect(screen.getByTestId('fireside-armchair-script-editor')).toBeInTheDocument();
+
+      // Inspiration Deck remains persistently mounted above the editor
+      expect(screen.getByTestId('fireside-inspiration-deck-card')).toBeInTheDocument();
+      const promptSparkEl = screen.getByTestId('fireside-inspiration-deck-prompt');
+      expect(promptSparkEl).toHaveTextContent(/What stories did your grandparents share/i);
+
+      // Textarea has unambiguous call-to-action placeholder (not the prompt spark!)
+      const textarea = screen.getByTestId('HS_FIRESIDE_SCRIPT_TEXTAREA') as HTMLTextAreaElement;
+      expect(textarea.placeholder).toContain('Type or speak your personal memory here');
+      expect(textarea.placeholder).not.toEqual(promptSparkEl.textContent?.replace(/[“”"]/g, ''));
+
+      // Narrator types their memory
+      fireEvent.change(textarea, {
+        target: { value: 'Looking back forty years ago, my grandfather carried a bronze compass.' },
+      });
+      expect(textarea.value).toBe('Looking back forty years ago, my grandfather carried a bronze compass.');
+
+      // The prompt spark question REMAINS mounted and visible in the Inspiration Deck!
+      expect(screen.getByTestId('fireside-inspiration-deck-prompt')).toHaveTextContent(
+        /What stories did your grandparents share/i
+      );
+    });
+
+    it('appends sentence starter into textarea when sensory seed chip is tapped (Click-to-Inspire)', () => {
+      render(<SingleCardPromptCarousel mediaMode="audio" />);
+
+      // Click a sensory seed chip directly from unwritten state
+      const seedChip = screen.getByTestId('fireside-sensory-seed-chip-sense1');
+      fireEvent.click(seedChip);
+
+      // Automatically transitions to editor with sentence starter populated
+      expect(screen.getByTestId('fireside-armchair-script-editor')).toBeInTheDocument();
+      const textarea = screen.getByTestId('HS_FIRESIDE_SCRIPT_TEXTAREA') as HTMLTextAreaElement;
+      expect(textarea.value.length).toBeGreaterThan(5);
+    });
+
+    it('dynamically updates live sensory anchor counters as matching words are typed', () => {
+      render(<SingleCardPromptCarousel mediaMode="audio" />);
+
+      const editBtn = screen.getByTestId('HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN');
+      fireEvent.click(editBtn);
+
+      const textarea = screen.getByTestId('HS_FIRESIDE_SCRIPT_TEXTAREA') as HTMLTextAreaElement;
+      expect(screen.getByTestId('fireside-live-sensory-counters')).toBeInTheDocument();
+
+      // Type text containing aroma and soundscape words
+      fireEvent.change(textarea, {
+        target: {
+          value: 'I remember the kitchen spices and the sound of my mother whistling in the morning.',
+        },
+      });
+
+      const liveCounters = screen.getByTestId('fireside-live-sensory-counters');
+      expect(liveCounters).toHaveTextContent(/Soundscape/i);
+      expect(liveCounters).toHaveTextContent(/Aroma/i);
+    });
+
+    it('allows persistent bilingual toggle in Inspiration Deck without erasing narrator draft text', () => {
+      render(<SingleCardPromptCarousel mediaMode="audio" />);
+
+      const editBtn = screen.getByTestId('HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN');
+      fireEvent.click(editBtn);
+
+      const textarea = screen.getByTestId('HS_FIRESIDE_SCRIPT_TEXTAREA') as HTMLTextAreaElement;
+      fireEvent.change(textarea, {
+        target: { value: 'Drafting my precious memories in English.' },
+      });
+      expect(textarea.value).toBe('Drafting my precious memories in English.');
+
+      // Switch language to Gujarati using the Inspiration Deck's language switcher
+      const guBtn = screen.getByRole('button', { name: /Switch prompt card language to ગુજરાતી/i });
+      fireEvent.click(guBtn);
+
+      // Textarea draft remains intact!
+      expect(textarea.value).toBe('Drafting my precious memories in English.');
+
+      // Inspiration deck now renders Gujarati question
+      expect(screen.getByTestId('fireside-inspiration-deck-prompt')).toHaveTextContent(
+        /તમારા વડીલો કે દાદા-દાદીએ/i
+      );
+    });
+  });
 });
+
 

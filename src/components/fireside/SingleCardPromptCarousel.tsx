@@ -45,7 +45,12 @@ import type {
   FiresideMediaMode,
 } from '@/types/fireside';
 import { FIRESIDE_LANGUAGE_LABELS, FIRESIDE_TOUCH_TARGETS } from '@/types/fireside';
-import { FIRESIDE_PROMPT_SPARKS, getRandomPrompt } from '@/lib/firesidePrompts';
+import {
+  FIRESIDE_PROMPT_SPARKS,
+  getRandomPrompt,
+  getSensorySeedsForSpark,
+  type FiresideSensorySeed,
+} from '@/lib/firesidePrompts';
 import { getSceneById, getPartForScene } from '@/lib/curriculum/masterStoryStructure';
 import type { EditingAuthority, UnifiedCurriculumMemory } from '@/types/curriculum';
 import { isSceneCompleted } from '@/types/curriculum';
@@ -436,11 +441,12 @@ export function SingleCardPromptCarousel({
     }
   };
 
-  // UNIFIED SENSORY ANCHOR PIPELINE (Identical to MemoryForm.tsx — MW-88-T8 & MW-88-T9):
+  // UNIFIED SENSORY ANCHOR PIPELINE (Identical to MemoryForm.tsx — MW-88-T8 & MW-88-T9 & UX-MW-131 Live Cue Detection):
+  const sensoryEvaluationText = isEditingScript ? draftProse : activeProse;
   const rawDetectedAnchors = useMemo(() => {
-    if (!activeProse) return [];
-    return detectSensoryAnchors(activeProse);
-  }, [activeProse]);
+    if (!sensoryEvaluationText) return [];
+    return detectSensoryAnchors(sensoryEvaluationText);
+  }, [sensoryEvaluationText]);
 
   const sensoryCounts = useMemo(() => {
     if (!rawDetectedAnchors.length) return { soundscape: 0, visual: 0, aroma: 0 };
@@ -456,6 +462,71 @@ export function SingleCardPromptCarousel({
       aroma: aromaCount,
     };
   }, [rawDetectedAnchors]);
+
+  // Canonical Sensory Seeds for the active spark (UX-MW-131)
+  const sensorySeeds: FiresideSensorySeed[] = useMemo(() => {
+    return getSensorySeedsForSpark(currentSpark);
+  }, [currentSpark]);
+
+  const brainstormBadgeText = useMemo(() => {
+    switch (currentLanguage) {
+      case 'gu':
+        return '💡 BRAINSTORM SPARK / વિચાર બિંદુ';
+      case 'pa':
+        return '💡 BRAINSTORM SPARK / ਵਿਚਾਰ ਬਿੰਦੂ';
+      case 'hi':
+        return '💡 BRAINSTORM SPARK / विचार बिंदु';
+      case 'en':
+      default:
+        return '💡 BRAINSTORM SPARK';
+    }
+  }, [currentLanguage]);
+
+  const sensorySeedsTrayLabel = useMemo(() => {
+    switch (currentLanguage) {
+      case 'gu':
+        return '🌿 SENSORY SEEDS (સંવેદનાત્મક પ્રેરણા)';
+      case 'pa':
+        return '🌿 SENSORY SEEDS (ਸੰਵੇਦੀ ਪ੍ਰੇਰਣਾ)';
+      case 'hi':
+        return '🌿 SENSORY SEEDS (संवेदी प्रेरणा)';
+      case 'en':
+      default:
+        return '🌿 SENSORY SEEDS';
+    }
+  }, [currentLanguage]);
+
+  const textareaPlaceholder = useMemo(() => {
+    switch (currentLanguage) {
+      case 'gu':
+        return "✍️ તમારી અંગત યાદો અહીં લખો અથવા બોલો... (દા.ત. 'ચાળીસ વર્ષ પહેલાંની વાત યાદ કરતાં, મને સૌથી વધુ સ્પર્શી જાય છે કે...')";
+      case 'pa':
+        return "✍️ ਆਪਣੀਆਂ ਨਿੱਜੀ ਯਾਦਾਂ ਇੱਥੇ ਲਿਖੋ ਜਾਂ ਬੋਲੋ... (ਉਦਾਹਰਣ ਵਜੋਂ 'ਚਾਲੀ ਸਾਲ ਪਹਿਲਾਂ ਦੀ ਗੱਲ ਯਾਦ ਕਰਦਿਆਂ, ਮੇਰੇ ਦਿਲ ਵਿੱਚ ਵੱਸਿਆ ਹੈ ਕਿ...')";
+      case 'hi':
+        return "✍️ अपनी व्यक्तिगत यादें यहाँ लिखें या बोलें... (जैसे 'चालीस साल पहले की बात याद करते हुए, मुझे सबसे ज्यादा याद आता है कि...')";
+      case 'en':
+      default:
+        return "✍️ Type or speak your personal memory here... (e.g. 'Looking back forty years ago, what stays with me most is...')";
+    }
+  }, [currentLanguage]);
+
+  const handleApplySensorySeed = (seed: FiresideSensorySeed) => {
+    const starter = seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en;
+    if (!isEditingScript) {
+      setIsEditingScript(true);
+      setDraftProse(starter);
+      setOriginalScriptDraft(null);
+      setIsScriptPolished(false);
+    } else {
+      if (!draftProse.trim()) {
+        setDraftProse(starter);
+      } else {
+        setDraftProse((prev) => `${prev.trim()}\n\n${starter}`);
+      }
+    }
+    const seedLabel = seed.label[currentLanguage] || seed.label.en;
+    toast.info(`Sensory seed added: ${seedLabel}`);
+  };
 
   const handleToggleSensoryPulse = (type: 'soundscape' | 'visual' | 'aroma') => {
     setHighlightedSensoryType((prev) => (prev === type ? null : type));
@@ -1245,21 +1316,160 @@ export function SingleCardPromptCarousel({
                 </div>
               )}
 
-              {/* Live Act I Prose Rendering, Armchair Script Editor & Sensory Modality Counters (MW-88-T4 / MW-88-T7 / MW-88-T9 / Rule 14) */}
+              {/* Live Act I Prose Rendering, Armchair Script Editor & Sensory Modality Counters (MW-88-T4 / MW-88-T7 / MW-88-T9 / Rule 14 / UX-MW-131) */}
               {isEditingScript ? (
                 <div
                   data-testid="fireside-armchair-script-editor"
-                  className="space-y-3 p-4 rounded-2xl bg-black/55 border border-amber-500/40"
+                  className="space-y-3.5 p-4 rounded-2xl bg-black/55 border border-amber-500/40"
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold">
-                      ARMCHAIR SCRIPT EDITOR
-                    </p>
-                    <p className="text-xs text-stone-300 leading-relaxed">
-                      Changes made here sync automatically to your Desktop Studio.
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold">
+                        ARMCHAIR SCRIPT EDITOR
+                      </p>
+                      <p className="text-xs text-stone-300 leading-relaxed">
+                        Changes made here sync automatically to your Desktop Studio.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 1. Dedicated Persistent Inspiration Deck Card (UX-MW-131) */}
+                  <div
+                    data-testid="fireside-inspiration-deck-card"
+                    className="p-3.5 rounded-xl bg-stone-950/80 border border-amber-500/30 shadow-md space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span
+                          data-testid="fireside-brainstorm-spark-badge"
+                          className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30 ring-1 ring-amber-400/30 shadow-sm flex items-center gap-1.5"
+                        >
+                          <span>💡</span>
+                          <span>{brainstormBadgeText}</span>
+                        </span>
+                        {linkedScene && (
+                          <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-stone-900 border border-white/10 text-neutral-400">
+                            Scene {linkedScene.sceneNumber} • {linkedScene.partTitle.split(':')[0]}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Persistent Bilingual Language Switcher for Inspiration Deck */}
+                      <div className="flex items-center gap-1" data-testid="fireside-inspiration-lang-switcher">
+                        {(['en', 'gu', 'pa', 'hi'] as FiresideLanguage[]).map((lang) => {
+                          const isCurrent = currentLanguage === lang;
+                          return (
+                            <button
+                              key={lang}
+                              type="button"
+                              data-testid={`fireside-inspiration-lang-${lang}`}
+                              aria-label={`Switch prompt card language to ${FIRESIDE_LANGUAGE_LABELS[lang]}`}
+                              onClick={() => handleLanguageSelect(lang)}
+                              className={`min-h-[32px] px-2 py-0.5 rounded-md text-[11px] font-mono font-medium transition-all cursor-pointer border ${
+                                isCurrent
+                                  ? 'bg-amber-500/25 text-amber-200 border-amber-400 font-bold ring-1 ring-amber-400/40'
+                                  : 'bg-white/5 text-neutral-400 border-white/10 hover:text-white'
+                              }`}
+                              title={`Switch prompt card language to ${FIRESIDE_LANGUAGE_LABELS[lang]}`}
+                            >
+                              {lang.toUpperCase()}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <p
+                      data-testid="fireside-inspiration-deck-prompt"
+                      className="text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
+                    >
+                      &ldquo;{currentText}&rdquo;
                     </p>
                   </div>
+
+                  {/* 2. Dedicated Sensory Seeds Tray (UX-MW-131) */}
+                  <div
+                    data-testid="fireside-sensory-seeds-tray"
+                    className="p-3 rounded-xl bg-stone-900/60 border border-emerald-500/25 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        data-testid="fireside-sensory-seeds-header"
+                        className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5"
+                      >
+                        <span>🌿</span>
+                        <span>{sensorySeedsTrayLabel}</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-stone-400">
+                        Tap seed to inspire story starter
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap" data-testid="fireside-sensory-seeds-chips">
+                      {sensorySeeds.map((seed) => {
+                        const chipIcon =
+                          seed.icon === 'audio' ? '👂' : seed.icon === 'aroma' ? '☕' : seed.icon === 'visual' ? '👁️' : '🌿';
+                        const chipLabel = seed.label[currentLanguage] || seed.label.en;
+                        return (
+                          <button
+                            key={seed.id}
+                            type="button"
+                            data-testid={`fireside-sensory-seed-chip-${seed.id}`}
+                            onClick={() => handleApplySensorySeed(seed)}
+                            title={`Click to inspire: Append starter "${seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en}..."`}
+                            className="min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-98 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                          >
+                            <span className="text-sm">{chipIcon}</span>
+                            <span className="font-semibold">{chipLabel}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Live Sensory Modality Counters during editing (UX-MW-131 Live Cue Detection) */}
+                  <div
+                    data-testid="fireside-live-sensory-counters"
+                    className="flex items-center gap-2 flex-wrap pt-0.5 text-xs font-mono text-stone-300"
+                  >
+                    <span className="text-[11px] uppercase tracking-wider text-amber-400 font-bold flex items-center gap-1">
+                      <span>✨</span> Live Sensory Anchors:
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono flex items-center gap-1 transition-all ${
+                          sensoryCounts.soundscape > 0
+                            ? 'bg-sky-500/20 text-sky-200 border-sky-400/50 ring-1 ring-sky-400/30 font-bold'
+                            : 'bg-white/5 text-stone-400 border-white/10'
+                        }`}
+                      >
+                        <Headphones className="w-3 h-3 text-sky-400" />
+                        Soundscape ({sensoryCounts.soundscape})
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono flex items-center gap-1 transition-all ${
+                          sensoryCounts.visual > 0
+                            ? 'bg-emerald-500/20 text-emerald-200 border-emerald-400/50 ring-1 ring-emerald-400/30 font-bold'
+                            : 'bg-white/5 text-stone-400 border-white/10'
+                        }`}
+                      >
+                        <Eye className="w-3 h-3 text-emerald-400" />
+                        Visual ({sensoryCounts.visual})
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-lg border text-[11px] font-mono flex items-center gap-1 transition-all ${
+                          sensoryCounts.aroma > 0
+                            ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 ring-1 ring-amber-400/30 font-bold'
+                            : 'bg-white/5 text-stone-400 border-white/10'
+                        }`}
+                      >
+                        <Coffee className="w-3 h-3 text-amber-400" />
+                        Aroma ({sensoryCounts.aroma})
+                      </span>
+                    </span>
+                  </div>
+
                   <textarea
                     data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"
                     value={draftProse}
@@ -1270,7 +1480,7 @@ export function SingleCardPromptCarousel({
                       }
                     }}
                     rows={5}
-                    placeholder={currentText}
+                    placeholder={textareaPlaceholder}
                     spellCheck={true}
                     autoCorrect="on"
                     autoCapitalize="sentences"
@@ -1437,38 +1647,194 @@ export function SingleCardPromptCarousel({
                   )}
 
                   {viewMode === 'script' ? (
-                    <div
-                      data-testid="fireside-active-script-body"
-                      className="text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200 max-h-56 overflow-y-auto pr-1"
-                    >
-                      &ldquo;{renderedScriptContent}&rdquo;
+                    <div className="space-y-3">
+                      <div
+                        data-testid="fireside-active-script-body"
+                        className="text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200 max-h-56 overflow-y-auto pr-1"
+                      >
+                        &ldquo;{renderedScriptContent}&rdquo;
+                      </div>
+
+                      {/* Sensory Seeds Tray for easy inspiration */}
+                      <div
+                        data-testid="fireside-sensory-seeds-tray"
+                        className="p-3 rounded-xl bg-stone-900/40 border border-emerald-500/25 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            data-testid="fireside-sensory-seeds-header"
+                            className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5"
+                          >
+                            <span>🌿</span>
+                            <span>{sensorySeedsTrayLabel}</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-stone-400">
+                            Tap seed to add starter
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap" data-testid="fireside-sensory-seeds-chips">
+                          {sensorySeeds.map((seed) => {
+                            const chipIcon =
+                              seed.icon === 'audio' ? '👂' : seed.icon === 'aroma' ? '☕' : seed.icon === 'visual' ? '👁️' : '🌿';
+                            const chipLabel = seed.label[currentLanguage] || seed.label.en;
+                            return (
+                              <button
+                                key={seed.id}
+                                type="button"
+                                data-testid={`fireside-sensory-seed-chip-${seed.id}`}
+                                onClick={() => handleApplySensorySeed(seed)}
+                                title={`Click to inspire: Append starter "${seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en}..."`}
+                                className="min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-98 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                              >
+                                <span className="text-sm">{chipIcon}</span>
+                                <span className="font-semibold">{chipLabel}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <p
-                      data-testid="fireside-prompt-spark-body"
-                      className="text-lg sm:text-xl font-serif text-stone-200 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
-                    >
-                      &ldquo;{currentText}&rdquo;
-                    </p>
+                    <div className="space-y-3">
+                      {/* Persistent Inspiration Deck Card */}
+                      <div
+                        data-testid="fireside-inspiration-deck-card"
+                        className="p-3.5 rounded-xl bg-stone-950/80 border border-amber-500/30 shadow-md space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span
+                            data-testid="fireside-brainstorm-spark-badge"
+                            className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30 ring-1 ring-amber-400/30 shadow-sm flex items-center gap-1.5"
+                          >
+                            <span>💡</span>
+                            <span>{brainstormBadgeText}</span>
+                          </span>
+                        </div>
+                        <p
+                          data-testid="fireside-prompt-spark-body"
+                          className="text-lg sm:text-xl font-serif text-stone-200 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
+                        >
+                          &ldquo;{currentText}&rdquo;
+                        </p>
+                      </div>
+
+                      {/* Sensory Seeds Tray */}
+                      <div
+                        data-testid="fireside-sensory-seeds-tray"
+                        className="p-3 rounded-xl bg-stone-900/40 border border-emerald-500/25 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            data-testid="fireside-sensory-seeds-header"
+                            className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5"
+                          >
+                            <span>🌿</span>
+                            <span>{sensorySeedsTrayLabel}</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-stone-400">
+                            Tap seed to add starter
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap" data-testid="fireside-sensory-seeds-chips">
+                          {sensorySeeds.map((seed) => {
+                            const chipIcon =
+                              seed.icon === 'audio' ? '👂' : seed.icon === 'aroma' ? '☕' : seed.icon === 'visual' ? '👁️' : '🌿';
+                            const chipLabel = seed.label[currentLanguage] || seed.label.en;
+                            return (
+                              <button
+                                key={seed.id}
+                                type="button"
+                                data-testid={`fireside-sensory-seed-chip-${seed.id}`}
+                                onClick={() => handleApplySensorySeed(seed)}
+                                title={`Click to inspire: Append starter "${seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en}..."`}
+                                className="min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-98 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                              >
+                                <span className="text-sm">{chipIcon}</span>
+                                <span className="font-semibold">{chipLabel}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (
+                /* Unwritten Story Canvas / Empty Scene (UX-MW-131) */
                 <div className="space-y-3">
-                  <p
-                    data-testid="fireside-prompt-spark-body"
-                    className="text-xl sm:text-2xl font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
+                  {/* Dedicated Persistent Inspiration Deck Card */}
+                  <div
+                    data-testid="fireside-inspiration-deck-card"
+                    className="p-4 rounded-xl bg-stone-950/80 border border-amber-500/30 shadow-md space-y-2.5"
                   >
-                    &ldquo;{currentText}&rdquo;
-                  </p>
-                  <div className="flex items-center justify-end">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span
+                        data-testid="fireside-brainstorm-spark-badge"
+                        className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30 ring-1 ring-amber-400/30 shadow-sm flex items-center gap-1.5"
+                      >
+                        <span>💡</span>
+                        <span>{brainstormBadgeText}</span>
+                      </span>
+                    </div>
+                    <p
+                      data-testid="fireside-prompt-spark-body"
+                      className="text-xl sm:text-2xl font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200"
+                    >
+                      &ldquo;{currentText}&rdquo;
+                    </p>
+                  </div>
+
+                  {/* Dedicated Sensory Seeds Tray */}
+                  <div
+                    data-testid="fireside-sensory-seeds-tray"
+                    className="p-3.5 rounded-xl bg-stone-900/60 border border-emerald-500/25 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        data-testid="fireside-sensory-seeds-header"
+                        className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1.5"
+                      >
+                        <span>🌿</span>
+                        <span>{sensorySeedsTrayLabel}</span>
+                      </span>
+                      <span className="text-[10px] font-mono text-stone-400">
+                        Tap seed to inspire story starter
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap" data-testid="fireside-sensory-seeds-chips">
+                      {sensorySeeds.map((seed) => {
+                        const chipIcon =
+                          seed.icon === 'audio' ? '👂' : seed.icon === 'aroma' ? '☕' : seed.icon === 'visual' ? '👁️' : '🌿';
+                        const chipLabel = seed.label[currentLanguage] || seed.label.en;
+                        return (
+                          <button
+                            key={seed.id}
+                            type="button"
+                            data-testid={`fireside-sensory-seed-chip-${seed.id}`}
+                            onClick={() => handleApplySensorySeed(seed)}
+                            title={`Click to inspire: Start story with "${seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en}..."`}
+                            className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-mono font-medium bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-98 border border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100 transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                          >
+                            <span className="text-sm">{chipIcon}</span>
+                            <span className="font-semibold">{chipLabel}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end pt-1">
                     <button
                       type="button"
                       data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
                       data-hotspot-id="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
                       onClick={handleStartEditScript}
-                      className="min-h-[48px] sm:min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 text-amber-200 border border-amber-500/40 transition-all cursor-pointer"
+                      className="min-h-[48px] sm:min-h-[44px] px-4 py-2 rounded-xl text-xs sm:text-sm font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 text-amber-200 border border-amber-500/40 transition-all cursor-pointer flex items-center gap-2"
                     >
-                      <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">[ ✏️ Edit Scene ]</span>
+                      <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">[ ✏️ Draft Scene / Begin Story ]</span>
                     </button>
                   </div>
                 </div>
