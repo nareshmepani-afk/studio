@@ -97,4 +97,12 @@ describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fir
       expect(spark).toBeDefined();
     });
   });
+
+  it('6. Fireside deep-link query param ?id=p4_1 resolves directly to Part II Scene 1 spark (spark_humour_mishap)', () => {
+    const resolvedScene = resolveSceneFromPromptId('p4_1');
+    expect(resolvedScene?.id).toBe('part-2-scene-1');
+    const targetSpark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === resolvedScene?.id);
+    expect(targetSpark?.id).toBe('spark_humour_mishap');
+    expect(targetSpark?.title).toBe('Formative Friendships');
+  });
 });

@@ -54,6 +54,26 @@ import {
 } from 'lucide-react';
 import { getSceneById, getPartForScene, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
+function resolveInitialSpark(targetParam?: string): FiresidePromptSpark {
+  if (targetParam) {
+    // 1. Direct match on spark id (e.g. "spark_roots_two_worlds")
+    const bySparkId = FIRESIDE_PROMPT_SPARKS.find((p) => p.id === targetParam);
+    if (bySparkId) return bySparkId;
+
+    // 2. Direct match on linkedSceneId (e.g. "part-1-scene-1")
+    const bySceneId = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === targetParam);
+    if (bySceneId) return bySceneId;
+
+    // 3. Resolve canonical scene from desktop promptId (e.g. "p1", "p4", "p4_1", "p3_b")
+    const resolvedScene = resolveSceneFromPromptId(targetParam);
+    if (resolvedScene) {
+      const byCanonicalScene = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === resolvedScene.id);
+      if (byCanonicalScene) return byCanonicalScene;
+    }
+  }
+  return FIRESIDE_PROMPT_SPARKS[0];
+}
+
 export default function FiresideStudioClient() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -83,7 +103,9 @@ export default function FiresideStudioClient() {
 
   const [activeLanguage, setActiveLanguage] = useState<FiresideLanguage>(resolvedLang);
   const [mediaMode, setMediaMode] = useState<FiresideMediaMode>('video');
-  const [activePromptSpark, setActivePromptSpark] = useState<FiresidePromptSpark>(FIRESIDE_PROMPT_SPARKS[0]);
+  const [activePromptSpark, setActivePromptSpark] = useState<FiresidePromptSpark>(() =>
+    resolveInitialSpark(initialIdParam || initialPromptParam)
+  );
   const [selectedSpark, setSelectedSpark] = useState<FiresidePromptSpark | null>(null);
   const [photos, setPhotos] = useState<HeirloomPhotoAttachment[]>([]);
   const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
@@ -304,6 +326,18 @@ export default function FiresideStudioClient() {
     }
     return undefined;
   }, [initialIdParam, initialPromptParam, nextPendingSceneId, activeSceneMemory]);
+
+  // Synchronise activePromptSpark when autoSparkId resolves (e.g. via deep-link or next pending scene)
+  useEffect(() => {
+    if (autoSparkId && !selectedSpark) {
+      const targetSpark = FIRESIDE_PROMPT_SPARKS.find(
+        (p) => p.id === autoSparkId || p.linkedSceneId === autoSparkId
+      );
+      if (targetSpark && targetSpark.id !== activePromptSpark.id) {
+        setActivePromptSpark(targetSpark);
+      }
+    }
+  }, [autoSparkId, selectedSpark, activePromptSpark.id]);
 
   const handleMoodChange = useCallback(
     (mood: StoryMoodTag) => {

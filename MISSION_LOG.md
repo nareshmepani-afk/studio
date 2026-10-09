@@ -1156,12 +1156,16 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - Device-aware routing: `< 768px` automatically enters `/studio/fireside?id=${targetId}`, `>= 768px` enters `/studio/production/${targetId}`.
     - Touch ergonomics with `min-h-[220px] sm:min-h-[300px]` on `[+ Add Scene]` card.
     - Strict UK English orthography compliance (`favourite`, `organise`, `colour`).
+  - **Fireside Deep-Link Initial State Synchronisation (`FiresideStudioClient.tsx`)**:
+    - Resolved initial prompt spark dynamically via `resolveInitialSpark(initialIdParam || initialPromptParam)` on initial mount.
+    - Synchronised `activePromptSpark` with `autoSparkId` to ensure deep links (e.g. `?id=p4_1`, `?id=part-2-scene-1`) immediately mount onto the target scene without defaulting to Part I Scene 1.
   - **Governance & Regression Shield**:
     - Codified `src/test/curriculum_ssot_arch_mw_127.test.ts` (13/13 tests passing).
-    - Updated `src/test/fireside_booth_entry.test.tsx` (5/5 tests passing).
+    - Updated `src/test/fireside_booth_entry.test.tsx` (6/6 tests passing, including ?id=p4_1 deep-link resolution).
     - Updated `src/test/fireside_sync.test.ts` (71/71 tests passing).
 - **Verification**:
-  - `npx.cmd vitest run`: 92/92 tests passing across all targeted suites.
+  - `npx.cmd vitest run`: 90/90 tests passing across all targeted suites.
   - `npx.cmd tsc --noEmit`: 0 errors.
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
+
 
