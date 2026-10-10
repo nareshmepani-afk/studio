@@ -5,9 +5,10 @@ import { Headphones, Eye, Coffee } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { filterDominantSensoryAnchors, type DetectedAnchor } from '@/utils/sensoryAnchors';
 import type { SensoryScriptEditorRef } from './SensoryScriptEditor';
+import type { NarrativeScriptInputRef } from './NarrativeScriptInput';
 
 export interface SensoryModalityKeyProps {
-  editorRef?: React.RefObject<SensoryScriptEditorRef | null>;
+  editorRef?: React.RefObject<SensoryScriptEditorRef | NarrativeScriptInputRef | null>;
   detectedAnchors: DetectedAnchor[];
   onAnchorClick?: (modality: 'soundscape' | 'visual' | 'aroma', word: string) => void;
   className?: string;

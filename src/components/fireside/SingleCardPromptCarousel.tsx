@@ -62,9 +62,9 @@ import { ChapterSpineRail, type ChapterSpineScene } from '@/components/navigatio
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
 import { FiresideModeSwitch } from '@/components/fireside/FiresideModeSwitch';
 import {
-  SensoryScriptEditor,
-  type SensoryScriptEditorRef,
-} from '@/components/studio/shared/SensoryScriptEditor';
+  NarrativeScriptInput,
+  type NarrativeScriptInputRef,
+} from '@/components/studio/shared/NarrativeScriptInput';
 import { SensoryModalityKey } from '@/components/studio/shared/SensoryModalityKey';
 import { toast } from 'sonner';
 
@@ -220,7 +220,7 @@ export function SingleCardPromptCarousel({
   const [highlightedSensoryType, setHighlightedSensoryType] = useState<
     'soundscape' | 'visual' | 'aroma' | null
   >(null);
-  const sensoryEditorRef = useRef<SensoryScriptEditorRef | null>(null);
+  const sensoryEditorRef = useRef<NarrativeScriptInputRef | null>(null);
 
   const currentLanguage = controlledLanguage || internalLanguage;
   const effectiveHybrid = typeof controlledHybrid === 'boolean' ? controlledHybrid : internalHybrid;
@@ -1455,7 +1455,7 @@ export function SingleCardPromptCarousel({
                     testIdPrefix="fireside-live-sensory-counters"
                   />
 
-                  <SensoryScriptEditor
+                  <NarrativeScriptInput
                     ref={sensoryEditorRef}
                     value={draftProse}
                     onChange={(val) => {
@@ -1467,8 +1467,9 @@ export function SingleCardPromptCarousel({
                     rows={5}
                     placeholder={textareaPlaceholder}
                     typography="serif"
+                    marginVariant="drawer"
                     textareaClassName="p-3.5 pr-10 pb-4"
-                    lang={currentLanguage && currentLanguage !== 'en' ? currentLanguage : 'en-GB'}
+                    language={currentLanguage && currentLanguage !== 'en' ? currentLanguage : 'en-GB'}
                     dataTestId="HS_FIRESIDE_SCRIPT_TEXTAREA"
                     ariaLabel="Edit story script"
                   />

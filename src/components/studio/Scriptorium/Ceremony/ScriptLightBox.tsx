@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { StageDirection, BeatSheetItem } from '@/types';
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
+import { NarrativeScriptInput } from '@/components/studio/shared/NarrativeScriptInput';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { stripScreenplayCues } from '@/lib/sanitizer';
 
@@ -463,18 +464,20 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
 
                     {isEditing ? (
                       <div className="space-y-4">
-                        <textarea
+                        <NarrativeScriptInput
                           value={userScript}
-                          onChange={(e) => setUserScript(e.target.value)}
-                          spellCheck={true}
-                          autoCorrect="on"
-                          autoCapitalize="sentences"
-                          lang="en-GB"
-                          className="w-full min-h-[50vh] bg-slate-900/60 border border-purple-500/30 rounded-3xl p-8 pr-12 pb-6 font-serif text-[24px] lg:text-[30px] text-white leading-[1.8] focus:outline-none focus:border-purple-500/60 transition-all custom-scrollbar resize-none shadow-inner"
+                          onChange={setUserScript}
+                          typography="typewriter"
+                          showScribesMargin={true}
+                          marginVariant="drawer"
+                          language="en-GB"
+                          minHeight="320px"
+                          rows={8}
                           placeholder="Edit your screenplay text here..."
+                          dataTestId="lightbox-script-textarea"
                         />
                         <div className="flex justify-between items-center px-4 text-[10px] font-mono text-white/30">
-                          <span>Manual Teleprompter Fine-Tuning Active</span>
+                          <span>Manual Teleprompter Fine-Tuning Active (Typewriter Zero-Drift Mode)</span>
                           <button 
                             onClick={() => setUserScript(sanitizedCleanScript)}
                             className="text-amber-400/60 hover:text-amber-400 transition-colors flex items-center gap-1.5"

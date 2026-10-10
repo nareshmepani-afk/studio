@@ -1342,6 +1342,62 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - TypeScript Compiler Gate: `npx.cmd tsc --noEmit` passed with exit code 0.
     - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
 
+---
+
+## Checkpoint #057 — SPEC-MW-134: The Standard Narrative Input Suite Formalization (2026-10-10)
+
+- **Target Ref**: `SPEC-MW-134` (The Memory Weaver Standard Input Architecture)
+- **Lead Agent**: Chat 0 (Mission Control Dispatch Brain) [Planning Mode]
+- **Target Epic**: Sprint 13 (Universal Core Primitives & Studio Parity)
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **RFC-001 Formalization (`docs/rfcs/RFC-001-shared-sensory-primitives-and-studio-parity.md`)**:
+    - Codified Section 4.3 specifying `<NarrativeScriptInput />` and `<ScribesMargin />`.
+    - Synthesized team brainstorm into a unified hybrid: **Option A (The Scribe's Margin)** + **Option C (Teleprompter Cadence & Breathability Metrics)**.
+    - Formalized the 5 Core Pillars:
+      1. **Zero-Drift Dual-Layer Geometry (Resolving B2)**: Exact typographic token lockstep, `px-0 mx-0` spans, `Intl.Segmenter` Indic-safe Unicode segmentation.
+      2. **Diaspora Voice Shield & British English (Rule 20 & Rule 45)**: 400+ Gujarati, Punjabi, Hindi loanword protection in `diasporaVoiceShield.ts`, `lang="en-GB"`, Grammarly extension blocking (`data-enable-grammarly="false"`).
+      3. **The Scribe's Margin (Zero-DOM-Injection Assistant)**: Desktop 280px permanent dock, Fireside slide-over drawer triggered by `[ ✨ Scribe Notes ]`, debounced typo & cliché detection.
+      4. **Teleprompter Cadence & Breathability HUD**: 120 WPM speech clock, >24 word breath run alerts, `/` and `//` cadence pause markers.
+      5. **Sensory Modality Counter Lockstep (Resolving B3)**: Single source of truth in `useSensoryHighlight.ts`, synchronized with `<SensoryModalityKey />`.
+  - **Complete TypeScript Contract Scoping**:
+    - Defined master interfaces: `NarrativeScriptInputProps`, `NarrativeScriptInputRef`, `ScribeSuggestion`, `CadenceMetrics`, `SensoryAnchorMatch`.
+    - Codified Desktop Workstation vs Fireside Armchair Studio divergence matrix.
+  - **Plane.so Board Synchronization**:
+    - Programmatically logged `SPEC-MW-134: The Standard Narrative Input Suite (<NarrativeScriptInput /> & Scribe's Margin)` via `scripts/plane.js`.
+
+---
+
+## Checkpoint #058 — SPEC-MW-134: Standard Narrative Input Suite, Scribe's Margin & Diaspora Voice Shield (2026-10-10)
+
+- **Target Ref**: `SPEC-MW-134` (The Memory Weaver Standard Input Architecture)
+- **Lead Agent**: Chat 2 (The Flash Executor) [Fast Mode + High Reasoning]
+- **Target Epic**: Sprint 13 (Universal Core Primitives & Studio Parity)
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Scaffolded Cultural & NLP Primitives**:
+    - `src/lib/dictionary/diasporaVoiceShield.ts`: 400+ Gujarati, Punjabi, Hindi loanwords (`DIASPORA_LEXICON`), mandatory UK English orthography mappings (`UK_ORTHOGRAPHY_MAPPINGS` per Rule 20), AI cliché & screenplay cue detector (`detectAIClichés` per Rule 11), `isProtectedDiasporaTerm`, and `checkUKOrthography`.
+    - `src/hooks/studio/useSensoryHighlight.ts`: Single source of truth for anchor detection, dominant trio calculation, unified modality counts (`soundscape`, `visual`, `aroma`), and zero-drift tokenization with defensive `Intl.Segmenter` & Indic unicode safeguards.
+    - `src/hooks/studio/useScriptCadence.ts`: 120 WPM elder speech pace calculator, breath run detection (> 24 words without pause), breath pause markers (`/` and `//`), and Scribe suggestion integration.
+  - **Implemented Interactive Primitives**:
+    - `src/components/studio/shared/ScribesMargin.tsx`: 280px dock / slide-over drawer with 120 WPM HUD, breath pause insertion keys (`[ + / ]` and `[ + // ]`), UK orthography notes with 1-click `[ Accept ]` / `[ Dismiss ]`, and AI cliché warnings.
+    - `src/components/studio/shared/NarrativeScriptInput.tsx`: Dual-layer CSS Grid overlay (`gridArea: 1/1/2/2`), 100% typographic geometry parity, `NarrativeScriptInputRef` imperative contract (`pulseAndSelectWord`, `applySuggestion`, `insertCadenceMarker`, `focus`, `getTextarea`), iOS inertial scroll parity (`overscrollBehavior: 'contain'`), extension shields (`data-enable-grammarly="false"`, `data-gramm="false"`), and ScribesMargin integration.
+  - **Wired Shared Primitives & Surfaces**:
+    - Refactored `src/components/studio/shared/SensoryScriptEditor.tsx` to consume `useSensoryHighlight` and re-export SPEC-MW-134 primitives, preserving 100% backward compatibility for all existing test harnesses.
+    - Updated `src/components/studio/shared/SensoryModalityKey.tsx` to accept `NarrativeScriptInputRef`.
+    - Wired `NarrativeScriptInput` into `src/components/fireside/SingleCardPromptCarousel.tsx` (Fireside Mobile) with `marginVariant="drawer"`.
+    - Wired `NarrativeScriptInput` into `src/components/studio/Scriptorium/Ceremony/ScriptLightBox.tsx` (Desktop Scriptorium fine-tuning).
+  - **Comprehensive Vitest Suite Expansion**:
+    - `src/test/diaspora_voice_shield.test.ts` (10/10 passed)
+    - `src/test/script_cadence.test.ts` (8/8 passed)
+    - `src/test/narrative_script_input.test.tsx` (7/7 passed)
+    - Total test suite: 804 passed across all 63 test files (0 failures).
+  - **Pre-Push Quality Gates**:
+    - `npx.cmd tsc --noEmit` exited with code 0.
+    - `npm.cmd run build` compiled all routes with exit code 0.
+
+
+
 
 
 

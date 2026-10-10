@@ -17,6 +17,12 @@ import {
   type DetectedAnchor,
 } from '@/utils/sensoryAnchors';
 
+import { useSensoryHighlight } from '@/hooks/studio/useSensoryHighlight';
+export { NarrativeScriptInput, type NarrativeScriptInputProps, type NarrativeScriptInputRef } from './NarrativeScriptInput';
+export { ScribesMargin, type ScribesMarginProps } from './ScribesMargin';
+export { useSensoryHighlight } from '@/hooks/studio/useSensoryHighlight';
+export { useScriptCadence, type CadenceMetrics, type ScribeSuggestion } from '@/hooks/studio/useScriptCadence';
+
 export interface SensoryScriptEditorRef {
   pulseAndSelectWord: (word: string, modality?: 'soundscape' | 'visual' | 'aroma') => void;
   focus: (options?: FocusOptions) => void;
@@ -119,36 +125,13 @@ export const SensoryScriptEditor = forwardRef<SensoryScriptEditorRef, SensoryScr
     const resolvedStyles = typography === 'serif' ? SERIF_STYLES : TYPEWRITER_STYLES;
     const caretColor = typography === 'serif' ? '#f59e0b' : '#10b981';
 
-    // 1. Unified Sensory Anchor Detection
-    const rawAnchors = useMemo(() => {
-      if (!value || hideAnchors) return [];
-      return detectSensoryAnchors(value);
-    }, [value, hideAnchors]);
-
-    const dominantAnchors = useMemo(() => {
-      if (!rawAnchors.length) return [];
-      return filterDominantSensoryAnchors(rawAnchors);
-    }, [rawAnchors]);
-
-    // Dispatch detected anchors upstream if requested
-    useEffect(() => {
-      onDetectedAnchorsChange?.(rawAnchors);
-    }, [rawAnchors, onDetectedAnchorsChange]);
-
-    // 2. Tokenization Engine: Splits ONLY at anchor boundaries, preserving Indic conjuncts, matras, and non-anchor text as unbroken contiguous runs
-    const tokens = useMemo(() => {
-      if (!value) return [];
-      if (hideAnchors || dominantAnchors.length === 0) {
-        return [value];
-      }
-
-      const sortedAnchors = [...dominantAnchors].sort((a, b) => b.word.length - a.word.length);
-      const anchorPattern = sortedAnchors.map((a) => a.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-      // Unicode-aware word boundary regex: matches anchor words while respecting letter/mark clusters across all languages (including Gujarati, Punjabi, and Hindi)
-      const regex = new RegExp(`(?<![\\p{L}\\p{N}\\p{M}])(${anchorPattern})(?![\\p{L}\\p{N}\\p{M}])`, 'gui');
-
-      return value.split(regex).filter((t: string) => t !== undefined && t !== '');
-    }, [value, hideAnchors, dominantAnchors]);
+    // 1. Shared Sensory Highlight Hook (Single Source of Truth)
+    const { dominantAnchors, tokens } = useSensoryHighlight({
+      value,
+      hideAnchors,
+      language: lang,
+      onDetectedAnchorsChange,
+    });
 
     // 3. Imperative Ref Contract (Rule 48.2)
     useImperativeHandle(

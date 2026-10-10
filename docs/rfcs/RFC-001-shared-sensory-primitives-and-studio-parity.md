@@ -83,6 +83,151 @@ While curriculum data is now synchronized, the narrative text editing and video 
   - ☕ **Aroma / Taste (N):** Amber Gold (`border-amber-400 bg-amber-500/15 text-amber-300`)
 - **Interaction:** Tapping any pill calls `editorRef.pulseAndSelectWord(word, modality)`, which jumps the caret, applies a luminous CSS pulse animation, and selects the word natively via `setSelectionRange`.
 
+### 4.3 Primitive 3 & Master Suite: `<NarrativeScriptInput />` & `<ScribesMargin />` (SPEC-MW-134)
+- **Target Ref:** SPEC-MW-134 (The Memory Weaver Standard Input Architecture)
+- **Component File:** `C:\Users\home\studio\src\components\studio\shared\NarrativeScriptInput.tsx`
+- **Companion File:** `C:\Users\home\studio\src\components\studio\shared\ScribesMargin.tsx`
+- **Engine Hooks:**
+  - `C:\Users\home\studio\src\hooks\studio\useSensoryHighlight.ts` (Highlight & tokenization engine)
+  - `C:\Users\home\studio\src\hooks\studio\useScriptCadence.ts` (120 WPM, breathability & cadence engine)
+- **Lexicon File:** `C:\Users\home\studio\src\lib\dictionary\diasporaVoiceShield.ts` (400+ diaspora loanwords & UK English dictionary)
+
+#### 4.3.1 Architectural Hybrid: The Scribe's Margin + Teleprompter Cadence Engine
+Rather than relying on third-party browser extensions or intrusive inline squiggly underlines that inject foreign DOM nodes into the dual-layer overlay, Memory Weaver adopts a unified hybrid of **Option A (The Scribe's Margin)** and **Option C (Teleprompter Cadence & Performance Metrics)**:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        <NarrativeScriptInput /> ARCHITECTURE                           │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                        │
+│  [ 💡 Inspiration Deck / Brainstorm Spark ] ────────────────────────────────────────── │
+│  [ 🌿 Sensory Seeds Tray: 👂 Temple Bell   ☕ Masala Chai   👁️ Rain on Brass ]        │
+│                                                                                        │
+│  ┌─────────────────────────────────────────────────┐ ┌───────────────────────────────┐ │
+│  │ ✍️ DUAL-LAYER ZERO-DRIFT CANVAS                  │ │ 📜 THE SCRIBE'S MARGIN        │ │
+│  │                                                 │ │ (Collapsible Sidebar / Modal) │ │
+│  │  Top Layer: Transparent <textarea>              │ │                               │ │
+│  │  • caret-sky-400, spellCheck={true}             │ │ 🌬️ Cadence: ~65s spoken       │ │
+│  │  • data-enable-grammarly="false"                │ │ • 120 WPM Elder Pace          │ │
+│  │  • lang="en-GB" (or 'gu-IN', 'pa-IN')           │ │ • 2 Breath Pauses Needed (//) │ │
+│  │                                                 │ │                               │ │
+│  │  Bottom Layer: Tokenized Display Layer          │ │ 🇬🇧 UK Orthography:            │ │
+│  │  • Identical typographic geometry               │ │   "favorite" ➔ "favourite"    │ │
+│  │  • Zero padding/margin on spans (px-0 mx-0)     │ │   [ Accept ] [ Dismiss ]      │ │
+│  │  • Flat background tint (bg-sky-500/15)         │ │                               │ │
+│  │  • Border-bottom underlines only (border-b-2)   │ │ 🛡️ Diaspora Voice Shield:     │ │
+│  │  • Unicode Intl.Segmenter (Indic safe)          │ │   "mandir" & "chai" preserved │ │
+│  └─────────────────────────────────────────────────┘ └───────────────────────────────┘ │
+│                                                                                        │
+│  [ 🎧 Soundscape (1) ]  [ 👁️ Visual (1) ]  [ ☕ Aroma (1) ]   [ ✨ 2 Scribe Notes ]    │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 4.3.2 The 5 Core Pillars of the Input Suite
+
+1. **Pillar 1: Zero-Drift Dual-Layer Geometry (Resolving B2)**
+   - **Identical Box Model:** Both the typing `<textarea>` and the display layer beneath share an explicit typographic token (`typographyConfig`):
+     - `font-family`: `"Courier Prime", monospace` (Desktop) or `Georgia, serif` (Fireside).
+     - `font-size`: `1.125rem` (18px), `line-height`: `1.875rem` (30px), `letter-spacing`: `0px`.
+     - `padding`: `1.25rem` (20px) on all four sides (`box-sizing: border-box`).
+   - **Span Styling Rules:** Highlighted sensory words receive zero horizontal padding (`px-0`), zero margins (`mx-0`), and no font-weight increase (`font-normal`). Highlights apply strictly via flat background alpha (`bg-sky-500/15`) and a 2px bottom border (`border-b-2 border-sky-400`). Text positioning remains sub-pixel identical to unhighlighted text.
+   - **Indic Unicode Segmentation:** Tokenization uses `Intl.Segmenter(lang, { granularity: 'word' })`. When no sensory cue matches a segment, text renders as a single uninterrupted text node, preventing WebKit/Blink from detaching Gujarati or Hindi vowel matras.
+
+2. **Pillar 2: The Diaspora Voice Shield & British English (Rule 20 & Rule 45)**
+   - **Lexicon Protection:** `diasporaVoiceShield.ts` registers over 400 Gujarati, Punjabi, Hindi, and East African diaspora cultural terms (*mandir, derasar, chai, rotli, rickshaw, dupatta, diwali, rakhi, bapuji, ba, docklands*). The linter recognises these as valid vocabulary.
+   - **British English Standard:** Injects `lang="en-GB"` to validate spellings like *colour, theatre, favourite,* and *programme*.
+   - **Oral Cadence Defence:** Disables Grammarly (`data-enable-grammarly="false"`, `data-gramm="false"`) to protect raw oral narrative flow from being forced into corporate syntax.
+
+3. **Pillar 3: The Scribe's Margin (Zero-DOM-Injection Assistant)**
+   - **Placement:**
+     - *Desktop:* A sleek 280px margin card anchored to the right of the canvas.
+     - *Fireside Mobile:* A slide-over drawer accessible via a discreet bottom pill: `[ ✨ 2 Scribe Notes ]`.
+   - **Debounced Linting (2.5-second idle):**
+     - *Spelling & Agreement:* Identifies simple typos without interrupting typing.
+     - *UK Orthography Matcher:* Offers 1-click conversion for US spellings (*honor* $\rightarrow$ *honour*).
+     - *AI Cliché Guard:* Flags cinematic script clichés (*"tapestry of memories"*, *"whispers of the past"*).
+
+4. **Pillar 4: Teleprompter Cadence & Breathability HUD (Option C)**
+   - Because scripts are performed in front of the camera in Act III, the input suite measures speakability:
+     - **120 WPM Speech Clock:** Displays estimated reading duration (e.g. `⏱️ ~75s spoken`).
+     - **Breath Run Warning:** Sentences exceeding 24 words without punctuation pulse with a soft breath icon: *"Long run without a pause. Consider adding a comma or a breath break (//)."*
+     - **Breath Marker Insertion:** Storytellers can insert `/` (short breath pause, ~0.2s) or `//` (full breath, ~0.5s) to pace the teleprompter roll.
+
+5. **Pillar 5: Sensory Modality Counter Lockstep (Resolving B3)**
+   - **Single Source of Truth:** `useSensoryHighlight` calculates modality matches once.
+   - **Unified Counts:** Inline spans, `<SensoryModalityKey />`, and telemetry share identical counts:
+     - 🎧 **Soundscape:** Sky Blue (`text-sky-400 border-sky-400 bg-sky-500/15`)
+     - 👁️ **Visual:** Emerald Green (`text-emerald-400 border-emerald-400 bg-emerald-500/15`)
+     - ☕ **Aroma:** Amber Gold (`text-amber-400 border-amber-400 bg-amber-500/15`)
+
+#### 4.3.3 Complete TypeScript Interface Contract
+
+```typescript
+// C:\Users\home\studio\src\components\studio\shared\NarrativeScriptInput.tsx
+
+export type InputTypography = 'typewriter' | 'serif';
+export type ScriptLanguage = 'en-GB' | 'gu' | 'pa' | 'hi';
+
+export interface SensoryAnchorMatch {
+  id: string;
+  word: string;
+  modality: 'soundscape' | 'visual' | 'aroma';
+  index: number;
+}
+
+export interface ScribeSuggestion {
+  id: string;
+  type: 'orthography' | 'breathability' | 'cliche' | 'spelling';
+  original: string;
+  replacement?: string;
+  message: string;
+  range: [number, number];
+}
+
+export interface CadenceMetrics {
+  wordCount: number;
+  characterCount: number;
+  estimatedSpokenSeconds: number; // Based on 120 WPM standard
+  breathPauseCount: number;       // Number of / and // markers
+  longRunSentenceCount: number;   // Sentences > 24 words without breath marks
+}
+
+export interface NarrativeScriptInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  typography?: InputTypography;
+  language?: ScriptLanguage;
+  placeholder?: string;
+  readOnly?: boolean;
+  minRows?: number;
+  showScribesMargin?: boolean;
+  onSensoryMatchCountChange?: (counts: { soundscape: number; visual: number; aroma: number }) => void;
+  onCadenceChange?: (metrics: CadenceMetrics) => void;
+  className?: string;
+  dataTestId?: string;
+}
+
+export interface NarrativeScriptInputRef {
+  pulseAndSelectWord: (word: string, modality?: 'soundscape' | 'visual' | 'aroma') => void;
+  applySuggestion: (suggestion: ScribeSuggestion) => void;
+  insertCadenceMarker: (marker: '/' | '//') => void;
+  focus: (options?: FocusOptions) => void;
+  getTextarea: () => HTMLTextAreaElement | null;
+}
+```
+
+#### 4.3.4 Surface Implementation Divergence Matrix
+
+| Attribute | Desktop Studio Workstation (`/studio/production/[id]`) | Fireside Armchair Studio (`/studio/fireside`) |
+| :--- | :--- | :--- |
+| **Typography** | `typography="typewriter"` (`font-mono`, Courier Prime) | `typography="serif"` (`font-serif`, Georgia / Merriweather) |
+| **Scribe's Margin** | Permanent 280px side card docked to the right of the canvas | Slide-over drawer opened by tapping `[ ✨ Scribe Notes ]` pill |
+| **Pacing Display** | Full HUD displaying WPM slider, word count, character count, and audio sync estimate | Minimalist badge: `⏱️ ~60s spoken (120 WPM)` |
+| **Catalyst Integration** | Full Director Catalysts and beat reordering blocks via `SentenceWrapper.tsx` | Clean, distraction-free single canvas with Sensory Seeds tray |
+| **Cadence Markers** | Quick-action toolbar keys `[ / ]` and `[ // ]` with audio waveform previews | Inline tapping or seed chip suggestion |
+
+---
+
 ---
 
 ## 5. System Governance Codification (Rule 48 in `AGENTS.md`)
@@ -119,17 +264,25 @@ Card headers and interactive pills must never double-render icons (e.g. `💡 �
 
 ## 6. Phased Rollout Plan
 
-- **Phase 1 (Sprint 12 — Completed under ARCH-MW-132):**
+- **Phase 1 (Sprint 12 — Completed under ARCH-MW-132 & ARCH-MW-133):**
   - Build shared primitives `<SensoryScriptEditor />` and `<SensoryModalityKey />`.
   - Wire into `SingleCardPromptCarousel.tsx` (Fireside Booth).
   - Codify Rule 48 into `AGENTS.md`.
-  - Verify with 30 Vitest assertions (`sensory_script_editor.test.tsx`, `fireside_prompt_carousel.test.tsx`).
-- **Phase 2 (Sprint 13):**
-  - Integrate shared primitives into `MemoryForm.tsx` (Desktop Master Scriptorium).
-  - Audit `C:\Users\home\studio\src\app\add-memory\page.tsx`.
-  - Implement a TipTap sensory extension adapter or integrate `<SensoryScriptEditor />` without disrupting Firestore autosave.
-- **Phase 3 (Sprint 14):**
-  - Implement Physical Keepsake QR Bridge & Cinema Room TV casting bridge.
+  - Remediate B2 zero-drift dual-layer geometry and Indic segmentation (`Intl.Segmenter`).
+  - Verify with 34 Vitest assertions (`sensory_script_editor.test.tsx`, `fireside_prompt_carousel.test.tsx`).
+- **Phase 2 (Sprint 13 — SPEC-MW-134: The Standard Narrative Input Suite):**
+  - Extract `useSensoryHighlight.ts` (shared highlight & tokenization hook) and `useScriptCadence.ts` (120 WPM pacing & breathability engine).
+  - Build `diasporaVoiceShield.ts` registering 400+ Gujarati, Punjabi, Hindi loanwords and UK English lexicons.
+  - Implement `<ScribesMargin />` (side card for Desktop, slide-over drawer for Fireside).
+  - Implement `<NarrativeScriptInput />` master primitive (evolution of `SensoryScriptEditor.tsx`).
+  - Wire `<NarrativeScriptInput />` into:
+    - `SingleCardPromptCarousel.tsx` (Fireside Armchair Studio)
+    - `MemoryForm.tsx` (Desktop Master Scriptorium)
+    - Freeform Creator (`C:\Users\home\studio\src\app\add-memory\page.tsx`).
+  - Decouple `SentenceWrapper.tsx` onto `useSensoryHighlight.ts` for Desktop beat management (Condition B4).
+- **Phase 3 (Sprint 14 — ARCH-MW-135):**
+  - Implement Physical Keepsake QR Bridge & Dual QR Code architecture (Cinema Room TV casting bridge).
+  - Enforce token revocation & privacy authorization controls for public QR scans (Condition B5).
 
 ---
 
@@ -165,7 +318,8 @@ Every team member is requested to contribute at least one creative, unconvention
 | Role | Name | Status | Sign-off Date | Notes / Conditions |
 | :--- | :--- | :--- | :--- | :--- |
 | **Product & Cultural Lead** | Naresh Mepani | 🟢 APPROVED WITH AMENDMENT | 2026-10-10 | Approved Physical Keepsake QR Bridge; mandated direct QR Code to Cinema Room TV view. |
-| **System Architect** | Lead Architect (Gemini) | 🟢 APPROVED | 2026-10-10 | Architecture validated; Phase 1 verified on dev edge; Phase 2 scoped. |
+| **System Architect** | Lead Architect (Gemini) | 🟢 APPROVED | 2026-10-10 | Architecture validated; Phase 1 verified on dev edge; Phase 2 scoped under SPEC-MW-134. |
 | **Quality Gatekeeper** | Claude (Opus / Sonnet) | 🟢 APPROVED WITH CONDITIONS | 2026-10-10 | Approved with Phase 1 hotfixes: B1 (Card 51 accuracy), B2 (dual-layer drift elimination), B3 (modality count harmonization), B4 (Desktop SentenceWrapper hook decoupling in Phase 2), B5 (Keepsake QR privacy/revocation architecture in Phase 3). |
-| **Mission Control** | Chat 0 | ⏳ PENDING REVIEW | — | Preparing Plane.so Epic #339 link and IndexedDB Offline Vault roadmap. |
-| **Executor** | Chat 2 | 🟢 PHASE 1 REMEDIATED | 2026-10-10 | Executed B2 zero-drift and Indic segmentation hotfixes under ARCH-MW-133; tests passing. |
+| **Mission Control** | Chat 0 | 🟢 ENDORSED & SPECIFIED | 2026-10-10 | Formalized SPEC-MW-134 (<NarrativeScriptInput />, <ScribesMargin />, useSensoryHighlight, useScriptCadence, diasporaVoiceShield) in Section 4.3; Plane.so #343 created. |
+| **Executor** | Chat 2 | 🟢 PHASE 1 REMEDIATED | 2026-10-10 | Executed B2 zero-drift and Indic segmentation hotfixes under ARCH-MW-133; ready for Phase 2 execution. |
+
