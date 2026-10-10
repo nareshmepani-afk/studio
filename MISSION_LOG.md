@@ -1297,4 +1297,24 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - TypeScript Compiler Gate: `npx.cmd tsc --noEmit` passed with exit code 0.
     - Local Production Build Gate (Rule 5): `npm.cmd run build` compiled all 46 routes with exit code 0.
 
+---
+
+## Checkpoint #055 — HOTFIX: Eliminate Doubled-Up Placeholder Text in SensoryScriptEditor (2026-10-10)
+
+- **Target Ref**: `HOTFIX-MW-134` (Eliminate Doubled-Up Placeholder Ghosting in SensoryScriptEditor)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Root Cause Resolution (`src/components/studio/shared/SensoryScriptEditor.tsx`)**:
+    - Identified that when `value` was empty, the placeholder was rendered twice: once in the underlying display layer (`tokens.length === 0 && placeholder ? <span>{placeholder}</span> : ...`) and once in the overlying interactive `<textarea placeholder={placeholder} />`.
+    - Removed the redundant placeholder span from the underlying highlight layer (`tokens.length === 0 ? null : tokens.map(...)`), allowing the native `<textarea>` to exclusively manage placeholder rendering with `placeholder:text-stone-500 placeholder:italic`.
+    - Completely eliminated visual doubling, ghosting, and blurred text overlay in the Scriptorium input area.
+  - **Automated Regression Shield (`src/test/sensory_script_editor.test.tsx`)**:
+    - Added regression test asserting `highlightLayer.textContent === ''` when `value` is empty, confirming zero placeholder duplication in the underlying DOM layer.
+  - **Verification**:
+    - Vitest Suite: 15/15 tests passing in `sensory_script_editor.test.tsx`.
+    - TypeScript Compiler Gate: `npx.cmd tsc --noEmit` passed with exit code 0.
+    - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+
+
 

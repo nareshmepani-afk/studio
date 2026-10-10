@@ -33,6 +33,24 @@ describe('ARCH-MW-132 & Rule 48: Shared Narrative Primitives & Cross-Surface Par
       expect(highlightLayer).toHaveAttribute('aria-hidden', 'true');
     });
 
+    it('does not duplicate placeholder in highlight layer when value is empty', () => {
+      render(
+        <SensoryScriptEditor
+          value=""
+          onChange={() => {}}
+          placeholder="Type your story here..."
+          dataTestId="test-empty-editor"
+        />
+      );
+
+      const textarea = screen.getByTestId('test-empty-editor') as HTMLTextAreaElement;
+      expect(textarea.placeholder).toBe('Type your story here...');
+
+      // Invariant: highlight layer MUST NOT render the placeholder to prevent doubled-up text bug
+      const highlightLayer = screen.getByTestId('sensory-script-editor-highlight-layer');
+      expect(highlightLayer.textContent).toBe('');
+    });
+
     it('detects sensory anchors and applies Rule 48 chromatic token underlines', () => {
       render(
         <SensoryScriptEditor

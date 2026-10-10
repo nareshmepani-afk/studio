@@ -228,9 +228,7 @@ export const SensoryScriptEditor = forwardRef<SensoryScriptEditorRef, SensoryScr
           }}
           className="z-10 pointer-events-none text-white w-full select-none custom-scrollbar overflow-y-auto"
         >
-          {tokens.length === 0 && placeholder ? (
-            <span className="text-stone-500 italic select-none">{placeholder}</span>
-          ) : (
+          {tokens.length === 0 ? null : (
             tokens.map((token: string, idx: number) => {
               const clean = token.toLowerCase();
               const matchingAnchor = !hideAnchors
@@ -313,6 +311,7 @@ export const SensoryScriptEditor = forwardRef<SensoryScriptEditorRef, SensoryScr
           className={cn(
             'relative z-20 w-full resize-none bg-transparent outline-none focus:outline-none custom-scrollbar overflow-y-auto',
             'selection:bg-amber-500/30 selection:text-amber-200',
+            'placeholder:text-stone-500 placeholder:italic',
             disabled && 'opacity-50 cursor-not-allowed',
             textareaClassName
           )}
