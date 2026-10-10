@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RFC-001: Universal Sensory Narrative Primitives & Studio Video Suite Parity — Architecture Review</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #0c0a09;
+      color: #f5f5f4;
+    }
+    .font-serif {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .obsidian-card {
+      background: radial-gradient(circle at top left, #1c1917, #0c0a09);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    .glass-panel {
+      background: rgba(28, 25, 23, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .tab-btn.active {
+      background-color: rgba(245, 158, 11, 0.2);
+      border-color: #f59e0b;
+      color: #fef3c7;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+
+  <!-- TOP HUD -->
+  <header class="max-w-6xl mx-auto mb-8 obsidian-card rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+    <div class="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+            📄 RFC-001 (ARCH-MW-133)
+          </span>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+            🔒 CODE FREEZE ACTIVE
+          </span>
+          <span class="text-xs font-mono text-stone-400">Governance: <strong class="text-emerald-300">Rule 48 &bull; Rule 43 (Team Consensus)</strong></span>
+          <span class="text-xs font-mono text-stone-500">•</span>
+          <span class="text-xs font-mono text-stone-400">Date: <strong class="text-amber-300">10 Oct 2026</strong></span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+          <span>🏛️ Universal Sensory Narrative Primitives, Video Suite Parity &amp; Desktop Master Architecture</span>
+        </h1>
+        <p class="text-sm text-stone-400 max-w-3xl leading-relaxed">
+          Interactive Architecture Review Dashboard for <code class="text-amber-300">docs/rfcs/RFC-001-shared-sensory-primitives-and-studio-parity.md</code>.
+          Codifies the "Desktop Master Workstation, Mobile Armchair Companion" paradigm and cross-surface video studio divergences.
+        </p>
+      </div>
+
+      <!-- Quick Status Badge -->
+      <div class="bg-stone-900/80 p-4 rounded-xl border border-stone-800 text-right shrink-0">
+        <div class="text-[11px] font-mono uppercase tracking-wider text-stone-400">Consensus Status</div>
+        <div class="text-lg font-black text-amber-400 flex items-center gap-2 justify-end">
+          <span>⏳ 2/5 SIGN-OFFS</span>
+        </div>
+        <div class="text-[11px] font-mono text-stone-500 mt-0.5">Naresh (Approved w/ Cinema QR) &bull; Lead Architect (Approved)</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <main class="max-w-6xl mx-auto space-y-6">
+    <div class="flex items-center gap-2 border-b border-stone-800 pb-2 overflow-x-auto">
+      <button onclick="switchTab('divergence')" id="tab-divergence" class="tab-btn active px-4 py-2 rounded-xl text-xs font-mono font-bold border border-transparent transition cursor-pointer text-stone-300 hover:text-white">
+        🎬 Video Suite Divergence Matrix
+      </button>
+      <button onclick="switchTab('keepsake')" id="tab-keepsake" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-bold border border-transparent transition cursor-pointer text-stone-300 hover:text-white">
+        📇 Physical Keepsake QR Bridge (Naresh Edition)
+      </button>
+      <button onclick="switchTab('matrix')" id="tab-matrix" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-bold border border-transparent transition cursor-pointer text-stone-300 hover:text-white">
+        💡 Unconventional Innovation Matrix
+      </button>
+      <button onclick="switchTab('primitives')" id="tab-primitives" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-bold border border-transparent transition cursor-pointer text-stone-300 hover:text-white">
+        🧩 Shared Narrative Primitives (Rule 48)
+      </button>
+      <button onclick="switchTab('signoff')" id="tab-signoff" class="tab-btn px-4 py-2 rounded-xl text-xs font-mono font-bold border border-transparent transition cursor-pointer text-stone-300 hover:text-white">
+        ✍️ Team Consensus &amp; Sign-Off Gate
+      </button>
+    </div>
+
+    <!-- TAB 1: VIDEO SUITE DIVERGENCE MATRIX -->
+    <section id="section-divergence" class="space-y-4">
+      <div class="glass-panel p-5 rounded-2xl border border-stone-800 space-y-3">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>🎬 Desktop Master Workstation vs. Fireside Armchair Booth</span>
+          </h2>
+          <span class="text-xs font-mono px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
+            Section 3 of RFC-001
+          </span>
+        </div>
+        <p class="text-xs text-stone-400 leading-relaxed">
+          The fundamental architectural decision of RFC-001 is that Desktop Studio defines the capability ceiling (multi-track, multi-take, dense timeline scrubbing), while Fireside Mobile distills this engine into an intimate, high-legibility, single-tap experience for elder narrators.
+        </p>
+
+        <!-- Divergence Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <!-- Desktop Column -->
+          <div class="p-5 rounded-xl bg-stone-950/80 border border-sky-500/30 space-y-3 shadow-lg">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                DESKTOP MASTER WORKSTATION
+              </span>
+              <span class="text-xs font-mono text-stone-400">/studio/production/[id]</span>
+            </div>
+            <h3 class="text-base font-bold text-white">Lean-Forward Director Workstation</h3>
+            <ul class="text-xs text-stone-300 space-y-2 list-disc list-inside">
+              <li><strong class="text-sky-300">Act I Script:</strong> Full Scriptorium with typewriter font (<code class="text-stone-300">Courier Prime</code>), section looping, beat reordering, and precision prompter customizer.</li>
+              <li><strong class="text-sky-300">Act II Weave:</strong> Multi-column beat inspector with granular sensory cue overrides and word-density scoring.</li>
+              <li><strong class="text-sky-300">Act III Capture:</strong> Multi-take folder (Take 1, Take 2, Take 3), granular WPM slider (80–180), external audio input selector (DJI Mic 2 vs USB), real-time VU meter, 16:9 widescreen video framing.</li>
+              <li><strong class="text-sky-300">Act IV Review:</strong> Master Screening Suite with multi-track timeline scrubber, head/tail trim handles, side-by-side take comparator, and B-roll archival photo placement markers.</li>
+            </ul>
+          </div>
+
+          <!-- Fireside Column -->
+          <div class="p-5 rounded-xl bg-stone-950/80 border border-amber-500/30 space-y-3 shadow-lg">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                FIRESIDE ARMCHAIR BOOTH
+              </span>
+              <span class="text-xs font-mono text-stone-400">/studio/fireside</span>
+            </div>
+            <h3 class="text-base font-bold text-white">Lean-Back Living Room Companion</h3>
+            <ul class="text-xs text-stone-300 space-y-2 list-disc list-inside">
+              <li><strong class="text-amber-300">Act I Script:</strong> Armchair Script Editor with warm serif typography (<code class="text-stone-300">Georgia / Merriweather</code>), persistent Inspiration Spark card (<code class="text-amber-300">💡</code>), and tactile Sensory Seed chips (<code class="text-emerald-300">🌿</code>).</li>
+              <li><strong class="text-amber-300">Act II Weave:</strong> Single-column woven preview card with auto-illuminating modality pills and instant bilingual translation.</li>
+              <li><strong class="text-amber-300">Act III Capture:</strong> One-tap Big Red Button (<code class="text-stone-300">[ Start Talking ]</code>), fixed elder prompter cadence at 120 WPM, portrait (9:16 / 4:5) mobile framing, zero technical dials, single <code class="text-stone-300">[ ↺ Retake ]</code>, automatic ambient noise filter.</li>
+              <li><strong class="text-amber-300">Act IV Review:</strong> Clean living room playback player, vintage physical album print scanner drawer, spoken postscript Bonus Memory drawer, 1-tap <code class="text-stone-300">[ Seal &amp; Complete Scene ]</code>, and direct Cinema Room TV casting bridge.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Shared Core Invariant -->
+        <div class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-xs text-emerald-200 mt-4 space-y-1">
+          <div class="font-bold flex items-center gap-1.5 text-emerald-300">
+            <span>🔒 The Shared Invariant (Rule 48)</span>
+          </div>
+          <p>
+            Both surfaces share the identical 31-scene curriculum (<code class="text-emerald-100">masterStoryStructure.ts</code>), the identical NLP sensory anchor engine (<code class="text-emerald-100">detectSensoryAnchors</code>), the identical Cloud Storage upload pipeline with CRC32c checksum verification, and identical encrypted Firestore metadata schemas.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: PHYSICAL KEEPSAKE QR BRIDGE -->
+    <section id="section-keepsake" class="space-y-4 hidden">
+      <div class="glass-panel p-5 rounded-2xl border border-stone-800 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>📇 Physical Keepsake QR Bridge — The Living Album Architecture</span>
+          </h2>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Proposed by Naresh Mepani
+          </span>
+        </div>
+        <p class="text-xs text-stone-300 leading-relaxed max-w-3xl">
+          Bridging physical diaspora heirlooms with digital cinema reels. When an elder completes and seals a scene, Memory Weaver synthesizes a printable, archival-quality keepsake card featuring a <strong>Dual QR Code Architecture</strong>:
+        </p>
+
+        <!-- Keepsake Card Mockup Preview -->
+        <div class="max-w-xl mx-auto p-6 rounded-2xl bg-[#0d0d0d] border-2 border-amber-500/50 shadow-2xl space-y-4 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-b from-amber-500/5 via-transparent to-amber-500/10 pointer-events-none"></div>
+
+          <div class="border-b border-amber-500/30 pb-3 flex items-center justify-between">
+            <div>
+              <div class="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold">MEMORY WEAVER &bull; PHYSICAL ARCHIVE KEEPSAKE</div>
+              <h4 class="text-base font-serif font-bold text-white">Part I &bull; Scene 1 &bull; A Child of Two Worlds</h4>
+              <div class="text-xs font-serif italic text-amber-200/80">બે દુનિયાનું બાળક &bull; Recorded by Kantaben Mepani</div>
+            </div>
+            <span class="text-2xl">🏛️</span>
+          </div>
+
+          <p class="text-xs font-serif text-stone-300 italic leading-relaxed">
+            &ldquo;Looking back forty years ago, what stays with me most is the ringing of the temple bells and the aroma of morning chai before the crossing...&rdquo;
+          </p>
+
+          <!-- Dual QR Code Grid -->
+          <div class="grid grid-cols-2 gap-4 pt-2">
+            <!-- QR Code 1: Personal Reel -->
+            <div class="p-3.5 rounded-xl bg-stone-900/90 border border-stone-700 text-center space-y-2">
+              <div class="w-24 h-24 mx-auto bg-stone-800 rounded-lg flex items-center justify-center border border-amber-400/40 text-amber-300 font-mono text-2xl font-bold shadow-inner">
+                [ QR 1 ]
+              </div>
+              <div class="text-[10px] font-mono font-bold text-amber-300 uppercase">📱 Scan for Personal Reel</div>
+              <div class="text-[9px] font-mono text-stone-400 break-all">memoryweaver.studio/cinema?id=...</div>
+              <div class="text-[10px] text-stone-400">Grandchildren scan on mobile to hear grandmother speak.</div>
+            </div>
+
+            <!-- QR Code 2: Cinema Room TV Bridge -->
+            <div class="p-3.5 rounded-xl bg-stone-900/90 border border-amber-500/40 text-center space-y-2 ring-1 ring-amber-400/20">
+              <div class="w-24 h-24 mx-auto bg-amber-950/40 rounded-lg flex items-center justify-center border border-amber-400 text-amber-300 font-mono text-2xl font-bold shadow-inner">
+                [ QR 2 ]
+              </div>
+              <div class="text-[10px] font-mono font-bold text-amber-400 uppercase">📺 Scan for Cinema Room TV</div>
+              <div class="text-[9px] font-mono text-stone-400 break-all">memoryweaver.studio/cinema/tv?id=...</div>
+              <div class="text-[10px] text-stone-400">Instantly casts reel to living room TV for family screening.</div>
+            </div>
+          </div>
+
+          <div class="border-t border-amber-500/20 pt-2 text-center text-[10px] font-mono text-stone-500">
+            Archival Acid-Free Card Stock &bull; Designed for insertion into 1970s Physical Photo Albums
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: UNCONVENTIONAL INNOVATION MATRIX -->
+    <section id="section-matrix" class="space-y-4 hidden">
+      <div class="glass-panel p-5 rounded-2xl border border-stone-800 space-y-4">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span>💡 Unconventional Innovation Matrix (Team Contributions)</span>
+        </h2>
+        <p class="text-xs text-stone-400 leading-relaxed">
+          Section 7 of RFC-001 challenges every team member to push the envelope with high-craft, boundary-breaking ideas before writing code:
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Naresh -->
+          <div class="p-4 rounded-xl bg-stone-950/80 border border-amber-500/40 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-amber-300">💡 NARESH MEPANI (Product Lead)</span>
+              <span class="text-[10px] font-mono text-emerald-400 font-bold">🟢 ENDORSED</span>
+            </div>
+            <h4 class="text-sm font-bold text-white">Physical Keepsake Dual-QR Bridge</h4>
+            <p class="text-xs text-stone-300 leading-relaxed">
+              Printable vintage postcard with gold foil-style dual QR codes (Personal Reel + Cinema Room TV bridge) to slip into existing physical family photo albums.
+            </p>
+          </div>
+
+          <!-- Claude -->
+          <div class="p-4 rounded-xl bg-stone-950/80 border border-emerald-500/40 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-emerald-300">🛡️ CLAUDE (Quality Gatekeeper)</span>
+              <span class="text-[10px] font-mono text-emerald-400 font-bold">🟢 SIGNED OFF WITH CONDITIONS</span>
+            </div>
+            <h4 class="text-sm font-bold text-white">Visual Regression Dual-Viewport Snapshots</h4>
+            <p class="text-xs text-stone-300 leading-relaxed">
+              Automated dual-viewport Playwright snapshot tests (390px iPhone vs 1440px Desktop) rendering the shared editor side-by-side to fail the build if caret or highlight offsets drift by >1px.
+            </p>
+          </div>
+
+          <!-- Chat 0 -->
+          <div class="p-4 rounded-xl bg-stone-950/80 border border-purple-500/40 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-purple-300">🧠 CHAT 0 (Dispatch Brain)</span>
+              <span class="text-[10px] font-mono text-amber-400 font-bold">⏳ PENDING</span>
+            </div>
+            <h4 class="text-sm font-bold text-white">Chunked IndexedDB Offline Vault</h4>
+            <p class="text-xs text-stone-300 leading-relaxed">
+              Chunked client storage layer saving raw video blobs locally during Wi-Fi drops and synchronizing automatically to Cloud Storage when connectivity resumes.
+            </p>
+          </div>
+
+          <!-- Chat 2 -->
+          <div class="p-4 rounded-xl bg-stone-950/80 border border-sky-500/40 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-sky-300">⚡ CHAT 2 (The Flash Executor)</span>
+              <span class="text-[10px] font-mono text-blue-400 font-bold">🔒 STANDBY</span>
+            </div>
+            <h4 class="text-sm font-bold text-white">Web Worker NLP Sensory Engine</h4>
+            <p class="text-xs text-stone-300 leading-relaxed">
+              Offload tokenization, lemma extraction, and regex matching from React main thread to a dedicated Web Worker (<code class="text-sky-300">sensory-worker.ts</code>) ensuring smooth 60fps typing on long scripts.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SHARED PRIMITIVES & RULE 48 -->
+    <section id="section-primitives" class="space-y-4 hidden">
+      <div class="glass-panel p-5 rounded-2xl border border-stone-800 space-y-4">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span>🧩 Rule 48 Codification &amp; Shared Narrative Primitives</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-xl bg-stone-950 border border-stone-800 space-y-2">
+            <div class="text-xs font-mono font-bold text-amber-400">&lt;SensoryScriptEditor /&gt;</div>
+            <div class="text-[11px] font-mono text-stone-400">src/components/studio/shared/SensoryScriptEditor.tsx</div>
+            <p class="text-xs text-stone-300 leading-relaxed">
+              Dual-layer CSS Grid overlay (<code class="text-stone-300">gridArea: 1/1/2/2</code>) with transparent interactive <code class="text-stone-300">&lt;textarea&gt;</code> atop tokenized underline layer. Supports <code class="text-stone-300">typography="serif"</code> (Fireside) and <code class="text-stone-300">typography="typewriter"</code> (Desktop). Exposes <code class="text-stone-300">pulseAndSelectWord(word, modality)</code>.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-stone-950 border border-stone-800 space-y-2">
+            <div class="text-xs font-mono font-bold text-emerald-400">&lt;SensoryModalityKey /&gt;</div>
+            <div class="text-[11px] font-mono text-stone-400">src/components/studio/shared/SensoryModalityKey.tsx</div>
+            <p class="text-xs text-stone-300 leading-relaxed">
+              Shared interactive counter pills adhering to Rule 45 chromas:
+              <br><strong class="text-sky-300">🎧 Soundscape:</strong> Sky Blue (<code class="text-sky-300">border-sky-400 bg-sky-500/15</code>)
+              <br><strong class="text-emerald-300">👁️ Visual:</strong> Emerald Green (<code class="text-emerald-300">border-emerald-400 bg-emerald-500/15</code>)
+              <br><strong class="text-amber-300">☕ Aroma:</strong> Amber Gold (<code class="text-amber-300">border-amber-400 bg-amber-500/15</code>)
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: TEAM CONSENSUS & SIGN-OFF GATE -->
+    <section id="section-signoff" class="space-y-4 hidden">
+      <div class="glass-panel p-5 rounded-2xl border border-stone-800 space-y-4">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span>✍️ Team Consensus &amp; Sign-Off Gate (Rule 43)</span>
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs font-mono text-left border-collapse">
+            <thead>
+              <tr class="border-b border-stone-800 text-stone-400">
+                <th class="py-2.5 px-3">Role</th>
+                <th class="py-2.5 px-3">Name</th>
+                <th class="py-2.5 px-3">Status</th>
+                <th class="py-2.5 px-3">Date</th>
+                <th class="py-2.5 px-3">Conditions / Notes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-stone-800/60 text-stone-300">
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">Product &amp; Cultural Lead</td>
+                <td class="py-3 px-3">Naresh Mepani</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">🟢 APPROVED</span></td>
+                <td class="py-3 px-3">2026-10-10</td>
+                <td class="py-3 px-3 text-stone-400">Approved Physical Keepsake QR Bridge; added direct QR Code to Cinema Room TV view.</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">System Architect</td>
+                <td class="py-3 px-3">Lead Architect (Gemini)</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">🟢 APPROVED</span></td>
+                <td class="py-3 px-3">2026-10-10</td>
+                <td class="py-3 px-3 text-stone-400">Architecture validated; Phase 1 complete &amp; verified; Phase 2 scoped.</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">Quality Gatekeeper</td>
+                <td class="py-3 px-3">Claude (Opus / Sonnet)</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">🟢 APPROVED WITH CONDITIONS</span></td>
+                <td class="py-3 px-3">2026-10-10</td>
+                <td class="py-3 px-3 text-stone-400">Approved with Phase 1 hotfixes: B1 (Card 51), B2 (dual-layer drift), B3 (modality counts), B4 (Desktop hook in Phase 2), B5 (Keepsake QR revocation in Phase 3).</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">Mission Control</td>
+                <td class="py-3 px-3">Chat 0</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">⏳ PENDING REVIEW</span></td>
+                <td class="py-3 px-3">—</td>
+                <td class="py-3 px-3 text-stone-400">Preparing Plane.so Epic #339 link and IndexedDB Offline Vault roadmap.</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-3 font-bold text-white">Executor</td>
+                <td class="py-3 px-3">Chat 2</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">🟢 REMEDIATION COMPLETE</span></td>
+                <td class="py-3 px-3">2026-10-10</td>
+                <td class="py-3 px-3 text-stone-400">Phase 1 hotfixes executed: B2 zero-drift, B3 modality count cap, Indic segmentation verified.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function switchTab(tabId) {
+      ['divergence', 'keepsake', 'matrix', 'primitives', 'signoff'].forEach(t => {
+        document.getElementById(`tab-${t}`)?.classList.toggle('active', t === tabId);
+        document.getElementById(`section-${t}`)?.classList.toggle('hidden', t !== tabId);
+      });
+    }
+  </script>
+</body>
+</html>

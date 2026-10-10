@@ -1245,3 +1245,56 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - Vitest Suite: 30/30 tests passing (`sensory_script_editor.test.tsx` + `fireside_prompt_carousel.test.tsx`).
     - TypeScript Compiler Gate: `npx.cmd tsc --noEmit` passed with exit code 0.
     - Local Production Build Gate (Rule 5): `npm.cmd run build` compiled all 46 routes with exit code 0.
+
+---
+
+## Checkpoint #053 — ARCH-MW-133: RFC-001 Circulation, Video Suite Divergences & Code Freeze (2026-10-10)
+
+- **Target Ref**: `ARCH-MW-133` (RFC-001: Universal Sensory Narrative Primitives, Video Suite Parity & Desktop Master Architecture)
+- **Status**: `DRAFT — PENDING TEAM CONSENSUS (RULE 43 ACTIVE)`
+- **Operational Mode**: `[Use Planning]` — Strict Code Freeze on Application Code (Zero app file mutations, zero builds, zero git pushes).
+- **Deliverables**:
+  - **Master RFC Document (`docs/rfcs/RFC-001-shared-sensory-primitives-and-studio-parity.md`)**:
+    - Formally established the **"Desktop Master, Mobile Companion"** paradigm.
+    - Drafted Section 3 **Comprehensive Divergence Matrix** contrasting Desktop Studio's high-density director workstation (multi-take folder, granular WPM sliders, VU meters, timeline scrubber, trim handles) with Fireside Mobile's distraction-free armchair recording booth (single Big Red Button, fixed 120 WPM cadence, portrait framing, 1-tap seal).
+    - Integrated **Physical Keepsake QR Bridge (Naresh Edition)** featuring Dual-QR architecture: Scan for Personal Memory Reel (`/cinema?id=...`) + Direct Scan for Cinema Room TV view (`/cinema/tv?id=...`) for big-screen television family casting.
+    - Formatted Section 7 **Unconventional Innovation Matrix** challenging Naresh, Claude, Chat 0, and Chat 2 for creative out-of-the-box contributions.
+  - **Interactive Architecture Review Dashboard (`architecture_rfc_review.html`)**:
+    - Published interactive 5-tab review artifact with live consensus tracker, video divergence side-by-side comparator, physical keepsake postcard mockup, innovation matrix cards, and sign-off table.
+  - **Consensus & Sign-off Status**:
+    - Naresh Mepani (Product & Cultural Lead): 🟢 APPROVED WITH AMENDMENT (Dual-QR Cinema Room TV Bridge).
+    - Lead Architect (Gemini): 🟢 APPROVED.
+    - Claude (Quality Gatekeeper): ⏳ PENDING CONTRIBUTION PROMPT.
+    - Chat 0 (Mission Control): ⏳ PENDING ROADMAP & PLANE.SO EPIC LINK.
+    - Chat 2 (Flash Executor): 🔒 STANDBY / READ-ONLY CONSULTATION MODE.
+
+---
+
+## Checkpoint #054 — ARCH-MW-133: Phase 1 Remediation (B2 Zero-Drift, B3 Modality Counts & Indic Script Segmentation) (2026-10-10)
+
+- **Target Ref**: `ARCH-MW-133` (Phase 1 Remediation: B2 Zero-Drift, B3 Modality Counts & Indic Script Segmentation)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Fix B2: Eliminate Dual-Layer Text Drift (`src/components/studio/shared/SensoryScriptEditor.tsx`)**:
+    - Enforced 100% typographic geometry lockstep between display layer spans and transparent `<textarea>`: identical `font-family`, `font-size`, `line-height`, `letter-spacing`, `word-spacing: normal`, `font-weight: 400`, and `box-sizing: border-box`.
+    - Zeroed out horizontal padding (`px-0`) and horizontal margin (`mx-0`) on anchor spans; removed `font-medium` widening; removed `display: inline-block` to preserve natural inline line breaking.
+    - Replaced pulse scale transformation (`scale-[1.14]` and `px-1`) with non-geometry-shifting box-shadow rings (`ring-2 ring-offset-0 ring-sky-400 bg-sky-400/30 shadow-[0_0_20px_rgba(56,189,248,0.8)]`), guaranteeing 100% frozen layout bounds during modality inspection.
+  - **Indic Script Segmentation Support (`src/components/studio/shared/SensoryScriptEditor.tsx`)**:
+    - Replaced naive `value.split(/([^a-zA-Z0-9])/g)` character fragmentation with Unicode-aware word boundary regex: `(?<![\p{L}\p{N}\p{M}])(${anchorPattern})(?![\p{L}\p{N}\p{M}])` with `gui` flags.
+    - Guaranteed that non-anchor text across Gujarati (`ગુજરાતી`), Punjabi (`ਪੰਜਾਬી`), and Hindi (`हिन्दी`) remains as contiguous unbroken text nodes, preventing conjuncts and combining matras from shattering into isolated DOM spans.
+  - **Fix B3: Harmonise Modality Key Counts (`src/components/studio/shared/SensoryModalityKey.tsx`)**:
+    - Updated modality counting engine (`soundscapeCount`, `visualCount`, `aromaCount`) to evaluate against `dominantAnchors` (capping at 1 dominant anchor per detected modality).
+    - Achieved 100% mathematical lockstep between key badge counts, editor underlined tokens, and Desktop `MemoryForm.tsx` (lines 894–906).
+  - **Card 51 & Documentation Clean-up (`qa_checklist_interactive.html` & `docs/rfcs/RFC-001-shared-sensory-primitives-and-studio-parity.md`)**:
+    - Cleaned up Card 51 in `qa_checklist_interactive.html`: replaced non-dictionary test anchor references (`bells`) with authentic canonical anchor (`ringing`), and explicitly framed Desktop Scriptorium TipTap convergence as Phase 2 under ARCH-MW-133.
+    - Amended Rule 48.2 in `RFC-001` to encapsulate shared highlight logic inside `useSensoryHighlight` hook rather than forcing `<SensoryScriptEditor />` replacement on complex Desktop surfaces with catalysts.
+    - Recorded Claude's conditional sign-off (`🟢 APPROVED WITH CONDITIONS`) and Chat 2's remediation execution in Section 8 of `RFC-001` and `architecture_rfc_review.html`.
+  - **Automated Regression Shield (`src/test/sensory_script_editor.test.tsx`)**:
+    - Authored 3 new hermetic regression tests asserting zero horizontal drift (`px-0 mx-0 font-normal`), Indic script unbroken text node preservation, and dominant modality count capping.
+  - **Verification**:
+    - Vitest Suite: 33/33 tests passing (`sensory_script_editor.test.tsx` [14 tests] + `fireside_prompt_carousel.test.tsx` [19 tests]).
+    - TypeScript Compiler Gate: `npx.cmd tsc --noEmit` passed with exit code 0.
+    - Local Production Build Gate (Rule 5): `npm.cmd run build` compiled all 46 routes with exit code 0.
+
+

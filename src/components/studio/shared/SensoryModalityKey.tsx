@@ -35,9 +35,10 @@ export const SensoryModalityKey: React.FC<SensoryModalityKeyProps> = ({
   const visualAnchor = dominantAnchors.find((a) => a.type === 'visual');
   const aromaAnchor = dominantAnchors.find((a) => a.type === 'aroma');
 
-  const soundscapeCount = detectedAnchors.filter((a) => a.type === 'soundscape').length;
-  const visualCount = detectedAnchors.filter((a) => a.type === 'visual').length;
-  const aromaCount = detectedAnchors.filter((a) => a.type === 'aroma').length;
+  // Rule 48 & ARCH-MW-133: Harmonised with dominant anchors (1 per detected modality) matching editor underlines and Desktop parity
+  const soundscapeCount = dominantAnchors.filter((a) => a.type === 'soundscape').length;
+  const visualCount = dominantAnchors.filter((a) => a.type === 'visual').length;
+  const aromaCount = dominantAnchors.filter((a) => a.type === 'aroma').length;
 
   const handleModalityClick = (modality: 'soundscape' | 'visual' | 'aroma', targetWord?: string) => {
     if (!targetWord) return;

@@ -54,6 +54,8 @@ const SERIF_STYLES: React.CSSProperties = {
   fontSize: '1.125rem', // 18px (text-lg)
   lineHeight: '1.625', // leading-relaxed
   letterSpacing: 'normal',
+  wordSpacing: 'normal',
+  fontWeight: 400,
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
   overflowWrap: 'break-word',
@@ -69,6 +71,8 @@ const TYPEWRITER_STYLES: React.CSSProperties = {
   fontSize: '1.125rem', // 18px
   lineHeight: '1.6',
   letterSpacing: '0.025em',
+  wordSpacing: 'normal',
+  fontWeight: 400,
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
   overflowWrap: 'break-word',
@@ -131,16 +135,17 @@ export const SensoryScriptEditor = forwardRef<SensoryScriptEditorRef, SensoryScr
       onDetectedAnchorsChange?.(rawAnchors);
     }, [rawAnchors, onDetectedAnchorsChange]);
 
-    // 2. Tokenization Engine (Splits by punctuation & anchors while preserving whitespace)
+    // 2. Tokenization Engine: Splits ONLY at anchor boundaries, preserving Indic conjuncts, matras, and non-anchor text as unbroken contiguous runs
     const tokens = useMemo(() => {
       if (!value) return [];
       if (hideAnchors || dominantAnchors.length === 0) {
-        return value.split(/([^a-zA-Z0-9])/g).filter((t: string) => t !== undefined && t !== '');
+        return [value];
       }
 
       const sortedAnchors = [...dominantAnchors].sort((a, b) => b.word.length - a.word.length);
       const anchorPattern = sortedAnchors.map((a) => a.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-      const regex = new RegExp(`(${anchorPattern}|[^a-zA-Z0-9])`, 'gi');
+      // Unicode-aware word boundary regex: matches anchor words while respecting letter/mark clusters across all languages (including Gujarati, Punjabi, and Hindi)
+      const regex = new RegExp(`(?<![\\p{L}\\p{N}\\p{M}])(${anchorPattern})(?![\\p{L}\\p{N}\\p{M}])`, 'gui');
 
       return value.split(regex).filter((t: string) => t !== undefined && t !== '');
     }, [value, hideAnchors, dominantAnchors]);
@@ -244,9 +249,9 @@ export const SensoryScriptEditor = forwardRef<SensoryScriptEditorRef, SensoryScr
                   data-token-index={idx}
                   data-anchor-word={isAnchor ? clean : undefined}
                   data-anchor-modality={anchorModality}
-                  style={isAnchor ? { display: 'inline-block' } : undefined}
                   className={cn(
-                    isAnchor && 'border-b-2 font-medium transition-all duration-300 rounded-sm px-0.5',
+                    'px-0 mx-0 font-normal',
+                    isAnchor && 'border-b-2 transition-colors duration-300',
                     isAnchor &&
                       anchorModality === 'soundscape' &&
                       'border-sky-400/80 bg-sky-500/15 text-sky-100',
@@ -256,16 +261,16 @@ export const SensoryScriptEditor = forwardRef<SensoryScriptEditorRef, SensoryScr
                     isAnchor &&
                       anchorModality === 'aroma' &&
                       'border-amber-400/80 bg-amber-500/15 text-amber-100',
-                    isPulsed && 'z-30 scale-[1.14] rounded px-1 ring-4 transition-all duration-200',
+                    isPulsed && 'z-30 ring-2 ring-offset-0 transition-all duration-200',
                     isPulsed &&
                       pulsedModality === 'soundscape' &&
-                      'ring-sky-400 bg-sky-400/40 text-white shadow-[0_0_25px_rgba(56,189,248,0.9)]',
+                      'ring-sky-400 bg-sky-400/30 text-white shadow-[0_0_20px_rgba(56,189,248,0.8)]',
                     isPulsed &&
                       pulsedModality === 'visual' &&
-                      'ring-emerald-400 bg-emerald-400/40 text-white shadow-[0_0_25px_rgba(16,185,129,0.9)]',
+                      'ring-emerald-400 bg-emerald-400/30 text-white shadow-[0_0_20px_rgba(16,185,129,0.8)]',
                     isPulsed &&
                       pulsedModality === 'aroma' &&
-                      'ring-amber-400 bg-amber-400/40 text-white shadow-[0_0_25px_rgba(245,158,11,0.9)]'
+                      'ring-amber-400 bg-amber-400/30 text-white shadow-[0_0_20px_rgba(245,158,11,0.8)]'
                   )}
                 >
                   {token}

@@ -111,6 +111,45 @@ describe('ARCH-MW-132 & Rule 48: Shared Narrative Primitives & Cross-Surface Par
       const textarea = screen.getByTestId('lang-check-textarea');
       expect(textarea).toHaveAttribute('lang', 'en-GB');
     });
+
+    it('enforces zero horizontal drift with px-0 mx-0 font-normal and no scale distortion on pulse', () => {
+      render(
+        <SensoryScriptEditor
+          value="Looking back, the ringing temple bells echoed."
+          onChange={() => {}}
+          dataTestId="drift-check-textarea"
+        />
+      );
+
+      const highlightLayer = screen.getByTestId('sensory-script-editor-highlight-layer');
+      const soundscapeSpan = highlightLayer.querySelector('[data-anchor-modality="soundscape"]');
+      expect(soundscapeSpan).toBeInTheDocument();
+      // Invariant: zero horizontal padding and margin, font-normal
+      expect(soundscapeSpan?.className).toContain('px-0');
+      expect(soundscapeSpan?.className).toContain('mx-0');
+      expect(soundscapeSpan?.className).toContain('font-normal');
+      expect(soundscapeSpan?.className).not.toContain('px-0.5');
+      expect(soundscapeSpan?.className).not.toContain('font-medium');
+      expect(soundscapeSpan?.className).not.toContain('scale-');
+    });
+
+    it('preserves Indic script segmentation (Gujarati/Punjabi/Hindi) as unbroken contiguous text nodes', () => {
+      render(
+        <SensoryScriptEditor
+          value="મારા બાળપણની યાદોમાં, ringing ઘંટડીઓનો અવાજ ગુંજતો હતો."
+          onChange={() => {}}
+          dataTestId="indic-check-textarea"
+        />
+      );
+
+      const highlightLayer = screen.getByTestId('sensory-script-editor-highlight-layer');
+      const spans = highlightLayer.querySelectorAll('span');
+      // Should have exactly 3 tokens: pre-text, anchor, post-text (NOT shattered into dozens of 1-char tokens)
+      expect(spans.length).toBe(3);
+      expect(spans[0].textContent).toBe('મારા બાળપણની યાદોમાં, ');
+      expect(spans[1].textContent).toBe('ringing');
+      expect(spans[2].textContent).toBe(' ઘંટડીઓનો અવાજ ગુંજતો હતો.');
+    });
   });
 
   describe('2. SensoryModalityKey Primitive', () => {
@@ -131,6 +170,26 @@ describe('ARCH-MW-132 & Rule 48: Shared Narrative Primitives & Cross-Surface Par
       expect(screen.getByTestId('test-key-soundscape')).toHaveTextContent('Soundscape (1)');
       expect(screen.getByTestId('test-key-visual')).toHaveTextContent('Visual (1)');
       expect(screen.getByTestId('test-key-aroma')).toHaveTextContent('Aroma (1)');
+    });
+
+    it('harmonises modality count to 1 dominant anchor when multiple anchors of same type are detected', () => {
+      const multipleSoundscapeAnchors: DetectedAnchor[] = [
+        { word: 'ringing', type: 'soundscape' },
+        { word: 'echo', type: 'soundscape' },
+        { word: 'melody', type: 'soundscape' },
+      ];
+
+      render(
+        <SensoryModalityKey
+          detectedAnchors={multipleSoundscapeAnchors}
+          testIdPrefix="test-dominant-key"
+        />
+      );
+
+      // Dominant anchor filtering limits to 1 per modality, matching Desktop parity
+      expect(screen.getByTestId('test-dominant-key-soundscape')).toHaveTextContent('Soundscape (1)');
+      expect(screen.getByTestId('test-dominant-key-visual')).toHaveTextContent('Visual (0)');
+      expect(screen.getByTestId('test-dominant-key-aroma')).toHaveTextContent('Aroma (0)');
     });
 
     it('disables modality buttons when count is zero', () => {
