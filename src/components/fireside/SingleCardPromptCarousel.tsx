@@ -518,14 +518,14 @@ export function SingleCardPromptCarousel({
   const textareaPlaceholder = useMemo(() => {
     switch (currentLanguage) {
       case 'gu':
-        return "✍️ તમારી અંગત યાદો અહીં લખો અથવા બોલો... (દા.ત. 'ચાળીસ વર્ષ પહેલાંની વાત યાદ કરતાં, મને સૌથી વધુ સ્પર્શી જાય છે કે...')";
+        return "✍️ તમારી અંગત યાદો, લાગણીઓ અથવા મહત્વપૂર્ણ ક્ષણો અહીં નોંધો... (દા.ત. 'ચાળીસ વર્ષ પહેલાંની વાત યાદ કરતાં, મને સૌથી વધુ સ્પર્શી જાય છે કે...')";
       case 'pa':
-        return "✍️ ਆਪਣੀਆਂ ਨਿੱਜੀ ਯਾਦਾਂ ਇੱਥੇ ਲਿਖੋ ਜਾਂ ਬੋਲੋ... (ਉਦਾਹਰਣ ਵਜੋਂ 'ਚਾਲੀ ਸਾਲ ਪਹਿਲਾਂ ਦੀ ਗੱਲ ਯਾਦ ਕਰਦਿਆਂ, ਮੇਰੇ ਦਿਲ ਵਿੱਚ ਵੱਸਿਆ ਹੈ ਕਿ...')";
+        return "✍️ ਆਪਣੀਆਂ ਨਿੱਜੀ ਯਾਦਾਂ, ਭਾਵਨਾਵਾਂ ਜਾਂ ਮਹੱਤਵਪੂਰਨ ਪਲਾਂ ਨੂੰ ਇੱਥੇ ਦਰਜ ਕਰੋ... (ਉਦਾਹਰਣ ਵਜੋਂ 'ਚਾਲੀ ਸਾਲ ਪਹਿਲਾਂ ਦੀ ਗੱਲ ਯਾਦ ਕਰਦਿਆਂ, ਮੇਰੇ ਦਿਲ ਵਿੱਚ ਵੱਸਿਆ ਹੈ ਕਿ...')";
       case 'hi':
-        return "✍️ अपनी व्यक्तिगत यादें यहाँ लिखें या बोलें... (जैसे 'चालीस साल पहले की बात याद करते हुए, मुझे सबसे ज्यादा याद आता है कि...')";
+        return "✍️ अपनी व्यक्तिगत यादें, भावनाएं या महत्वपूर्ण पल यहाँ लिखें... (जैसे 'चालीस साल पहले की बात याद करते हुए, मुझे सबसे ज्यादा याद आता है कि...')";
       case 'en':
       default:
-        return "✍️ Type or speak your personal memory here... (e.g. 'Looking back forty years ago, what stays with me most is...')";
+        return "✍️ Note down your memories, feelings, or key moments here... (e.g. 'Looking back forty years ago, what stays with me most is...')";
     }
   }, [currentLanguage]);
 

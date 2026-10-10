@@ -1316,5 +1316,32 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - TypeScript Compiler Gate: `npx.cmd tsc --noEmit` passed with exit code 0.
     - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
 
+---
+
+## Checkpoint #056 — HOTFIX-MW-135: Platform-Agnostic Script Drafting Copy Polish (Eliminate Speak Pre-conditions) (2026-10-10)
+
+- **Target Ref**: `HOTFIX-MW-135` (Platform-Agnostic Script Drafting Copy Polish)
+- **Lead Agent**: Chat 2 (Flash Executor) [Fast Mode + High Reasoning]
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Two-Act Hardware Separation Architecture**:
+    - Enforced strict architectural separation between **Act I: Script & Drafting (The Mind)** (text-only, zero hardware mic leasing) and **Act III: Recording & Prompter (The Voice & Camera)** (live `navigator.mediaDevices.getUserMedia` stream).
+    - Dropped premature in-browser Web Speech API injection (Option A) to protect against iOS Safari audio stream contention, diaspora accent degradation, and Rule 48 surface asymmetry. Parked universal voice-first scripting for dedicated sprint under `FEAT-MW-135`.
+  - **Platform-Agnostic Placeholder Polish (`src/components/fireside/SingleCardPromptCarousel.tsx`)**:
+    - Replaced misleading "Type or speak" with clear, platform-agnostic phrasing across all supported diaspora languages:
+      - **English:** `"✍️ Note down your memories, feelings, or key moments here... (e.g. 'Looking back forty years ago, what stays with me most is...')"`
+      - **Gujarati:** `"✍️ તમારી અંગત યાદો, લાગણીઓ અથવા મહત્વપૂર્ણ ક્ષણો અહીં નોંધો... (દા.ત. 'ચાળીસ વર્ષ પહેલાંની વાત યાદ કરતાં, મને સૌથી વધુ સ્પર્શી જાય છે કે...')"`
+      - **Punjabi:** `"✍️ ਆਪਣੀਆਂ ਨਿੱਜੀ ਯਾਦਾਂ, ਭਾਵਨਾਵਾਂ ਜਾਂ ਮਹੱਤਵਪੂਰਨ ਪਲਾਂ ਨੂੰ ਇੱਥੇ ਦਰਜ ਕਰੋ... (ਉਦਾਹਰਣ ਵਜੋਂ 'ਚਾਲੀ ਸਾਲ ਪਹਿਲਾਂ ਦੀ ਗੱਲ ਯਾਦ ਕਰਦਿਆਂ, ਮੇਰੇ ਦਿਲ ਵਿੱਚ ਵੱਸਿਆ ਹੈ ਕਿ...')"`
+      - **Hindi:** `"✍️ अपनी व्यक्तिगत यादें, भावनाएं या महत्वपूर्ण पल यहाँ लिखें... (जैसे 'चालीस साल पहले की बात याद करते हुए, मुझे सबसे ज्यादा याद आता है कि...')"`
+    - Completely eliminated desktop confusion regarding absent on-screen microphone activation while preserving natural OS keyboard dictation for mobile narrators.
+  - **Interactive Checklist & Test Synchronisation**:
+    - Synchronised Card 50 in `qa_checklist_interactive.html` with updated placeholder copy.
+    - Updated unit test assertion in `src/test/fireside_prompt_carousel.test.tsx` (line 386).
+  - **Verification**:
+    - Vitest Suite: 34/34 tests passing (`sensory_script_editor.test.tsx` + `fireside_prompt_carousel.test.tsx`).
+    - TypeScript Compiler Gate: `npx.cmd tsc --noEmit` passed with exit code 0.
+    - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+
+
 
 

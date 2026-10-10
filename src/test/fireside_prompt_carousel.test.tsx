@@ -383,7 +383,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
 
       // Textarea has unambiguous call-to-action placeholder (not the prompt spark!)
       const textarea = screen.getByTestId('HS_FIRESIDE_SCRIPT_TEXTAREA') as HTMLTextAreaElement;
-      expect(textarea.placeholder).toContain('Type or speak your personal memory here');
+      expect(textarea.placeholder).toContain('Note down your memories, feelings, or key moments here');
       expect(textarea.placeholder).not.toEqual(promptSparkEl.textContent?.replace(/[“”"]/g, ''));
 
       // Narrator types their memory
