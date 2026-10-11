@@ -67,6 +67,7 @@ import {
   type NarrativeScriptInputRef,
 } from '@/components/studio/shared/NarrativeScriptInput';
 import { SensoryModalityKey } from '@/components/studio/shared/SensoryModalityKey';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export interface SingleCardPromptCarouselProps {
@@ -612,33 +613,61 @@ export function SingleCardPromptCarousel({
   }, [highlightedSensoryType]);
 
   const renderedScriptContent = useMemo(() => {
-    if (!activeProse || !highlightedSensoryType) {
+    if (!activeProse || rawDetectedAnchors.length === 0) {
       return activeProse;
     }
-    const targetWords = Array.from(
-      new Set(
-        rawDetectedAnchors
-          .filter((a) => a.type === highlightedSensoryType)
-          .map((a) => a.word.toLowerCase())
-      )
-    );
+
+    const anchorMap = new Map<string, string>();
+    rawDetectedAnchors.forEach((a) => {
+      anchorMap.set(a.word.toLowerCase(), a.type);
+    });
+
+    const targetWords = Array.from(anchorMap.keys());
     if (targetWords.length === 0) {
       return activeProse;
     }
+
     const escaped = targetWords
       .sort((a, b) => b.length - a.length)
       .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    const regex = new RegExp(`(\\b(?:${escaped.join('|')})\\b)`, 'gi');
+
+    // Unicode-aware word boundary lookaround
+    const regex = new RegExp(
+      `(?<![\\p{L}\\p{N}\\p{M}])(${escaped.join('|')})(?![\\p{L}\\p{N}\\p{M}])`,
+      'gui'
+    );
     const parts = activeProse.split(regex);
-    const wordSet = new Set(targetWords);
 
     return parts.map((part, idx) => {
-      if (wordSet.has(part.toLowerCase())) {
+      const clean = part.toLowerCase();
+      const anchorType = anchorMap.get(clean);
+      if (anchorType) {
+        const isCurrentlyPulsed =
+          highlightedSensoryType !== null && anchorType === highlightedSensoryType;
+
+        if (isCurrentlyPulsed) {
+          return (
+            <span
+              key={idx}
+              data-testid="fireside-sensory-highlighted-word"
+              className="bg-amber-400/30 text-amber-200 border-b border-amber-400 px-1 rounded animate-pulse"
+            >
+              {part}
+            </span>
+          );
+        }
+
+        // Auto-highlight sensory cues matching Desktop Scriptorium palette
         return (
           <span
             key={idx}
-            data-testid="fireside-sensory-highlighted-word"
-            className="bg-amber-400/30 text-amber-200 border-b border-amber-400 px-1 rounded animate-pulse"
+            data-anchor-type={anchorType}
+            className={cn(
+              "px-1 py-0.5 rounded-sm border-b-2 font-medium transition-all duration-300",
+              anchorType === 'soundscape' && "border-sky-500/60 bg-sky-500/15 text-sky-100",
+              anchorType === 'visual' && "border-emerald-500/60 bg-emerald-500/15 text-emerald-100",
+              anchorType === 'aroma' && "border-amber-500/60 bg-amber-500/15 text-amber-100"
+            )}
           >
             {part}
           </span>
