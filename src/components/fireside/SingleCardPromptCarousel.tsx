@@ -67,6 +67,7 @@ import {
   type NarrativeScriptInputRef,
 } from '@/components/studio/shared/NarrativeScriptInput';
 import { SensoryModalityKey } from '@/components/studio/shared/SensoryModalityKey';
+import { useScriptCadence } from '@/hooks/studio/useScriptCadence';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -419,12 +420,47 @@ export function SingleCardPromptCarousel({
     };
   }, [draftProse, isEditingScript, activeProse, onSaveProse, currentSpark.linkedSceneId, currentSceneMemory?.sceneId]);
 
+  const { metrics: scriptCadence } = useScriptCadence(activeProse || '');
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const isTouchDraggingRef = useRef<boolean>(false);
+
+  const handleScriptTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      isTouchDraggingRef.current = false;
+    }
+  };
+
+  const handleScriptTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPosRef.current || e.touches.length !== 1) return;
+    const dx = Math.abs(e.touches[0].clientX - touchStartPosRef.current.x);
+    const dy = Math.abs(e.touches[0].clientY - touchStartPosRef.current.y);
+    if (dx > 8 || dy > 8) {
+      isTouchDraggingRef.current = true;
+    }
+  };
+
+  const handleScriptTouchEnd = () => {
+    touchStartPosRef.current = null;
+  };
+
   const handleStartEditScript = () => {
     setDraftProse(activeProse);
     setOriginalScriptDraft(null);
     setIsScriptPolished(false);
     setIsPolishingScript(false);
     setIsEditingScript(true);
+    setTimeout(() => {
+      sensoryEditorRef.current?.focus();
+    }, 50);
+  };
+
+  const handleScriptClickToType = (e: React.MouseEvent) => {
+    if (isTouchDraggingRef.current) {
+      isTouchDraggingRef.current = false;
+      return;
+    }
+    handleStartEditScript();
   };
 
   const handleSaveScript = () => {
@@ -663,10 +699,10 @@ export function SingleCardPromptCarousel({
             key={idx}
             data-anchor-type={anchorType}
             className={cn(
-              "px-1 py-0.5 rounded-sm border-b-2 font-medium transition-all duration-300",
-              anchorType === 'soundscape' && "border-sky-500/60 bg-sky-500/15 text-sky-100",
-              anchorType === 'visual' && "border-emerald-500/60 bg-emerald-500/15 text-emerald-100",
-              anchorType === 'aroma' && "border-amber-500/60 bg-amber-500/15 text-amber-100"
+              "px-0 mx-0 border-b-2 font-medium transition-colors duration-300",
+              anchorType === 'soundscape' && "border-sky-400/80 bg-sky-500/15 text-sky-100",
+              anchorType === 'visual' && "border-emerald-400/80 bg-emerald-500/15 text-emerald-100",
+              anchorType === 'aroma' && "border-amber-400/80 bg-amber-500/15 text-amber-100"
             )}
           >
             {part}
@@ -1699,16 +1735,6 @@ export function SingleCardPromptCarousel({
                           {viewMode === 'script' ? '👁️ VIEW ORIGINAL SPARK' : '✨ VIEW WOVEN SCRIPT'}
                         </span>
                       </button>
-
-                      <button
-                        type="button"
-                        data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
-                        data-hotspot-id="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
-                        onClick={handleStartEditScript}
-                        className="min-h-[48px] sm:min-h-[44px] px-3.5 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-950/60 hover:bg-amber-900/70 active:scale-98 text-amber-400 border border-amber-500/30 transition-all cursor-pointer shrink-0"
-                      >
-                        <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">✏️ EDIT SCENE</span>
-                      </button>
                     </div>
                   </div>
 
@@ -1723,12 +1749,55 @@ export function SingleCardPromptCarousel({
                   )}
 
                   {viewMode === 'script' ? (
-                    <div className="space-y-3">
+                    <div className="space-y-3.5">
+                      {/* INTERACTIVE CLICK-TO-TYPE SCRIPT CONTAINER (UI-MW-137) */}
                       <div
-                        data-testid="fireside-active-script-body"
-                        className="text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200 max-h-56 overflow-y-auto pr-1"
+                        data-testid="fireside-click-to-type-container"
+                        onClick={handleScriptClickToType}
+                        onTouchStart={handleScriptTouchStart}
+                        onTouchMove={handleScriptTouchMove}
+                        onTouchEnd={handleScriptTouchEnd}
+                        className="group/script relative p-4 rounded-2xl bg-black/40 border border-stone-800/80 hover:border-amber-500/40 hover:bg-black/50 transition-all cursor-text space-y-3 shadow-inner"
+                        title="Click or tap anywhere to edit scene script"
                       >
-                        &ldquo;{renderedScriptContent}&rdquo;
+                        <div
+                          data-testid="fireside-active-script-body"
+                          className="text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200 max-h-56 overflow-y-auto pr-1"
+                        >
+                          {renderedScriptContent}
+                        </div>
+
+                        {/* UNIFIED LOWER ACTION BAR (UI-MW-137) */}
+                        <div
+                          data-testid="fireside-lower-action-bar"
+                          className="pt-2.5 border-t border-stone-800/60 flex items-center justify-between gap-3 flex-wrap cursor-default"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div
+                            data-testid="fireside-script-cadence-pill"
+                            className="text-xs font-mono text-stone-400 flex items-center gap-1.5 select-none"
+                          >
+                            <span>⏱️</span>
+                            <span>
+                              ~{scriptCadence.estimatedSpokenSeconds}s spoken
+                              <span className="text-stone-600 mx-1">•</span>
+                              {scriptCadence.wordCount} {scriptCadence.wordCount === 1 ? 'word' : 'words'}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
+                            data-hotspot-id="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEditScript();
+                            }}
+                            className="min-h-[44px] px-4 py-1.5 rounded-xl text-xs sm:text-sm font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20 active:scale-98 transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">✏️ EDIT SCENE</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Sensory Seeds Tray for easy inspiration */}

@@ -1429,6 +1429,33 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - `npx.cmd tsc --noEmit` exited with code 0.
     - `npm.cmd run build` compiled all routes with exit code 0.
 
+## Checkpoint #060 — UI-MW-137: Ergonomic Lower Action Bar, Click-to-Type Canvas & Zero-Drift Sensory Underlines (2026-10-11)
+
+- **Target Ref**: `UI-MW-137` (Ergonomic Lower Action Bar & Click-to-Type Canvas)
+- **Lead Agent**: Chat 2 (The Flash Executor) [Fast Mode + High Reasoning]
+- **Target Epic**: Sprint 13 (Universal Core Primitives & Studio Parity)
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Feature 1: Quotation Mark Elimination (`SingleCardPromptCarousel.tsx`)**:
+    - Removed `&ldquo;` and `&rdquo;` wrapping the active script monologue in Fireside view mode.
+    - Restored authentic psychological voice ownership without the illusion of external third-party quotation.
+  - **Feature 2: Ergonomic Lower Action Bar with Live 120 WPM Cadence (`SingleCardPromptCarousel.tsx`)**:
+    - Removed `[ ✏️ EDIT SCENE ]` from the top header toolbar to keep header dedicated purely to scene metadata.
+    - Positioned unified Lower Action Bar directly beneath the script container matching the F-reading gaze pattern.
+    - Integrated live 120 WPM spoken cadence metrics and word counter (`⏱️ ~Xs spoken • Y words`).
+  - **Feature 3: Click-to-Type Container & Mobile Scroll-Drag Suppression (`SingleCardPromptCarousel.tsx`)**:
+    - Wrapped script text in interactive `fireside-click-to-type-container` (`cursor-text`, hover ring).
+    - Clicking anywhere on the text immediately triggers edit mode and auto-focuses the `<NarrativeScriptInput>` textarea.
+    - Added touch drag suppression (`touchmove` distance threshold > 8px) to prevent virtual keyboard popups when scrolling on touch devices.
+  - **Feature 4: Zero-Drift Baseline Underline Parity (`SingleCardPromptCarousel.tsx`)**:
+    - Removed `px-1 py-0.5 rounded-sm` pill classes from rendered sensory tokens.
+    - Standardised to pure baseline underlines (`border-b-2`, `px-0 mx-0 font-medium transition-colors duration-300`) matching Desktop Scriptorium.
+  - **Quality Gates & Test Coverage**:
+    - `src/test/fireside_prompt_carousel.test.tsx`: 24/24 passed (added 5 dedicated UI-MW-137 tests).
+    - `src/test/fireside_sync.test.ts`: 71/71 passed.
+    - `src/test/bidirectional_sync.test.tsx`: 9/9 passed.
+
+
 
 
 

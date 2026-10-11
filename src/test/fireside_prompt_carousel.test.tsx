@@ -457,6 +457,87 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       );
     });
   });
+
+  describe('3. Ergonomic Lower Action Bar & Click-to-Type Canvas (UI-MW-137)', () => {
+    const mockMemoryWithProse = {
+      sceneId: 'part-1-scene-1',
+      prose: 'The importance of reflection, integration, and honouring how far you have travelled. Looking back my Grandparents and parents, walking',
+    };
+
+    it('renders monologue prose without surrounding quotation marks', () => {
+      render(<SingleCardPromptCarousel activeSceneMemory={mockMemoryWithProse} />);
+
+      const scriptBody = screen.getByTestId('fireside-active-script-body');
+      expect(scriptBody).toBeInTheDocument();
+      // Must not begin or end with quotation marks
+      const text = scriptBody.textContent?.trim() || '';
+      expect(text.startsWith('“')).toBe(false);
+      expect(text.startsWith('"')).toBe(false);
+      expect(text.endsWith('”')).toBe(false);
+      expect(text.endsWith('"')).toBe(false);
+      expect(text).toContain('The importance of reflection');
+    });
+
+    it('renders the Lower Action Bar with live cadence, word count, and tactile Edit Scene button', () => {
+      render(<SingleCardPromptCarousel activeSceneMemory={mockMemoryWithProse} />);
+
+      expect(screen.getByTestId('fireside-lower-action-bar')).toBeInTheDocument();
+      const cadencePill = screen.getByTestId('fireside-script-cadence-pill');
+      expect(cadencePill).toBeInTheDocument();
+      expect(cadencePill).toHaveTextContent(/spoken/i);
+      expect(cadencePill).toHaveTextContent(/19 words/i);
+
+      const editBtn = screen.getByTestId('HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN');
+      expect(editBtn).toHaveTextContent(/Edit Scene/i);
+    });
+
+    it('activates editor upon clicking directly on the click-to-type script container', () => {
+      render(<SingleCardPromptCarousel activeSceneMemory={mockMemoryWithProse} />);
+
+      // Initially in view mode
+      expect(screen.queryByTestId('fireside-armchair-script-editor')).not.toBeInTheDocument();
+
+      // Click directly on the container
+      const container = screen.getByTestId('fireside-click-to-type-container');
+      fireEvent.click(container);
+
+      // Editor opens!
+      expect(screen.getByTestId('fireside-armchair-script-editor')).toBeInTheDocument();
+    });
+
+    it('suppresses editor activation when user performs a vertical touch-drag (mobile scroll guardrail)', () => {
+      render(<SingleCardPromptCarousel activeSceneMemory={mockMemoryWithProse} />);
+
+      const container = screen.getByTestId('fireside-click-to-type-container');
+
+      // Simulate a vertical touch drag (scroll gesture)
+      fireEvent.touchStart(container, {
+        touches: [{ clientX: 100, clientY: 100 }],
+      });
+      fireEvent.touchMove(container, {
+        touches: [{ clientX: 100, clientY: 150 }], // 50px drag
+      });
+      fireEvent.touchEnd(container);
+      fireEvent.click(container);
+
+      // Should still be in view mode, NOT editor!
+      expect(screen.queryByTestId('fireside-armchair-script-editor')).not.toBeInTheDocument();
+    });
+
+    it('renders sensory anchors with pure baseline underlines (px-0 mx-0 border-b-2) without pill classes', () => {
+      render(<SingleCardPromptCarousel activeSceneMemory={mockMemoryWithProse} />);
+
+      // Find highlighted anchors
+      const soundscapeSpan = document.querySelector('[data-anchor-type="soundscape"]');
+      if (soundscapeSpan) {
+        expect(soundscapeSpan.className).toContain('border-b-2');
+        expect(soundscapeSpan.className).toContain('px-0');
+        expect(soundscapeSpan.className).toContain('mx-0');
+        expect(soundscapeSpan.className).not.toContain('px-1');
+        expect(soundscapeSpan.className).not.toContain('rounded-sm');
+      }
+    });
+  });
 });
 
 
