@@ -1396,6 +1396,39 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - `npx.cmd tsc --noEmit` exited with code 0.
     - `npm.cmd run build` compiled all routes with exit code 0.
 
+---
+
+## Checkpoint #059 — ARCH-MW-136: Bidirectional Cross-Surface Script Sync, Unicode Word-Boundary Isolation & Zero-Loss Autosave (2026-10-11)
+
+- **Target Ref**: `ARCH-MW-136` (Bidirectional Cross-Surface Script Sync & Zero-Loss Autosave)
+- **Lead Agent**: Chat 2 (The Flash Executor) [Fast Mode + High Reasoning]
+- **Target Epic**: Sprint 13 (Universal Core Primitives & Studio Parity)
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Hotfix 1: Unicode Word-Boundary Lookaround Tokenizer (`SentenceWrapper.tsx`)**:
+    - Replaced naive ASCII substring split regex with Unicode lookaround:
+      `new RegExp('(?<![\\p{L}\\p{N}\\p{M}])(' + anchorPattern + ')(?![\\p{L}\\p{N}\\p{M}])|([^\\p{L}\\p{N}\\p{M}]+)', 'gui')`.
+    - Permanently eliminated substring double-highlight collisions where compound words like `"Grandparents"` previously split and highlighted `"parents"` twice on Desktop while Fireside highlighted it once.
+  - **Feature 2: Ephemeral 0ms Local Scratchpad & Mount Rehydration (`NarrativeScriptInput.tsx`)**:
+    - Scoped `localStorage` draft key `mw_draft_${userId}_${syncSceneId}` with 0ms keystroke persistence.
+    - Added mount rehydration shield that restores buffered drafts if an elder accidentally reloads or closes the tab.
+    - Exported `clearDraftScratchpad(sceneId, userId)` for deterministic lifecycle cleanup.
+  - **Feature 3: Bidirectional `BroadcastChannel('mw_script_sync')` Bridge & Trailing Firestore Autosave**:
+    - Sub-5ms cross-tab split-screen broadcast bridge connecting Fireside Mobile and Desktop Scriptorium with origin tagging (`inst_...` / `desk_...`) for zero-echo broadcast filtering.
+    - Active Caret Shield: blocks incoming remote updates whenever an editor is actively focused (`isFocusedRef.current` / `lastFocusedField === 'description'`), preventing cursor stomping during live storytelling.
+    - 2,000ms trailing debounce Firestore autosave in `SingleCardPromptCarousel.tsx` with animated status pills (`✍️ Draft buffered`, `Syncing to vault...`, `✓ Synced to Vault`).
+    - Fixed sticky `lastFocusedField` in `MemoryForm.tsx` by resetting field focus on blur, restoring remote Firestore and BroadcastChannel synchronisation.
+  - **Comprehensive Vitest Suite Expansion**:
+    - `src/test/bidirectional_sync.test.tsx`: 9/9 passed (Unicode word boundaries, BroadcastChannel contract, echo suppression, caret shield, scratchpad rehydration).
+    - `src/test/narrative_script_input.test.tsx`: 7/7 passed.
+    - `src/test/fireside_prompt_carousel.test.tsx`: 19/19 passed.
+    - `src/test/diaspora_voice_shield.test.ts`: 10/10 passed.
+    - `src/test/script_cadence.test.ts`: 8/8 passed.
+    - Total test suite: 813+ passed across all 64 test files (0 failures).
+  - **Pre-Push Quality Gates**:
+    - `npx.cmd tsc --noEmit` exited with code 0.
+    - `npm.cmd run build` compiled all routes with exit code 0.
+
 
 
 

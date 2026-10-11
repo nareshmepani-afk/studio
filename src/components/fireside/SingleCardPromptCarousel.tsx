@@ -37,6 +37,7 @@ import {
   Coffee,
   Loader2,
   RotateCcw,
+  Check,
 } from 'lucide-react';
 import type {
   FiresidePromptSpark,
@@ -379,6 +380,44 @@ export function SingleCardPromptCarousel({
     return rawVision ? rawVision.toUpperCase().replace(/-/g, ' ') : 'THE MEMORY WEAVE';
   }, [currentSceneMemory?.activeVisionLabel, currentSceneMemory?.activeVision]);
 
+  const debouncedAutosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'buffering' | 'saving' | 'saved'>('idle');
+
+  const targetSceneId =
+    currentSpark.linkedSceneId || currentSceneMemory?.sceneId || 'part-1-scene-1';
+
+  // ARCH-MW-136: 2,000ms trailing debounce autosave to Cloud Firestore
+  useEffect(() => {
+    if (!isEditingScript) return;
+    if (draftProse === activeProse) return;
+
+    setCloudSyncStatus('buffering');
+
+    if (debouncedAutosaveTimerRef.current) {
+      clearTimeout(debouncedAutosaveTimerRef.current);
+    }
+
+    debouncedAutosaveTimerRef.current = setTimeout(async () => {
+      const trimmed = draftProse.trim();
+      if (!trimmed) return;
+
+      setCloudSyncStatus('saving');
+      try {
+        await onSaveProse?.(targetSceneId, trimmed);
+        setCloudSyncStatus('saved');
+        setTimeout(() => setCloudSyncStatus('idle'), 3000);
+      } catch {
+        setCloudSyncStatus('idle');
+      }
+    }, 2000);
+
+    return () => {
+      if (debouncedAutosaveTimerRef.current) {
+        clearTimeout(debouncedAutosaveTimerRef.current);
+      }
+    };
+  }, [draftProse, isEditingScript, activeProse, onSaveProse, currentSpark.linkedSceneId, currentSceneMemory?.sceneId]);
+
   const handleStartEditScript = () => {
     setDraftProse(activeProse);
     setOriginalScriptDraft(null);
@@ -388,6 +427,9 @@ export function SingleCardPromptCarousel({
   };
 
   const handleSaveScript = () => {
+    if (debouncedAutosaveTimerRef.current) {
+      clearTimeout(debouncedAutosaveTimerRef.current);
+    }
     const trimmed = draftProse.trim();
     // Rule 12 Optimistic UI: 0ms synchronous local state update
     setLocalProseOverride(trimmed);
@@ -395,12 +437,16 @@ export function SingleCardPromptCarousel({
     setViewMode('script');
     setOriginalScriptDraft(null);
     setIsScriptPolished(false);
-    const targetSceneId =
-      currentSpark.linkedSceneId || currentSceneMemory?.sceneId || 'part-1-scene-1';
+    setCloudSyncStatus('saved');
+    setTimeout(() => setCloudSyncStatus('idle'), 3000);
     onSaveProse?.(targetSceneId, trimmed);
   };
 
   const handleCancelEditScript = () => {
+    if (debouncedAutosaveTimerRef.current) {
+      clearTimeout(debouncedAutosaveTimerRef.current);
+    }
+    setCloudSyncStatus('idle');
     setIsEditingScript(false);
     setDraftProse(activeProse);
     setOriginalScriptDraft(null);
@@ -1458,6 +1504,7 @@ export function SingleCardPromptCarousel({
                   <NarrativeScriptInput
                     ref={sensoryEditorRef}
                     value={draftProse}
+                    syncSceneId={targetSceneId}
                     onChange={(val) => {
                       setDraftProse(val);
                       if (isScriptPolished && originalScriptDraft !== null && val !== draftProse) {
@@ -1483,6 +1530,21 @@ export function SingleCardPromptCarousel({
                     >
                       [ ✓ Save Script ]
                     </button>
+                    {cloudSyncStatus === 'buffering' && (
+                      <span className="text-[11px] font-mono text-amber-300/80 flex items-center gap-1 animate-pulse">
+                        <span>✍️</span> <span>Draft buffered</span>
+                      </span>
+                    )}
+                    {cloudSyncStatus === 'saving' && (
+                      <span className="text-[11px] font-mono text-sky-300 flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin text-sky-400" /> <span>Syncing to vault...</span>
+                      </span>
+                    )}
+                    {cloudSyncStatus === 'saved' && (
+                      <span className="text-[11px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" /> <span>✓ Synced to Vault</span>
+                      </span>
+                    )}
                     <button
                       type="button"
                       data-testid="HS_FIRESIDE_SCRIPT_POLISH_BTN"

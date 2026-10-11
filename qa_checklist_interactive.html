@@ -67,7 +67,7 @@
           Organised strictly by target staging route so you can open a single URL and run every test on that route in chronological order:
           <strong class="text-sky-300">1. first_flight_rehearsal</strong> (Cards 1–6: 6/6 PASS) &bull;
           <strong class="text-amber-300">2. studio/production/</strong> (Card 7: 1/1 PASS) &bull;
-          <strong class="text-emerald-300">3. studio/fireside, Curriculum Lockstep Sync, Cloud Storage, Chromatic Lockstep &amp; Build Immutability (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115, OPS-116, MW-117, MW-118, MW-119, ARCH-MW-127, UX-MW-131, ARCH-MW-132 &amp; SPEC-MW-134)</strong> (Cards 8–10 PASS; Cards 11–52 Ready for Verification).
+          <strong class="text-emerald-300">3. studio/fireside, Curriculum Lockstep Sync, Cloud Storage, Chromatic Lockstep &amp; Build Immutability (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115, OPS-116, MW-117, MW-118, MW-119, ARCH-MW-127, UX-MW-131, ARCH-MW-132, SPEC-MW-134 &amp; ARCH-MW-136)</strong> (Cards 8–10 PASS; Cards 11–53 Ready for Verification).
         </p>
       </div>
 
@@ -5860,6 +5860,223 @@
           </div>
         </div>
 
+        <!-- CARD 53: BIDIRECTIONAL CROSS-SURFACE SCRIPT SYNC & ZERO-LOSS AUTOSAVE (ARCH-MW-136) -->
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-sky-500/50 shadow-xl transition-all" id="card-53" data-category="fireside">
+          <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
+          <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                  CARD 53
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                  CROSS-SURFACE SYNC &amp; AUTOSAVE
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                  ARCH-MW-136 &bull; RULE 12 &bull; ZERO-LOSS
+                </span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                Test 53: Bidirectional Cross-Surface Script Sync, Unicode Word-Boundary Highlighting &amp; Zero-Loss Autosave (ARCH-MW-136)
+              </h3>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <a
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Fireside The Threshold (Part I Scene 1) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Desktop Scriptorium (/studio) ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ZONE 2: TARGET ROUTE & METADATA -->
+          <div class="bg-gray-900/60 p-3 rounded-xl border border-gray-800 text-xs font-mono text-gray-400 space-y-1 mb-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span>Governance: <strong class="text-gray-300">ARCH-MW-136 &bull; BroadcastChannel Bridge &bull; LocalStorage Scratchpad &bull; SentenceWrapper.tsx &bull; NarrativeScriptInput.tsx</strong></span>
+              <span>Milestone: <strong class="text-sky-400">ARCH-MW-136 (Bidirectional Script Sync &amp; Autosave)</strong></span>
+            </div>
+            <div class="text-[11px] text-gray-500 break-all space-y-0.5">
+              <div>Part I Scene 1 Route: https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</div>
+              <div>Desktop Studio Route: https://dev.memoryweaver.studio/studio</div>
+            </div>
+          </div>
+
+          <!-- ZONE 3: TEST ITEMS -->
+          <div class="space-y-3">
+            <!-- ITEM 53.1 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-sky-400">Item 53.1</span>
+                    <span class="text-xs font-bold text-white">SentenceWrapper Unicode Word-Boundary Isolation</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    Type a sentence containing compound words like <code>"Looking back my Grandparents and parents, walking..."</code> in Desktop Scriptorium. Confirm that <code>"parents"</code> is highlighted exactly once as an independent anchor, without splitting <code>"Grandparents"</code> into separate fragments or double-highlighting.
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setVerdict(53, 'pass', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setVerdict(53, 'fail', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Desktop Scriptorium (/studio)</span>
+                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Test Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 53.2 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-sky-400">Item 53.2</span>
+                    <span class="text-xs font-bold text-white">Fireside &rarr; Desktop Real-Time Script Broadcast (&lt;5ms)</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    Open Desktop Studio and Fireside Studio side-by-side in split tabs for Scene 1 (The Threshold). Type or edit narrative text in Fireside's editor. Verify the text synchronises to Desktop Studio within 5ms via BroadcastChannel without waiting for manual save or page refresh.
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setVerdict(53, 'pass', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setVerdict(53, 'fail', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 53.3 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-sky-400">Item 53.3</span>
+                    <span class="text-xs font-bold text-white">Desktop &rarr; Fireside Real-Time Script Broadcast</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    In Desktop Studio, type into the Story Hook canvas. Verify that the draft text updates immediately in Fireside Studio's editor, ensuring 100% bidirectional parity between both authoring surfaces.
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setVerdict(53, 'pass', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setVerdict(53, 'fail', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Desktop Scriptorium (/studio)</span>
+                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Test Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 53.4 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-sky-400">Item 53.4</span>
+                    <span class="text-xs font-bold text-white">Caret Shield Protection During Active Typing</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    With cursor focused and actively typing in Fireside Studio, dispatch changes from Desktop. Confirm that the Fireside editor ignores incoming updates while focused, protecting the elder's cursor and typing stream from being overwritten.
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setVerdict(53, 'pass', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setVerdict(53, 'fail', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 53.5 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-sky-400">Item 53.5</span>
+                    <span class="text-xs font-bold text-white">Zero-Loss LocalStorage Scratchpad &amp; Accidental Refresh Rehydration</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    In Fireside, type a unique phrase into the editor. Without clicking <code>[ ✓ Save Script ]</code>, refresh the browser tab (F5). Confirm the buffered draft is completely restored upon mount from the 0ms scratchpad, preventing any lost thoughts.
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setVerdict(53, 'pass', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setVerdict(53, 'fail', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 53.6 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-sky-400">Item 53.6</span>
+                    <span class="text-xs font-bold text-white">2,000ms Trailing Debounce Firestore Autosave &amp; Visual Pills</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    In Fireside, type a sentence and pause typing for 2 seconds. Observe the autosave status indicator pills cycle from <code>✍️ Draft buffered</code> to <code>Syncing to vault...</code> to <code>✓ Synced to Vault</code>, confirming non-blocking background persistence to Cloud Firestore.
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setVerdict(53, 'pass', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setVerdict(53, 'fail', this)" class="verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- ZONE 4: AUDIT NOTES & SCREENSHOT DROPZONE -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Audit Notes / Narrative Feedback</label>
+                <textarea id="notes-53" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500" placeholder="Observations on sync latency, caret shielding, or autosave behaviour..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
+                <textarea id="console-log-53" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
+              </div>
+            </div>
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-53" ondragover="event.preventDefault()" ondrop="handleDrop(event, 53)">
+              <input type="file" id="file-input-53" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(53, f))" />
+              <div onclick="document.getElementById('file-input-53').click()" class="space-y-1">
+                <span class="text-sm">📸</span>
+                <div class="text-xs text-gray-400">Drag &amp; drop screenshot, <span class="text-amber-400 underline font-medium">browse</span>, or paste (Ctrl+V) directly while card is active</div>
+                <div id="img-count-53" class="text-[10px] text-gray-500 font-mono">0 screenshots attached</div>
+              </div>
+            </div>
+            <div id="image-gallery-53" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+          </div>
+        </div>
+
         </div>
       </section>
       </div>
@@ -5902,7 +6119,7 @@
   </footer>
 
   <script>
-    const TOTAL = 52;
+    const TOTAL = 53;
     const STORAGE_KEY = 'MW_QA_ROUTE_GROUPED_3187cca9';
     let currentFilter = 'all';
     let currentViewMode = 'active';
@@ -5962,7 +6179,8 @@
       "[studio <-> studio/fireside] ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration",
       "[studio/fireside] UX-MW-131: Fireside Inspiration Deck Decoupling & Dedicated Sensory Seeds Tray",
       "[studio/fireside • Desktop Studio] ARCH-MW-132: Shared Narrative Primitives & Cross-Surface Parity (SensoryScriptEditor, SensoryModalityKey & Single-Icon Discipline)",
-      "[studio/fireside • Desktop Studio] SPEC-MW-134: Standard Narrative Input Suite, Scribe's Margin, Diaspora Voice Shield & 120 WPM Cadence"
+      "[studio/fireside • Desktop Studio] SPEC-MW-134: Standard Narrative Input Suite, Scribe's Margin, Diaspora Voice Shield & 120 WPM Cadence",
+      "[studio/fireside <-> Desktop Studio] ARCH-MW-136: Bidirectional Cross-Surface Script Sync, Unicode Word-Boundary Highlighting & Zero-Loss Autosave"
     ];
 
     let verdicts = {

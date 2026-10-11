@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, useImperativeHandle } from 'react';
 import { Scriptorium } from './Scriptorium/Scriptorium';
 import { SentenceWrapper } from './Scriptorium/SentenceWrapper';
 import { ScriptBlock } from '@/types';
@@ -28,6 +28,8 @@ import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { MentorshipHotspot } from './MentorshipHotspot';
 import { useMemoryPersistence } from '@/hooks/studio/useMemoryPersistence';
+import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
+import type { ScriptSyncMessage } from '@/components/studio/shared/NarrativeScriptInput';
 import { 
   SelectionDeck, 
   SynthesizingOverlay, 
@@ -370,6 +372,77 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [lastFocusedField, setLastFocusedField] = useState<'title' | 'description' | 'script' | 'metadata' | 'location' | null>(null);
   const lastSyncedDescription = useRef(data?.description || '');
   const lastSyncedProse = useRef(data?.prose || '');
+
+  // ARCH-MW-136: Bidirectional Cross-Surface Script Sync Bridge
+  const desktopInstanceIdRef = useRef<string>(
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `desk_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`
+  );
+  const desktopChannelRef = useRef<BroadcastChannel | null>(null);
+
+  const canonicalSceneId = useMemo(() => {
+    const rawId = (data as any)?.sceneId || data?.promptId || data?.id || 'part-1-scene-1';
+    const resolvedScene = resolveSceneFromPromptId(rawId);
+    return resolvedScene?.id || (data as any)?.sceneId || rawId;
+  }, [data?.id, data?.promptId, (data as any)?.sceneId]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('BroadcastChannel' in window) || !canonicalSceneId) {
+      return;
+    }
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('mw_script_sync');
+      desktopChannelRef.current = channel;
+
+      channel.onmessage = (event: MessageEvent<ScriptSyncMessage>) => {
+        const msg = event.data;
+        if (!msg || msg.sourceInstanceId === desktopInstanceIdRef.current) return;
+
+        // Check if message targets the same canonical scene
+        const msgCanonical = resolveSceneFromPromptId(msg.sceneId)?.id || msg.sceneId;
+        if (msgCanonical !== canonicalSceneId) return;
+
+        // Origin Tagging Caret Shield:
+        // If actively focused on Desktop's Story Hook, protect typing caret!
+        if (lastFocusedField === 'description') return;
+
+        if (msg.prose !== description) {
+          setDescription(msg.prose);
+          setProse(msg.prose);
+          lastSyncedDescription.current = msg.prose;
+          setScriptBlocks((prev) => {
+            if (prev.length > 0) {
+              const updated = [...prev];
+              updated[0] = { ...updated[0], text: msg.prose };
+              return updated;
+            }
+            return [{ id: 'story-hook', text: msg.prose, type: 'hook', catalysts: [] }];
+          });
+        }
+      };
+    } catch {}
+
+    return () => {
+      try { channel?.close(); } catch {}
+      desktopChannelRef.current = null;
+    };
+  }, [canonicalSceneId, lastFocusedField, description]);
+
+  const broadcastDesktopScript = useCallback((text: string) => {
+    if (!desktopChannelRef.current || !canonicalSceneId) return;
+    try {
+      desktopChannelRef.current.postMessage({
+        sceneId: canonicalSceneId,
+        prose: text,
+        sourceInstanceId: desktopInstanceIdRef.current,
+        timestamp: Date.now(),
+      });
+    } catch {}
+  }, [canonicalSceneId]);
+
   const [scriptBlocks, setScriptBlocks] = useState<ScriptBlock[]>(data?.scriptBlocks || []);
   
   // Poster State
@@ -2401,6 +2474,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                              hideAnchors={false}
                              onUpdate={(text: string) => {
                                setDescription(text);
+                               broadcastDesktopScript(text);
                                onActivity?.(); // Reset idle timer
                                // Update first script block title if it's the story hook
                                if (scriptBlocks.length > 0) {
@@ -2410,7 +2484,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                }
                              }}
                              onFocus={() => setLastFocusedField('description')}
-                             onBlur={handleCaretUpdate}
+                             onBlur={(e: any) => {
+                               handleCaretUpdate(e);
+                               setLastFocusedField(null);
+                             }}
                              readOnly={isProductionLocked}
                              actions={globalActions}
                            />

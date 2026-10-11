@@ -484,11 +484,15 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   // 1. REFINED TOKENIZATION ENGINE (V4.6 - CODE RED STABILIZATION)
   const tokens = useMemo(() => {
     if (!block.text) return [];
-    if (anchors.length === 0) return block.text.split(/([^a-zA-Z0-9])/g).filter((t: string) => t !== "");
+    if (anchors.length === 0) {
+      const fallbackRegex = new RegExp(`([^\\p{L}\\p{N}\\p{M}]+)`, 'gui');
+      return block.text.split(fallbackRegex).filter((t: string) => t !== undefined && t !== "");
+    }
 
     const sortedAnchors = [...anchors].sort((a, b) => b.word.length - a.word.length);
     const anchorPattern = sortedAnchors.map(a => a.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-    const regex = new RegExp(`(${anchorPattern}|[^a-zA-Z0-9])`, 'gi');
+    // Unicode-aware word boundary lookaround: matches anchor words while respecting letter/mark clusters across all diaspora languages
+    const regex = new RegExp(`(?<![\\p{L}\\p{N}\\p{M}])(${anchorPattern})(?![\\p{L}\\p{N}\\p{M}])|([^\\p{L}\\p{N}\\p{M}]+)`, 'gui');
     
     return block.text.split(regex).filter((t: string) => t !== undefined && t !== "");
   }, [block.text, anchors]);

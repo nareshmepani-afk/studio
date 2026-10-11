@@ -24,9 +24,28 @@ import { ScribesMargin } from './ScribesMargin';
 export type InputTypography = 'typewriter' | 'serif';
 export type ScriptLanguage = 'en-GB' | 'gu' | 'pa' | 'hi';
 
+export interface ScriptSyncMessage {
+  sceneId: string;
+  prose: string;
+  sourceInstanceId: string;
+  timestamp: number;
+}
+
+export function clearDraftScratchpad(sceneId: string, userId?: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const key = userId ? `mw_draft_${userId}_${sceneId}` : `mw_draft_${sceneId}`;
+    localStorage.removeItem(key);
+  } catch {}
+}
+
 export interface NarrativeScriptInputProps {
   value: string;
   onChange: (value: string) => void;
+  syncSceneId?: string;
+  userId?: string;
+  enableLocalScratchpad?: boolean;
+  enableBroadcastSync?: boolean;
   typography?: InputTypography;
   language?: ScriptLanguage | string;
   placeholder?: string;
@@ -113,6 +132,10 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
       marginVariant = 'dock',
       onSensoryMatchCountChange,
       onCadenceChange,
+      syncSceneId,
+      userId,
+      enableLocalScratchpad = true,
+      enableBroadcastSync = true,
       onDetectedAnchorsChange,
       onFocus,
       onBlur,
@@ -134,6 +157,117 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
     const [pulsedModality, setPulsedModality] = useState<'soundscape' | 'visual' | 'aroma' | null>(null);
     const [isMarginOpen, setIsMarginOpen] = useState(showScribesMargin);
     const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Ephemeral Local Scratchpad Key (ARCH-MW-136: 0ms Keystroke Buffer)
+    const scratchpadKey = enableLocalScratchpad && syncSceneId
+      ? (userId ? `mw_draft_${userId}_${syncSceneId}` : `mw_draft_${syncSceneId}`)
+      : null;
+
+    // Unique per window/tab instance ID for BroadcastChannel origin tagging
+    const instanceIdRef = useRef<string>(
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `inst_${crypto.randomUUID()}`
+        : `inst_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`
+    );
+
+    const isFocusedRef = useRef(false);
+    const channelRef = useRef<BroadcastChannel | null>(null);
+    const hasRehydratedRef = useRef(false);
+
+    // Rehydrate scratchpad on mount if local draft exists and is newer/fuller
+    useEffect(() => {
+      if (!scratchpadKey || hasRehydratedRef.current || typeof window === 'undefined') return;
+      try {
+        const saved = localStorage.getItem(scratchpadKey);
+        if (saved && saved.trim().length > 0 && saved !== value) {
+          const isDefault = !value || value.trim().length === 0 ||
+            value.includes("Your birthplace, family roots") ||
+            value.includes("Enter the core of your memory") ||
+            value.includes("Select a prompt to begin");
+          
+          if (isDefault || saved.length > value.length) {
+            hasRehydratedRef.current = true;
+            onChange(saved);
+          }
+        }
+      } catch {}
+    }, [scratchpadKey, value, onChange]);
+
+    // Local BroadcastChannel Bridge for sub-5ms cross-tab sync
+    useEffect(() => {
+      if (!enableBroadcastSync || !syncSceneId || typeof window === 'undefined' || !('BroadcastChannel' in window)) {
+        return;
+      }
+
+      let channel: BroadcastChannel | null = null;
+      try {
+        channel = new BroadcastChannel('mw_script_sync');
+        channelRef.current = channel;
+
+        channel.onmessage = (event: MessageEvent<ScriptSyncMessage>) => {
+          const msg = event.data;
+          if (!msg || msg.sourceInstanceId === instanceIdRef.current || msg.sceneId !== syncSceneId) {
+            return;
+          }
+
+          // Origin Tagging Shield: If currently focused on this editor, protect active typing caret!
+          if (isFocusedRef.current) {
+            return;
+          }
+
+          if (msg.prose !== value) {
+            onChange(msg.prose);
+            if (scratchpadKey) {
+              try {
+                localStorage.setItem(scratchpadKey, msg.prose);
+              } catch {}
+            }
+          }
+        };
+      } catch {}
+
+      return () => {
+        try {
+          channel?.close();
+        } catch {}
+        channelRef.current = null;
+      };
+    }, [enableBroadcastSync, syncSceneId, scratchpadKey, value, onChange]);
+
+    const broadcastLocalUpdate = useCallback((nextProse: string) => {
+      if (!channelRef.current || !syncSceneId) return;
+      try {
+        channelRef.current.postMessage({
+          sceneId: syncSceneId,
+          prose: nextProse,
+          sourceInstanceId: instanceIdRef.current,
+          timestamp: Date.now(),
+        });
+      } catch {}
+    }, [syncSceneId]);
+
+    const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const nextVal = e.target.value;
+      onChange(nextVal);
+
+      if (scratchpadKey) {
+        try {
+          localStorage.setItem(scratchpadKey, nextVal);
+        } catch {}
+      }
+
+      broadcastLocalUpdate(nextVal);
+    };
+
+    const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      isFocusedRef.current = true;
+      onFocus?.(e);
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      isFocusedRef.current = false;
+      onBlur?.(e);
+    };
 
     const resolvedStyles = typography === 'serif' ? SERIF_STYLES : TYPEWRITER_STYLES;
     const caretColor = typography === 'serif' ? '#f59e0b' : '#10b981';
@@ -343,7 +477,7 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
               ref={textareaRef}
               data-testid={dataTestId}
               value={value}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={handleTextareaChange}
               placeholder={placeholder}
               spellCheck={true}
               autoCorrect="on"
@@ -352,8 +486,8 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
               rows={rows}
               disabled={disabled}
               readOnly={readOnly}
-              onFocus={onFocus}
-              onBlur={onBlur}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
               onKeyDown={onKeyDown}
               data-enable-grammarly="false"
               data-gramm="false"
