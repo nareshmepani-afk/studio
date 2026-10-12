@@ -1483,6 +1483,42 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - `src/test/bidirectional_sync.test.tsx`: 9/9 passed.
     - `npx.cmd tsc --noEmit`: exited with code 0.
 
+## Checkpoint #062 — ARCH-MW-140: The Complete Heirloom Folio, Bidirectional Engine & QA Verification Suite (2026-10-12)
+
+- **Target Ref**: `ARCH-MW-140` (The Complete Heirloom Folio & Bidirectional Engine Rollout)
+- **Lead Agent**: Chat 2 (The Flash Executor) [Fast Mode + High Reasoning]
+- **Target Epic**: Sprint 13 (Universal Core Primitives & Studio Parity)
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Track 1: Core Engine & Sub-Pixel Drift Elimination**:
+    - `SensoryScriptEditor.tsx`: Strict 1:1 character geometry parity between transparent textarea and highlight span layer (`px-0 mx-0 font-normal`, `border-b-2`).
+    - `useSensoryHighlight.ts`: Indic Unicode diacritic cluster (`\p{M}`) preservation and defensive `Intl.Segmenter` fallback for hermetic JSDOM execution.
+    - `SentenceWrapper.tsx`: Unicode-aware lookaround regex boundary (`(?<![\p{L}\p{N}\p{M}])(${anchorPattern})(?![\p{L}\p{N}\p{M}])`) with `u` flag, isolating anchor tokens without compound-word splits.
+    - `SensoryModalityKey.tsx`: Golden Trio parity lockstep (1 per detected modality) strictly synchronised with active editor underlines.
+  - **Track 2: Bidirectional Real-Time Synchronization & Zero-Loss Scratchpad**:
+    - `NarrativeScriptInput.tsx`: Zero-latency `BroadcastChannel('mw_script_sync')` bridge with `sourceInstanceId` origin tagging to suppress echo loops.
+    - Zero-loss local storage scratchpad (`mw_draft_${userId}_${syncSceneId}`) with 0ms rehydration guarding against accidental reloads.
+    - Caret selection range preservation shielding narrator typing flow from incoming remote broadcasts.
+    - 2,000ms debounced Firestore cloud autosave with live state indicators (buffering, syncing, saved).
+  - **Track 3: The Heirloom Folio Navigation Spine**:
+    - Complete suite of Heirloom Folio navigation primitives: `folioTokens.ts`, `globals.css` (`--folio-*`), `FloatingChapterDial.tsx`, `MobileThumbRibbon.tsx`, `FilofaxDesktopSpine.tsx`, `FolioChapterDrawer.tsx`, and `HeirloomFolioSpine.tsx`.
+    - 4 Non-negotiable ergonomic safeguards verified: iOS safe-area insets (`calc(4.5rem+env(safe-area-inset-bottom))`), tablet micro-spine (`w-14`) vs desktop ledger (`w-64`), elder typographic baseline (`text-xs`), and protruding active tab clipping shield (`-translate-x-1.5`, `overflow-visible`).
+  - **Track 4: Fireside Ergonomics & Click-to-Type Parity**:
+    - Elimination of quotation marks (`&ldquo;` / `&rdquo;`) wrapping prose.
+    - Ergonomic Lower Action Bar with 120 WPM cadence metrics located directly beneath the script.
+    - Interactive click-to-type script container with mobile touch-drag suppression.
+  - **Track 5: Rule 48 Codification & QA Checklist Auto-Tracking**:
+    - Codified Rule 48.5 (Heirloom Folio Design Tokens & Viewport Adaptation) and Rule 48.6 (Real-Time Bidirectional Script Sync & Zero-Loss Autosave) in `AGENTS.md`.
+    - Enhanced `qa_checklist_interactive.html` with real-time sub-item progress tracking (`0/10 ITEMS EVALUATED` -> `ALL 10/10 ITEMS PASSED`) and hermetic card reset.
+- **Quality Gates & Test Coverage**:
+  - `src/test/bidirectional_sync.test.tsx`: 9/9 passed.
+  - `src/test/folio_navigation.test.tsx`: 14/14 passed.
+  - `src/test/fireside_prompt_carousel.test.tsx`: 24/24 passed.
+  - `src/test/studio_fixes.test.tsx`: 135/135 passed.
+  - Total test suite: 65 test files, 832/832 tests passed.
+  - `npx.cmd tsc --noEmit`: exited with code 0.
+
+
 
 
 

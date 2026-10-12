@@ -1359,3 +1359,18 @@ Sensory modality indicators across all surfaces must adhere strictly to Rule 45 
 ## 48.4 Single-Icon Discipline
 Card headers and interactive pills must never double-render icons (e.g. `💡 💡` or `🌿 🌿`). Icons must appear exactly once as the leading glyph.
 
+## 48.5 Heirloom Folio Design Tokens & Viewport Adaptation (ARCH-MW-139 / SPEC-MW-139)
+- **SSOT Design Tokens**: All navigation palette colours, border styles, typography classes, and touch target constants MUST strictly derive from `src/components/navigation/folio/folioTokens.ts` and `--folio-*` CSS variables in `globals.css`.
+- **Viewport-Adaptive Filofax Spine**:
+  - Tablet / Compact Desktop (768px–1023px): Renders in Micro-Spine mode (`w-14` / 56px) displaying classic Roman numerals (`Ⅰ, Ⅱ, Ⅲ...`) with hover tooltips.
+  - Large Desktop ($\ge 1024\text{px}$): Expands into the Full Ledger (`w-64` / 256px) with full scene titles, Arabic numbers, and status dots (`●` completed take, `◐` draft, `○` unrecorded).
+  - Protruding Active Tab Shield (Safeguard 4): Active tab protrudes leftward (`-translate-x-1.5`) with gold outline without being clipped by parent wrappers (`overflow-visible`), and container applies `lg:pr-64` in-flow padding.
+- **Mobile Safe-Area Offset & Keyboard Shield (Safeguard 1)**: Floating Chapter Dial and Mobile Thumb Ribbon must respect iOS safe-area insets (`bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]`) and immediately auto-hide (`opacity-0 pointer-events-none`) when the user enters script edit mode (`isEditing === true`).
+- **Elder Typographic Minimum & 48px Touch Parity (Safeguard 3 & Rule 26)**: Micro-labels below 12px (`text-[10px]`) are prohibited; all folio metadata enforces `text-xs` (12px) with `tracking-[0.15em]`. All mobile touch targets must satisfy minimum 48px bounds (`min-h-[48px] min-w-[48px]`).
+
+## 48.6 Real-Time Bidirectional Script Sync & Zero-Loss Autosave (ARCH-MW-136)
+- **Zero-Latency Cross-Surface Sync**: Desktop Studio and Fireside Mobile must synchronise narrative script changes in real-time via `BroadcastChannel('mw_script_sync')` (<5ms latency), using `sourceInstanceId` origin tagging to avoid echo feedback loops.
+- **Zero-Loss Local Scratchpad**: Active drafts must automatically persist to `localStorage` (`mw_draft_${userId}_${sceneId}`) on every keystroke, guaranteeing instant 0ms restoration if the user refreshes or closes the browser tab. Scratchpads are cleared only upon explicit save or scene deletion.
+- **Remote Caret Position Shield**: When receiving remote broadcast updates, the editor must preserve the local narrator's active cursor selection range (`selectionStart` / `selectionEnd`), preventing caret jumps while typing.
+- **Decoupled Firestore Cloud Autosave**: Cloud persistence must be debounced (2,000ms) and decoupled from UI state flipping (Rule 12), with clear visual status feedback (buffering, syncing to vault, synced).
+
