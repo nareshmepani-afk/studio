@@ -116,4 +116,42 @@ describe('useStudioData Loading Shield', () => {
     expect(p1Chapter?.memory?.title).toBe('A Child of Two Worlds');
     expect(p1Chapter?.memory?.status).toBe('pre-release');
   });
+
+  it('correlates memory by document id when document has canonical scene id as id without explicit promptId/sceneId (BUG-MW-143 regression shield)', () => {
+    mockAuthLoading = false;
+    mockUser = { uid: 'user_naresh_123' };
+
+    const { result } = renderHook(() => useStudioData('user_naresh_123'));
+
+    // Document saved with id: 'part-1-scene-1' but missing promptId / sceneId
+    const mockMemories = [
+      {
+        id: 'part-1-scene-1',
+        title: 'A Child of Two Worlds',
+        prose: 'The history I carry is an epic journey across oceans and generations...',
+        status: 'draft',
+        createdAt: '2026-10-12T13:08:00.000Z',
+      },
+    ];
+
+    act(() => {
+      if (memoriesCallback) {
+        memoriesCallback({
+          docs: mockMemories.map(m => ({
+            id: m.id,
+            data: () => m,
+          })),
+        });
+      }
+    });
+
+    const p1Chapter = result.current.chapters
+      .flatMap(c => c.prompts)
+      .find(p => p.id === 'p1');
+
+    expect(p1Chapter).toBeDefined();
+    expect(p1Chapter?.memory).toBeDefined();
+    expect(p1Chapter?.memory?.id).toBe('part-1-scene-1');
+    expect(p1Chapter?.memory?.prose).toContain('epic journey');
+  });
 });

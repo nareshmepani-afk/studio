@@ -116,6 +116,9 @@ export function useStudioData(userId: string | undefined) {
         // CANDIDATE RESOLUTION SHIELD: If multiple memory documents exist matching the prompt,
         // prioritise authentic non-test memories and completed/in-progress takes over unrecorded stage-0 test drafts.
         const candidateMemories = memories.filter((m) => {
+          if (m.id === scene.id || m.id === scene.promptId) {
+            return true;
+          }
           if (m.promptId === scene.promptId || (m as any).sceneId === scene.id || m.promptId === scene.id) {
             return true;
           }

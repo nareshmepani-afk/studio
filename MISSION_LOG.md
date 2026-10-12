@@ -1587,7 +1587,31 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `AGENTS.md`: Section 30.6 codified and verified.
   - `qa_checklist_interactive.html`: Card 55 updated with Zone 1 bifurcated buttons and Zone 2 Persona Audit card.
   - TypeScript Compiler: `npx.cmd tsc --noEmit` exited 0.
+---
+
+### [2026-10-12 17:15 BST] • Checkpoint #067 — Document Correlation Shield & Database Identity Repair (BUG-MW-143)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architect**: Triaged telemetry incident report `mw_telemetry_qvxwzgqk0kd` (`nareshmepani@hotmail.com` / `TQdB395kXxaAGPhFxk1LVWuT8cg2`).
+  - 🤖 **Chat 2 (The Flash Executor)**: Diagnosed root cause via Firebase MCP on `memory-weaver-dev`, repaired corrupted Firestore identity on document `ey96djU6qR1BrDGnvZwp`, purged orphan `part-1-scene-1` document, hardened `useStudioData.ts` and `useCurriculumVault.ts`, added Vitest regression shield, and verified 46-route build.
+- **Architectural & Forensic Deliverables**:
+  - **Track 1: Root-Cause Forensic Diagnosis**:
+    - Discovered that document `ey96djU6qR1BrDGnvZwp` (holding user's authentic 271-word narrative prose and 4K recorded video) had its `sceneId` and `promptId` overwritten to `part-1-scene-2` / `p2` during scene-switch testing, shifting it to Scene 2 on the dashboard.
+    - Identified that `useCurriculumVault.ts:updateSceneProse` omitted `sceneId`, `promptId`, `title`, `chapterId`, `partNumber`, and `status` when persisting new draft prose to Firestore, creating half-populated orphan documents (`part-1-scene-1`).
+    - Discovered that `useStudioData.ts:candidateMemories` did not match memory documents by `id === scene.id`, causing any scene saved under its canonical scene ID without `promptId` to be completely invisible on `/studio`.
+  - **Track 2: Staging Database State Repair (Zero Data Loss)**:
+    - Restored `ey96djU6qR1BrDGnvZwp` to its authentic canonical identity: `title: "A Child of Two Worlds"`, `promptId: "p1"`, `sceneId: "part-1-scene-1"`, `chapterId: "part-1"`, `partNumber: 1`, `status: "pre-release"`, `productionStage: 2`, `actsCompleted: ["act1", "act2"]`.
+    - Deleted orphan duplicate document `part-1-scene-1`.
+    - Confirmed Scene 2 (`5F7e9DACtBao5lgKYAxf`) retains its authentic draft prose.
+  - **Track 3: Hardened Payload & Document ID Correlation**:
+    - `src/hooks/studio/useStudioData.ts`: Extended `candidateMemories` filter to match `m.id === scene.id || m.id === scene.promptId`, ensuring canonical scene documents always correlate.
+    - `src/hooks/useCurriculumVault.ts`: Updated `updateSceneProse` Firestore payload to explicitly include `sceneId`, `promptId`, `title`, `chapterId`, `partNumber`, and `status`.
+  - **Track 4: Automated Regression Shield**:
+    - Authored regression test in `src/test/useStudioData.shield.test.ts` asserting document ID correlation for canonical scene ID documents without explicit promptId.
+- **Quality Gates & Test Coverage**:
+  - Vitest suite: 66/66 test files passed, 841/841 tests passed.
+  - TypeScript Compiler: `npx.cmd tsc --noEmit` exited with code 0.
   - Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+
 
 
 

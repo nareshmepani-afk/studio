@@ -1048,6 +1048,12 @@ export function useCurriculumVault({
       };
 
       const payload: Record<string, any> = {
+        sceneId: canonicalSceneId,
+        promptId: mappedPromptId || sceneDef?.promptId || canonicalSceneId,
+        title: current.title || sceneDef?.title || '',
+        chapterId: sceneDef ? `part-${sceneDef.partNumber}` : 'part-1',
+        partNumber: sceneDef?.partNumber || 1,
+        status: current.currentStatus || 'draft',
         prose: updatedProseText,
         description: updatedProseText, // Rule 14 dual-sync
         sensoryAnchors: preservedSensoryAnchors,
