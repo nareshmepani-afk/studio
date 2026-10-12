@@ -14,6 +14,7 @@
     "lint": "next lint --quiet",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
+    "audit:data": "tsx scripts/auditStagingDataIntegrity.ts",
     "validate": "npm run lint && npm run type-check && npm run test",
     "sync:vault-manifest": "node scripts/syncVaultManifest.mjs",
     "prepare": "husky"
@@ -111,6 +112,7 @@
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "lint-staged": "^17.0.2",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^4.1.5"
   },

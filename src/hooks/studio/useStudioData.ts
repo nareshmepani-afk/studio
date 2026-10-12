@@ -250,6 +250,49 @@ export function useStudioData(userId: string | undefined) {
     };
   }, [memories, requests]);
 
+  // Layer 4: Client-Side Anomaly Sentinel (TOOL-MW-145)
+  // Compares authentic document count (M) with resolved card count (N) to detect document shadowing in real time.
+  useEffect(() => {
+    if (isLoading || !memories || memories.length === 0 || chapters.length === 0) return;
+
+    const evaluation = evaluateDataShadowingAnomaly(memories, chapters);
+
+    if (evaluation.hasAnomaly) {
+      console.error('[CRITICAL_DATA_SHADOWING_ANOMALY]', {
+        totalAuthenticDocs: evaluation.M,
+        totalResolvedCards: evaluation.N,
+        orphanedCount: evaluation.orphanedCount,
+        unmappedDocIds: evaluation.orphanedDocs,
+      });
+
+      // Dispatch client telemetry payload to preserve trace
+      if (typeof window !== 'undefined') {
+        if ((window as any).mwTelemetry?.track) {
+          (window as any).mwTelemetry.track('DATA_SHADOWING_ANOMALY_DETECTED', {
+            severity: 'CRITICAL',
+            orphanedDocIds: evaluation.orphanedDocs.map((d) => d.id),
+            totalAuthenticDocs: evaluation.M,
+            totalResolvedCards: evaluation.N,
+            timestamp: Date.now(),
+          });
+        }
+        fetch('/api/telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'DATA_SHADOWING_ANOMALY_DETECTED',
+            severity: 'CRITICAL',
+            userId,
+            orphanedDocIds: evaluation.orphanedDocs.map((d) => d.id),
+            totalAuthenticDocs: evaluation.M,
+            totalResolvedCards: evaluation.N,
+            timestamp: new Date().toISOString(),
+          }),
+        }).catch(() => {});
+      }
+    }
+  }, [isLoading, memories, chapters, userId]);
+
   return {
     chapters,
     memories,
@@ -258,3 +301,62 @@ export function useStudioData(userId: string | undefined) {
     isLoading
   };
 }
+
+export interface DataShadowingAnomalyResult {
+  hasAnomaly: boolean;
+  M: number;
+  N: number;
+  orphanedCount: number;
+  orphanedDocs: Array<{
+    id: string;
+    sceneId?: string;
+    promptId?: string;
+    title?: string;
+  }>;
+}
+
+/**
+ * Evaluates whether any authentic user memories exist in Firestore that failed to correlate with active curriculum scene cards (M > N).
+ * Exported for deterministic unit testing and live telemetry reporting.
+ */
+export function evaluateDataShadowingAnomaly(
+  rawMemories: Memory[],
+  chapters: UnifiedChapter[]
+): DataShadowingAnomalyResult {
+  // 1. Calculate raw user memories containing authentic work
+  const authenticDocs = rawMemories.filter((doc) => {
+    const hasProse = typeof doc.prose === 'string' && doc.prose.trim().length > 0;
+    const hasVideo = typeof doc.videoUrl === 'string' && doc.videoUrl.trim().length > 0;
+    const hasTakes = Array.isArray(doc.takes) && doc.takes.length > 0;
+    return hasProse || hasVideo || hasTakes;
+  });
+
+  // 2. Calculate resolved dashboard card count (N)
+  const allPrompts = chapters.flatMap((c) => c.prompts);
+  const resolvedSceneCards = allPrompts.filter((p) => !!p.memory);
+  const resolvedDocIds = new Set(resolvedSceneCards.map((p) => p.memory?.id).filter(Boolean));
+
+  const M = authenticDocs.length;
+  const N = resolvedDocIds.size;
+
+  const hasAnomaly = M > N;
+  const orphanedDocs = hasAnomaly
+    ? authenticDocs
+        .filter((d) => !resolvedDocIds.has(d.id))
+        .map((d) => ({
+          id: d.id,
+          sceneId: (d as any).sceneId,
+          promptId: d.promptId,
+          title: d.title,
+        }))
+    : [];
+
+  return {
+    hasAnomaly,
+    M,
+    N,
+    orphanedCount: orphanedDocs.length,
+    orphanedDocs,
+  };
+}
+

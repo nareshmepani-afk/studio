@@ -1614,3 +1614,43 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Deployment: Pushed commit `878bb5d0` to `dev`, edge rollout verified via `/api/version` (`commitSha: "878bb5d"`).
   - Plane.so Issue: Created ticket #353 (`BUG-MW-143`).
   - Verification Suite: Registered Card 56 in `qa_checklist_interactive.html` with 4 deterministic test items (Items 56.1–56.4) and Persona Audit for `nareshmepani@hotmail.com`.
+
+---
+
+### [2026-10-12 18:00 BST] • Checkpoint #068 — Data Integrity Defense Shield: Layer 3 Pre-Deploy Audit & Layer 4 Client Sentinel (TOOL-MW-145)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architect**: Approved the dual-layer data-integrity strategy (RFC-MW-144) to permanently eliminate missing data regressions through pre-release synthetic database audits (Layer 3) and runtime client-side telemetry sentinels (Layer 4).
+  - 🤖 **Chat 2 (The Flash Executor)**: Implemented Layer 4 anomaly sentinel in `src/hooks/studio/useStudioData.ts`, built Layer 3 standalone CLI diagnostic runner in `scripts/auditStagingDataIntegrity.ts`, registered `npm run audit:data` in `package.json`, authored 11-test invariant suite in `src/test/data_integrity_invariants.test.ts`, and verified staging database zero-anomaly health.
+- **Architectural & Forensic Deliverables**:
+  - **Track 1: Layer 4 Client-Side Anomaly Sentinel (`src/hooks/studio/useStudioData.ts`)**:
+    - Calculates raw authentic user documents ($M$) containing authentic prose, video URL, or takes array.
+    - Calculates resolved curriculum scene card count ($N$) successfully mapped on the active dashboard.
+    - If $M > N$, automatically logs `[CRITICAL_DATA_SHADOWING_ANOMALY]` and dispatches `DATA_SHADOWING_ANOMALY_DETECTED` client telemetry with unmapped document IDs to sound the alert before users notice.
+    - Exported pure function `evaluateDataShadowingAnomaly` for deterministic unit testing.
+  - **Track 2: Layer 3 Pre-Deployment CLI Diagnostic Runner (`scripts/auditStagingDataIntegrity.ts`)**:
+    - Standalone runner executable via `npm run audit:data` or `npx tsx scripts/auditStagingDataIntegrity.ts`.
+    - Authenticates directly against `memory-weaver-dev` using developer's OAuth token store or env credentials.
+    - Executes 4 rigorous integrity audits:
+      - **Audit A**: Detects orphan documents missing both `sceneId` and `promptId`.
+      - **Audit B**: Detects split-brain collisions (multiple documents claiming the identical `sceneId`).
+      - **Audit C**: Detects orphan persistent cloud video assets without proper lifecycle status.
+      - **Audit D**: Detects identity bleed / title mismatches between document content and assigned scene.
+    - Tested against active staging database: validated all 6 user memories for `nareshmepani@hotmail.com` with **0 anomalies** and exit code 0.
+  - **Track 3: Invariant Unit & Anti-Regression Suite (`src/test/data_integrity_invariants.test.ts`)**:
+    - Authored 11-test invariant suite covering:
+      - Invariant 1: Universal Scene Correlation Matrix across 4 historical document schemas.
+      - Invariant 2: Document Anti-Hijacking immutability guard.
+      - Invariant 3: Canonical Payload Completeness (all 6 indexing fields enforced).
+      - Invariant 4: Rule 14 Text Hierarchy & Placeholder Masking Shield.
+      - Invariant 5: Layer 4 Client-Side Anomaly Sentinel trigger logic ($M > N$).
+    - 11/11 tests passing in 12ms.
+  - **Track 4: Tooling & Script Registration (`package.json`)**:
+    - Registered `"audit:data": "tsx scripts/auditStagingDataIntegrity.ts"`.
+    - Added `tsx` to `devDependencies` for universal, cross-platform execution.
+- **Quality Gates & Test Coverage**:
+  - Invariant Suite: `src/test/data_integrity_invariants.test.ts`: 11/11 passed.
+  - Full Vitest suite: 67/67 test files passed, 849/849 tests passed.
+  - Diagnostic Audit: `npm run audit:data` passed with exit code 0.
+  - TypeScript Compiler: `npx.cmd tsc --noEmit` exited with code 0.
+  - Verification Suite: Registered Card 57 in `qa_checklist_interactive.html` with 4 verification items.
+
