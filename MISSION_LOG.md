@@ -1518,6 +1518,30 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Total test suite: 65 test files, 832/832 tests passed.
   - `npx.cmd tsc --noEmit`: exited with code 0.
 
+### [2026-10-12 14:30 BST] • Checkpoint #064 — Primary CTA Elevation, Editorial Rule & Save-First Navigation (UI-MW-141)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architect**: Approved forensic diagnosis of visual starvation on primary CTA, demotion of competing Act II pathway, consolidation of badge salad into single clean editorial rule, and save-first page reload on Heirloom Folio tabs.
+  - 🤖 **Chat 2 (The Flash Executor)**: Executed UI-MW-141 end-to-end.
+- **Architectural Deliverables**:
+  - **Track 1: Primary CTA Elevation (Solid Gilded Ingot)**:
+    - Restyled `HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN` in `SingleCardPromptCarousel.tsx` from transparent ghost outline to full-width solid gilded ingot (`bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold min-h-[54px] w-full shadow-lg shadow-amber-500/20`).
+  - **Track 2: Competing Pathway Demotion & Chromatic Harmony**:
+    - Suppressed `HS_FIRESIDE_SPINE_PROGRESS_BTN` above the scene title when `!activeProse`, eliminating premature skip-to-Act-II affordance.
+    - Quieted down sensory seed tray chips to unified dark stone surfaces (`bg-stone-900/60 border border-stone-800 text-stone-300 hover:border-amber-500/40 hover:text-white`).
+    - Replaced bright solid blue on Act I tab with subtle amber progress dot (`● `) and dark stone backdrop.
+  - **Track 3: Clean Editorial Rule (Badge Salad Elimination)**:
+    - Consolidated `[ ⚡ NEXT RECOMMENDED ]`, `[ 🗃️ READY FOR ACTION ]`, `[ PART I • SCENE 1 ]`, and `Scene 1 of 4` into a single clean editorial rule (`Part I • Scene 1 of 4 • Recommended`), preserving test IDs and accessible anchors.
+  - **Track 4: Save-First Scene Navigation & Clean Reload**:
+    - `MemoryForm.tsx`: Rewrote `handleSelectScene` to flush active draft (`await flush(finalOverrides)`) with 2.5s safety timeout, followed by a full page reload via `window.location.assign('/studio/production/${targetSceneId}?act=1')`, ensuring genuine multi-scene document switching without header-only mutations.
+    - `SingleCardPromptCarousel.tsx`: Added save-first check in `handleSelectScene` to persist draft script before transitioning prompt carousel index.
+- **Quality Gates & Test Coverage**:
+  - `src/test/folio_navigation.test.tsx`: 14/14 tests passed.
+  - `src/test/fireside_prompt_carousel.test.tsx`: 24/24 tests passed.
+  - `src/test/fireside_hotspots_telemetry.test.tsx`: 8/8 tests passed.
+  - `npx.cmd tsc --noEmit`: exited with code 0.
+  - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
+
+
 
 
 

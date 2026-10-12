@@ -466,21 +466,6 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     );
   }, [canonicalSceneId, data, description]);
 
-  const handleSelectScene = useCallback(
-    (targetSceneId: string) => {
-      const targetScene = getSceneById(targetSceneId);
-      if (!targetScene) return;
-      update((prev) => ({
-        ...prev,
-        sceneId: targetSceneId,
-        promptId: targetScene.promptId || targetSceneId,
-        title: targetScene.title || prev.title,
-        chapterTitle: targetScene.partTitle || prev.chapterTitle,
-      }));
-    },
-    [update]
-  );
-
   const [scriptBlocks, setScriptBlocks] = useState<ScriptBlock[]>(data?.scriptBlocks || []);
   
   // Poster State
@@ -603,6 +588,38 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     },
     isSaving: isCloudSaving
   }));
+
+  // Save-First Scene Navigation & Clean Reload (ARCH-MW-140 / UI-MW-141)
+  const handleSelectScene = useCallback(
+    async (targetSceneId: string) => {
+      if (targetSceneId === canonicalSceneId) return;
+      const targetScene = getSceneById(targetSceneId);
+      if (!targetScene) return;
+
+      try {
+        let finalOverrides: any = {};
+        if (scriptoriumRef.current?.flush) {
+          const latestBlocks = scriptoriumRef.current.flush();
+          if (latestBlocks) {
+            finalOverrides.scriptBlocks = latestBlocks;
+            const joinedProse = latestBlocks.map((b: any) => b.text).join('\n\n');
+            finalOverrides.prose = joinedProse;
+          }
+        }
+        await Promise.race([
+          flush(finalOverrides),
+          new Promise((resolve) => setTimeout(resolve, 2500)),
+        ]);
+      } catch (err) {
+        console.warn('[MemoryForm:handleSelectScene] Pre-navigation flush error or timeout:', err);
+      }
+
+      if (typeof window !== 'undefined') {
+        window.location.assign(`/studio/production/${targetSceneId}?act=1`);
+      }
+    },
+    [canonicalSceneId, flush]
+  );
 
   const onValidityChangeRef = useRef(onValidityChange);
   useEffect(() => {

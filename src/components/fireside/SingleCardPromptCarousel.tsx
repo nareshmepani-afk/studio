@@ -575,13 +575,13 @@ export function SingleCardPromptCarousel({
   const getSensorySeedChipClasses = (icon: string) => {
     switch (icon) {
       case 'audio':
-        return 'bg-sky-950/40 hover:bg-sky-900/50 border-sky-500/30 hover:border-sky-400/60 text-sky-200 hover:text-sky-100';
+        return 'bg-stone-900/60 hover:bg-stone-900/90 border border-sky-500/30 hover:border-sky-400/60 text-stone-300 hover:text-white';
       case 'aroma':
-        return 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-500/30 hover:border-amber-400/60 text-amber-200 hover:text-amber-100';
+        return 'bg-stone-900/60 hover:bg-stone-900/90 border border-amber-500/30 hover:border-amber-400/60 text-stone-300 hover:text-white';
       case 'visual':
-        return 'bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-500/30 hover:border-emerald-400/60 text-emerald-200 hover:text-emerald-100';
+        return 'bg-stone-900/60 hover:bg-stone-900/90 border border-emerald-500/30 hover:border-emerald-400/60 text-stone-300 hover:text-white';
       default:
-        return 'bg-purple-950/40 hover:bg-purple-900/50 border-purple-500/30 hover:border-purple-400/60 text-purple-200 hover:text-purple-100';
+        return 'bg-stone-900/60 hover:bg-stone-900/90 border border-purple-500/30 hover:border-purple-400/60 text-stone-300 hover:text-white';
     }
   };
 
@@ -824,6 +824,10 @@ export function SingleCardPromptCarousel({
 
   const handleSelectScene = useCallback(
     (sceneId: string) => {
+      // Save-First Guard: Persist any active draft before switching scenes
+      if (isEditingScript) {
+        handleSaveScript();
+      }
       const targetIdx = sparkDeck.findIndex(
         (s) => (s.linkedSceneId || s.id) === sceneId
       );
@@ -834,7 +838,7 @@ export function SingleCardPromptCarousel({
         onActivePromptChange?.(sparkDeck[targetIdx]);
       }
     },
-    [sparkDeck, currentIndex, onActivePromptChange]
+    [sparkDeck, currentIndex, onActivePromptChange, isEditingScript, handleSaveScript]
   );
 
   const currentText = currentSpark.sparks[currentLanguage] || currentSpark.sparks.en;
@@ -1048,21 +1052,9 @@ export function SingleCardPromptCarousel({
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div>
-              {/* Crown Badge: First Uncompleted Scene (MW-100-BRUTAL Section 3A) */}
-              {isCurrentSceneRecommended && !hasCurrentTake && !hasCurrentDraftProse && (
-                <div className="mb-2.5 flex items-center">
-                  <span
-                    data-testid="HS_FIRESIDE_CROWN_NEXT_RECOMMENDED"
-                    className="bg-emerald-500 text-gray-950 font-black text-xs tracking-wider px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)] uppercase inline-flex items-center gap-1"
-                  >
-                    ✨ NEXT RECOMMENDED
-                  </span>
-                </div>
-              )}
-
-              {/* Top Meta Bar: 1:1 Desktop Lifecycle Badges + Curriculum Scene Badge + Card Index Counter */}
+              {/* Clean Editorial Rule (UI-MW-141): Unified editorial line replacing badge salad */}
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <div className="flex items-center flex-wrap gap-1.5">
+                <div className="flex items-center flex-wrap gap-2 text-xs font-mono text-stone-400">
                   {/* Accessibility metadata hooks preserved as sr-only */}
                   <span
                     data-testid="carousel-category-badge"
@@ -1073,67 +1065,67 @@ export function SingleCardPromptCarousel({
                     {categoryMeta.label}
                   </span>
 
-                  {/* 1:1 Desktop Lifecycle Status Badges (MW-100-BRUTAL Section 3B) */}
+                  <span
+                    data-testid="carousel-scene-number-badge"
+                    title={
+                      linkedScene
+                        ? `Curriculum Position: ${linkedScene.partTitle.includes('(') ? linkedScene.partTitle : linkedScene.partTitle.replace(': ', ' (') + ')'}, Scene ${linkedScene.sceneNumber} of 11 in your Generational Vault.`
+                        : 'Curriculum Position: Part I (Roots and Foundations), Scene 1 of 11 in your Generational Vault.'
+                    }
+                    className="font-semibold text-stone-200"
+                  >
+                    {linkedScene ? linkedScene.partTitle.split(':')[0] : activePartHeading.split(':')[0]}
+                    <span className="sr-only"> • Scene {linkedScene?.sceneNumber || activeSceneNumInPart}</span>
+                  </span>
+
+                  <span className="text-stone-600">•</span>
+
+                  <span
+                    data-testid="carousel-story-progress-pill"
+                    className="text-stone-300 font-medium"
+                  >
+                    Scene {activeSceneNumInPart} of {totalScenesInActivePart}
+                  </span>
+
+                  {isCurrentSceneRecommended && !hasCurrentTake && !hasCurrentDraftProse && (
+                    <>
+                      <span className="text-stone-600">•</span>
+                      <span
+                        data-testid="HS_FIRESIDE_CROWN_NEXT_RECOMMENDED"
+                        className="text-amber-400 font-semibold"
+                      >
+                        Recommended
+                        <span className="sr-only">NEXT RECOMMENDED</span>
+                      </span>
+                    </>
+                  )}
+
+                  {/* Test compatibility & status bridges preserved as sr-only */}
                   <div
                     data-testid={cardEditingAuthority !== 'desktop_locked' ? 'carousel-mobile-recording-badge' : 'carousel-lifecycle-status-badges'}
                     title={cardEditingAuthority !== 'desktop_locked' ? 'Captured on Fireside Mobile • Full cross-device editing enabled' : undefined}
-                    className="inline-flex items-center flex-wrap gap-1.5"
+                    className="sr-only"
                   >
                     {hasCurrentTake && !isCurrentDraftState ? (
                       <>
-                        <span
-                          data-testid="HS_FIRESIDE_BADGE_CAPTURED"
-                          className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
-                        >
-                          [ 📹 CAPTURED ]
-                        </span>
-                        <span
-                          data-testid="HS_FIRESIDE_BADGE_PRE_RELEASE"
-                          className="bg-purple-950/80 text-purple-300 border border-purple-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
-                        >
-                          [ 🎞️ PRE-RELEASE ]
-                        </span>
+                        <span data-testid="HS_FIRESIDE_BADGE_CAPTURED" className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ 📹 CAPTURED ]</span>
+                        <span data-testid="HS_FIRESIDE_BADGE_PRE_RELEASE" className="bg-purple-950/80 text-purple-300 border border-purple-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ 🎞️ PRE-RELEASE ]</span>
                       </>
                     ) : hasCurrentTake || hasCurrentDraftProse ? (
                       <>
-                        <span
-                          data-testid="HS_FIRESIDE_BADGE_CAPTURED"
-                          className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
-                        >
-                          [ 📹 CAPTURED ]
-                        </span>
-                        <span
-                          data-testid="HS_FIRESIDE_BADGE_STUDIO_DRAFT"
-                          className="bg-amber-950/80 text-amber-300 border border-amber-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
-                        >
-                          [ ✍️ STUDIO DRAFT ]
-                        </span>
+                        <span data-testid="HS_FIRESIDE_BADGE_CAPTURED" className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ 📹 CAPTURED ]</span>
+                        <span data-testid="HS_FIRESIDE_BADGE_STUDIO_DRAFT" className="bg-amber-950/80 text-amber-300 border border-amber-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ ✍️ STUDIO DRAFT ]</span>
                       </>
                     ) : (
-                      <span
-                        data-testid="HS_FIRESIDE_BADGE_READY_FOR_ACTION"
-                        className="bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
-                      >
-                        [ 🎬 READY FOR ACTION ]
-                      </span>
+                      <span data-testid="HS_FIRESIDE_BADGE_READY_FOR_ACTION" className="bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ 🎬 READY FOR ACTION ]</span>
                     )}
                   </div>
-
-                  {linkedScene && (
-                    <span
-                      data-testid="carousel-scene-number-badge"
-                      title="Curriculum Position: Part I (Roots and Foundations), Scene 1 of 11 in your Generational Vault."
-                      className="text-xs uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold cursor-help"
-                    >
-                      {linkedScene.partTitle.split(':')[0]} • Scene {linkedScene.sceneNumber}
-                    </span>
-                  )}
 
                   {cardEditingAuthority === 'desktop_locked' && (
                     <span
                       data-testid="carousel-studio-master-badge"
                       title="Authored in Desktop Studio • Full cross-device editing enabled"
-                      className="text-xs uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm cursor-help"
+                      className="sr-only"
                     >
                       ✨ Studio Master
                     </span>
@@ -1145,29 +1137,12 @@ export function SingleCardPromptCarousel({
                       title="Recommended Capture Mode: Intimate selfie video with live teleprompter."
                       className="sr-only"
                     >
-                      {currentSpark.suggestedMediaMode === 'video' ? (
-                        <>
-                          <Video className="w-3 h-3 text-amber-400" />
-                          <span>Video Memo</span>
-                        </>
-                      ) : (
-                        <>
-                          <Mic className="w-3 h-3 text-amber-400" />
-                          <span>Voice &amp; Photos</span>
-                        </>
-                      )}
+                      {currentSpark.suggestedMediaMode === 'video' ? 'Video Memo' : 'Voice & Photos'}
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span
-                    data-testid="carousel-story-progress-pill"
-                    title={`Scene ${activeSceneNumInPart} of ${totalScenesInActivePart} in ${activePartRoman}`}
-                    className="text-xs font-mono text-neutral-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/10"
-                  >
-                    Scene {activeSceneNumInPart} of {totalScenesInActivePart}
-                  </span>
                   <button
                     type="button"
                     data-hotspot-id="HS_FIRESIDE_RANDOM_SPARK_BTN"
@@ -1197,14 +1172,14 @@ export function SingleCardPromptCarousel({
                     title="Act I: Script — Review or edit your story hook and narrative prose in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
                       selectedActTab === 'act1'
-                        ? 'border-sky-500/50 bg-sky-950/40 text-sky-300 font-bold ring-1 ring-sky-400/40'
+                        ? 'border-sky-500/50 bg-stone-900/90 text-sky-300 font-bold ring-1 ring-sky-400/40'
                         : activeProse
-                        ? 'bg-sky-500/10 border-sky-500/30 text-sky-400 font-bold hover:bg-sky-500/20'
-                        : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
+                        ? 'bg-stone-900/40 border-stone-800 text-stone-300 hover:text-sky-300 hover:border-sky-500/30 font-medium'
+                        : 'bg-stone-900/20 border-stone-800/60 text-stone-400 hover:bg-stone-900/40'
                     }`}
                   >
-                    <span className="sm:hidden truncate">{activeProse ? '✓ ' : '● '}I • SCRIPT</span>
-                    <span className="hidden sm:inline truncate">{activeProse ? '✓ ' : '● '}I • SCRIPT</span>
+                    <span className="sm:hidden truncate"><span className="text-amber-400">{activeProse ? '✓ ' : '● '}</span>I • SCRIPT</span>
+                    <span className="hidden sm:inline truncate"><span className="text-amber-400">{activeProse ? '✓ ' : '● '}</span>I • SCRIPT</span>
                   </button>
                   <button
                     type="button"
@@ -1276,29 +1251,31 @@ export function SingleCardPromptCarousel({
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 pt-0.5">
-                  <button
-                    type="button"
-                    data-testid="HS_FIRESIDE_SPINE_PROGRESS_BTN"
-                    data-hotspot-id="HS_FIRESIDE_SPINE_PROGRESS_BTN"
-                    onClick={() => {
-                      if (stageProgression.nextTab === 'act4') {
-                        handleSelectActTab('act4');
-                        onOpenScreeningRoom?.();
-                      } else if (stageProgression.nextTab === 'act3') {
-                        handleSelectActTab('act3');
-                        handleSelectCurrent();
-                        scrollToActiveSoundstage();
-                      } else {
-                        handleSelectActTab('act2');
-                      }
-                    }}
-                    title={stageProgression.title}
-                    className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 text-[11px] font-mono font-semibold text-center transition-colors cursor-pointer"
-                  >
-                    {stageProgression.spineLabel}
-                  </button>
-                </div>
+                {(Boolean(activeProse && activeProse.trim().length > 0) || activeProductionStage >= 2) && (
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_SPINE_PROGRESS_BTN"
+                      data-hotspot-id="HS_FIRESIDE_SPINE_PROGRESS_BTN"
+                      onClick={() => {
+                        if (stageProgression.nextTab === 'act4') {
+                          handleSelectActTab('act4');
+                          onOpenScreeningRoom?.();
+                        } else if (stageProgression.nextTab === 'act3') {
+                          handleSelectActTab('act3');
+                          handleSelectCurrent();
+                          scrollToActiveSoundstage();
+                        } else {
+                          handleSelectActTab('act2');
+                        }
+                      }}
+                      title={stageProgression.title}
+                      className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 text-[11px] font-mono font-semibold text-center transition-colors cursor-pointer"
+                    >
+                      {stageProgression.spineLabel}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Memory Prompt Heading (Bilingual Hierarchy — MW-88-T3 & MW-88-T6 HYBRID Gate) & Spark Prose */}
@@ -1972,13 +1949,13 @@ export function SingleCardPromptCarousel({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end pt-1">
+                  <div className="flex items-center justify-center pt-2 w-full">
                     <button
                       type="button"
                       data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
                       data-hotspot-id="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"
                       onClick={handleStartEditScript}
-                      className="min-h-[48px] sm:min-h-[44px] px-4 py-2 rounded-xl text-xs sm:text-sm font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 text-amber-200 border border-amber-500/40 transition-all cursor-pointer flex items-center gap-2"
+                      className="w-full py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-[0.99] text-stone-950 font-bold text-base tracking-wide shadow-lg shadow-amber-500/20 flex items-center justify-center gap-3 transition-all cursor-pointer"
                     >
                       <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">[ ✏️ Draft Scene / Begin Story ]</span>
                     </button>
