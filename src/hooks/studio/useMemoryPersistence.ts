@@ -154,7 +154,9 @@ export function useMemoryPersistence({
   // 2. Recovery on Mount
   useEffect(() => {
     const id = data?.id || data?.promptId || 'unknown';
-    const backup = localStorage.getItem(`draft_hook_${id}`) || localStorage.getItem('draft_hook_unknown');
+    const backup = localStorage.getItem(`mw_draft_${id}`) || 
+                   localStorage.getItem(`draft_hook_${id}`) || 
+                   localStorage.getItem('draft_hook_unknown');
     const isDefault = !description || 
                     description.includes("Your birthplace, family roots") || 
                     description.includes("Enter the core of your memory") ||
@@ -170,7 +172,22 @@ export function useMemoryPersistence({
     }
   }, []);
 
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const cancelAutosave = useCallback(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+  }, []);
+
   const flush = useCallback(async (overrides?: Partial<PersistenceProps>) => {
+    // Invalidate pending autosave debounce timer immediately prior to flush
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
     // Synchronize overrides to God Ref immediately to bypass React async render batching latency
     if (overrides) {
       latestStateRef.current = { ...latestStateRef.current, ...overrides };
@@ -370,11 +387,20 @@ export function useMemoryPersistence({
   useEffect(() => {
     if (autoSaveRef.current.isReviewing || autoSaveRef.current.isGeneratingDrafts) return;
 
-    const handler = setTimeout(() => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
       autoSaveRef.current.flush();
     }, 2000); // Increased to 2s to allow for UI breathing room
 
-    return () => clearTimeout(handler);
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
   }, [
     // We only want to restart the timer when the content actually changes,
     // NOT when the flush callback changes.
@@ -408,5 +434,5 @@ export function useMemoryPersistence({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [description]);
 
-  return { flush, isSaving };
+  return { flush, isSaving, cancelAutosave };
 }

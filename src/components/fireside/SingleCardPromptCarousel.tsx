@@ -446,7 +446,16 @@ export function SingleCardPromptCarousel({
   };
 
   const handleStartEditScript = () => {
-    setDraftProse(activeProse);
+    let initialDraft = activeProse;
+    if (!initialDraft && typeof window !== 'undefined') {
+      try {
+        const backup = localStorage.getItem(`mw_draft_${targetSceneId}`) || localStorage.getItem(`draft_hook_${targetSceneId}`);
+        if (backup && backup.trim()) {
+          initialDraft = backup.trim();
+        }
+      } catch (_) {}
+    }
+    setDraftProse(initialDraft);
     setOriginalScriptDraft(null);
     setIsScriptPolished(false);
     setIsPolishingScript(false);
@@ -467,6 +476,7 @@ export function SingleCardPromptCarousel({
   const handleSaveScript = () => {
     if (debouncedAutosaveTimerRef.current) {
       clearTimeout(debouncedAutosaveTimerRef.current);
+      debouncedAutosaveTimerRef.current = null;
     }
     const trimmed = draftProse.trim();
     // Rule 12 Optimistic UI: 0ms synchronous local state update
@@ -477,6 +487,17 @@ export function SingleCardPromptCarousel({
     setIsScriptPolished(false);
     setCloudSyncStatus('saved');
     setTimeout(() => setCloudSyncStatus('idle'), 3000);
+
+    // Scratchpad backup to protect against network drops or unloads
+    if (typeof window !== 'undefined' && trimmed) {
+      try {
+        localStorage.setItem(`mw_draft_${targetSceneId}`, trimmed);
+        localStorage.setItem(`draft_hook_${targetSceneId}`, trimmed);
+      } catch (storageErr) {
+        console.warn('[SingleCardPromptCarousel:handleSaveScript] Failed to write scratchpad backup:', storageErr);
+      }
+    }
+
     onSaveProse?.(targetSceneId, trimmed);
   };
 
@@ -824,10 +845,28 @@ export function SingleCardPromptCarousel({
 
   const handleSelectScene = useCallback(
     (sceneId: string) => {
-      // Save-First Guard: Persist any active draft before switching scenes
+      // 1. Invalidate pending autosave debounces prior to switching
+      if (debouncedAutosaveTimerRef.current) {
+        clearTimeout(debouncedAutosaveTimerRef.current);
+        debouncedAutosaveTimerRef.current = null;
+      }
+
+      // 2. Save-First Guard: Persist any active draft before switching scenes
+      const trimmed = draftProse.trim();
       if (isEditingScript) {
         handleSaveScript();
+      } else if (trimmed && trimmed !== (activeProse || '')) {
+        onSaveProse?.(targetSceneId, trimmed);
       }
+
+      // 3. Fail-safe scratchpad backup to localStorage
+      if (typeof window !== 'undefined' && trimmed) {
+        try {
+          localStorage.setItem(`mw_draft_${targetSceneId}`, trimmed);
+          localStorage.setItem(`draft_hook_${targetSceneId}`, trimmed);
+        } catch (_) {}
+      }
+
       const targetIdx = sparkDeck.findIndex(
         (s) => (s.linkedSceneId || s.id) === sceneId
       );
@@ -836,9 +875,11 @@ export function SingleCardPromptCarousel({
         setShowFollowUps(false);
         setCurrentIndex(targetIdx);
         onActivePromptChange?.(sparkDeck[targetIdx]);
+      } else if (targetIdx === -1 && typeof window !== 'undefined') {
+        window.location.assign(`/studio/fireside?id=${sceneId}`);
       }
     },
-    [sparkDeck, currentIndex, onActivePromptChange, isEditingScript, handleSaveScript]
+    [sparkDeck, currentIndex, onActivePromptChange, isEditingScript, handleSaveScript, draftProse, activeProse, targetSceneId, onSaveProse]
   );
 
   const currentText = currentSpark.sparks[currentLanguage] || currentSpark.sparks.en;

@@ -29,6 +29,7 @@ import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { MentorshipHotspot } from './MentorshipHotspot';
 import { useMemoryPersistence } from '@/hooks/studio/useMemoryPersistence';
 import { resolveSceneFromPromptId, getSceneById, MASTER_STORY_STRUCTURE } from '@/lib/curriculum/masterStoryStructure';
+import { teardownActiveMediaStreams } from '@/utils/mediaTeardown';
 import { FilofaxDesktopSpine } from '@/components/navigation/folio/FilofaxDesktopSpine';
 import type { FolioSceneToken } from '@/components/navigation/folio/folioTokens';
 import type { ScriptSyncMessage } from '@/components/studio/shared/NarrativeScriptInput';
@@ -510,7 +511,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
   // Initialize Persistence
 
-  const { flush, isSaving: isCloudSaving } = useMemoryPersistence({
+  const { flush, isSaving: isCloudSaving, cancelAutosave } = useMemoryPersistence({
     data,
     update,
     title,
@@ -589,36 +590,73 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     isSaving: isCloudSaving
   }));
 
-  // Save-First Scene Navigation & Clean Reload (ARCH-MW-140 / UI-MW-141)
+  // Save-First Scene Navigation & Clean Hard Reload (ARCH-MW-140 / UI-MW-141 / BUG-MW-141)
   const handleSelectScene = useCallback(
     async (targetSceneId: string) => {
       if (targetSceneId === canonicalSceneId) return;
       const targetScene = getSceneById(targetSceneId);
       if (!targetScene) return;
 
-      try {
-        let finalOverrides: any = {};
-        if (scriptoriumRef.current?.flush) {
-          const latestBlocks = scriptoriumRef.current.flush();
-          if (latestBlocks) {
-            finalOverrides.scriptBlocks = latestBlocks;
-            const joinedProse = latestBlocks.map((b: any) => b.text).join('\n\n');
-            finalOverrides.prose = joinedProse;
-          }
+      // 1. Invalidate pending autosave debounces prior to flush
+      cancelAutosave?.();
+
+      // 2. Release MediaStream hardware tracks (camera/mic) before navigation to prevent device lockups
+      teardownActiveMediaStreams();
+
+      // Extract current prose from Scriptorium or local state
+      let currentProse = prose || description || '';
+      let finalOverrides: any = {};
+      if (scriptoriumRef.current?.flush) {
+        const latestBlocks = scriptoriumRef.current.flush();
+        if (latestBlocks) {
+          finalOverrides.scriptBlocks = latestBlocks;
+          const joinedProse = latestBlocks.map((b: any) => b.text).join('\n\n');
+          finalOverrides.prose = joinedProse;
+          currentProse = joinedProse;
         }
-        await Promise.race([
-          flush(finalOverrides),
-          new Promise((resolve) => setTimeout(resolve, 2500)),
+      }
+
+      // 3. 2.5-second network timeout race & localStorage scratchpad backup if Firestore write stalls
+      let saveSucceeded = false;
+      try {
+        const flushPromise = flush(finalOverrides);
+        const timeoutPromise = new Promise<{ timedOut: boolean }>((resolve) =>
+          setTimeout(() => resolve({ timedOut: true }), 2500)
+        );
+        const raceResult = await Promise.race([
+          flushPromise.then((res) => ({ timedOut: false, res })),
+          timeoutPromise,
         ]);
+
+        if (!raceResult.timedOut && (raceResult as any).res?.success !== false) {
+          saveSucceeded = true;
+        }
       } catch (err) {
         console.warn('[MemoryForm:handleSelectScene] Pre-navigation flush error or timeout:', err);
       }
 
+      // If Firestore write stalled or failed, back up to localStorage scratchpad fail-safe
+      if (typeof window !== 'undefined' && currentProse) {
+        if (!saveSucceeded) {
+          try {
+            localStorage.setItem(`mw_draft_${canonicalSceneId}`, currentProse);
+            localStorage.setItem(`draft_hook_${canonicalSceneId}`, currentProse);
+            if (data?.id) {
+              localStorage.setItem(`mw_draft_${data.id}`, currentProse);
+              localStorage.setItem(`draft_hook_${data.id}`, currentProse);
+            }
+          } catch (storageErr) {
+            console.warn('[MemoryForm:handleSelectScene] Failed to write localStorage scratchpad:', storageErr);
+          }
+        }
+      }
+
+      // Clean hard navigation (clean document lifecycle, 0 caret/stream leaks)
       if (typeof window !== 'undefined') {
         window.location.assign(`/studio/production/${targetSceneId}?act=1`);
       }
     },
-    [canonicalSceneId, flush]
+    [canonicalSceneId, cancelAutosave, data?.id, description, flush, prose]
   );
 
   const onValidityChangeRef = useRef(onValidityChange);
@@ -2182,7 +2220,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 {(() => {
                                   if (typeof window === 'undefined') return null;
                                   const id = data?.id || data?.promptId || 'unknown';
-                                  const backup = localStorage.getItem(`draft_hook_${id}`) || localStorage.getItem('draft_hook_unknown');
+                                  const backup = localStorage.getItem(`mw_draft_${canonicalSceneId}`) ||
+                                                localStorage.getItem(`mw_draft_${id}`) ||
+                                                localStorage.getItem(`draft_hook_${canonicalSceneId}`) ||
+                                                localStorage.getItem(`draft_hook_${id}`) || 
+                                                localStorage.getItem('draft_hook_unknown');
                                   const currentDesc = description || '';
                                   
                                   const isDefault = !currentDesc.trim() || 
@@ -2205,6 +2247,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                         onClick={() => {
                                           console.log("[MemoryForm] Executing manual recovery from button...");
                                           setDescription(backup!);
+                                          setProse(backup!);
                                           toast.success("Script Restored", {
                                             description: "We've re-anchored your lost prose from the local black box.",
                                             icon: <Sparkles className="w-4 h-4" />

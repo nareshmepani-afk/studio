@@ -1541,6 +1541,37 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `npx.cmd tsc --noEmit`: exited with code 0.
   - `npm.cmd run build`: 46/46 routes compiled cleanly with exit code 0.
 
+---
+
+### [2026-10-12 15:15 BST] • Checkpoint #065 — Save-First & Clean Hard-Navigation Engine (BUG-MW-141)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architect**: Specified the 3 non-negotiable safeguards: (1) invalidate pending autosave debounces, (2) release hardware MediaStream tracks before navigation, and (3) 2.5-second network timeout race with localStorage scratchpad backup.
+  - 🤖 **Chat 2 (The Flash Executor)**: Implemented `teardownActiveMediaStreams`, updated `useMemoryPersistence`, hardened `MemoryForm.tsx` and `SingleCardPromptCarousel.tsx`, authored `save_first_navigation.test.ts`, and verified quality gates.
+- **Architectural Deliverables**:
+  - **Track 1: Autosave Debounce Invalidation (`useMemoryPersistence.ts` & `MemoryForm.tsx`)**:
+    - Exported `cancelAutosave` from `useMemoryPersistence.ts` and tied `autoSaveTimerRef` directly to manual and pre-navigation flush cycles.
+    - Cancelled pending autosave debounces synchronously before initiating flush in `MemoryForm.tsx` and before scene switching in `SingleCardPromptCarousel.tsx`.
+  - **Track 2: MediaStream Hardware Track Teardown (`src/utils/mediaTeardown.ts`)**:
+    - Created `teardownActiveMediaStreams()` utility that scans all active `<video>` and `<audio>` elements in the DOM, halts all active MediaStream tracks (`track.stop()`), detaches `srcObject`, and pauses playback.
+    - Clears global `(window as any).__activeMediaStreams` registry, completely eliminating camera/microphone hardware indicator leaks and macOS/iOS red recording dot lockups before hard navigation.
+  - **Track 3: 2.5-Second Network Timeout Race & LocalStorage Scratchpad Fallback**:
+    - Implemented `Promise.race([flush(finalOverrides), timeoutPromise(2500)])` in `MemoryForm.tsx`.
+    - If flush times out or rejects, writes active prose directly to `localStorage.setItem('mw_draft_' + canonicalSceneId, currentProse)` and `draft_hook_${canonicalSceneId}`.
+    - Updated recovery logic on mount across both `useMemoryPersistence.ts` and `MemoryForm.tsx` to automatically re-anchor drafts from `mw_draft_${id}` / `mw_draft_${canonicalSceneId}`.
+  - **Track 4: Clean Hard Navigation & Lifecycle Reset**:
+    - Dispatched `window.location.assign('/studio/production/' + targetSceneId + '?act=1')` to provide a pristine document lifecycle, fresh Firestore hydration, and complete teardown of TipTap / ProseMirror caret and selection observer state without in-place shallow title hijacking.
+  - **Track 5: Fireside Harmonization (`SingleCardPromptCarousel.tsx`)**:
+    - Added autosave debounce invalidation and dual-key scratchpad backup (`mw_draft_${targetSceneId}`) to `handleSaveScript` and `handleSelectScene`.
+    - Recovered local scratchpad backup in `handleStartEditScript` when active scene prose is blank.
+  - **Track 6: Automated Test Verification (`src/test/save_first_navigation.test.ts`)**:
+    - Authored comprehensive 8-test unit suite covering debounce cancellation, hardware track release, 2.5s race timeout fallback, URL assignment, and Fireside parity.
+- **Quality Gates & Test Coverage**:
+  - `src/test/save_first_navigation.test.ts`: 8/8 passed.
+  - Full Vitest suite: 66/66 test files passed, 840/840 tests passed.
+  - TypeScript Compiler: `npx.cmd tsc --noEmit` exited 0.
+  - Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+
+
 
 
 
