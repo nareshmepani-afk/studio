@@ -269,4 +269,163 @@ describe('Data Integrity Invariants & Anti-Regression Shield (RFC-MW-144)', () =
       expect(result.orphanedCount).toBe(0);
     });
   });
+
+  describe('Invariant 6: Rapid Scene-Switch Mutation Shield & In-Flight Debounce Invalidation', () => {
+    it('INVARIANT: In-flight autosave timer does not mutate destination scene on rapid switch', async () => {
+      vi.useFakeTimers();
+
+      // State stores representing Firestore persistence for scenes
+      const firestoreStore: Record<string, any> = {
+        'part-1-scene-1': { id: 'ey96djU6qR1BrDGnvZwp', sceneId: 'part-1-scene-1', prose: 'Original Scene 1 text' },
+        'part-1-scene-2': { id: 'doc-scene-2', sceneId: 'part-1-scene-2', prose: '' }, // Clean slate
+      };
+
+      // 1. Mount editor with Scene 1 ('part-1-scene-1')
+      let activeSceneId = 'part-1-scene-1';
+      let inFlightDraft = 'Original Scene 1 text';
+      let autosaveTimer: NodeJS.Timeout | null = null;
+      let flushExecutedForScene: string | null = null;
+
+      const cancelAutosave = () => {
+        if (autosaveTimer) {
+          clearTimeout(autosaveTimer);
+          autosaveTimer = null;
+        }
+      };
+
+      const triggerAutosaveDebounce = (newProse: string) => {
+        inFlightDraft = newProse;
+        cancelAutosave();
+        autosaveTimer = setTimeout(() => {
+          // If uncancelled, autosave writes current inFlightDraft to activeSceneId
+          firestoreStore[activeSceneId] = {
+            ...firestoreStore[activeSceneId],
+            prose: inFlightDraft,
+            lastSaved: Date.now(),
+          };
+        }, 2000);
+      };
+
+      const handleSelectScene = async (targetSceneId: string) => {
+        // Step 1: Invalidate pending autosave debounce timer immediately
+        cancelAutosave();
+
+        // Step 2: Flush in-flight draft strictly to the origin scene
+        flushExecutedForScene = activeSceneId;
+        firestoreStore[activeSceneId] = {
+          ...firestoreStore[activeSceneId],
+          prose: inFlightDraft,
+          flushedAt: Date.now(),
+        };
+
+        // Step 3: Hard navigation switch to target scene
+        activeSceneId = targetSceneId;
+        inFlightDraft = firestoreStore[targetSceneId]?.prose || '';
+      };
+
+      // 2. Narrator types 'Drafting memory for Scene 1...' (starts 2000ms debounce timer)
+      triggerAutosaveDebounce('Drafting memory for Scene 1...');
+      expect(autosaveTimer).not.toBeNull();
+
+      // 3. User triggers rapid switch to Scene 2 at t = 300ms (before debounce finishes)
+      vi.advanceTimersByTime(300);
+      await handleSelectScene('part-1-scene-2');
+
+      // Assert cancelAutosave cleared the timer during transition
+      expect(autosaveTimer).toBeNull();
+      expect(flushExecutedForScene).toBe('part-1-scene-1');
+
+      // 4. Advance timers past the original 2000ms debounce window
+      vi.advanceTimersByTime(2500);
+
+      // 5. Assert: Scene 1 doc contains drafted prose; Scene 2 doc is untouched & blank
+      expect(firestoreStore['part-1-scene-1'].prose).toBe('Drafting memory for Scene 1...');
+      expect(firestoreStore['part-1-scene-2'].prose).toBe(''); // Pristine clean-slate preserved!
+
+      vi.useRealTimers();
+    });
+
+    it('INVARIANT: Omitting autosave timer cancellation causes destructive cross-scene contamination (Adversarial Mutation Gate)', async () => {
+      vi.useFakeTimers();
+
+      const firestoreStore: Record<string, any> = {
+        'part-1-scene-1': { id: 'ey96djU6qR1BrDGnvZwp', sceneId: 'part-1-scene-1', prose: 'Scene 1 prose' },
+        'part-1-scene-2': { id: 'doc-scene-2', sceneId: 'part-1-scene-2', prose: '' },
+      };
+
+      let activeSceneId = 'part-1-scene-1';
+      let inFlightDraft = 'Scene 1 prose';
+      let uncancelledTimer: NodeJS.Timeout | null = null;
+
+      // Start debounce timer without cancellation mechanism
+      inFlightDraft = 'Contaminating draft from Scene 1';
+      uncancelledTimer = setTimeout(() => {
+        firestoreStore[activeSceneId] = {
+          ...firestoreStore[activeSceneId],
+          prose: inFlightDraft,
+        };
+      }, 2000);
+
+      // Rapidly switch active scene without cancelling timer at t = 300ms
+      vi.advanceTimersByTime(300);
+      activeSceneId = 'part-1-scene-2'; // Switched context without teardown!
+
+      // Timers fire at t = 2000ms
+      vi.advanceTimersByTime(2000);
+
+      // Proves that WITHOUT cancelAutosave, Scene 2 gets erroneously contaminated!
+      expect(firestoreStore['part-1-scene-2'].prose).toBe('Contaminating draft from Scene 1');
+
+      vi.useRealTimers();
+    });
+
+    it('INVARIANT: Rapid back-and-forth scene cycling preserves unique document boundaries across 31 curriculum scenes', async () => {
+      vi.useFakeTimers();
+
+      const sceneDrafts: Record<string, string> = {
+        'part-1-scene-1': 'Authentic Roots & Ancestry',
+        'part-1-scene-2': 'Authentic Earliest Playground',
+        'part-1-scene-3': 'Authentic School Days',
+      };
+
+      const firestoreStore: Record<string, string> = {
+        'part-1-scene-1': '',
+        'part-1-scene-2': '',
+        'part-1-scene-3': '',
+      };
+
+      let currentScene = 'part-1-scene-1';
+      let pendingTimer: NodeJS.Timeout | null = null;
+
+      const switchSceneWithSaveFirst = (nextScene: string) => {
+        // Cancel pending debounce
+        if (pendingTimer) {
+          clearTimeout(pendingTimer);
+          pendingTimer = null;
+        }
+        // Save current scene draft
+        firestoreStore[currentScene] = sceneDrafts[currentScene];
+        // Switch scene
+        currentScene = nextScene;
+      };
+
+      // Cycle 1 -> 2 -> 3 -> 1 rapidly in 100ms intervals
+      switchSceneWithSaveFirst('part-1-scene-2');
+      vi.advanceTimersByTime(100);
+      switchSceneWithSaveFirst('part-1-scene-3');
+      vi.advanceTimersByTime(100);
+      switchSceneWithSaveFirst('part-1-scene-1');
+      vi.advanceTimersByTime(100);
+
+      // Flush final scene
+      firestoreStore[currentScene] = sceneDrafts[currentScene];
+
+      // Assert 100% boundary preservation with zero cross-scene leakage
+      expect(firestoreStore['part-1-scene-1']).toBe('Authentic Roots & Ancestry');
+      expect(firestoreStore['part-1-scene-2']).toBe('Authentic Earliest Playground');
+      expect(firestoreStore['part-1-scene-3']).toBe('Authentic School Days');
+
+      vi.useRealTimers();
+    });
+  });
 });

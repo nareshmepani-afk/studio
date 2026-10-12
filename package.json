@@ -15,6 +15,8 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "audit:data": "tsx scripts/auditStagingDataIntegrity.ts",
+    "audit:data:all": "tsx scripts/auditStagingDataIntegrity.ts --all-active",
+    "test:sentinel": "playwright test src/test/e2e/dashboard_sentinel.spec.ts",
     "validate": "npm run lint && npm run type-check && npm run test",
     "sync:vault-manifest": "node scripts/syncVaultManifest.mjs",
     "prepare": "husky"
@@ -99,6 +101,7 @@
     "twilio": "^6.1.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/dotenv": "^8.2.3",

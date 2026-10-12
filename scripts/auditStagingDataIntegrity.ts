@@ -88,6 +88,15 @@ function httpsGet(url: string, headers: Record<string, string>): Promise<{ statu
   });
 }
 
+export const KNOWN_STAGING_PERSONAS = [
+  { uid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2', email: 'nareshmepani@hotmail.com', role: 'Primary Producer & QA Lead' },
+  { uid: 'fPd7cERQ5dNdmqnAD1CodwbXJHl1', email: 'nareshmepani@googlemail.com', role: 'Secondary Admin Persona' },
+  { uid: 'xo8Y3wtDHLaNTDZI630jWrpu7gk2', email: 'test@example.com', role: 'Automated E2E Test Runner' },
+  { uid: '6D1xU4cY3OWmpv955wtZHdH8dQf2', email: 'nareshmepani+legal&gdpr@hotmail.com', role: 'Legal & GDPR Persona' },
+  { uid: 'BM8RgcxxUMPRdENLgvbjddqMidT2', email: 'nareshmepani@yahoo.com', role: 'Standard Storyteller Persona' },
+  { uid: 'dlku0xrbcZXqbxuo02l2JOi8TXI2', email: 'nareshmepani+2026-08-21@hotmail.com', role: 'Clean-Slate Persona' },
+];
+
 export async function runStagingDataAudit(targetUid = 'TQdB395kXxaAGPhFxk1LVWuT8cg2', projectId = 'memory-weaver-dev'): Promise<AuditAnomaly[]> {
   const token = getAccessToken();
   const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${targetUid}/memories`;
@@ -97,6 +106,11 @@ export async function runStagingDataAudit(targetUid = 'TQdB395kXxaAGPhFxk1LVWuT8
     Authorization: `Bearer ${token}`,
     Accept: 'application/json',
   });
+
+  if (response.status === 404) {
+    console.log(`📦 Retrieved 0 raw memory documents (clean slate).`);
+    return [];
+  }
 
   if (response.status !== 200) {
     throw new Error(`Firestore REST query failed with status ${response.status}: ${response.body}`);
@@ -216,39 +230,103 @@ export async function runStagingDataAudit(targetUid = 'TQdB395kXxaAGPhFxk1LVWuT8
   return anomalies;
 }
 
+export async function runMultiPersonaStagingAudit(projectId = 'memory-weaver-dev'): Promise<{ totalAnomalies: number; personaReports: any[] }> {
+  console.log(`\n🌐 Initiating Global Staging Multi-Persona Audit across ${KNOWN_STAGING_PERSONAS.length} test accounts...\n`);
+
+  const personaReports: any[] = [];
+  let totalAnomalies = 0;
+
+  for (const persona of KNOWN_STAGING_PERSONAS) {
+    try {
+      console.log(`👤 Checking Persona: ${persona.email} (${persona.role}) [UID: ${persona.uid}]`);
+      const anomalies = await runStagingDataAudit(persona.uid, projectId);
+      totalAnomalies += anomalies.length;
+      personaReports.push({
+        persona,
+        anomalies,
+        status: anomalies.length === 0 ? 'PASS' : 'FAIL',
+      });
+    } catch (err: any) {
+      console.error(`⚠️ Error auditing persona ${persona.email}:`, err.message);
+      personaReports.push({
+        persona,
+        anomalies: [{ audit: 'A', severity: 'CRITICAL', docId: 'ERROR', description: err.message }],
+        status: 'ERROR',
+      });
+      totalAnomalies += 1;
+    }
+  }
+
+  return { totalAnomalies, personaReports };
+}
+
 async function main() {
   console.log('═══════════════════════════════════════════════════════════════════════════');
   console.log('🛡️  STAGING DATA INTEGRITY SHIELD (TOOL-MW-145 / RFC-MW-144)');
   console.log('═══════════════════════════════════════════════════════════════════════════');
 
   try {
-    const targetUid = process.env.AUDIT_UID || 'TQdB395kXxaAGPhFxk1LVWuT8cg2';
+    const isMultiPersona = process.argv.includes('--all-active') || process.argv.includes('--all');
+    const customUidArgIdx = process.argv.indexOf('--uid');
+    const customUid = customUidArgIdx !== -1 && process.argv[customUidArgIdx + 1] ? process.argv[customUidArgIdx + 1] : undefined;
+    const targetUid = customUid || process.env.AUDIT_UID || 'TQdB395kXxaAGPhFxk1LVWuT8cg2';
     const projectId = process.env.AUDIT_PROJECT || 'memory-weaver-dev';
 
-    const anomalies = await runStagingDataAudit(targetUid, projectId);
+    if (isMultiPersona) {
+      console.log('Mode: Mode B (Global Staging Scan: All Active Personas)');
+      const { totalAnomalies, personaReports } = await runMultiPersonaStagingAudit(projectId);
 
-    console.log('\n───────────────────────────────────────────────────────────────────────────');
-    console.log('📊 AUDIT SUMMARY REPORT');
-    console.log('───────────────────────────────────────────────────────────────────────────');
+      console.log('\n───────────────────────────────────────────────────────────────────────────');
+      console.log('📊 MULTI-PERSONA AUDIT SUMMARY REPORT');
+      console.log('───────────────────────────────────────────────────────────────────────────');
 
-    if (anomalies.length === 0) {
-      console.log('✅ ZERO ANOMALIES DETECTED!');
-      console.log('   ✓ Audit A: Zero orphan documents');
-      console.log('   ✓ Audit B: Zero split-brain collisions');
-      console.log('   ✓ Audit C: Zero unlinked or draft video assets');
-      console.log('   ✓ Audit D: Zero title-scene identity bleeds');
-      console.log('🎉 Staging database verified 100% healthy and aligned with canonical curriculum.');
-      console.log('═══════════════════════════════════════════════════════════════════════════\n');
-      process.exit(0);
-    } else {
-      console.error(`❌ ${anomalies.length} INTEGRITY ANOMALIES DETECTED:\n`);
-      anomalies.forEach((a, idx) => {
-        console.error(`[${idx + 1}] Audit ${a.audit} [${a.severity}]: ${a.description}`);
-        console.error(`    Doc ID: ${a.docId} | Scene: ${a.sceneId || 'N/A'}`);
+      personaReports.forEach(r => {
+        const icon = r.status === 'PASS' ? '✅' : '❌';
+        console.log(`${icon} [${r.status}] ${r.persona.email.padEnd(38)} (${r.persona.role}): ${r.anomalies.length} anomalies`);
+        if (r.anomalies.length > 0) {
+          r.anomalies.forEach((a: any) => console.log(`     └─ Audit ${a.audit} [${a.severity}]: ${a.description}`));
+        }
       });
-      console.error('\n🚫 DEPLOYMENT / AUDIT GATE FAILED: Staging data contains anomalies.');
-      console.error('═══════════════════════════════════════════════════════════════════════════\n');
-      process.exit(1);
+
+      console.log('───────────────────────────────────────────────────────────────────────────');
+      if (totalAnomalies === 0) {
+        console.log(`✅ ZERO ANOMALIES DETECTED ACROSS ALL ${personaReports.length} STAGING PERSONAS!`);
+        console.log('🎉 Staging database verified 100% healthy and free from data corruption.');
+        console.log('═══════════════════════════════════════════════════════════════════════════\n');
+        process.exit(0);
+      } else {
+        console.error(`\n❌ ${totalAnomalies} TOTAL ANOMALIES DETECTED ACROSS STAGING PERSONAS.`);
+        console.error('🚫 DEPLOYMENT / AUDIT GATE FAILED: Staging data contains anomalies.');
+        console.error('═══════════════════════════════════════════════════════════════════════════\n');
+        process.exit(1);
+      }
+    } else {
+      console.log('Mode: Mode A (Target QA Persona)');
+      const anomalies = await runStagingDataAudit(targetUid, projectId);
+
+      console.log('\n───────────────────────────────────────────────────────────────────────────');
+      console.log('📊 AUDIT SUMMARY REPORT');
+      console.log('───────────────────────────────────────────────────────────────────────────');
+
+      if (anomalies.length === 0) {
+        console.log('✅ ZERO ANOMALIES DETECTED!');
+        console.log('   ✓ Audit A: Zero orphan documents');
+        console.log('   ✓ Audit B: Zero split-brain collisions');
+        console.log('   ✓ Audit C: Zero unlinked or draft video assets');
+        console.log('   ✓ Audit D: Zero title-scene identity bleeds');
+        console.log('🎉 Staging database verified 100% healthy and aligned with canonical curriculum.');
+        console.log('═══════════════════════════════════════════════════════════════════════════\n');
+        process.exit(0);
+      } else {
+        console.error(`❌ ${anomalies.length} INTEGRITY ANOMALIES DETECTED:\n`);
+        anomalies.forEach((a, idx) => {
+          console.error(`[${idx + 1}] Audit ${a.audit} [${a.severity}]: ${a.description}`);
+          console.error(`    Doc ID: ${a.docId} | Scene: ${a.sceneId || 'N/A'}`);
+        });
+        console.error('\n🚫 DEPLOYMENT / AUDIT GATE FAILED: Staging data contains anomalies.');
+        console.error('═══════════════════════════════════════════════════════════════════════════\n');
+        process.exit(1);
+      }
     }
   } catch (err: any) {
     console.error('\n💥 FATAL ERROR EXECUTING DATA INTEGRITY AUDIT:', err.message || err);

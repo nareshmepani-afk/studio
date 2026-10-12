@@ -6945,7 +6945,7 @@
                   TOOL-MW-145 &bull; RFC-MW-144 &bull; LAYER 3 &amp; LAYER 4
                 </span>
                 <span id="item-progress-badge-57" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700">
-                  0/4 ITEMS EVALUATED
+                  0/5 ITEMS EVALUATED
                 </span>
               </div>
               <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
@@ -6962,20 +6962,28 @@
                 <span>🔗 Open Studio Dashboard (/studio) ↗</span>
               </a>
               <a
+                href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Scene 4 (Clean Slate) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/production/part-1-scene-5?act=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/40 text-indigo-300 hover:text-indigo-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Scene 5 (Switch Target) ↗</span>
+              </a>
+              <a
                 href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 hover:text-purple-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span>🔗 Open Scene 1 Desktop Studio ↗</span>
-              </a>
-              <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-              >
-                <span>🔗 Open Scene 1 Fireside ↗</span>
               </a>
             </div>
           </div>
@@ -6988,27 +6996,28 @@
             </div>
             <div class="p-2.5 rounded-lg bg-stone-900/90 border border-amber-500/30 text-[11px] text-gray-300 space-y-1">
               <div class="flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-stone-950">AUDIT PROTOCOL &amp; PERSONA</span>
-                <span class="text-amber-200 font-bold">nareshmepani@hotmail.com</span>
-                <span class="text-gray-500">(UID: TQdB395kXxaAGPhFxk1LVWuT8cg2)</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-stone-950">AUDIT PROTOCOL &amp; MULTI-PERSONA SUITE</span>
+                <span class="text-amber-200 font-bold">6 Active Staging Personas</span>
+                <span class="text-gray-500">(Primary: nareshmepani@hotmail.com / TQdB...)</span>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-gray-400">
                 <div class="space-y-0.5">
-                  <div class="text-emerald-400 font-semibold">Layer 3 Pre-Deploy Diagnostic Runner:</div>
-                  <div>Command: <code class="text-gray-200">npm run audit:data</code></div>
-                  <div>Script: <code class="text-gray-200">scripts/auditStagingDataIntegrity.ts</code></div>
+                  <div class="text-emerald-400 font-semibold">Layer 3 Multi-Persona Diagnostic Runner:</div>
+                  <div>Single Persona: <code class="text-gray-200">npm run audit:data</code></div>
+                  <div>Global Staging Scan: <code class="text-gray-200">npm run audit:data -- --all-active</code></div>
                   <div>Coverage: <span class="text-emerald-300">Audits A (Orphans), B (Split-Brain), C (Orphan Video), D (Identity Bleed)</span></div>
                 </div>
                 <div class="space-y-0.5">
-                  <div class="text-amber-400 font-semibold">Layer 4 In-Browser Telemetry Sentinel:</div>
-                  <div>Hook: <code class="text-gray-200">useStudioData.ts</code></div>
-                  <div>Assertion: <code class="text-gray-200">evaluateDataShadowingAnomaly (M &gt; N)</code></div>
+                  <div class="text-amber-400 font-semibold">Layer 4 Automated In-Browser Sentinel:</div>
+                  <div>CI Smoke Test: <code class="text-gray-200">npm run test:sentinel</code> (Playwright)</div>
+                  <div>Assertion: <code class="text-gray-200">0 [CRITICAL_DATA_SHADOWING_ANOMALY] logs (M == N)</code></div>
                   <div>Event: <span class="text-amber-300">DATA_SHADOWING_ANOMALY_DETECTED</span></div>
                 </div>
               </div>
             </div>
             <div class="text-[11px] text-gray-500 break-all space-y-0.5">
-              <div>Audit Command: npm run audit:data (or npx tsx scripts/auditStagingDataIntegrity.ts)</div>
+              <div>Global Audit: npm run audit:data -- --all-active</div>
+              <div>Playwright Sentinel: npm run test:sentinel</div>
               <div>Diagnostic Invariant Test: npx vitest run src/test/data_integrity_invariants.test.ts</div>
               <div>Dashboard Route: https://dev.memoryweaver.studio/studio</div>
             </div>
@@ -7022,15 +7031,15 @@
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 57.1</span>
-                    <span class="text-xs font-bold text-white">Layer 3 Pre-Deployment Diagnostic Audit Runner (npm run audit:data)</span>
+                    <span class="text-xs font-bold text-white">Layer 3 Multi-Persona Staging Diagnostic Runner (npm run audit:data -- --all-active)</span>
                   </div>
                   <p class="text-xs text-gray-400">
-                    Verify the automated staging database diagnostic tool:
+                    Verify the automated staging database diagnostic tool across all active personas:
                   </p>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Run <code>npm run audit:data</code> in the terminal.</li>
-                    <li>Confirm the script connects to <code>memory-weaver-dev</code>, scans all 6 user memories for UID <code>TQdB395kXxaAGPhFxk1LVWuT8cg2</code>, and executes Audits A, B, C, and D.</li>
-                    <li>Verify the script reports <strong>ZERO ANOMALIES DETECTED</strong> and exits with code 0.</li>
+                    <li>Run <code>npm run audit:data -- --all-active</code> in the terminal.</li>
+                    <li>Confirm the script connects to <code>memory-weaver-dev</code>, scans all 6 active staging personas (Producer, Admin, E2E Runner, Legal, Storyteller, Clean-Slate), and executes Audits A, B, C, and D.</li>
+                    <li>Verify the script reports <strong>ZERO ANOMALIES DETECTED ACROSS ALL 6 STAGING PERSONAS</strong> and exits with code 0.</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -7040,7 +7049,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: CLI Diagnostic Runner (scripts/auditStagingDataIntegrity.ts)</span>
-                <span class="text-[11px] font-mono text-emerald-400">Verified via npm run audit:data (Exit 0)</span>
+                <span class="text-[11px] font-mono text-emerald-400">Verified across 6 personas (Exit 0)</span>
               </div>
             </div>
 
@@ -7050,14 +7059,15 @@
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 57.2</span>
-                    <span class="text-xs font-bold text-white">Layer 4 Client-Side Anomaly Sentinel (useStudioData.ts M &gt; N Comparison)</span>
+                    <span class="text-xs font-bold text-white">Layer 4 Automated Sentinel E2E Smoke Test (npm run test:sentinel)</span>
                   </div>
                   <p class="text-xs text-gray-400">
-                    Open Developer Console (F12) and navigate to <code>https://dev.memoryweaver.studio/studio</code>:
+                    Verify programmatic in-browser sentinel verification without manual F12 reliance:
                   </p>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Confirm zero <code>[CRITICAL_DATA_SHADOWING_ANOMALY]</code> errors are emitted in the console, confirming authentic documents (M) match resolved cards (N).</li>
-                    <li>Verify the pure function <code>evaluateDataShadowingAnomaly</code> successfully evaluates 100% of authentic documents without throwing exceptions.</li>
+                    <li>Run <code>npm run test:sentinel</code> (or <code>npx playwright test src/test/e2e/dashboard_sentinel.spec.ts</code>).</li>
+                    <li>Confirm Playwright launches headless Chromium, navigates to <code>https://dev.memoryweaver.studio/studio</code>, and listens for console events.</li>
+                    <li>Verify the test asserts <strong>0 data-shadowing anomalies detected (M == N)</strong> and passes with exit code 0.</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -7066,7 +7076,7 @@
                 </div>
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
-                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard (/studio)</span>
+                <span class="text-[11px] font-mono text-gray-500">Target: Playwright E2E Smoke (src/test/e2e/dashboard_sentinel.spec.ts)</span>
                 <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
               </div>
             </div>
@@ -7077,15 +7087,15 @@
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 57.3</span>
-                    <span class="text-xs font-bold text-white">Invariant Unit &amp; Anti-Regression Suite (src/test/data_integrity_invariants.test.ts)</span>
+                    <span class="text-xs font-bold text-white">Invariant Unit &amp; Rapid-Switch Mutation Shield (14 Tests)</span>
                   </div>
                   <p class="text-xs text-gray-400">
-                    Verify the automated regression test suite:
+                    Verify the automated regression test suite including in-motion rapid-switch safeguards:
                   </p>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
                     <li>Run <code>npx vitest run src/test/data_integrity_invariants.test.ts</code>.</li>
-                    <li>Verify all 11 invariant tests pass cleanly in &le; 15ms.</li>
-                    <li>Confirm coverage across: Invariant 1 (Correlation Matrix), Invariant 2 (Document Anti-Hijacking), Invariant 3 (Payload Completeness), Invariant 4 (Rule 14 Text Hierarchy), and Invariant 5 (Layer 4 Sentinel Trigger Logic).</li>
+                    <li>Verify all 14 invariant tests pass cleanly in &le; 15ms.</li>
+                    <li>Confirm Invariant 6 verifies that in-flight autosave debounce timers are cancelled prior to navigation, and that omitting cancellation causes destructive cross-scene contamination.</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -7095,7 +7105,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Vitest Suite (src/test/data_integrity_invariants.test.ts)</span>
-                <span class="text-[11px] font-mono text-emerald-400">11/11 Tests Passed</span>
+                <span class="text-[11px] font-mono text-emerald-400">14/14 Tests Passed (0 Regressions)</span>
               </div>
             </div>
 
@@ -7124,6 +7134,38 @@
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard (/studio)</span>
                 <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 57.5 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 57.5</span>
+                    <span class="text-xs font-bold text-white">Active Rapid-Switch Write Guard &amp; Zero-Bleed Verification</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    Explicit in-motion transition verification (testing debounce cancellation during live typing):
+                  </p>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
+                    <li>Open clean-slate Scene 4 (<code>https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1</code>).</li>
+                    <li>Type <em>"Temporary rapid-switch test draft"</em> in the Story Hook textarea.</li>
+                    <li>Immediately (within 500ms, before the 2000ms debounce timer ends) click Scene 5 in the spine navigator (or switch to <code>/studio/production/part-1-scene-5?act=1</code>).</li>
+                    <li>Confirm Scene 4 persists the test draft, while Scene 5 loads pristine, clean, and blank with <strong>ZERO text bleed or document hijacking</strong>.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(57, 5, 'pass', this)" id="btn-item-pass-57-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(57, 5, 'fail', this)" id="btn-item-fail-57-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Active In-Motion Switch (Scene 4 &rarr; Scene 5)</span>
+                <div class="flex items-center gap-3">
+                  <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Scene 4 (Origin) ↗</a>
+                  <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-5?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-indigo-400 hover:underline">🔗 Open Scene 5 (Destination) ↗</a>
+                </div>
               </div>
             </div>
           </div>
@@ -7665,7 +7707,7 @@
       54: 5,
       55: 5,
       56: 4,
-      57: 4
+      57: 5
     };
 
     function updateItemProgress(cardNum) {
