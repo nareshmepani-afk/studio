@@ -327,6 +327,42 @@ In `qa_checklist_interactive.html`:
   - When new commits are deployed, punch-list resolutions migrate seamlessly across versions alongside notes, telemetry, and screenshots.
   - Both Single Test Copy (`[ 📋 Copy Test N ]`) and Suite-Level Markdown Reports (`[ 📋 Copy Markdown Report ]`) automatically include verified punch-list line items (`- [x] Punch-List N.M: [Description]`), providing an immutable verification trail.
 
+# 30.6. Mandatory Tester Persona State Audit & Bifurcated Clean-Slate/Progressed Test Protocol (Rule 30.5 / GOV-MW-142)
+
+## 30.6.1 Pre-Flight Account State Audit
+Before creating, updating, or formatting ANY test checklist card (`#card-N`) in `qa_checklist_interactive.html` or QA release templates, the agent MUST programmatically query the designated tester’s live database state via MCP tools (`auth_get_users` + `firestore_list_documents`):
+1. **Identify Existing Memories**: Extract active document IDs, canonical `sceneId`, title, active `productionStage` (1, 2, 3, 4), and `actsCompleted`.
+2. **Identify Clean-Slate Scenes**: Extract curriculum scenes (from the 31 available) that have NO document and 0 draft prose under that user's UID.
+
+## 30.6.2 Strict Bifurcated Test Categorisation
+Every test item within a card MUST explicitly declare its pre-condition category:
+- **Category A: Clean Slate (Zero-State / Unrecorded)**:
+  - *Applicability*: Features verifying empty state affordances, suppression of premature next-act buttons, initial prompt placeholder display, unedited sensory seed chips, or initial draft CTAs.
+  - *Mandatory Route*: Must point strictly to a verified clean-slate scene (e.g. Scene 2 `part-1-scene-2`). Linking to an existing memory scene for a clean-slate test is strictly prohibited.
+- **Category B: Progressed State (Existing Memory / Non-Degradation)**:
+  - *Applicability*: Features verifying stage resumption, downstream act progression, cross-reload persistence, or edit preservation on previously saved records.
+  - *Mandatory Route*: Must point strictly to the active document ID route (e.g. `/studio/production/ey96djU6qR1BrDGnvZwp?act=1`).
+
+## 30.6.3 Clean-Slate Preservation Guardrail & Fallback Candidates
+- **The Clean-Slate Burn Hazard**: If a tester clicks `[ 🔗 Open Clean Slate (Scene 2) ↗ ]` and types into the box or tests autosave, Scene 2 is no longer a clean slate—it becomes a persisted Firestore draft document. The next time they re-test Category A, Scene 2 will behave as a progressed state rather than an empty slate.
+- **Mandatory Fallback Designation**: In the Zone 2 Persona Audit, always designate two alternative clean-slate candidate scenes:
+  - **Primary Zero-State Candidate**: e.g., Part I Scene 2 (`part-1-scene-2` • *The Brass Spice Tin*)
+  - **Fallback Zero-State Candidate**: e.g., Part I Scene 4 (`part-1-scene-4` • *The Family Album*)
+- **Administrative Draft Reset Protocol**: Provide a copyable 1-click administrative reset curl/command or Firestore delete snippet in Zone 2 to purge test drafts for the designated scene if soiled during QA execution.
+
+## 30.6.4 Mandatory Zone 2 Tester Persona Callout Card
+Every checklist card MUST render a dedicated, visually elevated `TESTER PERSONA AUDIT` box within Zone 2 displaying:
+- Tester Email and Firebase UID.
+- Table of existing memory document IDs, their scene titles, and active stages.
+- Explicit designation of both Primary and Fallback verified clean-slate routes for zero-state testing.
+- Target edge commit SHA verified live via `/api/version`.
+
+## 30.6.5 Multi-Route Direct Action Buttons in Zone 1
+Zone 1 MUST NOT render a single ambiguous link. It must provide dedicated, clearly labeled direct action buttons:
+- `[ 🔗 Open [Surface] (Clean Slate • Scene X) ↗ ]`
+- `[ 🔗 Open [Surface] (Existing Memory • Doc [ID]) ↗ ]`
+- `[ 🔗 Open [Surface] (Fallback Clean Slate • Scene Y) ↗ ]`
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)

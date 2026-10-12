@@ -1571,6 +1571,25 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - TypeScript Compiler: `npx.cmd tsc --noEmit` exited 0.
   - Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
 
+---
+
+### [2026-10-12 16:30 BST] • Checkpoint #066 — Rule 30.5 Codification & Deterministic QA Persona Protocol (GOV-MW-142)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architect**: Approved and ratified Rule 30.5 (Section 30.6 in `AGENTS.md`) mandating pre-flight account state audits, bifurcated Clean-Slate (Category A) vs Progressed State (Category B) test items, Zone 2 Persona Callouts, and the Clean-Slate Preservation Guardrail (primary + fallback candidate scenes).
+  - 🤖 **Chat 2 (The Flash Executor)**: Codified Section 30.6 into `C:\Users\home\studio\.agents\AGENTS.md`, updated Card 55 templates in `qa_checklist_interactive.html` with primary (`part-1-scene-2`) and fallback (`part-1-scene-4`) clean slates, verified pre-push build gates (`npm.cmd run build`), and deployed to `dev`.
+- **Architectural & Governance Deliverables**:
+  - **Pre-Flight Account State Audit (30.6.1)**: Mandates automated extraction of tester UID, active memory document IDs, and unrecorded curriculum scenes via Firebase Auth & Firestore MCP tools before generating test cards.
+  - **Strict Bifurcated Test Categorisation (30.6.2)**: Requires every test item to explicitly declare whether it tests Category A (Clean Slate / 0 prose / empty state) or Category B (Progressed State / existing document / stage resumption).
+  - **Clean-Slate Preservation Guardrail (30.6.3)**: Designates Primary Zero-State Candidate (`part-1-scene-2`) and Fallback Zero-State Candidate (`part-1-scene-4`), mitigating the "clean-slate burn hazard" when typing tests persist drafts.
+  - **Zone 2 Persona Audit Card (30.6.4)**: Displays tester UID, document IDs, active stages, clean-slate candidate scenes, and edge commit SHA directly on `#card-N`.
+  - **Zone 1 Multi-Route Action Buttons (30.6.5)**: Renders dedicated direct action buttons for Primary Clean Slate, Fallback Clean Slate, Existing Memory, and Desktop Studio routes with zero relative URL ambiguity.
+- **Quality Gates & Test Coverage**:
+  - `AGENTS.md`: Section 30.6 codified and verified.
+  - `qa_checklist_interactive.html`: Card 55 updated with Zone 1 bifurcated buttons and Zone 2 Persona Audit card.
+  - TypeScript Compiler: `npx.cmd tsc --noEmit` exited 0.
+  - Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+
+
 
 
 
