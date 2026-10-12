@@ -50,13 +50,13 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">325c981f</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">878bb5d0</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">325c981</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">878bb5d</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">12 Oct 2026, 14:50 BST</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">12 Oct 2026, 17:25 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">12 Oct 2026, 14:44 BST</strong></span>
+          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">12 Oct 2026, 17:20 BST</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Environment: <strong class="text-amber-300">dev.memoryweaver.studio</strong></span>
         </div>
@@ -67,7 +67,7 @@
           Organised strictly by target staging route so you can open a single URL and run every test on that route in chronological order:
           <strong class="text-sky-300">1. first_flight_rehearsal</strong> (Cards 1–6: 6/6 PASS) &bull;
           <strong class="text-amber-300">2. studio/production/</strong> (Card 7: 1/1 PASS) &bull;
-          <strong class="text-emerald-300">3. studio/fireside, Curriculum Lockstep Sync, Cloud Storage, Chromatic Lockstep &amp; Build Immutability (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115, OPS-116, MW-117, MW-118, MW-119, ARCH-MW-127, UX-MW-131, ARCH-MW-132, SPEC-MW-134, ARCH-MW-136 &amp; ARCH-MW-139)</strong> (Cards 8–10 PASS; Cards 11–54 Ready for Verification).
+          <strong class="text-emerald-300">3. studio/fireside, Curriculum Lockstep Sync, Cloud Storage, Chromatic Lockstep &amp; Build Immutability (MW-88, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115, OPS-116, MW-117, MW-118, MW-119, ARCH-MW-127, UX-MW-131, ARCH-MW-132, SPEC-MW-134, ARCH-MW-136, ARCH-MW-139, UI-MW-141 &amp; BUG-MW-143)</strong> (Cards 8–10 PASS; Cards 11–56 Ready for Verification).
         </p>
       </div>
 
@@ -6680,6 +6680,255 @@
           </div>
         </div>
 
+        <!-- CARD 56: SCENE CORRELATION & RESTORED MASTER REEL VERIFICATION (BUG-MW-143) -->
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-56" data-category="fireside">
+          <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
+          <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  CARD 56
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                  SCENE CORRELATION &amp; MASTER REEL RESTORATION
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/10 text-sky-300 border border-sky-500/30">
+                  BUG-MW-143 &bull; ZERO DATA LOSS &bull; CANONICAL METADATA
+                </span>
+                <span id="item-progress-badge-56" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700">
+                  0/4 ITEMS EVALUATED
+                </span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                Test 56: Scene Correlation Shield, Document Identity Repair &amp; Restored Master Reel Verification (BUG-MW-143)
+              </h3>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <a
+                href="https://dev.memoryweaver.studio/studio"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-200 hover:text-amber-100 transition flex items-center gap-1.5 shadow-sm cursor-pointer ring-1 ring-amber-400/30"
+              >
+                <span>🔗 Open Studio Dashboard (/studio) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 hover:text-purple-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Scene 1 Desktop Studio (Doc ey96djU6) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Scene 1 Fireside (Doc ey96djU6) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Clean Slate (Scene 3) ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ZONE 2: TARGET ROUTE & METADATA -->
+          <div class="bg-gray-900/60 p-3.5 rounded-xl border border-gray-800 text-xs font-mono text-gray-400 space-y-2 mb-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span>Governance: <strong class="text-gray-300">BUG-MW-143 &bull; GOV-MW-142 (Rule 30.5 / 30.6 Persona Protocol) &bull; Rules 5, 7, 9, 14, 20</strong></span>
+              <span>Milestone: <strong class="text-amber-400">BUG-MW-143 (Telemetry mw_telemetry_qvxwzgqk0kd Incident Resolution)</strong></span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-stone-900/90 border border-amber-500/30 text-[11px] text-gray-300 space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-stone-950">TESTER PERSONA AUDIT</span>
+                <span class="text-amber-200 font-bold">nareshmepani@hotmail.com</span>
+                <span class="text-gray-500">(UID: TQdB395kXxaAGPhFxk1LVWuT8cg2)</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-gray-400">
+                <div class="space-y-0.5">
+                  <div class="text-emerald-400 font-semibold">Category B: Progressed State (Restored Master Memory):</div>
+                  <div>Doc ID: <code class="text-gray-200">ey96djU6qR1BrDGnvZwp</code></div>
+                  <div>Scene: <code class="text-gray-200">part-1-scene-1</code> (&quot;A Child of Two Worlds&quot;)</div>
+                  <div>Status: <code class="text-gray-200">pre-release</code> &bull; Stage: <code class="text-gray-200">2</code> &bull; Acts: <code class="text-gray-200">[&quot;act1&quot;, &quot;act2&quot;]</code></div>
+                  <div>Assets: <span class="text-emerald-300">271-word prose + 4K video.webm restored</span></div>
+                </div>
+                <div class="space-y-0.5">
+                  <div class="text-amber-400 font-semibold">Category A: Clean Slate (Zero-State Candidate):</div>
+                  <div>Primary Candidate: <code class="text-gray-200">part-1-scene-3</code> (&quot;School Days &amp; Early Wonder&quot;)</div>
+                  <div>Fallback Candidate: <code class="text-gray-200">part-1-scene-4</code> (&quot;Traditions, Feasts &amp; Sacred Days&quot;)</div>
+                  <div>Scene 2 Draft: <code class="text-gray-200">5F7e9DACtBao5lgKYAxf</code> (&quot;The House I Grew Up In&quot;)</div>
+                </div>
+              </div>
+            </div>
+            <div class="text-[11px] text-gray-500 break-all space-y-0.5">
+              <div>Studio Dashboard Route: https://dev.memoryweaver.studio/studio</div>
+              <div>Scene 1 Desktop Route: https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</div>
+              <div>Scene 1 Fireside Route: https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</div>
+              <div>Clean Slate Route: https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</div>
+              <div>Live Edge Commit: <span class="text-emerald-400 font-bold">878bb5d</span> (Rollout Verified via /api/version)</div>
+            </div>
+          </div>
+
+          <!-- ZONE 3: TEST ITEMS -->
+          <div class="space-y-3">
+            <!-- ITEM 56.1 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 56.1</span>
+                    <span class="text-xs font-bold text-white">Studio Dashboard Scene 1 Master Resolution &amp; Pre-Release Restoration (Category B)</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    Open Director's Studio on <code>https://dev.memoryweaver.studio/studio</code>. Observe <strong>Part I • Scene 1 (A Child of Two Worlds)</strong> card:
+                  </p>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
+                    <li>Confirm Scene 1 displays <strong class="text-emerald-400">[ CAPTURED ]</strong> and <strong class="text-purple-400">[ PRE-RELEASE ]</strong> badges (NOT &ldquo;READY FOR ACTION&rdquo;).</li>
+                    <li>Confirm the card displays the authentic narrative prose preview quote: <em class="text-gray-200">&ldquo;The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me...&rdquo;</em></li>
+                    <li>Confirm the primary action button renders as <strong class="text-amber-300">[ ✏️ Edit Scene ]</strong> (NOT the empty &ldquo;▶ Action&rdquo; placeholder button).</li>
+                    <li>Confirm the empty film reel placeholder icon is replaced with the active media take indicator.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(56, 1, 'pass', this)" id="btn-item-pass-56-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(56, 1, 'fail', this)" id="btn-item-fail-56-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard (/studio)</span>
+                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 56.2 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 56.2</span>
+                    <span class="text-xs font-bold text-white">Scene 2 Identity Disambiguation &amp; Separation (Category B)</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    On <code>https://dev.memoryweaver.studio/studio</code>, inspect <strong>Part I • Scene 2 (The House I Grew Up In)</strong>:
+                  </p>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
+                    <li>Confirm Scene 2 renders its own authentic draft memory (<code>5F7e9DACtBao5lgKYAxf</code>) with its own narrative text: <em class="text-gray-200">&ldquo;Looking back, what stays with me most is the ringing of the temple bells...&rdquo;</em></li>
+                    <li>Verify Scene 2 is <strong>completely decoupled</strong> from Scene 1's text and does NOT show the &ldquo;epic journey across oceans&rdquo; quote.</li>
+                    <li>Verify the top dashboard stats accurately report: <strong>Recorded: 5</strong> and <strong>Cinema Releases: 0</strong>.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(56, 2, 'pass', this)" id="btn-item-pass-56-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(56, 2, 'fail', this)" id="btn-item-fail-56-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard (/studio)</span>
+                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 56.3 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 56.3</span>
+                    <span class="text-xs font-bold text-white">Desktop Production Deck: 271-Word Prose &amp; Soundstage Video Playback (Category B)</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    Open Desktop Studio with tester's restored master memory at <code>https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</code>:
+                  </p>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
+                    <li>In <strong>Act I Scriptorium</strong>, verify the full 271-word epic narrative prose hydrates with zero text truncation or placeholder masking.</li>
+                    <li>Click <strong>Act III (Capture / Soundstage)</strong> in the top act stepper: verify the recorded video reel (<code>video.webm</code>) is present and ready for playback.</li>
+                    <li>Click Play on the video preview: confirm video streams smoothly with clear narrator audio.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(56, 3, 'pass', this)" id="btn-item-pass-56-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(56, 3, 'fail', this)" id="btn-item-fail-56-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Desktop Studio (Doc ey96djU6qR1BrDGnvZwp)</span>
+                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Test Route (Desktop Studio) ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 56.4 -->
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 56.4</span>
+                    <span class="text-xs font-bold text-white">Zero-Orphan Payload Persistence on Clean Slate Drafting (Category A)</span>
+                  </div>
+                  <p class="text-xs text-gray-400">
+                    Open Fireside on unrecorded clean slate <code>https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</code> (Part I Scene 3 &bull; School Days &amp; Early Wonder):
+                  </p>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
+                    <li>Click <code>[ ✏️ Draft Scene / Begin Story ]</code> and type new narrative memories. Click <code>[ ✓ Save Script ]</code>.</li>
+                    <li>Navigate back to <code>https://dev.memoryweaver.studio/studio</code> and verify Scene 3 immediately displays its draft status and quote preview.</li>
+                    <li>Confirm the newly persisted Firestore document contains complete canonical metadata (<code>sceneId: "part-1-scene-3"</code>, <code>promptId: "p3"</code>, <code>status: "draft"</code>), preventing orphan document blindness.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(56, 4, 'pass', this)" id="btn-item-pass-56-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(56, 4, 'fail', this)" id="btn-item-fail-56-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 3 Clean Slate)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (Scene 3 Clean Slate) ↗</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- ZONE 4: VERDICT CONTROLS -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-gray-400">Card 56 Verdict:</span>
+              <button onclick="setCardVerdict(56, 'pass')" id="btn-pass-56" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+              <button onclick="setCardVerdict(56, 'fail')" id="btn-fail-56" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+              <button onclick="setCardVerdict(56, 'retest')" id="btn-retest-56" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-amber-500/50 hover:text-amber-400">Re-test</button>
+            </div>
+            <button onclick="resetCardVerdict(56)" class="text-[11px] font-mono text-gray-500 hover:text-gray-300 transition cursor-pointer">
+              Reset
+            </button>
+          </div>
+
+          <!-- ZONE 5: AUDIT NOTES & SCREENSHOT DROPZONE -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Audit Notes / Narrative Feedback</label>
+                <textarea id="notes-56" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500" placeholder="Observations on Scene 1 restoration, video playback, or Scene 2 decoupling..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
+                <textarea id="console-log-56" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
+              </div>
+            </div>
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-56" ondragover="event.preventDefault()" ondrop="handleDrop(event, 56)">
+              <input type="file" id="file-input-56" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(56, f))" />
+              <div onclick="document.getElementById('file-input-56').click()" class="space-y-1">
+                <span class="text-sm">📸</span>
+                <div class="text-xs text-gray-400">Drag &amp; drop screenshot, <span class="text-amber-400 underline font-medium">browse</span>, or paste (Ctrl+V) directly while card is active</div>
+                <div id="img-count-56" class="text-[10px] text-gray-500 font-mono">0 screenshots attached</div>
+              </div>
+            </div>
+            <div id="image-gallery-56" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+          </div>
+        </div>
+
 </div>
       </section>
       </div>
@@ -6718,11 +6967,11 @@
   </div>
 
   <footer class="max-w-6xl mx-auto mt-12 text-center text-xs text-gray-500 font-mono py-6 border-t border-gray-800/60">
-    Memory Weaver Studio &bull; Master QA Interactive Verification Suite (Grouped by Route) &bull; Target: d61a0ed6 &bull; dev.memoryweaver.studio
+    Memory Weaver Studio &bull; Master QA Interactive Verification Suite (Grouped by Route) &bull; Target: 878bb5d0 &bull; dev.memoryweaver.studio
   </footer>
 
   <script>
-    const TOTAL = 55;
+    const TOTAL = 56;
     const STORAGE_KEY = 'MW_QA_ROUTE_GROUPED_3187cca9';
     let currentFilter = 'all';
     let currentViewMode = 'active';
@@ -6784,7 +7033,9 @@
       "[studio/fireside • Desktop Studio] ARCH-MW-132: Shared Narrative Primitives & Cross-Surface Parity (SensoryScriptEditor, SensoryModalityKey & Single-Icon Discipline)",
       "[studio/fireside • Desktop Studio] SPEC-MW-134: Standard Narrative Input Suite, Scribe's Margin, Diaspora Voice Shield & 120 WPM Cadence",
       "[studio/fireside <-> Desktop Studio] ARCH-MW-136: Bidirectional Cross-Surface Script Sync, Unicode Word-Boundary Highlighting & Zero-Loss Autosave",
-      "[studio/fireside <-> Desktop Studio] ARCH-MW-139: The Heirloom Folio Navigation & Token System (Safeguards 1-4 Parity)"
+      "[studio/fireside <-> Desktop Studio] ARCH-MW-139: The Heirloom Folio Navigation & Token System (Safeguards 1-4 Parity)",
+      "[studio/fireside • Desktop Studio] UI-MW-141: Primary CTA Beacon Elevation, Editorial Rule & Save-First Folio Reload",
+      "[studio • Desktop Studio] BUG-MW-143: Scene Correlation Shield, Document Identity Repair & Restored Master Reel Verification"
     ];
 
     let verdicts = {
@@ -6989,7 +7240,12 @@
       48: 'dock',
       49: 'spine',
       50: 'carousel',
-      51: 'carousel'
+      51: 'carousel',
+      52: 'carousel',
+      53: 'carousel',
+      54: 'spine',
+      55: 'carousel',
+      56: 'dock'
     };
     let currentPanel = 'all';
 
@@ -7169,7 +7425,8 @@
     const CARD_ITEM_COUNTS = {
       53: 10,
       54: 5,
-      55: 5
+      55: 5,
+      56: 4
     };
 
     function updateItemProgress(cardNum) {
@@ -7804,9 +8061,13 @@
             });
             updateItemProgress(53);
             updateItemProgress(54);
+            updateItemProgress(55);
+            updateItemProgress(56);
           } else {
             updateItemProgress(53);
             updateItemProgress(54);
+            updateItemProgress(55);
+            updateItemProgress(56);
           }
           if (state.punchLists) {
             punchLists = { ...punchLists, ...state.punchLists };
