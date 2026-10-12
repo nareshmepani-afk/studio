@@ -28,7 +28,9 @@ import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { MentorshipHotspot } from './MentorshipHotspot';
 import { useMemoryPersistence } from '@/hooks/studio/useMemoryPersistence';
-import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
+import { resolveSceneFromPromptId, getSceneById, MASTER_STORY_STRUCTURE } from '@/lib/curriculum/masterStoryStructure';
+import { FilofaxDesktopSpine } from '@/components/navigation/folio/FilofaxDesktopSpine';
+import type { FolioSceneToken } from '@/components/navigation/folio/folioTokens';
 import type { ScriptSyncMessage } from '@/components/studio/shared/NarrativeScriptInput';
 import { 
   SelectionDeck, 
@@ -442,6 +444,42 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       });
     } catch {}
   }, [canonicalSceneId]);
+
+  const folioScenes: FolioSceneToken[] = useMemo(() => {
+    let globalIndex = 0;
+    return MASTER_STORY_STRUCTURE.flatMap((part) =>
+      part.scenes.map((scene) => {
+        const isCurrent = canonicalSceneId === scene.id;
+        const token: FolioSceneToken = {
+          id: scene.id,
+          index: globalIndex++,
+          sceneNumber: scene.sceneNumber,
+          title: scene.title,
+          partNumber: part.partNumber,
+          partTitle: part.title,
+          hasCompletedReel: isCurrent ? Boolean((data as any)?.takes?.length) : false,
+          hasDraftProse: isCurrent ? Boolean(description || (data as any)?.prose) : false,
+          takesCount: isCurrent ? ((data as any)?.takes?.length ?? 0) : 0,
+        };
+        return token;
+      })
+    );
+  }, [canonicalSceneId, data, description]);
+
+  const handleSelectScene = useCallback(
+    (targetSceneId: string) => {
+      const targetScene = getSceneById(targetSceneId);
+      if (!targetScene) return;
+      update((prev) => ({
+        ...prev,
+        sceneId: targetSceneId,
+        promptId: targetScene.promptId || targetSceneId,
+        title: targetScene.title || prev.title,
+        chapterTitle: targetScene.partTitle || prev.chapterTitle,
+      }));
+    },
+    [update]
+  );
 
   const [scriptBlocks, setScriptBlocks] = useState<ScriptBlock[]>(data?.scriptBlocks || []);
   
@@ -1341,7 +1379,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
 
   return (
-    <div className="relative w-full z-10 px-8 pb-24 pt-4">
+    <div className="relative w-full z-10 px-8 pb-24 pt-4 lg:pr-64 overflow-visible">
     <LayoutGroup>
       <div className="w-full relative">
         {/* --- PERSISTENT PRODUCTION HEADER (Sole Authority: Top Chrome) --- */}
@@ -3407,6 +3445,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     />
   );
 })()}
+
+      {/* The Viewport-Adaptive Filofax Spine (ARCH-MW-139 / SPEC-MW-139 Safeguards 2 & 4) */}
+      <FilofaxDesktopSpine
+        scenes={folioScenes}
+        activeSceneId={canonicalSceneId}
+        onSelectScene={handleSelectScene}
+      />
     </div>
   );
 });

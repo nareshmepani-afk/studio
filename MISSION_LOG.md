@@ -1452,8 +1452,37 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - Standardised to pure baseline underlines (`border-b-2`, `px-0 mx-0 font-medium transition-colors duration-300`) matching Desktop Scriptorium.
   - **Quality Gates & Test Coverage**:
     - `src/test/fireside_prompt_carousel.test.tsx`: 24/24 passed (added 5 dedicated UI-MW-137 tests).
-    - `src/test/fireside_sync.test.ts`: 71/71 passed.
+
+## Checkpoint #061 — ARCH-MW-139 / SPEC-MW-139: The Heirloom Folio Navigation & Token System (2026-10-12)
+
+- **Target Ref**: `ARCH-MW-139` / `SPEC-MW-139` (The Heirloom Folio Navigation & Token System)
+- **Lead Agent**: Chat 2 (The Flash Executor) [Fast Mode + High Reasoning]
+- **Target Epic**: Sprint 13 (Universal Core Primitives & Studio Parity)
+- **Target Branch**: `dev`
+- **Architectural & Governance Deliverables**:
+  - **Modular Folio Suite (`src/components/navigation/folio/`)**:
+    - `folioTokens.ts`: Established Single Source of Truth (SSOT) design tokens, Roman numeral converter (`toRomanNumeral`), scene state resolver (`resolveFolioSceneState`), responsive dimensions, and elder typography standards.
+    - `globals.css`: Registered `--folio-*` CSS variables in `:root` and `.dark` palettes.
+    - `FloatingChapterDial.tsx`: Mobile floating pill with Safeguard 1 safe-area offset (`bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]`), auto-hiding during edit mode (`opacity-0 pointer-events-none scale-90`), 48px touch target, and gilded hallmark.
+    - `MobileThumbRibbon.tsx`: Mobile docked bottom navigation bar (< 768px) with 48px touch targets, chevron navigation, and hallmark trigger. Auto-hides when `isEditing === true`.
+    - `FilofaxDesktopSpine.tsx`: Viewport-adaptive right-docked ledger (w-14 micro-spine with Roman numerals on 768px–1023px, w-64 full ledger on $\ge 1024\text{px}$). Safeguard 4 protruding active tab (`-translate-x-1.5`) with `overflow-visible` parent container.
+    - `FolioChapterDrawer.tsx`: Accessible 31-scene full chapter picker modal grouped by Part (Parts I–VI) with state indicators (`●` completed reel, `◐` draft, `○` unrecorded), 48px touch targets, and ESC/backdrop dismissal.
+    - `HeirloomFolioSpine.tsx`: Master responsive orchestrator coordinating dial, ribbon, desktop spine, and drawer modal.
+  - **Surface Integrations**:
+    - **Desktop Studio (`MemoryForm.tsx`)**: Docked adaptive `<FilofaxDesktopSpine />` along right edge. Applied `lg:pr-64` in-flow container padding and `overflow-visible` to prevent layout clipping. Full director controls and autosave pipeline preserved intact (Rule 7).
+    - **Fireside Mobile (`SingleCardPromptCarousel.tsx`)**: Mounted `<HeirloomFolioSpine />` with mobile variant, replacing fluorescent badge soup with clean gilded hallmark and elder-compliant `text-xs` badges. Backward-compatible `data-testid` hooks preserved.
+  - **4 Critical Safeguards Verified**:
+    1. *Mobile Safe-Area & Virtual Keyboard Shield*: `bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]` offset and auto-hiding when `isEditing === true`.
+    2. *Viewport-Adaptive Filofax Spine*: Micro-Spine (`w-14`) on tablet, Full Ledger (`w-64`) on large desktop; container `lg:pr-64` padding.
+    3. *Elder Typographic Minimum (Rule 26)*: Ban on `text-[10px]` micro-labels; strict minimum `text-xs` (12px) with `tracking-[0.15em]`.
+    4. *Protruding Tab Clipping Shield*: Parent container `overflow-visible` preserving protruding tab shadow without clipping.
+  - **Quality Gates & Test Coverage**:
+    - `src/test/folio_navigation.test.tsx`: 14/14 passed.
+    - `src/test/fireside_prompt_carousel.test.tsx`: 24/24 passed.
+    - `src/test/studio_fixes.test.tsx`: 135/135 passed.
     - `src/test/bidirectional_sync.test.tsx`: 9/9 passed.
+    - `npx.cmd tsc --noEmit`: exited with code 0.
+
 
 
 

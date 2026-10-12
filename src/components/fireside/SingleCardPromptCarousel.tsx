@@ -60,6 +60,7 @@ import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
 import { OrientationSoundcheckDock } from '@/components/fireside/OrientationSoundcheckDock';
 import { ChapterSpineRail, type ChapterSpineScene } from '@/components/navigation/ChapterSpineRail';
+import { HeirloomFolioSpine } from '@/components/navigation/folio/HeirloomFolioSpine';
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
 import { FiresideModeSwitch } from '@/components/fireside/FiresideModeSwitch';
 import {
@@ -1052,7 +1053,7 @@ export function SingleCardPromptCarousel({
                 <div className="mb-2.5 flex items-center">
                   <span
                     data-testid="HS_FIRESIDE_CROWN_NEXT_RECOMMENDED"
-                    className="bg-emerald-500 text-gray-950 font-black text-[10px] tracking-wider px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)] uppercase inline-flex items-center gap-1"
+                    className="bg-emerald-500 text-gray-950 font-black text-xs tracking-wider px-2.5 py-0.5 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)] uppercase inline-flex items-center gap-1"
                   >
                     ✨ NEXT RECOMMENDED
                   </span>
@@ -1082,13 +1083,13 @@ export function SingleCardPromptCarousel({
                       <>
                         <span
                           data-testid="HS_FIRESIDE_BADGE_CAPTURED"
-                          className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                          className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
                         >
                           [ 📹 CAPTURED ]
                         </span>
                         <span
                           data-testid="HS_FIRESIDE_BADGE_PRE_RELEASE"
-                          className="bg-purple-950/80 text-purple-300 border border-purple-500/40 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                          className="bg-purple-950/80 text-purple-300 border border-purple-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
                         >
                           [ 🎞️ PRE-RELEASE ]
                         </span>
@@ -1097,13 +1098,13 @@ export function SingleCardPromptCarousel({
                       <>
                         <span
                           data-testid="HS_FIRESIDE_BADGE_CAPTURED"
-                          className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                          className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
                         >
                           [ 📹 CAPTURED ]
                         </span>
                         <span
                           data-testid="HS_FIRESIDE_BADGE_STUDIO_DRAFT"
-                          className="bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                          className="bg-amber-950/80 text-amber-300 border border-amber-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
                         >
                           [ ✍️ STUDIO DRAFT ]
                         </span>
@@ -1111,7 +1112,7 @@ export function SingleCardPromptCarousel({
                     ) : (
                       <span
                         data-testid="HS_FIRESIDE_BADGE_READY_FOR_ACTION"
-                        className="bg-sky-500/10 text-sky-400 border border-sky-500/30 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold"
+                        className="bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono px-2 py-0.5 rounded-md font-bold"
                       >
                         [ 🎬 READY FOR ACTION ]
                       </span>
@@ -1122,7 +1123,7 @@ export function SingleCardPromptCarousel({
                     <span
                       data-testid="carousel-scene-number-badge"
                       title="Curriculum Position: Part I (Roots and Foundations), Scene 1 of 11 in your Generational Vault."
-                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold cursor-help"
+                      className="text-xs uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold cursor-help"
                     >
                       {linkedScene.partTitle.split(':')[0]} • Scene {linkedScene.sceneNumber}
                     </span>
@@ -1132,7 +1133,7 @@ export function SingleCardPromptCarousel({
                     <span
                       data-testid="carousel-studio-master-badge"
                       title="Authored in Desktop Studio • Full cross-device editing enabled"
-                      className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm cursor-help"
+                      className="text-xs uppercase font-mono tracking-wider px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/50 text-amber-200 font-bold shadow-sm cursor-help"
                     >
                       ✨ Studio Master
                     </span>
@@ -2168,6 +2169,22 @@ export function SingleCardPromptCarousel({
           </button>
         </div>
       </div>
+
+      {/* 6. The Heirloom Folio Spine (ARCH-MW-139 / SPEC-MW-139) */}
+      <HeirloomFolioSpine
+        scenes={spineScenes}
+        activeSceneId={activeSceneId}
+        onSelectScene={handleSelectScene}
+        currentIndex={currentIndex}
+        onPrevScene={handlePrev}
+        onNextScene={handleNext}
+        canPrev={currentIndex > 0}
+        canNext={currentIndex < sparkDeck.length - 1}
+        isEditing={isEditingScript}
+        mobileVariant="both"
+        includeDesktopSpine={false}
+        className="w-full mt-3"
+      />
     </div>
   );
 }
