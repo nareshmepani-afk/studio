@@ -1722,4 +1722,39 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Live Deployment Verification: Programmatic probe against `https://dev.memoryweaver.studio/api/version` confirmed live traffic serving target commit `de4a35e`.
   - Plane.so Issue Auto-Sync: Work item #355 updated to Completed.
 
+---
+
+### [2026-10-13 16:45 BST] • Checkpoint #071 — Act III Dual-Mode Stage: Master Reel Review vs. Clean-Slate Capture (UI-MW-148)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architect**: Identified the Stage Door friction where narrators entering Act III with an existing video take (`data.videoUrl`) were confronted by the full-screen `"STANDING BY // AWAITING NARRATOR"` rehearsal modal and forced camera/mic activation, obscuring the master reel review suite and locking the hero CTA in `STEP INTO SOLO BOOTH`.
+  - 🤖 **Chat 2 (The Flash Executor)**: Engineered the Act III Dual-Mode stage architecture, bifurcating Act III into Mode 2 (Master Reel Review: optics powered down, pre-flight modal suppressed, RecordEditingSuite mounted with interactive scrubber, hero CTA elevated to `APPROVE & PROCEED TO ACT IV ➔`) and Mode 1 (Clean-Slate Capture: rehearsal checklist active, camera/mic ignited on mount, hero CTA `STEP INTO SOLO BOOTH >`). Implemented `handleRetakePerformance` non-destructive escape hatch (Mode 2 -> Mode 1 transition preserving historical takes in `data.takes`), updated `ProductionControlBar.tsx`, registered Card 58 in `qa_checklist_interactive.html`, and codified 28 unit regression invariants.
+- **Architectural & Forensic Deliverables**:
+  - **Track 1: Act III Dual-Mode Stage Mounting (`src/components/studio/SoloStage.tsx`)**:
+    - Added `isRetakingMode` state flag and initialized `reviewTake` and `reviewVideoUrl` directly from `data?.videoUrl` to prevent 1-frame flash.
+    - Defined `hasExistingVideo = Boolean(!isRetakingMode && (data?.videoUrl || reviewVideoUrl || recordedBlob))`.
+    - Gated Standby pre-flight modal behind `!hasExistingVideo`: completely suppressed when an authentic master video take exists.
+    - Gated camera power effect to keep hardware sensors (camera & microphone) unpowered during Master Reel Review, eliminating battery drain, fan noise, and elder privacy concerns.
+  - **Track 2: Non-Destructive Retake Performance Escape Hatch (`src/components/studio/SoloStage.tsx`, `src/components/studio/RecordEditingSuite.tsx`)**:
+    - Added `[ 🔄 Retake Performance ]` action to `RecordEditingSuite` header and toolbar with direct prop contract `onRetake`.
+    - Engineered `handleRetakePerformance`: pauses all video buffers (GPU stream collision guard), clears volatile review states, sets `isRetakingMode(true)`, ignites camera optic stream, un-mutes optics via Tech-Scout ceremony hotspot, and preserves all existing takes in `data.takes` (Universal Non-Degradation, Rule 7).
+    - Added `handleLoadedMetadata` to automatically resolve duration across video buffers.
+  - **Track 3: Production Control Bar CTA & Lobby Gate Parity (`src/components/studio/ProductionControlBar.tsx`, `src/components/studio/ProductionDeck.tsx`)**:
+    - Passed `hasExistingVideo` prop into `ProductionControlBar`.
+    - Bypassed lobby gate when `hasExistingVideo` is true (`const isLobbyGate = currentStage === 2 && isLobbyConfirmed === false && !hasExistingVideo;`).
+    - Recalibrated hero action label to return `'APPROVE & PROCEED TO ACT IV →'` and tooltip `'Master reel ready for review and approval.'` when `hasExistingVideo` is true.
+    - Synced `isLobbyConfirmed` in `ProductionDeck.tsx` when `memoryData?.videoUrl` exists.
+  - **Track 4: Automated Invariant Regression Shield (`src/test/act3_dual_mode_stage.test.tsx`, `src/test/production_control_bar_acts.test.tsx`, `src/components/studio/__tests__/SoloStage.shield.test.tsx`)**:
+    - Authored 6 dedicated invariant assertions in `act3_dual_mode_stage.test.tsx` verifying Mode 2 modal suppression, Mode 1 modal display, camera sensor gating, and retake transitions.
+    - Updated `vitest.config.ts` to include `src/components/studio/__tests__`.
+    - 28/28 tests passing across all 3 test files.
+  - **Track 5: QA Verification Suite Card 58 (`qa_checklist_interactive.html`)**:
+    - Registered Card 58 (UI-MW-148 Act III Dual-Mode Stage Verification) with 4 comprehensive test items with fully-qualified staging URLs.
+- **Quality Gates & Test Coverage**:
+  - Invariant Suite: `src/test/act3_dual_mode_stage.test.tsx`: 6/6 passed.
+  - Control Bar Suite: `src/test/production_control_bar_acts.test.tsx`: 9/9 passed.
+  - SoloStage Shield Suite: `src/components/studio/__tests__/SoloStage.shield.test.tsx`: 13/13 passed.
+  - Total Act III Invariants: 28/28 passed.
+  - Local Production Build Gate: `npm.cmd run build` compiled all routes with exit code 0.
+
+
 

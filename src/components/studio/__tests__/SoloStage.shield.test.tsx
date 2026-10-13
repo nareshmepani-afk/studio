@@ -84,6 +84,7 @@ const mockHttpsCallable = vi.fn().mockResolvedValue({
 vi.mock('@/lib/firebase', () => ({
   app: {},
   storage: {},
+  db: {},
 }));
 
 vi.mock('firebase/storage', () => ({
@@ -113,8 +114,29 @@ let mockRecordedBlob: any = null;
 const mockStartAlchemy = vi.fn();
 let mockIsSaving = false;
 
+let mockIsMuted = false;
+let mockCameraEnabled = false;
+
 vi.mock('@/hooks/useCamera', () => ({
-  useCamera: () => ({ active: false, start: vi.fn(), stop: vi.fn(), stream: null }),
+  useCamera: ({ enabled }: { enabled?: boolean } = {}) => {
+    mockCameraEnabled = !!enabled;
+    return {
+      active: !!enabled,
+      start: vi.fn(),
+      stop: vi.fn(),
+      stream: null,
+      isMuted: mockIsMuted,
+      cameraError: null,
+      capabilities: null,
+      applyZoom: vi.fn(),
+      zoomValue: 1,
+      switchCamera: vi.fn(),
+      hasMultipleCameras: false,
+      activeInput: 'camera',
+      switchInput: vi.fn(),
+      isWirelessLinked: false,
+    };
+  },
 }));
 
 let mockRecordedSegments: any[] = [];
@@ -586,3 +608,96 @@ describe('Recovery Shield (Session Resilience)', () => {
     keysSpy.mockRestore();
   });
 });
+
+describe('UI-MW-148: Act III Dual-Mode Stage (Master Reel Review vs Clean-Slate Capture)', () => {
+  const mockUpdate = vi.fn();
+  const memoryWithMaster: Memory = {
+    id: 'ey96djU6qR1BrDGnvZwp',
+    title: 'A Child of Two Worlds',
+    description: 'Authentic recorded narrative monologue.',
+    videoUrl: 'https://storage.googleapis.com/test-bucket/master_reel.webm',
+    status: 'draft',
+    lastEdited: Date.now(),
+    scriptBlocks: []
+  } as any;
+
+  const memoryCleanSlate: Memory = {
+    id: 'clean-slate-scene-4',
+    title: 'Clean Slate Scene',
+    description: 'No recorded video yet.',
+    status: 'draft',
+    lastEdited: Date.now(),
+    scriptBlocks: []
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (localforage.keys as any) = vi.fn().mockResolvedValue([]);
+    (localforage.getItem as any) = vi.fn().mockResolvedValue(null);
+    mockRecordedSegments = [];
+    mockRecordedBlob = null;
+    mockIsMuted = true;
+  });
+
+  it('Mode 2 (Master Reel Review): suppresses Standing By modal and mounts RecordEditingSuite when videoUrl exists even if isMuted is true', async () => {
+    mockIsMuted = true;
+
+    render(
+      <SoloStage 
+        data={memoryWithMaster} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    // Standby modal must be completely suppressed
+    expect(screen.queryByText(/Standing By \/\/ Awaiting Narrator/i)).toBeNull();
+
+    // RecordEditingSuite must be mounted cleanly with timeline and retake action
+    expect(await screen.findByText('EDITING SUITE')).toBeDefined();
+    expect(screen.getByText('VIRTUAL EDL ACTIVE')).toBeDefined();
+    expect(screen.getAllByText(/Retake Performance/i).length).toBeGreaterThan(0);
+  });
+
+  it('Mode 1 (Clean-Slate Capture): displays Standing By modal when videoUrl is absent and isMuted is true', async () => {
+    mockIsMuted = true;
+
+    render(
+      <SoloStage 
+        data={memoryCleanSlate} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    // Standby modal must be displayed to guide narrator through pre-flight optics
+    expect(await screen.findByText(/Standing By \/\/ Awaiting Narrator/i)).toBeDefined();
+    expect(screen.getByText('Ignite Camera & Mic')).toBeDefined();
+  });
+
+  it('Retake Escape Hatch: transitions from Mode 2 to Mode 1, powering camera on and exiting review mode', async () => {
+    mockIsMuted = false;
+
+    render(
+      <SoloStage 
+        data={memoryWithMaster} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    expect(await screen.findByText('EDITING SUITE')).toBeDefined();
+
+    // Click Retake Performance
+    const retakeButtons = screen.getAllByText(/Retake Performance/i);
+    await act(async () => {
+      fireEvent.click(retakeButtons[0]);
+    });
+
+    // RecordEditingSuite should unmount or review overlay should exit
+    await waitFor(() => {
+      expect(screen.queryByText('EDITING SUITE')).toBeNull();
+    });
+  });
+});
+

@@ -1681,7 +1681,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                   setLobbyConfirmed(true);
                                   setActiveRoom(room);
                                 }}
-                                isLobbyConfirmed={isRehearsalFlight ? true : lobbyConfirmed}
+                                isLobbyConfirmed={isRehearsalFlight || Boolean(memoryData?.videoUrl) ? true : lobbyConfirmed}
+                                hasExistingVideo={Boolean(memoryData?.videoUrl)}
                             />
                         </footer>
                     )}

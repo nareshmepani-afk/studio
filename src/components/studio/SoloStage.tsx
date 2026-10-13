@@ -751,8 +751,9 @@ export default function SoloStage({
     isWirelessLinked
   } = useCamera({ enabled: isCameraActive });
   const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
-  const [reviewTake, setReviewTake] = useState(false);
-  const [reviewVideoUrl, setReviewVideoUrl] = useState<string | null>(null);
+  const [isRetakingMode, setIsRetakingMode] = useState(false);
+  const [reviewTake, setReviewTake] = useState(() => Boolean(data?.videoUrl));
+  const [reviewVideoUrl, setReviewVideoUrl] = useState<string | null>(() => data?.videoUrl || null);
   const reviewVideoRef = useRef<HTMLVideoElement>(null);
   const [reviewPlaying, setReviewPlaying] = useState(true);
   const [reviewEnded, setReviewEnded] = useState(false);
@@ -793,6 +794,8 @@ export default function SoloStage({
     uploadProgress, 
     uploadResult 
   } = useMediaRecorder(stream);
+
+  const hasExistingVideo = Boolean(!isRetakingMode && (data?.videoUrl || reviewVideoUrl || recordedBlob));
 
   // Synchronise useMediaRecorder's isRecording state to global studio state context
   useEffect(() => {
@@ -1266,13 +1269,13 @@ export default function SoloStage({
 
   // Auto-engage Review Take Mode on Act III load if a recorded video performance exists
   useEffect(() => {
-    if (currentStage === 2 && (recordedBlob || data?.videoUrl)) {
+    if (currentStage === 2 && !isRetakingMode && (recordedBlob || data?.videoUrl)) {
       setReviewTake(true);
       if (data?.videoUrl && !recordedBlob) {
         setReviewVideoUrl(data.videoUrl);
       }
     }
-  }, [currentStage, data?.videoUrl, recordedBlob]);
+  }, [currentStage, data?.videoUrl, recordedBlob, isRetakingMode]);
 
   // Intercept MediaRecorder stop event and trigger Review overlay before sealing
   useEffect(() => {
@@ -1282,6 +1285,7 @@ export default function SoloStage({
       setReviewTake(true);
       setReviewPlaying(true);
       setReviewEnded(false);
+      setIsRetakingMode(false);
     }
   }, [recordedBlob, isAlchemySaving, isAlchemyComplete]);
 
@@ -1607,6 +1611,7 @@ export default function SoloStage({
     console.log("[SoloStage] User discarded take. Cleaning up resources...");
     clearRecording();
     lastAttemptedBlobRef.current = null;
+    setIsRetakingMode(true);
     setReviewTake(false);
     setIsCameraActive(true);
     setReviewPlaying(true);
@@ -2027,8 +2032,15 @@ export default function SoloStage({
   }, [recordedBlob, productionStage]);
 
   // NEW: Manage camera activation based on active Production Stage (Stage 1/Weave & Stage 2/Recording)
+  // Mode 1 vs Mode 2 Camera Power Management: Keep camera unpowered during Master Reel Review
   useEffect(() => {
     if (showRestorePrompt) {
+      if (isCameraActive) {
+        setIsCameraActive(false);
+      }
+      return;
+    }
+    if (productionStage === 2 && hasExistingVideo) {
       if (isCameraActive) {
         setIsCameraActive(false);
       }
@@ -2039,7 +2051,7 @@ export default function SoloStage({
     } else if (productionStage !== 1 && productionStage !== 2 && productionStage !== 3 && isCameraActive) {
       setIsCameraActive(false);
     }
-  }, [productionStage, isCameraActive, recordedBlob, showRestorePrompt]);
+  }, [productionStage, isCameraActive, recordedBlob, showRestorePrompt, hasExistingVideo]);
 
   const handleReattemptAccess = useCallback(() => {
     setIsCameraActive(false);
@@ -2131,28 +2143,42 @@ export default function SoloStage({
   }, [previewCurrentTime]);
 
   const handleRetakePerformance = useCallback(() => {
+    console.log("[SoloStage] User initiated retake. Powering up camera stream for next take while preserving history...");
     if (previewVideoRef.current) {
       previewVideoRef.current.pause();
     }
     if (theaterVideoRef.current) {
       theaterVideoRef.current.pause();
     }
+    if (reviewVideoRef.current) {
+      reviewVideoRef.current.pause();
+    }
     
     setIsPlaying(false);
     setIsReelTheaterOpen(false);
     setIsPosterLightboxOpen(false);
     clearRecording();
+    lastAttemptedBlobRef.current = null;
     setReviewVideoUrl(null);
-    setProductionStage(1);
+    setReviewTake(false);
+    setIsRetakingMode(true);
+    if (productionStage === 3) {
+      setProductionStage(2);
+    }
     setIsCameraActive(true);
+
+    if (unmuteOptics) {
+      unmuteOptics();
+    }
 
     logEvent('HS_ACT4_RETAKE_PERFORMANCE', { version: APP_VERSION });
 
-    toast.info("Recording Studio Ready for Take 2", {
-      description: "Returned to Stage 1. Frame yourself and start recording when ready.",
+    const nextTakeNumber = (selectionRoomTakes?.length || 0) + 1;
+    toast.info("STUDIO READY // RETAKE ENGAGED", {
+      description: `Camera stream engaged. Ready for Take ${nextTakeNumber}. Previous takes safely preserved in history.`,
       icon: <RefreshCw className="w-4 h-4 text-sky-400" />
     });
-  }, [setProductionStage, clearRecording]);
+  }, [setProductionStage, clearRecording, unmuteOptics, selectionRoomTakes, productionStage]);
 
   const handleSeekPreview = useCallback((seconds: number, autoPlay: boolean = true) => {
     setPreviewCurrentTime(seconds);
@@ -3075,7 +3101,7 @@ export default function SoloStage({
               `
             }}
           />
-          {mounted && isMuted && (
+          {mounted && isMuted && !reviewTake && !hasExistingVideo && (
             <div 
               onClick={unmuteOptics}
               className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center z-[70] pointer-events-auto animate-fade-in border border-rose-500/20 rounded-[2.5rem] cursor-pointer group/cam transition-all duration-500 hover:bg-slate-950/90"
@@ -5062,13 +5088,14 @@ export default function SoloStage({
                                segmentId: 'master_take_01',
                                blobUrl: reviewVideoUrl,
                                startOffset: 0,
-                               endOffset: videoDuration || 60,
-                               duration: videoDuration || 60,
+                               endOffset: effectiveVideoDuration || videoDuration || 60,
+                               duration: effectiveVideoDuration || videoDuration || 60,
                              }]
                        }
                        onUpdateSegments={setRecordedSegments}
                        onApprove={handleStitchAndApprove}
                        onDiscard={handleDiscardTake}
+                       onRetake={handleRetakePerformance}
                        isStitching={isStitching}
                        stitchingStatus={stitchingStatus}
                      />

@@ -143,6 +143,29 @@ describe('ProductionControlBar: Act-Specific Guidance & UK English Invariants', 
       fireEvent.click(btn);
       expect(onNextMock).toHaveBeenCalled();
     });
+
+    it('renders APPROVE & PROCEED TO ACT IV in ready emerald state when hasExistingVideo is true', () => {
+      const onNextMock = vi.fn();
+      renderWithStudio(
+        <ProductionControlBar
+          {...defaultProps}
+          currentStage={2}
+          isComplete={true}
+          isLobbyConfirmed={true}
+          hasExistingVideo={true}
+          onNext={onNextMock}
+          missingRequirements={[]}
+        />,
+        2
+      );
+
+      const btn = screen.getByRole('button', { name: /APPROVE & PROCEED TO ACT IV/i });
+      expect(btn).toBeInTheDocument();
+      expect(btn.className).toContain('bg-emerald-500');
+
+      fireEvent.click(btn);
+      expect(onNextMock).toHaveBeenCalled();
+    });
   });
 
   describe('2. Act I (Scriptorium) & Act II (Weave) Guidance', () => {

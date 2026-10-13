@@ -37,6 +37,7 @@ interface ProductionControlBarProps {
   activeRoom?: 'solo' | 'collaborative' | 'guest';
   onSelectRoom?: (room: 'solo' | 'collaborative' | 'guest') => void;
   isLobbyConfirmed?: boolean;
+  hasExistingVideo?: boolean;
 }
 
 const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }) => {
@@ -102,7 +103,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   isTheaterOpen = false,
   activeRoom = 'solo',
   onSelectRoom,
-  isLobbyConfirmed = true
+  isLobbyConfirmed = true,
+  hasExistingVideo = false
 }) => {
   const { 
     detectedAnchors, 
@@ -183,7 +185,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     transition: { duration: 0.4 }
   };
 
-  const isLobbyGate = currentStage === 2 && isLobbyConfirmed === false;
+  const isLobbyGate = currentStage === 2 && isLobbyConfirmed === false && !hasExistingVideo;
   const hasSelectedTreatment = Boolean(selectedVision?.label || selectedTake);
   const isStageReady = (isComplete && !isLowClarity) || isLobbyGate || (isReviewing && hasSelectedTreatment);
 
@@ -401,9 +403,11 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     switch (currentStage) {
       case 0: return isLowClarity ? "Scene Clarity below 15% threshold." : "Title, Description, and Year are mandatory catalysts (Year and 'I Was' age work together seamlessly).";
       case 1: return "Selecting a Sensory Weave is required before recording.";
-      case 2: return isLobbyGate 
-        ? "Step into your recording booth to record a video take." 
-        : "A video recording is required to anchor this memory.";
+      case 2:
+        if (hasExistingVideo) return "Master reel ready for review and approval.";
+        return isLobbyGate 
+          ? "Step into your recording booth to record a video take." 
+          : "A video recording is required to anchor this memory.";
       case 3: return "Final review and poster art pending.";
       default: return "Requirements not met.";
     }
@@ -433,6 +437,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
       case 2:
         if (isPending) return 'SAVING FOOTAGE...';
+        if (hasExistingVideo) {
+          return 'APPROVE & PROCEED TO ACT IV →';
+        }
         if (isLobbyGate) {
           const boothName = activeRoom === 'collaborative' ? 'COLLAB SUITE' : activeRoom === 'guest' ? "DIRECTOR'S CHAIR" : 'SOLO BOOTH';
           return `STEP INTO ${boothName}`;

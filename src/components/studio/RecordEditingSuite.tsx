@@ -11,6 +11,7 @@ interface RecordEditingSuiteProps {
   onUpdateSegments: (newSegments: any[]) => void;
   onApprove: (edl: EDLTrackSegment[]) => Promise<void> | void;
   onDiscard: () => void;
+  onRetake?: () => void;
   isStitching?: boolean;
   stitchingStatus?: string;
 }
@@ -20,6 +21,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
   onUpdateSegments,
   onApprove,
   onDiscard,
+  onRetake,
   isStitching: externalIsStitching,
   stitchingStatus: externalStitchingStatus,
 }) => {
@@ -82,6 +84,24 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
     handleTimeUpdate,
     handleTimeUpdateB,
   } = useVideoSequencer({ edl });
+
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const dur = e.currentTarget.duration;
+    if (dur && isFinite(dur) && dur > 0) {
+      setEdl((prev) => {
+        if (prev.length === 1 && (prev[0].duration === 60 || !prev[0].duration || prev[0].duration !== dur)) {
+          const updated = [{
+            ...prev[0],
+            duration: dur,
+            endOffset: dur,
+          }];
+          onUpdateSegments(updated);
+          return updated;
+        }
+        return prev;
+      });
+    }
+  };
 
   // Keyboard scrubbing & escape controls
   useEffect(() => {
@@ -282,6 +302,16 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
           <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest bg-emerald-950/40 border border-emerald-500/20 px-3 py-1 rounded-full">
             VIRTUAL EDL ACTIVE
           </span>
+          {onRetake && (
+            <button
+              onClick={onRetake}
+              className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:border-amber-400 hover:bg-amber-500/20 text-amber-300 font-mono text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+              title="Record a new take while keeping existing takes in history"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Retake Performance</span>
+            </button>
+          )}
           <button
             onClick={() => setIsPreviewMode(true)}
             className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-500/20 text-emerald-400 font-mono text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
@@ -378,6 +408,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
               ref={videoARef}
               crossOrigin="anonymous"
               onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
               data-testid="review-video"
               className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ease-in-out ${
                 activeBuffer === 'A' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
@@ -390,6 +421,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
               ref={videoBRef}
               crossOrigin="anonymous"
               onTimeUpdate={handleTimeUpdateB}
+              onLoadedMetadata={handleLoadedMetadata}
               data-testid="review-video-b"
               className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ease-in-out ${
                 activeBuffer === 'B' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
@@ -666,7 +698,20 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
               </button>
             </div>
 
-            <div className={`flex gap-4 ${isMaximized ? "lg:w-full lg:grid lg:grid-cols-2 lg:gap-4 lg:border-t lg:border-white/5 lg:pt-4" : ""}`}>
+            <div className={`flex gap-4 ${isMaximized ? "lg:w-full lg:grid lg:grid-cols-3 lg:gap-4 lg:border-t lg:border-white/5 lg:pt-4" : ""}`}>
+              {onRetake && (
+                <button
+                  type="button"
+                  onClick={onRetake}
+                  disabled={isStitching}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-amber-500/10 border border-amber-500/30 hover:border-amber-400 hover:bg-amber-500/20 text-amber-300 rounded-xl text-[10px] uppercase font-black tracking-widest cursor-pointer transition-all disabled:opacity-50 active:scale-95 w-full"
+                  title="Record a new take while keeping existing takes in history"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Retake Performance
+                </button>
+              )}
+
               <button
                 onClick={onDiscard}
                 disabled={isStitching}
