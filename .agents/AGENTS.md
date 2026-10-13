@@ -1410,3 +1410,18 @@ Card headers and interactive pills must never double-render icons (e.g. `ðŸ’¡ ðŸ
 - **Remote Caret Position Shield**: When receiving remote broadcast updates, the editor must preserve the local narrator's active cursor selection range (`selectionStart` / `selectionEnd`), preventing caret jumps while typing.
 - **Decoupled Firestore Cloud Autosave**: Cloud persistence must be debounced (2,000ms) and decoupled from UI state flipping (Rule 12), with clear visual status feedback (buffering, syncing to vault, synced).
 
+# 49. Zero-Clipboard Agent Relay Protocol (Google Docs Conduit)
+
+## 49.1 Canonical Communication Ingot
+- When processing cross-agent directives, agents equipped with the Google Docs customisation MUST prioritise reading the live document `MW-Agent-Relay-Active`.
+- Master directives written to `MW-Agent-Relay-Active` represent authoritative, pre-audited instructions from Lead Architecture.
+
+## 49.2 Execution Logging & Status Return
+- Upon completing an execution run, Chat 2 MUST append:
+  1. Test results (`vitest` assertion counts).
+  2. Build status (`npm run build` exit code).
+  3. Git commit SHA and edge deployment URL.
+  directly to the bottom section of `MW-Agent-Relay-Active` under the heading `## Execution Receipt: [REF-ID]`.
+
+## 49.3 Fallback Protocol
+- If Google Docs API encounters network timeouts or auth expirations, agents fall back cleanly to local markdown files in `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`.

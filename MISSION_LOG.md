@@ -1756,5 +1756,38 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Total Act III Invariants: 28/28 passed.
   - Local Production Build Gate: `npm.cmd run build` compiled all routes with exit code 0.
 
+---
 
+### [2026-10-13 17:00 BST] • Checkpoint #072 — Zero-Clipboard Agent Relay Protocol & Rule 49 Codification (WORKFLOW-MW-149)
+- **Partner Disciplines:**
+  - 👤 **Creative Director**: Ratified WORKFLOW-MW-149 to eliminate manual clipboard copying between planning and execution chats via the Google Docs conduit and dedicated relay ingot `MW-Agent-Relay-Active`.
+  - 🧠 **Chat 0 (Mission Control Dispatch Brain)**: Codified Rule 49 in `C:\Users\home\studio\.agents\AGENTS.md`. Verified Antigravity Google Workspace conduits (`gdocs` and `gdrive` registered on PATH) and validated active Firebase MCP authentication (`nareshmepani@googlemail.com`).
+  - ⚡ **Chat 2 (The Flash Executor)**: Standing by to consume structured directives from `MW-Agent-Relay-Active` with zero-clipboard friction, returning execution receipts (test assertions, build exit codes, commit SHAs) directly to the relay ingot.
+- **Architectural & Governance Deliverables**:
+  - **Rule 49 Codification (`.agents/AGENTS.md`)**:
+    - Section 49.1: Canonical Communication Ingot (`MW-Agent-Relay-Active`).
+    - Section 49.2: Execution Logging & Status Return (`## Execution Receipt: [REF-ID]`).
+    - Section 49.3: Fallback Protocol (`C:\Users\home\studio\ACTIVE_DIRECTIVE.md`).
+  - **Platform Tooling & MCP Authentication**:
+    - Firebase MCP Server: Confirmed authenticated as `nareshmepani@googlemail.com` with active Firestore read/query capabilities.
+    - Google Docs & Google Drive Skills: CLI tools registered on PATH; standing by for user Google authorization.
+
+---
+
+### [2026-10-13 17:20 BST] • Checkpoint #073 — Act III Dual-Mode Stage Verification & Zero-Clipboard Relay Execution (UI-MW-148)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architecture**: Dispatched formal directive UI-MW-148 to `MW-Agent-Relay-Active` via Google Docs conduit, mandating Act III stage dual-mode verification and execution receipt generation.
+  - ⚡ **Chat 2 (The Flash Executor)**: Consumed directive directly from `MW-Agent-Relay-Active` via `gdocs` tool, verified Handshake Token `MW-RELAY-PING-991`, verified SoloStage dual-mode gate & hardware privacy shield, authored regression test suite `src/test/SoloStage.shield.test.tsx` (6/6 passing in 982ms), confirmed Next.js production build (46/46 routes compiling with exit code 0), and appended execution receipt to Section 2.
+- **Architectural Deliverables & Validation**:
+  - **Regression Test Suite (`src/test/SoloStage.shield.test.tsx`)**:
+    - Asserted complete suppression of "Standing By // Awaiting Narrator" modal when `data.videoUrl` exists even if optics are muted.
+    - Asserted `RecordEditingSuite` scrubber and timeline bounds render interactively.
+    - Asserted hero CTA displays `APPROVE & PROCEED TO ACT IV ➔`.
+    - Asserted Mode 1 Clean-Slate capture displays pre-flight checklist and ignites camera feed.
+    - Asserted `[ 🔄 Retake Performance ]` smoothly transitions from Mode 2 to Mode 1 without clobbering historical takes in `data.takes`.
+- **Quality Gates & Test Coverage**:
+  - Vitest Regression Suite: `src/test/SoloStage.shield.test.tsx`: 6/6 passed in 982ms.
+  - Full Act III Invariant Suite: 28/28 tests passed.
+  - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+  - Live Edge Rollout Verification: Programmatic probe against `/api/version` confirmed live traffic serving target commit `e2d5e07`.
 
