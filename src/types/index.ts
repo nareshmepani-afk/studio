@@ -75,6 +75,7 @@ export interface Memory {
   city?: string;
   country?: string;
   videoUrl?: string;
+  audioUrl?: string;
   emotionTags: string[];
   date: string;
   createdAt: string;

@@ -283,15 +283,16 @@ export function StudioDashboard({
           <StatCard 
             icon={<MonitorPlay className="w-5 h-5" />} 
             label="Recorded" 
-            value={stats.published + (stats.preRelease || 0) + stats.drafts} 
-            subLabel={`${stats.completionPercentage}% Published`}
+            value={stats.recordedCount ?? (stats.published + (stats.preRelease || 0))} 
+            subLabel={`${stats.videoCount ?? 0} Video • ${stats.audioCount ?? 0} Audio`}
             color="green"
             dataHotspotId="HS_STUDIO_STAT_RECORDED"
           />
           <StatCard 
             icon={<Clock className="w-5 h-5" />} 
-            label="Studio Drafts" 
-            value={stats.drafts} 
+            label="Written Drafts" 
+            value={stats.textDraftsCount ?? stats.drafts} 
+            subLabel="Awaiting Recording"
             color="amber"
             dataHotspotId="HS_STUDIO_STAT_DRAFTS"
           />

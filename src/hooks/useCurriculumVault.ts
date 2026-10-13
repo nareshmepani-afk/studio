@@ -41,6 +41,7 @@ import {
 
 export { resolveEditingAuthority } from '@/types/curriculum';
 export type { StoryMoodTag, EditingAuthority, SurfaceOrigin, MemoirReel, MemoirTakeStatus } from '@/types/curriculum';
+import { sanitizeMemoryPayloadForStorage } from '@/lib/memoryPersistenceGuard';
 
 export interface UseCurriculumVaultOptions {
   userId?: string | null;
@@ -693,7 +694,8 @@ export function useCurriculumVault({
             }
           }
 
-          await setDoc(memoryDocRef, payload, { merge: true });
+          const cleanPayload = sanitizeMemoryPayloadForStorage(payload);
+          await setDoc(memoryDocRef, cleanPayload, { merge: true });
 
           if (memoirId) {
             const legacyDocRef = doc(
@@ -705,7 +707,8 @@ export function useCurriculumVault({
               'scenes',
               canonicalSceneId
             );
-            await setDoc(legacyDocRef, memToPersist, { merge: true });
+            const cleanLegacy = sanitizeMemoryPayloadForStorage(memToPersist);
+            await setDoc(legacyDocRef, cleanLegacy, { merge: true });
           }
         } catch (cloudErr) {
           console.error('[useCurriculumVault] Failed to persist scene take to Firestore:', cloudErr);
@@ -921,7 +924,8 @@ export function useCurriculumVault({
           const targetDocId = resolveDocIdForScene(canonicalSceneId);
           const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
 
-          await setDoc(memoryDocRef, payload, { merge: true });
+          const cleanPayload = sanitizeMemoryPayloadForStorage(payload);
+          await setDoc(memoryDocRef, cleanPayload, { merge: true });
 
           if (memoirId) {
             const legacyDocRef = doc(
@@ -933,7 +937,8 @@ export function useCurriculumVault({
               'scenes',
               canonicalSceneId
             );
-            await setDoc(legacyDocRef, memToPersist, { merge: true });
+            const cleanLegacy = sanitizeMemoryPayloadForStorage(memToPersist);
+            await setDoc(legacyDocRef, cleanLegacy, { merge: true });
           }
         } catch (cloudErr) {
           console.error('[useCurriculumVault] Failed to persist discarded take to Firestore:', cloudErr);
@@ -1012,7 +1017,8 @@ export function useCurriculumVault({
         try {
           const targetDocId = resolveDocIdForScene(canonicalSceneId);
           const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
-          await setDoc(memoryDocRef, { takes: reordered, updatedAt: nowIso }, { merge: true });
+          const cleanPayload = sanitizeMemoryPayloadForStorage({ takes: reordered, updatedAt: nowIso });
+          await setDoc(memoryDocRef, cleanPayload, { merge: true });
         } catch (cloudErr) {
           console.error('[useCurriculumVault] Failed to persist reordered takes to Firestore:', cloudErr);
         }
@@ -1190,7 +1196,8 @@ export function useCurriculumVault({
             payload.audioUrl = resolvedAudioUrl;
           }
 
-          await setDoc(memoryDocRef, payload, { merge: true });
+          const cleanPayload = sanitizeMemoryPayloadForStorage(payload);
+          await setDoc(memoryDocRef, cleanPayload, { merge: true });
 
           if (memoirId) {
             const legacyDocRef = doc(
@@ -1202,7 +1209,7 @@ export function useCurriculumVault({
               'scenes',
               canonicalSceneId
             );
-            await setDoc(legacyDocRef, payload, { merge: true });
+            await setDoc(legacyDocRef, cleanPayload, { merge: true });
           }
         } catch (cloudErr) {
           console.error('[useCurriculumVault] Failed to persist preferred take to Firestore:', cloudErr);
@@ -1720,7 +1727,8 @@ export function useCurriculumVault({
                 }
               : {}),
           };
-          await setDoc(memoryDocRef, payload, { merge: true });
+          const cleanPayload = sanitizeMemoryPayloadForStorage(payload);
+          await setDoc(memoryDocRef, cleanPayload, { merge: true });
         } catch (err) {
           console.error('[useCurriculumVault] Failed to persist restored take to Firestore:', err);
         }

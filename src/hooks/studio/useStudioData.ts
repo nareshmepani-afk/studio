@@ -232,11 +232,35 @@ export function useStudioData(userId: string | undefined) {
     });
   }, [memories, requests, mode]);
 
-  // Global Publish Stats
+  // Global Publish & Semantic Media Stats (AUDIT-MW-147)
   const stats = useMemo(() => {
     const published = memories.filter(m => m.status === 'published').length;
     const preRelease = memories.filter(m => m.status === 'pre-release').length;
     const drafts = memories.filter(m => m.status === 'draft').length;
+
+    // Media Classification: Video vs Audio vs Text Drafts
+    const isVideoMemory = (m: Memory) => {
+      if (typeof m.videoUrl === 'string' && m.videoUrl.trim().length > 0) return true;
+      if (Array.isArray(m.takes) && m.takes.some((t: any) => 
+        (t.mediaMode === 'video' || Boolean(t.videoUrl)) && Boolean(t.mediaUrl || t.videoUrl || t.url)
+      )) return true;
+      return false;
+    };
+
+    const isAudioMemory = (m: Memory) => {
+      if (isVideoMemory(m)) return false;
+      if (typeof (m as any).audioUrl === 'string' && (m as any).audioUrl.trim().length > 0) return true;
+      if (Array.isArray(m.takes) && m.takes.some((t: any) => 
+        (t.mediaMode === 'audio' || Boolean((t as any).audioUrl)) && Boolean(t.mediaUrl || (t as any).audioUrl || t.url)
+      )) return true;
+      return false;
+    };
+
+    const videoCount = memories.filter(isVideoMemory).length;
+    const audioCount = memories.filter(isAudioMemory).length;
+    const recordedCount = videoCount + audioCount;
+    const textDraftsCount = memories.filter(m => !isVideoMemory(m) && !isAudioMemory(m)).length;
+
     // Exclude demo module from total possible personal memoir scenes (31 narrative scenes)
     const totalPossible = MASTER_STORY_STRUCTURE.filter(p => !p.isDemo).reduce((acc, part) => acc + part.scenes.length, 0);
 
@@ -244,6 +268,10 @@ export function useStudioData(userId: string | undefined) {
       published,
       preRelease,
       drafts,
+      videoCount,
+      audioCount,
+      recordedCount,
+      textDraftsCount,
       totalPossible,
       completionPercentage: totalPossible > 0 ? Math.round((published / totalPossible) * 100) : 0,
       totalRequests: requests.length

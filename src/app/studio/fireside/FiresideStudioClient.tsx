@@ -51,7 +51,9 @@ import {
   Monitor,
   Sparkles,
   RotateCcw,
+  Cloud,
 } from 'lucide-react';
+import { uploadAudioWithResiliency, uploadVideoWithResiliency } from '@/lib/media/chunkedAudioUpload';
 import { getSceneById, getPartForScene, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
 function resolveInitialSpark(targetParam?: string): FiresidePromptSpark {
@@ -118,6 +120,8 @@ export default function FiresideStudioClient() {
   const [isBonusDrawerOpen, setIsBonusDrawerOpen] = useState<boolean>(false);
   const [forceRecordMode, setForceRecordMode] = useState<boolean>(false);
   const [isReviewingTake, setIsReviewingTake] = useState<boolean>(false);
+  const [isSecuringToVault, setIsSecuringToVault] = useState<boolean>(false);
+  const [securingProgress, setSecuringProgress] = useState<number>(0);
   const [isHybrid, setIsHybrid] = useState<boolean>(false);
   const [pinnedPrompterQuestion, setPinnedPrompterQuestion] = useState<string | null>(null);
   const [bonusDrawerSeedPrompt, setBonusDrawerSeedPrompt] = useState<string | null>(null);
@@ -625,7 +629,6 @@ export default function FiresideStudioClient() {
     const shouldBePreferred = !isAlreadyCompleted;
     takeIsPreferredRef.current = shouldBePreferred;
 
-    const blobUrl = typeof window !== 'undefined' ? URL.createObjectURL(audioBlob) : '';
     const isSameBlob = lastSavedBlobRef.current === audioBlob && !!activeTakeIdRef.current;
     const takeId = isSameBlob ? activeTakeIdRef.current! : `take_${Date.now()}`;
     const takeNumber = isSameBlob
@@ -634,18 +637,40 @@ export default function FiresideStudioClient() {
     activeTakeIdRef.current = takeId;
     activeTakeNumberRef.current = takeNumber;
     lastSavedBlobRef.current = audioBlob;
+
+    let permanentStorageUrl: string | null = null;
+    if (user?.uid && !user.uid.startsWith('guest')) {
+      setIsSecuringToVault(true);
+      setSecuringProgress(0);
+      try {
+        const uploadResult = await uploadAudioWithResiliency(
+          user.uid,
+          effectiveSceneId,
+          audioBlob,
+          (progress) => setSecuringProgress(progress)
+        );
+        permanentStorageUrl = uploadResult.storageUrl;
+      } catch (uploadErr) {
+        console.error('[FiresideStudioClient] Failed to secure audio to vault:', uploadErr);
+        setNotification('Notice: Cloud sync failed. Local audio preserved in current session.');
+      } finally {
+        setIsSecuringToVault(false);
+      }
+    }
+
     await saveSceneTake(effectiveSceneId, {
       id: takeId,
       takeNumber,
       source: 'fireside_mobile',
       mediaMode: 'audio',
-      mediaUrl: blobUrl,
+      mediaUrl: permanentStorageUrl || '',
       durationSeconds,
       createdAt: new Date().toISOString(),
       label: `Take ${takeNumber} (${shouldBePreferred ? 'Fireside Voice' : 'Fireside Voice Audition'})`,
       isPreferred: shouldBePreferred,
       role: shouldBePreferred ? 'master_cut' : 'alternate',
     }, { photos });
+
     setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
@@ -655,7 +680,7 @@ export default function FiresideStudioClient() {
       : '';
     setNotification(
       shouldBePreferred
-        ? `Memoir voice recording complete (${mins}m ${secs}s)${photoSuffix}. Synchronising to vault.`
+        ? `Memoir voice recording secured in vault (${mins}m ${secs}s)${photoSuffix}.`
         : `Audition take recorded (${mins}m ${secs}s). Master Reel preserved in vault.`
     );
     setTimeout(() => {
@@ -677,7 +702,6 @@ export default function FiresideStudioClient() {
     const shouldBePreferred = !isAlreadyCompleted;
     takeIsPreferredRef.current = shouldBePreferred;
 
-    const blobUrl = typeof window !== 'undefined' ? URL.createObjectURL(videoBlob) : '';
     const isSameBlob = lastSavedBlobRef.current === videoBlob && !!activeTakeIdRef.current;
     const takeId = isSameBlob ? activeTakeIdRef.current! : `take_${Date.now()}`;
     const takeNumber = isSameBlob
@@ -686,18 +710,40 @@ export default function FiresideStudioClient() {
     activeTakeIdRef.current = takeId;
     activeTakeNumberRef.current = takeNumber;
     lastSavedBlobRef.current = videoBlob;
+
+    let permanentStorageUrl: string | null = null;
+    if (user?.uid && !user.uid.startsWith('guest')) {
+      setIsSecuringToVault(true);
+      setSecuringProgress(0);
+      try {
+        const uploadResult = await uploadVideoWithResiliency(
+          user.uid,
+          effectiveSceneId,
+          videoBlob,
+          (progress) => setSecuringProgress(progress)
+        );
+        permanentStorageUrl = uploadResult.storageUrl;
+      } catch (uploadErr) {
+        console.error('[FiresideStudioClient] Failed to secure video to vault:', uploadErr);
+        setNotification('Notice: Cloud sync failed. Local video preserved in current session.');
+      } finally {
+        setIsSecuringToVault(false);
+      }
+    }
+
     await saveSceneTake(effectiveSceneId, {
       id: takeId,
       takeNumber,
       source: 'fireside_mobile',
       mediaMode: 'video',
-      mediaUrl: blobUrl,
+      mediaUrl: permanentStorageUrl || '',
       durationSeconds,
       createdAt: new Date().toISOString(),
       label: `Take ${takeNumber} (${shouldBePreferred ? 'Fireside Video' : 'Fireside Audition Take'})`,
       isPreferred: shouldBePreferred,
       role: shouldBePreferred ? 'master_cut' : 'alternate',
     }, { photos });
+
     setForceRecordMode(false);
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
@@ -707,7 +753,7 @@ export default function FiresideStudioClient() {
       : '';
     setNotification(
       shouldBePreferred
-        ? `Video memo recorded (${mins}m ${secs}s)${photoSuffix}. Synchronising to vault.`
+        ? `Video memo secured in vault (${mins}m ${secs}s)${photoSuffix}.`
         : `Audition video recorded (${mins}m ${secs}s). Master Reel preserved in vault.`
     );
     setTimeout(() => {
@@ -1271,6 +1317,31 @@ export default function FiresideStudioClient() {
             >
               Open Studio ↓
             </a>
+          </div>
+        )}
+
+        {/* High-Contrast Archival Vault Uploading Indicator (AUDIT-MW-147) */}
+        {isSecuringToVault && (
+          <div className="fixed inset-0 z-50 bg-stone-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-200">
+            <div className="bg-stone-900 border-2 border-amber-500/80 text-amber-100 p-8 rounded-2xl shadow-2xl max-w-sm w-full flex flex-col items-center gap-4">
+              <div className="w-14 h-14 rounded-full border-4 border-amber-500/20 border-t-amber-400 animate-spin flex items-center justify-center">
+                <Cloud className="w-6 h-6 text-amber-400" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-serif font-bold text-amber-200 tracking-wide">
+                  ☁️ Securing to Generational Vault...
+                </h3>
+                <p className="text-xs text-stone-400">
+                  {securingProgress > 0 ? `${securingProgress}% uploaded` : 'Preserving media reel with archival durability'}
+                </p>
+              </div>
+              <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden border border-stone-700">
+                <div
+                  className="bg-amber-500 h-full transition-all duration-300"
+                  style={{ width: `${Math.max(5, securingProgress)}%` }}
+                />
+              </div>
+            </div>
           </div>
         )}
       </main>

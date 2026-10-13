@@ -34,6 +34,7 @@ import {
   PlusCircle,
   Trash2,
   Lock,
+  AlertCircle,
 } from 'lucide-react';
 import { HeirloomPhotoAttachment } from '@/types/fireside';
 import { StoryMoodTag, EditingAuthority } from '@/types/curriculum';
@@ -75,6 +76,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [mediaLoadError, setMediaLoadError] = useState<string | null>(null);
   const isDesktopLocked = editingAuthority === 'desktop_locked';
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -93,6 +95,13 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   useEffect(() => {
     setShowDiscardConfirm(false);
     if (isOpen) {
+      if (typeof mediaUrl === 'string' && mediaUrl.startsWith('blob:')) {
+        setMediaLoadError(
+          'This take was recorded in an earlier local session. Please record a fresh take to secure permanently in the Generational Vault.'
+        );
+      } else {
+        setMediaLoadError(null);
+      }
       setIsPlaying(true);
       setCurrentTime(0);
       setPhotoIndex(0);
@@ -112,11 +121,12 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
       }, 100);
     } else {
       setIsPlaying(false);
+      setMediaLoadError(null);
       if (videoRef.current) videoRef.current.pause();
       if (audioRef.current) audioRef.current.pause();
       if (soundtrackAudioRef.current) soundtrackAudioRef.current.pause();
     }
-  }, [isOpen, mediaMode, durationSeconds]);
+  }, [isOpen, mediaMode, durationSeconds, mediaUrl]);
 
   // Slideshow timer for audio mode with photos
   useEffect(() => {
@@ -305,6 +315,12 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={() => setIsPlaying(false)}
+                onError={() => {
+                  setMediaLoadError(
+                    'This take was recorded in an earlier local session or the media link is unavailable. Please record a fresh take to secure permanently in the Generational Vault.'
+                  );
+                  setIsPlaying(false);
+                }}
                 className="w-full h-full object-cover sm:object-contain bg-black"
               />
               {photoUrl && (
@@ -366,8 +382,22 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                   onLoadedMetadata={handleLoadedMetadata}
                   onTimeUpdate={handleTimeUpdate}
                   onEnded={() => setIsPlaying(false)}
+                  onError={() => {
+                    setMediaLoadError(
+                      'This take was recorded in an earlier local session or the media link is unavailable. Please record a fresh take to secure permanently in the Generational Vault.'
+                    );
+                    setIsPlaying(false);
+                  }}
                 />
               )}
+            </div>
+          )}
+
+          {/* Expired Blob / Media Playback Guidance Banner (AUDIT-MW-147) */}
+          {mediaLoadError && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 max-w-lg w-[92%] bg-stone-900/95 border border-amber-500/70 text-amber-200 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs leading-relaxed font-sans">{mediaLoadError}</p>
             </div>
           )}
 

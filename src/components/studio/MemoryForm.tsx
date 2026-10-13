@@ -8,7 +8,7 @@ import {
   Save, Rocket, AlertCircle, Loader2, Edit3, ChevronRight, ChevronDown, Maximize2, 
   Trash2, Plus, Minus, Info, Layout, Layers, Wand2, Music, Wind, Coffee, Zap,
   FileText, ImageIcon, Video, Share2, MoreHorizontal, Square, History, UserCircle,
-  RotateCcw, Lock, Eye, Film, Headphones
+  RotateCcw, Lock, Eye, Film, Headphones, Play, Pause, Volume2, CheckCircle2
 } from 'lucide-react';
 import { Memory, SensoryPromptTemplate, ActionResponse, CatalystType, StructuredScript } from '@/types';
 import { useDictionary } from '@/hooks/use-dictionary';
@@ -269,6 +269,44 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     storyHookRef.current = node;
     storyHookFocusRef(node);
   }, [storyHookFocusRef]);
+
+  // Desktop Spoken Memory Parity Resolver (AUDIT-MW-147)
+  const spokenAudioTake = useMemo(() => {
+    if (!data) return null;
+    if (Array.isArray(data.takes)) {
+      const preferred = data.takes.find((t: any) => t.mediaMode === 'audio' && t.isPreferred);
+      if (preferred) return preferred;
+      const anyAudio = data.takes.find((t: any) => t.mediaMode === 'audio');
+      if (anyAudio) return anyAudio;
+    }
+    if (data.audioUrl) {
+      return {
+        id: 'spoken_audio_root',
+        mediaUrl: data.audioUrl,
+        mediaMode: 'audio',
+        durationSeconds: (data as any).duration || 0,
+        createdAt: data.createdAt,
+      };
+    }
+    return null;
+  }, [data]);
+
+  const [isPlayingSpokenReel, setIsPlayingSpokenReel] = useState(false);
+  const spokenAudioRef = useRef<HTMLAudioElement | null>(null);
+  const toggleSpokenPlayback = useCallback(() => {
+    if (!spokenAudioRef.current) return;
+    if (isPlayingSpokenReel) {
+      spokenAudioRef.current.pause();
+      setIsPlayingSpokenReel(false);
+    } else {
+      spokenAudioRef.current.play().then(() => {
+        setIsPlayingSpokenReel(true);
+      }).catch((err) => {
+        console.warn('[MemoryForm] Spoken reel play failed:', err);
+        setIsPlayingSpokenReel(false);
+      });
+    }
+  }, [isPlayingSpokenReel]);
 
   // ONBOARDING: Focus Handshake
   useEffect(() => {
@@ -1588,6 +1626,85 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
         {/* --- MAIN THEATRICAL STAGES --- */}
         <div className="flex-1 min-w-0 px-4 xl:px-0">
+          {/* Desktop Spoken Memory Secured Banner (Parity with Fireside — AUDIT-MW-147) */}
+          {spokenAudioTake && productionStage !== 2 && (
+            <div className="mb-6 max-w-[95vw] xl:max-w-screen-2xl mx-auto rounded-2xl bg-gradient-to-r from-amber-950/40 via-stone-900/90 to-amber-950/30 border border-amber-500/40 p-4 sm:p-5 shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-3 duration-300">
+              <div className="flex items-start gap-3.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center shrink-0 mt-0.5 text-amber-400">
+                  <Headphones className="w-5 h-5" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">
+                      Spoken Memory Secured in Generational Vault ✓
+                    </span>
+                    {spokenAudioTake.durationSeconds ? (
+                      <span className="text-[11px] font-mono text-stone-400">
+                        • {Math.floor(spokenAudioTake.durationSeconds / 60)}m {Math.round(spokenAudioTake.durationSeconds % 60)}s
+                      </span>
+                    ) : null}
+                    {spokenAudioTake.createdAt ? (
+                      <span className="text-[11px] font-mono text-stone-500 hidden sm:inline">
+                        • {new Date(spokenAudioTake.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-stone-300 leading-relaxed font-sans">
+                    Oral history voice take recorded and preserved. You can audition the spoken reel below or upgrade to a full cinematic video recording anytime.
+                  </p>
+                  {spokenAudioTake.mediaUrl?.startsWith('blob:') && (
+                    <p className="text-[11px] text-amber-400/90 flex items-center gap-1 font-mono pt-0.5">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      Notice: Audio take recorded in an earlier local session. Record a fresh take to secure permanently in the Generational Vault.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 shrink-0 w-full md:w-auto justify-end">
+                {spokenAudioTake.mediaUrl && !spokenAudioTake.mediaUrl.startsWith('blob:') && (
+                  <>
+                    <audio
+                      ref={spokenAudioRef}
+                      src={spokenAudioTake.mediaUrl}
+                      preload="metadata"
+                      onEnded={() => setIsPlayingSpokenReel(false)}
+                      onError={() => setIsPlayingSpokenReel(false)}
+                    />
+                    <button
+                      type="button"
+                      onClick={toggleSpokenPlayback}
+                      data-testid="listen-spoken-reel-btn"
+                      className="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-200 text-xs font-bold tracking-tight flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      {isPlayingSpokenReel ? (
+                        <>
+                          <Pause className="w-4 h-4 fill-amber-300 text-amber-300" />
+                          <span>Pause Reel</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-4 h-4 fill-amber-300 text-amber-300" />
+                          <span>Listen to Spoken Reel</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setProductionStage?.(2)}
+                  data-testid="upgrade-to-video-btn"
+                  className="px-3.5 py-2 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary-foreground text-xs font-bold tracking-tight flex items-center gap-2 transition-all cursor-pointer shadow-lg hover:shadow-primary/20"
+                >
+                  <Video className="w-4 h-4 text-emerald-400" />
+                  <span>Upgrade to Video Recording</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <AnimatePresence mode="wait">
             {/* ACT 1: THE CORE MEMORY (Title & Visual Hook) */}
             {productionStage === 0 && modality !== null && (

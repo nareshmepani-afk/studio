@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MASTER_STORY_STRUCTURE, resolveSceneFromPromptId, getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import { UnifiedCurriculumMemory } from '@/types/curriculum';
 import { evaluateDataShadowingAnomaly } from '@/hooks/studio/useStudioData';
+import {
+  assertMemoryWriteIntegrity,
+  sanitizeMemoryPayloadForStorage,
+  IllegalBlobPersistenceError,
+} from '@/lib/memoryPersistenceGuard';
 
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: null, loading: false }) }));
 vi.mock('@/hooks/useLanguage', () => ({ useLanguage: () => ({ mode: 'en' }) }));
@@ -426,6 +431,115 @@ describe('Data Integrity Invariants & Anti-Regression Shield (RFC-MW-144)', () =
       expect(firestoreStore['part-1-scene-3']).toBe('Authentic School Days');
 
       vi.useRealTimers();
+    });
+  });
+
+  describe('Invariant 7: Ephemeral Blob URL Persistence Prohibition (AUDIT-MW-147)', () => {
+    it('INVARIANT: assertMemoryWriteIntegrity forcefully rejects blob: URLs in audioUrl', () => {
+      const payloadWithBlobAudio = {
+        sceneId: 'part-1-scene-2',
+        audioUrl: 'blob:https://dev.memoryweaver.studio/78c15a86-7a71-46df-a8c6-512cb5927ad7',
+      };
+
+      expect(() =>
+        assertMemoryWriteIntegrity('5F7e9DACtBao5lgKYAxf', payloadWithBlobAudio)
+      ).toThrow(IllegalBlobPersistenceError);
+    });
+
+    it('INVARIANT: assertMemoryWriteIntegrity forcefully rejects blob: URLs in videoUrl and mediaUrl', () => {
+      const payloadWithBlobVideo = {
+        sceneId: 'part-1-scene-1',
+        videoUrl: 'blob:https://dev.memoryweaver.studio/abc-123',
+      };
+
+      expect(() =>
+        assertMemoryWriteIntegrity('ey96djU6qR1BrDGnvZwp', payloadWithBlobVideo)
+      ).toThrow(IllegalBlobPersistenceError);
+
+      const payloadWithBlobMediaUrl = {
+        sceneId: 'part-1-scene-1',
+        mediaUrl: 'blob:https://dev.memoryweaver.studio/xyz-789',
+      };
+
+      expect(() =>
+        assertMemoryWriteIntegrity('ey96djU6qR1BrDGnvZwp', payloadWithBlobMediaUrl)
+      ).toThrow(IllegalBlobPersistenceError);
+    });
+
+    it('INVARIANT: assertMemoryWriteIntegrity forcefully rejects blob: URLs nested inside takes array', () => {
+      const payloadWithBlobTakes = {
+        sceneId: 'part-1-scene-2',
+        takes: [
+          {
+            id: 'take_1',
+            mediaMode: 'audio',
+            mediaUrl: 'blob:https://dev.memoryweaver.studio/take-blob-uuid',
+          },
+        ],
+      };
+
+      expect(() =>
+        assertMemoryWriteIntegrity('5F7e9DACtBao5lgKYAxf', payloadWithBlobTakes)
+      ).toThrow(IllegalBlobPersistenceError);
+    });
+
+    it('INVARIANT: assertMemoryWriteIntegrity permits legitimate Cloud Storage URLs and nulls', () => {
+      const validPayload = {
+        sceneId: 'part-1-scene-1',
+        videoUrl: 'https://firebasestorage.googleapis.com/v0/b/project.appspot.com/o/video.webm?alt=media',
+        audioUrl: null,
+        takes: [
+          {
+            id: 'take_1',
+            mediaMode: 'video',
+            mediaUrl: 'https://firebasestorage.googleapis.com/v0/b/project.appspot.com/o/take.webm',
+          },
+        ],
+      };
+
+      expect(() =>
+        assertMemoryWriteIntegrity('ey96djU6qR1BrDGnvZwp', validPayload)
+      ).not.toThrow();
+    });
+
+    it('INVARIANT: sanitizeMemoryPayloadForStorage nullifies ephemeral blob: URLs while strictly preserving authentic metadata', () => {
+      const unwashedPayload = {
+        sceneId: 'part-1-scene-2',
+        title: 'Earliest Playground',
+        prose: 'Authentic childhood playground memory...',
+        audioUrl: 'blob:https://dev.memoryweaver.studio/78c15a86-7a71-46df-a8c6-512cb5927ad7',
+        videoUrl: 'blob:https://dev.memoryweaver.studio/temp-video',
+        mediaUrl: 'blob:https://dev.memoryweaver.studio/temp-media',
+        duration: 134,
+        takes: [
+          {
+            id: 'take_1',
+            takeNumber: 1,
+            mediaMode: 'audio',
+            mediaUrl: 'blob:https://dev.memoryweaver.studio/78c15a86',
+            url: 'blob:https://dev.memoryweaver.studio/78c15a86',
+            durationSeconds: 134,
+            label: 'Take 1 (Fireside Voice)',
+          },
+        ],
+      };
+
+      const cleansed = sanitizeMemoryPayloadForStorage(unwashedPayload);
+
+      // Media pointers cleansed
+      expect(cleansed.audioUrl).toBeNull();
+      expect(cleansed.videoUrl).toBeNull();
+      expect(cleansed.mediaUrl).toBeNull();
+      expect(cleansed.takes[0].mediaUrl).toBeNull();
+      expect(cleansed.takes[0].url).toBeNull();
+
+      // Authentic metadata preserved 100%
+      expect(cleansed.sceneId).toBe('part-1-scene-2');
+      expect(cleansed.title).toBe('Earliest Playground');
+      expect(cleansed.prose).toBe('Authentic childhood playground memory...');
+      expect(cleansed.duration).toBe(134);
+      expect(cleansed.takes[0].id).toBe('take_1');
+      expect(cleansed.takes[0].durationSeconds).toBe(134);
     });
   });
 });

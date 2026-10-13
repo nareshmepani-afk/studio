@@ -43,6 +43,7 @@ import CinemaPoster from '../memory/CinemaPoster';
 import { CinemaMonitor } from './CinemaMonitor';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useAuth } from '@/hooks/useAuth';
+import { sanitizeMemoryPayloadForStorage } from '@/lib/memoryPersistenceGuard';
 import { Teleprompter } from './Teleprompter';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { APP_VERSION } from '@/config/version';
@@ -2231,7 +2232,7 @@ export default function SoloStage({
           if (db && userId && data.id && !userId.startsWith('guest')) {
             try {
               const docRef = doc(db, 'users', userId, 'memories', data.id);
-              await setDoc(docRef, {
+              const cleanPayload = sanitizeMemoryPayloadForStorage({
                 videoUrl: url,
                 takes: updatedTakes,
                 activeTakeId: newTakeId,
@@ -2240,7 +2241,8 @@ export default function SoloStage({
                 trimStart: trimRange[0],
                 trimEnd: trimRange[1],
                 updatedAt: new Date().toISOString(),
-              }, { merge: true });
+              });
+              await setDoc(docRef, cleanPayload, { merge: true });
             } catch (fsErr) {
               console.warn("[SoloStage] Direct Firestore takes persistence warning:", fsErr);
             }
