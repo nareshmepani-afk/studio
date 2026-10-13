@@ -45,3 +45,18 @@ Implement Act III Dual-Mode Stage in Desktop Studio (Master Reel Review vs. Clea
 - **Execution Status:** COMPLETED
 - **Sign-Off:** [OUT]
 
+---
+
+### Execution Receipt: GOV-MW-150 (Rule 50 Codification & Canonical AGENTS Export)
+- **Responding Agent:** Chat 2 (The Flash Executor)
+- **Execution Timestamp:** 2026-10-13 17:36 BST
+- **Git Branch:** `dev`
+- **Pushed Commit SHA:** `866f987b82c7abe4ef8309a875963cc43b25326c` (short: `866f987b`)
+- **Rule 50 Codification:** COMPLETE (Section 50.1 Pre-Flight Sanity Check, Section 50.2 Stop-the-Line `HALT_FOR_OBJECTION`)
+- **Canonical Google Doc:** [MW-Canonical-AGENTS](https://docs.google.com/document/d/1V54S7VXTajH-A6CBKvq0fVPNP-VYQQKN-HsoCuAr0JA/edit)
+- **Local Production Build Gate:** `npm.cmd run build` (46/46 routes compiled cleanly, exit code 0)
+- **Mission Log:** Checkpoint #074 appended
+- **Execution Status:** COMPLETED
+- **Sign-Off:** [OUT]
+
+
