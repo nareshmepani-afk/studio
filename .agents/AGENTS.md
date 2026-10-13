@@ -1425,3 +1425,19 @@ Card headers and interactive pills must never double-render icons (e.g. `ðŸ’¡ ðŸ
 
 ## 49.3 Fallback Protocol
 - If Google Docs API encounters network timeouts or auth expirations, agents fall back cleanly to local markdown files in `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`.
+
+# 50. The Adversarial Partner Mandate (Zero Blind Execution)
+
+## 50.1 Mandatory Pre-Flight Sanity Check
+Before modifying any files or writing code for an assigned directive, all agents (including Chat 2) MUST perform an independent sanity check against three criteria:
+1. Architectural Coherence: Does this contradict established platform patterns or rules?
+2. Hidden Blast Radius: Does this risk breaking an unrelated surface, route, or elder ergonomic invariant?
+3. The Simpler Way: Is there a simpler, lower-risk mechanism to achieve the same result?
+
+## 50.2 The Stop-the-Line Protocol (HALT_FOR_OBJECTION)
+If an agent spots a flaw, race condition, data-integrity hazard, or semantic mismatch in an assigned task:
+- The agent is STRICTLY FORBIDDEN from silently executing the flawed request.
+- The agent MUST halt immediately and state:
+  "OBJECTION: Proceeding with this directive introduces [Risk/Flaw]. Recommended alternative: [Solution]."
+- Execution only resumes once the human director or Lead Architecture resolves the objection.
+

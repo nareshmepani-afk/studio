@@ -1791,3 +1791,21 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
   - Live Edge Rollout Verification: Programmatic probe against `/api/version` confirmed live traffic serving target commit `e2d5e07`.
 
+---
+
+### [2026-10-13 17:35 BST] • Checkpoint #074 — Rule 50 Codification & Canonical AGENTS Drive Export (GOV-MW-150)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architecture**: Dispatched governance directive GOV-MW-150 establishing the Adversarial Partner Mandate (Rule 50) and commissioning a permanent canonical Google Doc mirror of AGENTS.md in Google Drive.
+  - ⚡ **Chat 2 (The Flash Executor)**: Appended Rule 50 to `C:\Users\home\studio\.agents\AGENTS.md`, executed native markdown import into Google Drive creating `MW-Canonical-AGENTS` (Doc ID: `1V54S7VXTajH-A6CBKvq0fVPNP-VYQQKN-HsoCuAr0JA`), ran full Next.js production build verification (46/46 routes exit code 0), and appended the execution receipt to Section 2 of `MW-Agent-Relay-Active`.
+- **Architectural & Governance Deliverables**:
+  - **Rule 50 Codification (`.agents/AGENTS.md`)**:
+    - Section 50.1: Mandatory Pre-Flight Sanity Check (Architectural Coherence, Hidden Blast Radius, The Simpler Way).
+    - Section 50.2: The Stop-the-Line Protocol (`HALT_FOR_OBJECTION`): Formal prohibition on blind execution of flawed directives.
+  - **Google Drive Canonical Ingot (`MW-Canonical-AGENTS`)**:
+    - Native Google Doc created at: `https://docs.google.com/document/d/1V54S7VXTajH-A6CBKvq0fVPNP-VYQQKN-HsoCuAr0JA/edit`.
+    - Contains all 50 platform rules, serving as the shared living reference constitution.
+- **Quality Gates & Verification**:
+  - Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+  - Relay Protocol Receipt: Appended to Section 2 of `MW-Agent-Relay-Active` with sign-off `[OUT]`.
+
+
