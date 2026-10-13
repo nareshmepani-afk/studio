@@ -1689,3 +1689,37 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Playwright E2E Sentinel: `npm run test:sentinel` passed in 25.5s with 0 console anomalies.
   - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
 
+---
+
+### [2026-10-13 14:25 BST] • Checkpoint #070 — Audio Blob Persistence Shield, Semantic Metrics Realignment & Desktop Spoken Memory Parity (AUDIT-MW-147)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architect**: Diagnosed the tripartite audio failure mechanism: ephemeral `blob:` URLs committed to Firestore before upload completion causing playback failure ("Watch Theatrical Reel"), misleading dashboard metric summing unrecorded text drafts into "Recorded", and absence of oral history playback parity on Desktop Studio.
+  - 🤖 **Chat 2 (The Flash Executor)**: Engineered universal persistence guardrail (`memoryPersistenceGuard.ts`), gated Fireside media commits behind resilient Cloud Storage upload completion with high-contrast `[ ☁️ Securing to Generational Vault... ]` progress overlay, sanitized all Firestore write paths in `useCurriculumVault.ts` and `SoloStage.tsx`, added expired blob playback detection in `FiresideCinemaLightbox.tsx`, recalibrated dashboard metrics to semantic distinction (`Recorded: 2 (1 Video • 1 Audio)` and `Written Drafts: 3`), rendered desktop celebratory parity banner in `MemoryForm.tsx` with inline audio player and video upgrade action, and codified Invariant 7 in `data_integrity_invariants.test.ts`.
+- **Architectural & Forensic Deliverables**:
+  - **Track 1: Memory Persistence Guard & Ephemeral Blob Sanitizer (`src/lib/memoryPersistenceGuard.ts`, `src/hooks/useCurriculumVault.ts`, `src/components/studio/SoloStage.tsx`)**:
+    - Created `IllegalBlobPersistenceError`, `assertMemoryWriteIntegrity()`, and `sanitizeMemoryPayloadForStorage()`.
+    - Applied sanitizer across all Firestore write methods in `useCurriculumVault.ts` (`saveSceneTake`, `safeDiscardTake`, `reorderSceneTakes`, `setPreferredTake`, `restoreOuttakeTake`) and `SoloStage.tsx`, guaranteeing 0% possibility of temporary `blob:` URLs polluting Firestore.
+  - **Track 2: Fireside Archival Upload Gate & High-Contrast Progress Overlay (`src/app/studio/fireside/FiresideStudioClient.tsx`, `src/components/fireside/FiresideCinemaLightbox.tsx`)**:
+    - Gated `saveSceneTake` in `handleAudioRecordingComplete` and `handleVideoRecordingComplete` to strictly await `uploadAudioWithResiliency` / `uploadVideoWithResiliency` before committing take metadata.
+    - Added high-contrast modal: `[ ☁️ Securing to Generational Vault... ]` with real-time percentage progress bar.
+    - In `FiresideCinemaLightbox.tsx`, added expired blob detection on mount and playback error handling with UK English narrator guidance.
+  - **Track 3: Semantic Media Metrics Realignment (`src/hooks/studio/useStudioData.ts`, `src/components/studio/StudioDashboard.tsx`)**:
+    - Recalibrated `stats` in `useStudioData.ts` to compute semantic media counts: `videoCount`, `audioCount`, `recordedCount = videoCount + audioCount`, and `textDraftsCount` (unrecorded text drafts).
+    - StatCard #2: `label="Recorded"`, `value={stats.recordedCount}` (2), `subLabel="1 Video • 1 Audio"`.
+    - StatCard #3: `label="Written Drafts"`, `value={stats.textDraftsCount}` (3), `subLabel="Awaiting Recording"`.
+    - StatCard #4: `label="Cinema Releases"`, `value={stats.published}` (0).
+  - **Track 4: Desktop Spoken Memory Secured Parity Banner (`src/components/studio/MemoryForm.tsx`)**:
+    - Built celebratory banner rendered on Desktop Studio when active scene has an audio take (`mediaMode === 'audio'`).
+    - Displays: `[ 🎙️ Spoken Memory Secured in Generational Vault ✓ ]`, duration (`Xm Ys`), date timestamp, embedded audio player (`[ 🎧 Listen to Spoken Reel ]`), and direct stage escalation action `[ 📹 Upgrade to Video Recording ]`.
+  - **Track 5: Invariant 7 Regression Suite (`src/test/data_integrity_invariants.test.ts`) & QA Alignment (`qa_checklist_interactive.html`)**:
+    - Authored 5 Invariant 7 assertions in `data_integrity_invariants.test.ts` (suite expanded to 19 tests, 19/19 passing).
+    - Updated Item 56.2 copy in `qa_checklist_interactive.html` to reflect semantic separation (`Recorded: 2 (1 Video • 1 Audio)` and `Written Drafts: 3`).
+- **Quality Gates & Test Coverage**:
+  - Invariant Suite: `src/test/data_integrity_invariants.test.ts`: 19/19 passed in 15ms.
+  - Full Vitest suite: 67/67 test files passed, 860/860 tests passed.
+  - TypeScript Compiler: `npx.cmd tsc --noEmit` exited with code 0.
+  - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+  - Live Deployment Verification: Programmatic probe against `https://dev.memoryweaver.studio/api/version` confirmed live traffic serving target commit `de4a35e`.
+  - Plane.so Issue Auto-Sync: Work item #355 updated to Completed.
+
+
