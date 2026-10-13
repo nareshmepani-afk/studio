@@ -19,6 +19,7 @@
     "test:sentinel": "playwright test src/test/e2e/dashboard_sentinel.spec.ts",
     "validate": "npm run lint && npm run type-check && npm run test",
     "sync:vault-manifest": "node scripts/syncVaultManifest.mjs",
+    "qa:sync": "tsx scripts/syncQADeck.ts",
     "prepare": "husky"
   },
   "dependencies": {

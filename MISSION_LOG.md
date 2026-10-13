@@ -1808,4 +1808,26 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
   - Relay Protocol Receipt: Appended to Section 2 of `MW-Agent-Relay-Active` with sign-off `[OUT]`.
 
+---
+
+### [2026-10-13 17:55 BST] • Checkpoint #075 — Interactive QA Deck Sync Engine & Drive Mirror (TOOL-MW-151)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architecture**: Dispatched directive TOOL-MW-151 mandating an automated, zero-clipboard synchronization engine between `qa_checklist_interactive.html` and a live, shareable Google Doc in Google Drive (`MW-QA-Deck-Active`).
+  - ⚡ **Chat 2 (The Flash Executor)**: Authored `scripts/syncQADeck.ts`, registered `npm run qa:sync` in `package.json`, extracted HUD telemetry and test card hierarchy (Active Focus Card 58, Recent History Cards 56 & 57), executed Drive synchronization publishing `MW-QA-Deck-Active` (Doc ID: `17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c`), validated local production build gate (46/46 routes exit code 0), and appended the execution receipt to Section 2 of `MW-Agent-Relay-Active`.
+- **Architectural & Tooling Deliverables**:
+  - **QA Deck Sync Engine (`scripts/syncQADeck.ts`)**:
+    - Standalone runner executable via `npm run qa:sync` or `npx tsx scripts/syncQADeck.ts`.
+    - Parses HUD telemetry (`targetSha`, `edgeSha`, `updatedTime`, `edgeDeployTime`, `totalCards`).
+    - Extracts Active Focus card with category badges, direct route launchers, and item-by-item verification steps.
+    - Captures historical context from preceding test cards for regression tracking.
+    - Idempotently creates or updates `MW-QA-Deck-Active` in Google Drive using native `gdocs` markdown import.
+  - **Google Drive Living QA Ingot (`MW-QA-Deck-Active`)**:
+    - Published at: `https://docs.google.com/document/d/17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c/edit`.
+    - Formatted with structured Markdown tables, interactive checkboxes `[ ]`, context banners, and active route hyperlinks.
+- **Quality Gates & Verification**:
+  - Script Execution: `npm.cmd run qa:sync` executed with exit code 0.
+  - Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+  - Relay Protocol Receipt: Appended to Section 2 of `MW-Agent-Relay-Active` with sign-off `[OUT]`.
+
+
 
