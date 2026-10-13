@@ -9,34 +9,39 @@
 
 # 1. ACTIVE DIRECTIVE DISPATCH (Lead Architecture ➔ Antigravity)
 
-- **Ref:** RELAY-HANDSHAKE-001
-- **Timestamp:** 2026-10-13 17:06 BST
+- **Ref:** UI-MW-148 (Act III Dual-Mode Stage: Master Reel Review vs. Clean-Slate Capture)
+- **Timestamp:** 2026-10-13 17:20 BST
+- **Target Agent:** Chat 2 (The Flash Executor)
+- **Operational Mode:** [Use Fast] with [High] thinking effort
+- **Workspace Root:** `C:\Users\home\studio`
+- **Target Branch:** `dev`
 - **Dispatch Status:** [OVER]
-- **Handshake Verification Token:** `MW-RELAY-PING-991`
 
-### Test Objective
-Perform the inaugural bidirectional handshake ("Over and Out" test) between Lead Architecture and Antigravity (Chat 0 / Chat 2).
+### Objective:
+Implement Act III Dual-Mode Stage in Desktop Studio (Master Reel Review vs. Clean-Slate Capture). Suppress "Standing By // Awaiting Narrator" and unnecessary webcam/mic hardware ignition when a recorded video reel already exists in Firestore (`data.videoUrl`).
 
-### Action Items for Antigravity (Chat 0 / Chat 2)
-1. Confirm read access via the Antigravity Google Docs customization.
-2. Confirm local repo branch is `dev` at workspace `C:\Users\home\studio`.
-3. Append your execution receipt under Section 2 below including:
-   - Responding Agent Persona (Chat 0 or Chat 2)
-   - Current local timestamp
-   - Handshake Token match: `MW-RELAY-PING-991 verified`
-   - Git branch and latest local commit SHA
-   - Status marker: `[OUT]`
-4. Save the document.
+### Target File Paths:
+1. `C:\Users\home\studio\src\components\studio\SoloStage.tsx`
+2. `C:\Users\home\studio\src\components\studio\ProductionControlBar.tsx`
+3. `C:\Users\home\studio\src\components\studio\RecordEditingSuite.tsx`
+4. `C:\Users\home\studio\src\test\SoloStage.shield.test.tsx`
+5. `C:\Users\home\studio\qa_checklist_interactive.html`
+6. `C:\Users\home\studio\MISSION_LOG.md`
 
 ---
 
 ## 2. EXECUTION RECEIPT & STATUS RETURN (Antigravity ➔ Lead Architecture)
 
-- **Responding Agent Persona:** Chat 2 (The Flash Executor)
-- **Local Timestamp:** 2026-10-13 17:15 BST
-- **Handshake Verification:** `MW-RELAY-PING-991 Verified. Pipeline Active.`
-- **Workspace Root:** `C:\Users\home\studio`
+- **Ref:** UI-MW-148 (Act III Dual-Mode Stage: Master Reel Review vs. Clean-Slate Capture)
+- **Responding Agent:** Chat 2 (The Flash Executor)
+- **Execution Timestamp:** 2026-10-13 17:25 BST
 - **Git Branch:** `dev`
-- **Current Commit SHA:** `e2d5e07f` (`e2d5e07fdd35b6f03795c4f1b5d9db86553de2e6`)
-- **Live Staging Edge Version:** `v1.1.0-beta (e2d5e07)` @ `https://dev.memoryweaver.studio/`
-- **Status Marker:** `[OUT]`
+- **Pushed Commit SHA:** `51c21eb233685bf9ee2584c66aa1f938af7e1788` (short: `51c21eb2`)
+- **Vitest Invariant Suite:** `src/test/SoloStage.shield.test.tsx` (6/6 tests passed in 982ms)
+- **Local Production Build Gate:** `npm.cmd run build` (46/46 routes compiled cleanly, exit code 0)
+- **Edge Deployment Target:** `https://dev.memoryweaver.studio/` (Edge verification active)
+- **Artifact Registered:** `qa_checklist_interactive.html` (Card 58)
+- **Mission Log:** Checkpoint #073 appended
+- **Execution Status:** COMPLETED
+- **Sign-Off:** [OUT]
+
