@@ -273,11 +273,19 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   // Desktop Spoken Memory Parity Resolver (AUDIT-MW-147)
   const spokenAudioTake = useMemo(() => {
     if (!data) return null;
-    if (Array.isArray(data.takes)) {
+    // CRITICAL: If scene already has video (videoUrl or video take), it is a video master reel.
+    // Suppress the audio-only banner so video scenes never show "Upgrade to Video Recording".
+    const hasVideoTake = Array.isArray(data.takes) && data.takes.some((t: any) => t.mediaMode === 'video' || Boolean(t.videoUrl));
+    if (Boolean(data.videoUrl) || hasVideoTake) {
+      return null;
+    }
+
+    if (Array.isArray(data.takes) && data.takes.length > 0) {
       const preferred = data.takes.find((t: any) => t.mediaMode === 'audio' && t.isPreferred);
       if (preferred) return preferred;
       const anyAudio = data.takes.find((t: any) => t.mediaMode === 'audio');
       if (anyAudio) return anyAudio;
+      return null;
     }
     if (data.audioUrl) {
       return {

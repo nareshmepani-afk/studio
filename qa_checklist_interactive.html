@@ -6767,33 +6767,67 @@
                 </div>
               </div>
             </div>
-            <div class="text-[11px] text-gray-500 break-all space-y-0.5">
-              <div>Studio Dashboard Route: https://dev.memoryweaver.studio/studio</div>
-              <div>Scene 1 Desktop Route: https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</div>
-              <div>Scene 1 Fireside Route: https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</div>
-              <div>Clean Slate Route: https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</div>
-              <div>Live Edge Commit: <span class="text-emerald-400 font-bold">878bb5d</span> (Rollout Verified via /api/version)</div>
+            <div class="text-[11px] text-gray-400 break-all space-y-1 bg-black/40 p-2.5 rounded-lg border border-gray-800">
+              <div class="font-bold text-amber-300 text-[10px] uppercase tracking-wider">🗺️ Quick Route &amp; Surface Directory:</div>
+              <div><strong class="text-emerald-400">📍 VIEW A (Dashboard Grid):</strong> <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio</a> <span class="text-gray-500">(Items 56.1, 56.2)</span></div>
+              <div><strong class="text-purple-400">🎬 VIEW B (5-Act Editor):</strong> <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</a> <span class="text-gray-500">(Item 56.3)</span></div>
+              <div><strong class="text-emerald-300">🎙️ VIEW C (Fireside Companion):</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</a> <span class="text-gray-500">(Item 56.4)</span></div>
+              <div class="text-gray-500 pt-0.5 border-t border-gray-800">Live Edge Commit: <span class="text-emerald-400 font-bold">878bb5d</span> (Rollout Verified via /api/version)</div>
             </div>
           </div>
 
           <!-- ZONE 3: TEST ITEMS -->
-          <div class="space-y-3">
+          <div class="space-y-4">
             <!-- ITEM 56.1 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- VIEW LOCATION BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-amber-300">
+                  <span class="text-base">📍</span> VIEW A: STUDIO OVERVIEW DASHBOARD GRID (NOT THE SCENE EDITOR)
+                </div>
+                <div class="text-[11px] text-amber-100/90 mt-1 leading-relaxed">
+                  <strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">https://dev.memoryweaver.studio/studio</code><br/>
+                  <strong>⚠️ HOW TO REACH &amp; TEST:</strong> Remain on the main overview dashboard grid. Do <u>NOT</u> click into any scene editor or click &ldquo;[ ✏️ Edit Scene ]&rdquo; yet! Scroll down past the 4 top stats cards to the section titled <strong>&ldquo;Part I: Heritage &amp; Origins&rdquo;</strong>. Inspect the <em>face of the card itself</em> in the grid.
+                </div>
+              </div>
+
+              <!-- CARD SCHEMATIC WIREFRAME -->
+              <div class="my-3 p-3 rounded-lg bg-black/70 border border-amber-500/30 font-mono text-[11px] text-gray-300 overflow-x-auto leading-relaxed">
+                <div class="text-[10px] text-amber-400 font-bold uppercase mb-1.5 flex items-center gap-1.5">
+                  <span>🗺️</span> EXACT CARD SCHEMATIC ON THE DASHBOARD GRID (Look for this card on /studio):
+                </div>
+                <pre class="text-gray-300 font-mono text-[11px] leading-snug">
+┌────────────────────────────────────────────────────────────────────────┐
+│ <span class="text-emerald-400 font-bold">[ ✓ CAPTURED ]</span> <span class="text-purple-400 font-bold">[ 🎬 PRE-RELEASE ]</span>               <span class="text-amber-400 font-bold">[ PART I • SCENE 1 ]</span>   │  &lt;-- 1. BADGES (Top-Left)
+│                                                                        │
+│ <span class="text-white font-bold text-xs">A Child of Two Worlds</span>                                                  │  &lt;-- Scene Title
+│ <span class="text-gray-400 italic">Your birthplace, family roots, and the cultural crossroads...</span>          │
+│                                                                        │
+│ ┌────────────────────────────────────────────────────────────────────┐ │
+│ │ <span class="text-emerald-300 italic">&ldquo;The history I carry is an epic journey across oceans and...&rdquo;</span>     │ │  &lt;-- 2. RESTORED QUOTE BOX
+│ └────────────────────────────────────────────────────────────────────┘ │      (NOT empty film icon!)
+│                                                                        │
+│ <span class="text-gray-500">(ℹ️ Details)</span>                                       <span class="text-amber-300 font-bold">[ ✏️ Edit Scene ]</span>   │  &lt;-- 3. BUTTON (Bottom-Right)
+└────────────────────────────────────────────────────────────────────────┘
+                </pre>
+                <div class="text-[10px] text-gray-400 mt-2 border-t border-gray-800 pt-1.5 flex flex-col gap-0.5">
+                  <div><span class="text-emerald-400 font-bold">✓ What you SHOULD see:</span> Badges <code class="text-emerald-400">[CAPTURED]</code> &amp; <code class="text-purple-400">[PRE-RELEASE]</code> at top-left, authentic 271-word quote in middle, button <code class="text-amber-300">[✏️ Edit Scene]</code> at bottom-right.</div>
+                  <div><span class="text-rose-400 font-bold">✗ What you should NOT see:</span> <code class="text-rose-400">[READY FOR ACTION]</code> or empty <code class="text-rose-400">[▶ Action]</code> button or dashed empty box with film reel icon.</div>
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 56.1</span>
                     <span class="text-xs font-bold text-white">Studio Dashboard Scene 1 Master Resolution &amp; Pre-Release Restoration (Category B)</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    Open Director's Studio on <code>https://dev.memoryweaver.studio/studio</code>. Observe <strong>Part I • Scene 1 (A Child of Two Worlds)</strong> card:
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Confirm Scene 1 displays <strong class="text-emerald-400">[ CAPTURED ]</strong> and <strong class="text-purple-400">[ PRE-RELEASE ]</strong> badges (NOT &ldquo;READY FOR ACTION&rdquo;).</li>
-                    <li>Confirm the card displays the authentic narrative prose preview quote: <em class="text-gray-200">&ldquo;The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me...&rdquo;</em></li>
-                    <li>Confirm the primary action button renders as <strong class="text-amber-300">[ ✏️ Edit Scene ]</strong> (NOT the empty &ldquo;▶ Action&rdquo; placeholder button).</li>
-                    <li>Confirm the empty film reel placeholder icon is replaced with the active media take indicator.</li>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li><strong>Step 1 (Open Dashboard Grid):</strong> Open <code class="text-sky-300">https://dev.memoryweaver.studio/studio</code> and stay on this overview page.</li>
+                    <li><strong>Step 2 (Locate Card):</strong> Scroll down past the 4 top stats cards to <strong>&ldquo;Part I: Heritage &amp; Origins&rdquo;</strong>. The very first card on the left is <strong>&ldquo;A Child of Two Worlds&rdquo;</strong>.</li>
+                    <li><strong>Step 3 (Verify Badges):</strong> Confirm the top-left of the card displays <strong class="text-emerald-400">[ ✓ CAPTURED ]</strong> and <strong class="text-purple-400">[ 🎬 PRE-RELEASE ]</strong> badges (NOT &ldquo;READY FOR ACTION&rdquo;).</li>
+                    <li><strong>Step 4 (Verify Narrative Quote Box):</strong> Confirm the middle of the card displays the authentic narrative prose preview quote: <em class="text-gray-200">&ldquo;The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me...&rdquo;</em> (The empty film reel placeholder icon is replaced with the active media take indicator).</li>
+                    <li><strong>Step 5 (Verify Primary Button):</strong> Confirm the primary action button at bottom-right renders as <strong class="text-amber-300">[ ✏️ Edit Scene ]</strong> with a pencil icon (NOT the unrecorded &ldquo;▶ Action&rdquo; placeholder button).</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -6801,27 +6835,42 @@
                   <button onclick="setItemVerdict(56, 1, 'fail', this)" id="btn-item-fail-56-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
-                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard (/studio)</span>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard Overview Grid (/studio)</span>
                 <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
               </div>
             </div>
 
             <!-- ITEM 56.2 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- VIEW LOCATION BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-amber-300">
+                  <span class="text-base">📍</span> VIEW A: STUDIO OVERVIEW DASHBOARD GRID (TOP STATS &amp; SCENE 2 CARD)
+                </div>
+                <div class="text-[11px] text-amber-100/90 mt-1 leading-relaxed">
+                  <strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">https://dev.memoryweaver.studio/studio</code><br/>
+                  <strong>⚠️ HOW TO TEST:</strong> Inspect (1) the 4 top dashboard stats cards at the top of the page, and (2) the second card in the grid ("Part I • Scene 2: The House I Grew Up In").
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 56.2</span>
-                    <span class="text-xs font-bold text-white">Scene 2 Identity Disambiguation &amp; Separation (Category B)</span>
+                    <span class="text-xs font-bold text-white">Scene 2 Identity Disambiguation &amp; Semantic Media Separation (Category B)</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    On <code>https://dev.memoryweaver.studio/studio</code>, inspect <strong>Part I • Scene 2 (The House I Grew Up In)</strong>:
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Confirm Scene 2 renders its own authentic draft memory (<code>5F7e9DACtBao5lgKYAxf</code>) with its own narrative text: <em class="text-gray-200">&ldquo;Looking back, what stays with me most is the ringing of the temple bells...&rdquo;</em></li>
-                    <li>Verify Scene 2 is <strong>completely decoupled</strong> from Scene 1's text and does NOT show the &ldquo;epic journey across oceans&rdquo; quote.</li>
-                    <li>Verify the top dashboard stats accurately report semantic media separation: <strong>Recorded: 2</strong> (sublabel: <em class="text-emerald-400">1 Video &bull; 1 Audio</em>), <strong>Written Drafts: 3</strong> (sublabel: <em class="text-amber-400">Awaiting Recording</em>), and <strong>Cinema Releases: 0</strong>.</li>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li><strong>Top Dashboard Stats Alignment:</strong> At the very top of <code class="text-sky-300">/studio</code>, verify the Master Control Stats row accurately reports semantic media separation:
+                      <ul class="list-circle list-inside pl-4 pt-1 space-y-0.5 text-gray-400">
+                        <li><strong>Recorded: 2</strong> (sublabel: <em class="text-emerald-400">1 Video &bull; 1 Audio</em>)</li>
+                        <li><strong>Written Drafts: 3</strong> (sublabel: <em class="text-amber-400">Awaiting Recording</em>)</li>
+                        <li><strong>Cinema Releases: 0</strong></li>
+                        <li><strong>Total Chapters: 31</strong></li>
+                      </ul>
+                    </li>
+                    <li><strong>Scene 2 Card Independence:</strong> In the grid under <strong>&ldquo;Part I: Heritage &amp; Origins&rdquo;</strong>, inspect the second card: <strong>&ldquo;Part I • Scene 2 (The House I Grew Up In)&rdquo;</strong>. Confirm it renders its own authentic draft memory (<code class="text-gray-200">5F7e9DACtBao5lgKYAxf</code>) with its own narrative text: <em class="text-gray-200">&ldquo;Looking back, what stays with me most is the ringing of the temple bells...&rdquo;</em></li>
+                    <li><strong>Zero Bleed Guarantee:</strong> Verify Scene 2 is <strong>completely decoupled</strong> from Scene 1's text and does NOT show the &ldquo;epic journey across oceans&rdquo; quote.</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -6829,27 +6878,36 @@
                   <button onclick="setItemVerdict(56, 2, 'fail', this)" id="btn-item-fail-56-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
-                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard (/studio)</span>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard Overview Grid (/studio)</span>
                 <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
               </div>
             </div>
 
             <!-- ITEM 56.3 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- VIEW LOCATION BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-purple-500/10 border-2 border-purple-500/40 text-purple-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-purple-300">
+                  <span class="text-base">🎬</span> VIEW B: DESKTOP PRODUCTION SOUNDSTAGE (5-ACT FULL-SCREEN SUITE)
+                </div>
+                <div class="text-[11px] text-purple-100/90 mt-1 leading-relaxed">
+                  <strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-purple-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</code><br/>
+                  <strong>How to Reach:</strong> On the Studio Dashboard (/studio), click <strong>[ ✏️ Edit Scene ]</strong> on Scene 1, or click the direct button below.<br/>
+                  <strong>What this page is:</strong> The full-screen production environment. Look at the top Act Stepper: <em>Act I (Scriptorium) &bull; Act II (Storyboards) &bull; Act III (Capture / Soundstage) &bull; Act IV (Review) &bull; Act V (Cinema)</em>.
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 56.3</span>
                     <span class="text-xs font-bold text-white">Desktop Production Deck: 271-Word Prose &amp; Soundstage Video Playback (Category B)</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    Open Desktop Studio with tester's restored master memory at <code>https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</code>:
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>In <strong>Act I Scriptorium</strong>, verify the full 271-word epic narrative prose hydrates with zero text truncation or placeholder masking.</li>
-                    <li>Click <strong>Act III (Capture / Soundstage)</strong> in the top act stepper: verify the recorded video reel (<code>video.webm</code>) is present and ready for playback.</li>
-                    <li>Click Play on the video preview: confirm video streams smoothly with clear narrator audio.</li>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li><strong>Act I Scriptorium Prose Hydration:</strong> In <strong>Act I Scriptorium</strong>, verify the full 271-word epic narrative prose hydrates with zero text truncation or placeholder masking.</li>
+                    <li><strong>Video Master Audio Banner Guard (BUG FIXED):</strong> Confirm the top of the screen does <strong>NOT</strong> display the banner <em class="text-rose-300">&ldquo;🎧 SPOKEN MEMORY SECURED IN GENERATIONAL VAULT&rdquo;</em> or prompt <em class="text-rose-300">&ldquo;Upgrade to Video Recording&rdquo;</em>. Because Scene 1 is a 4K Video Master Reel with recorded video takes, the audio-only banner is correctly suppressed.</li>
+                    <li><strong>Act III Soundstage 4K Video Playback:</strong> Click <strong>Act III (Capture / Soundstage)</strong> in the top act stepper. Confirm the recorded video reel (<code class="text-emerald-300">video.webm</code>) is present and ready for playback. Click Play on the preview: confirm video streams smoothly with clear narrator audio.</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -6857,27 +6915,35 @@
                   <button onclick="setItemVerdict(56, 3, 'fail', this)" id="btn-item-fail-56-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
-                <span class="text-[11px] font-mono text-gray-500">Target: Desktop Studio (Doc ey96djU6qR1BrDGnvZwp)</span>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Desktop Soundstage Production Suite (Doc ey96djU6qR1BrDGnvZwp)</span>
                 <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Test Route (Desktop Studio) ↗</a>
               </div>
             </div>
 
             <!-- ITEM 56.4 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- VIEW LOCATION BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-emerald-300">
+                  <span class="text-base">🎙️</span> VIEW C: FIRESIDE COMPANION STUDIO (CLEAN SLATE SCENE 3)
+                </div>
+                <div class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed">
+                  <strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-emerald-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</code><br/>
+                  <strong>What this page is:</strong> Focused, card-by-card distraction-free recording companion for Part I &bull; Scene 3 (&ldquo;School Days &amp; Early Wonder&rdquo;).
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 56.4</span>
                     <span class="text-xs font-bold text-white">Zero-Orphan Payload Persistence on Clean Slate Drafting (Category A)</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    Open Fireside on unrecorded clean slate <code>https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</code> (Part I Scene 3 &bull; School Days &amp; Early Wonder):
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Click <code>[ ✏️ Draft Scene / Begin Story ]</code> and type new narrative memories. Click <code>[ ✓ Save Script ]</code>.</li>
-                    <li>Navigate back to <code>https://dev.memoryweaver.studio/studio</code> and verify Scene 3 immediately displays its draft status and quote preview.</li>
-                    <li>Confirm the newly persisted Firestore document contains complete canonical metadata (<code>sceneId: "part-1-scene-3"</code>, <code>promptId: "p3"</code>, <code>status: "draft"</code>), preventing orphan document blindness.</li>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li><strong>Draft Memory in Fireside:</strong> Open Fireside on clean slate <code class="text-sky-300">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</code>. Click <strong class="text-amber-300">[ ✏️ Draft Scene / Begin Story ]</strong> and type new narrative memories. Click <strong class="text-emerald-300">[ ✓ Save Script ]</strong>.</li>
+                    <li><strong>Immediate Overview Propagation:</strong> Navigate back to View A (<code class="text-sky-300">https://dev.memoryweaver.studio/studio</code>) and verify Scene 3 immediately displays its draft status and quote preview in the grid.</li>
+                    <li><strong>Canonical Metadata Integrity:</strong> Confirm the newly persisted Firestore document contains complete canonical metadata (<code class="text-gray-200">sceneId: &quot;part-1-scene-3&quot;</code>, <code class="text-gray-200">promptId: &quot;p3&quot;</code>, <code class="text-gray-200">status: &quot;draft&quot;</code>), preventing orphan document blindness.</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -6885,8 +6951,8 @@
                   <button onclick="setItemVerdict(56, 4, 'fail', this)" id="btn-item-fail-56-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 3 Clean Slate)</span>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Companion Studio (Part I Scene 3 Clean Slate)</span>
                 <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (Scene 3 Clean Slate) ↗</a>
               </div>
             </div>
@@ -6929,7 +6995,7 @@
           </div>
         </div>
 
-        <!-- CARD 57: DATA INTEGRITY DEFENSE SHIELD (TOOL-MW-145 / RFC-MW-144) -->
+        <!-- CARD 57: DATA INTEGRITY DEFENCE SHIELD (TOOL-MW-145 / RFC-MW-144) -->
         <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-57" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
@@ -6949,7 +7015,7 @@
                 </span>
               </div>
               <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
-                Test 57: Data Integrity Defense Shield — Layer 3 Pre-Deploy Audit &amp; Layer 4 Client Sentinel (TOOL-MW-145)
+                Test 57: Data Integrity Defence Shield — Layer 3 Pre-Deploy Audit &amp; Layer 4 Client Sentinel (TOOL-MW-145)
               </h3>
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
@@ -7024,20 +7090,28 @@
           </div>
 
           <!-- ZONE 3: TEST ITEMS -->
-          <div class="space-y-3">
+          <div class="space-y-4">
             <!-- ITEM 57.1 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- EXECUTION CONTEXT BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-sky-500/10 border-2 border-sky-500/40 text-sky-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-sky-300">
+                  <span class="text-base">🖥️</span> EXECUTION CONTEXT: LOCAL CLI TERMINAL (POWERSHELL / BASH)
+                </div>
+                <div class="text-[11px] text-sky-100/90 mt-1 leading-relaxed">
+                  <strong>Command:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-sky-300 font-mono font-bold">npm run audit:data -- --all-active</code><br/>
+                  <strong>Target Layer:</strong> Layer 3 Multi-Persona Pre-Deploy Staging Database Diagnostic Runner.
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 57.1</span>
                     <span class="text-xs font-bold text-white">Layer 3 Multi-Persona Staging Diagnostic Runner (npm run audit:data -- --all-active)</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    Verify the automated staging database diagnostic tool across all active personas:
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Run <code>npm run audit:data -- --all-active</code> in the terminal.</li>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Run <code class="text-sky-300">npm run audit:data -- --all-active</code> in the project terminal.</li>
                     <li>Confirm the script connects to <code>memory-weaver-dev</code>, scans all 6 active staging personas (Producer, Admin, E2E Runner, Legal, Storyteller, Clean-Slate), and executes Audits A, B, C, and D.</li>
                     <li>Verify the script reports <strong>ZERO ANOMALIES DETECTED ACROSS ALL 6 STAGING PERSONAS</strong> and exits with code 0.</li>
                   </ul>
@@ -7047,26 +7121,34 @@
                   <button onclick="setItemVerdict(57, 1, 'fail', this)" id="btn-item-fail-57-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: CLI Diagnostic Runner (scripts/auditStagingDataIntegrity.ts)</span>
                 <span class="text-[11px] font-mono text-emerald-400">Verified across 6 personas (Exit 0)</span>
               </div>
             </div>
 
             <!-- ITEM 57.2 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- EXECUTION CONTEXT BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-purple-500/10 border-2 border-purple-500/40 text-purple-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-purple-300">
+                  <span class="text-base">🤖</span> EXECUTION CONTEXT: PLAYWRIGHT HEADLESS BROWSER RUNNER
+                </div>
+                <div class="text-[11px] text-purple-100/90 mt-1 leading-relaxed">
+                  <strong>Command:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-purple-300 font-mono font-bold">npm run test:sentinel</code><br/>
+                  <strong>Target Layer:</strong> Layer 4 Automated Client Sentinel Verification (Zero F12 reliance).
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 57.2</span>
                     <span class="text-xs font-bold text-white">Layer 4 Automated Sentinel E2E Smoke Test (npm run test:sentinel)</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    Verify programmatic in-browser sentinel verification without manual F12 reliance:
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Run <code>npm run test:sentinel</code> (or <code>npx playwright test src/test/e2e/dashboard_sentinel.spec.ts</code>).</li>
-                    <li>Confirm Playwright launches headless Chromium, navigates to <code>https://dev.memoryweaver.studio/studio</code>, and listens for console events.</li>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Run <code class="text-purple-300">npm run test:sentinel</code> (or <code>npx playwright test src/test/e2e/dashboard_sentinel.spec.ts</code>).</li>
+                    <li>Confirm Playwright launches headless Chromium, navigates to <code class="text-sky-300">https://dev.memoryweaver.studio/studio</code>, and listens for console events.</li>
                     <li>Verify the test asserts <strong>0 data-shadowing anomalies detected (M == N)</strong> and passes with exit code 0.</li>
                   </ul>
                 </div>
@@ -7075,25 +7157,33 @@
                   <button onclick="setItemVerdict(57, 2, 'fail', this)" id="btn-item-fail-57-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Playwright E2E Smoke (src/test/e2e/dashboard_sentinel.spec.ts)</span>
                 <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
               </div>
             </div>
 
             <!-- ITEM 57.3 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- EXECUTION CONTEXT BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-emerald-300">
+                  <span class="text-base">🧪</span> EXECUTION CONTEXT: VITEST REGRESSION SUITE
+                </div>
+                <div class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed">
+                  <strong>Command:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-emerald-300 font-mono font-bold">npx vitest run src/test/data_integrity_invariants.test.ts</code><br/>
+                  <strong>Target Layer:</strong> 14 Invariant Assertions &amp; In-Flight Autosave Debounce Cancellation Guard.
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 57.3</span>
                     <span class="text-xs font-bold text-white">Invariant Unit &amp; Rapid-Switch Mutation Shield (14 Tests)</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    Verify the automated regression test suite including in-motion rapid-switch safeguards:
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Run <code>npx vitest run src/test/data_integrity_invariants.test.ts</code>.</li>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Run <code class="text-emerald-300">npx vitest run src/test/data_integrity_invariants.test.ts</code>.</li>
                     <li>Verify all 14 invariant tests pass cleanly in &le; 15ms.</li>
                     <li>Confirm Invariant 6 verifies that in-flight autosave debounce timers are cancelled prior to navigation, and that omitting cancellation causes destructive cross-scene contamination.</li>
                   </ul>
@@ -7103,27 +7193,35 @@
                   <button onclick="setItemVerdict(57, 3, 'fail', this)" id="btn-item-fail-57-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Vitest Suite (src/test/data_integrity_invariants.test.ts)</span>
                 <span class="text-[11px] font-mono text-emerald-400">14/14 Tests Passed (0 Regressions)</span>
               </div>
             </div>
 
             <!-- ITEM 57.4 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- VIEW LOCATION BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-amber-300">
+                  <span class="text-base">📍</span> VIEW A: STUDIO OVERVIEW DASHBOARD GRID (GROUND TRUTH AUDIT)
+                </div>
+                <div class="text-[11px] text-amber-100/90 mt-1 leading-relaxed">
+                  <strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">https://dev.memoryweaver.studio/studio</code><br/>
+                  <strong>Tester Persona:</strong> <code class="text-amber-300 font-mono">nareshmepani@hotmail.com</code> (UID: TQdB395kXxaAGPhFxk1LVWuT8cg2).
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 57.4</span>
                     <span class="text-xs font-bold text-white">Staging Database Health Verification &amp; Persona Data Parity</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    Verify account status on <code>https://dev.memoryweaver.studio/studio</code> for <code>nareshmepani@hotmail.com</code>:
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li>Confirm Part I Scene 1 shows <strong>[ CAPTURED ]</strong> and <strong>[ PRE-RELEASE ]</strong> with 271-word epic narrative quote.</li>
                     <li>Confirm Part I Scene 2 shows its own authentic draft text with zero bleed or clobbering.</li>
-                    <li>Confirm top statistics display accurately: <strong>Recorded: 5</strong> and <strong>Cinema Releases: 0</strong>.</li>
+                    <li>Confirm top statistics accurately display semantic media separation: <strong>Recorded: 2</strong> (sublabel: <em class="text-emerald-400">1 Video &bull; 1 Audio</em>), <strong>Written Drafts: 3</strong>, and <strong>Cinema Releases: 0</strong>.</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -7131,27 +7229,36 @@
                   <button onclick="setItemVerdict(57, 4, 'fail', this)" id="btn-item-fail-57-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
-                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard (/studio)</span>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard Overview Grid (/studio)</span>
                 <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
               </div>
             </div>
 
             <!-- ITEM 57.5 -->
-            <div class="p-3 bg-gray-900/40 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <!-- VIEW LOCATION BANNER -->
+              <div class="mb-3 p-3 rounded-xl bg-purple-500/10 border-2 border-purple-500/40 text-purple-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-purple-300">
+                  <span class="text-base">🎬</span> VIEW B: DESKTOP PRODUCTION SOUNDSTAGE (ACTIVE IN-MOTION RAPID SWITCH)
+                </div>
+                <div class="text-[11px] text-purple-100/90 mt-1 leading-relaxed">
+                  <strong>Origin URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-sky-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1</code><br/>
+                  <strong>Destination URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-indigo-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/production/part-1-scene-5?act=1</code><br/>
+                  <strong>Test Objective:</strong> Explicit verification that typing in Scene 4 and rapidly switching to Scene 5 cancels in-flight debounce and prevents document shadowing.
+                </div>
+              </div>
+
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 57.5</span>
                     <span class="text-xs font-bold text-white">Active Rapid-Switch Write Guard &amp; Zero-Bleed Verification</span>
                   </div>
-                  <p class="text-xs text-gray-400">
-                    Explicit in-motion transition verification (testing debounce cancellation during live typing):
-                  </p>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1 pl-2">
-                    <li>Open clean-slate Scene 4 (<code>https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1</code>).</li>
-                    <li>Type <em>"Temporary rapid-switch test draft"</em> in the Story Hook textarea.</li>
-                    <li>Immediately (within 500ms, before the 2000ms debounce timer ends) click Scene 5 in the spine navigator (or switch to <code>/studio/production/part-1-scene-5?act=1</code>).</li>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Open clean-slate Scene 4 (<code class="text-sky-300">https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1</code>).</li>
+                    <li>Type <em>&ldquo;Temporary rapid-switch test draft&rdquo;</em> in the Story Hook textarea.</li>
+                    <li>Immediately (within 500ms, before the 2000ms debounce timer ends) click Scene 5 in the spine navigator (or navigate to <code class="text-indigo-300">/studio/production/part-1-scene-5?act=1</code>).</li>
                     <li>Confirm Scene 4 persists the test draft, while Scene 5 loads pristine, clean, and blank with <strong>ZERO text bleed or document hijacking</strong>.</li>
                   </ul>
                 </div>
@@ -7160,7 +7267,7 @@
                   <button onclick="setItemVerdict(57, 5, 'fail', this)" id="btn-item-fail-57-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Active In-Motion Switch (Scene 4 &rarr; Scene 5)</span>
                 <div class="flex items-center gap-3">
                   <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Scene 4 (Origin) ↗</a>
@@ -7314,7 +7421,7 @@
       "[studio/fireside <-> Desktop Studio] ARCH-MW-139: The Heirloom Folio Navigation & Token System (Safeguards 1-4 Parity)",
       "[studio/fireside • Desktop Studio] UI-MW-141: Primary CTA Beacon Elevation, Editorial Rule & Save-First Folio Reload",
       "[studio • Desktop Studio] BUG-MW-143: Scene Correlation Shield, Document Identity Repair & Restored Master Reel Verification",
-      "[studio/ops • Staging Pipeline] TOOL-MW-145: Complete Data Integrity Defense Shield (Layer 3 Pre-Deploy Audit & Layer 4 Client Sentinel)"
+      "[studio/ops • Staging Pipeline] TOOL-MW-145: Complete Data Integrity Defence Shield (Layer 3 Pre-Deploy Audit & Layer 4 Client Sentinel)"
     ];
 
     let verdicts = {
