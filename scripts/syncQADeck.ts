@@ -238,13 +238,19 @@ function extractCards(html: string): TestCard[] {
   return cards;
 }
 
-function formatMarkdownDeck(header: HeaderMeta, activeCard: TestCard, recentCards: TestCard[]): string {
+function formatMarkdownDeck(
+  header: HeaderMeta,
+  activeCard: TestCard,
+  recentCards: TestCard[],
+  operator: string = 'Chat 2 (The Flash Executor)'
+): string {
   const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
 
   let md = `# MEMORY WEAVER: ACTIVE QA VERIFICATION DECK\n\n`;
   md += `**Document Title:** MW-QA-Deck-Active  \n`;
+  md += `**Executing Operator:** [SYNC - ${operator}]  \n`;
   md += `**Status:** LIVE EDGE SYNC ACTIVE  \n`;
-  md += `**Governance Anchor:** Rule 30 (Mandatory Interactive QA Verification Standard) & Rule 49  \n`;
+  md += `**Governance Anchor:** Rule 30 (Mandatory Interactive QA Verification Standard) & Rule 51 (Explicit Provenance Protocol)  \n`;
   md += `**Public Staging Endpoint:** [https://dev.memoryweaver.studio/](https://dev.memoryweaver.studio/)  \n\n`;
   md += `---\n\n`;
 
@@ -253,6 +259,7 @@ function formatMarkdownDeck(header: HeaderMeta, activeCard: TestCard, recentCard
   md += `| Telemetry Dimension | Active Edge Specification |\n`;
   md += `| :--- | :--- |\n`;
   md += `| **Active Focus Card** | **Card ${activeCard.cardNum}: ${activeCard.title}** |\n`;
+  md += `| **Sync Operator** | \`[SYNC - ${operator}]\` |\n`;
   md += `| **Target Commit SHA** | \`${header.targetSha}\` |\n`;
   md += `| **Active Edge SHA** | \`${header.edgeSha}\` |\n`;
   md += `| **Checklist Updated** | ${header.updatedTime} |\n`;
@@ -328,9 +335,22 @@ function formatMarkdownDeck(header: HeaderMeta, activeCard: TestCard, recentCard
   return md;
 }
 
-export async function syncQADeck(): Promise<{ docId: string; docUrl: string; activeCardNum: number }> {
+export async function syncQADeck(customOperator?: string): Promise<{ docId: string; docUrl: string; activeCardNum: number; operator: string }> {
+  // Resolve executing operator per Rule 51 (The Explicit Provenance Protocol)
+  let operator = customOperator || process.env.QA_OPERATOR;
+  if (!operator) {
+    const args = process.argv.slice(2);
+    const opIdx = args.findIndex(a => a === '--operator' || a === '-o');
+    if (opIdx !== -1 && args[opIdx + 1]) {
+      operator = args[opIdx + 1];
+    } else {
+      operator = 'Chat 2 (The Flash Executor)';
+    }
+  }
+
   console.log('────────────────────────────────────────────────────────────');
   console.log('🚀 Memory Weaver QA Deck Sync Engine (TOOL-MW-151)');
+  console.log(`👤 Executing Operator: [SYNC - ${operator}] (Rule 51)`);
   console.log('────────────────────────────────────────────────────────────');
 
   const workspaceRoot = process.cwd();
@@ -359,7 +379,7 @@ export async function syncQADeck(): Promise<{ docId: string; docUrl: string; act
   console.log(`📜 Recent Regression Context: ${recentCards.map(c => `Card ${c.cardNum}`).join(', ')}`);
 
   console.log('📝 Generating Canonical Markdown snapshot...');
-  const markdownContent = formatMarkdownDeck(header, activeCard, recentCards);
+  const markdownContent = formatMarkdownDeck(header, activeCard, recentCards, operator);
 
   // Discover CLI binaries
   const gdocsBin = resolveBinary('gdocs');
@@ -432,16 +452,17 @@ export async function syncQADeck(): Promise<{ docId: string; docUrl: string; act
   console.log('✨ QA DECK SYNCHRONISATION COMPLETE');
   console.log(`📎 Document ID:  ${docId}`);
   console.log(`🔗 Document URL: ${docUrl}`);
+  console.log(`👤 Operator Stamp: [SYNC - ${operator}]`);
   console.log('────────────────────────────────────────────────────────────');
 
-  return { docId, docUrl, activeCardNum: activeCard.cardNum };
+  return { docId, docUrl, activeCardNum: activeCard.cardNum, operator };
 }
 
 // Direct CLI invocation
 if (require.main === module) {
   syncQADeck()
-    .then(({ docId, docUrl }) => {
-      console.log(`\nSUCCESS: MW-QA-Deck-Active synced to Drive.`);
+    .then(({ docId, docUrl, operator }) => {
+      console.log(`\nSUCCESS: MW-QA-Deck-Active synced to Drive by [SYNC - ${operator}].`);
       console.log(`URL: ${docUrl}\n`);
       process.exit(0);
     })

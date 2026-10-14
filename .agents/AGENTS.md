@@ -1421,7 +1421,7 @@ Card headers and interactive pills must never double-render icons (e.g. `💡 �
   1. Test results (`vitest` assertion counts).
   2. Build status (`npm run build` exit code).
   3. Git commit SHA and edge deployment URL.
-  directly to the bottom section of `MW-Agent-Relay-Active` under the heading `## Execution Receipt: [REF-ID]`.
+  directly to the bottom section of `MW-Agent-Relay-Active` conforming strictly to Rule 51 (The Explicit Provenance Protocol).
 
 ## 49.3 Fallback Protocol
 - If Google Docs API encounters network timeouts or auth expirations, agents fall back cleanly to local markdown files in `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`.
@@ -1440,4 +1440,42 @@ If an agent spots a flaw, race condition, data-integrity hazard, or semantic mis
 - The agent MUST halt immediately and state:
   "OBJECTION: Proceeding with this directive introduces [Risk/Flaw]. Recommended alternative: [Solution]."
 - Execution only resumes once the human director or Lead Architecture resolves the objection.
+
+# 51. The Explicit Provenance Protocol (Standardised Actor Sign-Off & Receipt Ingot)
+
+## 51.1 The Anonymous Token Prohibition
+- Bare tokens such as `[OUT]` and `[OVER]` are strictly prohibited across all relay documents, commits, and mission logs.
+- Every directive dispatch, receipt return, and verification step MUST carry an explicit, self-describing actor stamp identifying who authored, executed, or validated the action.
+
+## 51.2 Standardised Actor Sign-Off Tokens
+All agents and participants MUST use the canonical token lexicon:
+| Token Format | Authorised Actor | Context / Operational Meaning |
+| :--- | :--- | :--- |
+| `[OVER - Lead Architecture (Gemini)]` | Lead Architecture | Master directive fully formulated and dispatched; awaiting agent pickup. |
+| `[OVER - Director (Naresh)]` | Human Director | Manual directive, architectural pivot, or priority redirection dispatched. |
+| `[OUT - Chat 2 (The Flash Executor)]` | Chat 2 (Antigravity) | Implementation, unit tests, build gate, and rollout handoff executed cleanly. |
+| `[OUT - Chat 0 (Mission Control)]` | Chat 0 | Task triage, architectural decomposition, or planning phase concluded. |
+| `[OUT - Chat 3 (QA Gatekeeper)]` | Chat 3 | Playwright suite, persona state audit, or regression run certified. |
+| `[HALT - <Actor> (Rule 50 Objection)]` | Any Agent / Lead | Execution halted due to an invariant hazard, architectural flaw, or data risk. |
+| `[ACK - Director (Naresh)]` | Human Director | Human verification, gate sign-off, or acceptance confirmed. |
+| `[SYNC - <Actor>]` | Sync Engine / Operator | Living QA deck or Google Drive mirroring operation stamped with executing actor. |
+
+## 51.3 Strict Receipt Formatting Ingot (MW-Agent-Relay-Active)
+To permanently eliminate run-on lines and markdown collisions when multiple receipts stack:
+1. **Isolated Boundary Rule**: Every execution receipt MUST begin with an isolated horizontal divider (`---`) preceded and followed by a blank line.
+2. **Standardised Sub-Header**: Must use `### Execution Receipt: [REF-ID] (Title)`.
+3. **Structured Attribution Block**:
+   - `• Responding Agent: [Actor Name]`
+   - `• Execution Timestamp: [ISO / BST Timestamp]`
+   - `• Git Branch / Pushed Commit SHA: [Branch @ SHA]`
+   - `• Test & Build Gates: [vitest counts / build status]`
+   - `• Execution Status: [COMPLETED / BLOCKED / HALTED]`
+4. **Isolated Terminal Sign-Off**: The receipt MUST close with:
+   `• Sign-Off: [OUT - Chat 2 (The Flash Executor)]`
+   followed by at least two empty lines to ensure subsequent appends never collide with the signature line.
+
+## 51.4 QA Deck Operator Attribution (MW-QA-Deck-Active)
+- The QA deck sync engine (`scripts/syncQADeck.ts`) MUST capture the executing operator via CLI argument (`--operator`) or environment variable (`QA_OPERATOR`).
+- The generated telemetry HUD MUST declare `| **Sync Operator** | [SYNC - <Operator>] |` alongside timestamp and commit SHA, preventing anonymous headless syncs.
+
 

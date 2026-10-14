@@ -1870,3 +1870,28 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
 - **Quality Gates & Rollout Verification**:
   - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes cleanly with exit code 0.
   - Verification: Clean slate assertion aligns 1:1 with authentic database state.
+
+---
+
+### [2026-10-14 11:45 UTC / 12:45 BST] • Checkpoint #078 — The Explicit Provenance Protocol & Operator Attribution (GOV-MW-154)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Gatekeeper**: Identified semantic ambiguity and provenance risks across multi-agent handoffs: bare tokens like `[OUT]` and `[OVER]` lose attribution when receipts stack, `MW-QA-Deck-Active` lacked operator stamps, and run-on line collisions occurred in `MW-Agent-Relay-Active`.
+  - ⚡ **Chat 2 (The Flash Executor)**: Codified Rule 51 (The Explicit Provenance Protocol) in `AGENTS.md`, updated `scripts/syncQADeck.ts` to capture and stamp operator attribution, reconciled `MW-Agent-Relay-Active` with isolated receipt dividers and explicit sign-off tokens, and synchronized `MW-Canonical-AGENTS` in Google Drive.
+- **Architectural & Governance Deliverables**:
+  - **Rule 51 Codified (`.agents/AGENTS.md`)**:
+    - **Section 51.1 (Anonymous Token Prohibition)**: Total ban on bare, anonymous `[OUT]` and `[OVER]` tokens across all conduits, mission logs, and receipts.
+    - **Section 51.2 (Standardised Actor Sign-Off Tokens)**: Codified self-describing actor lexicon: `[OVER - Lead Architecture (Gemini)]`, `[OVER - Director (Naresh)]`, `[OUT - Chat 2 (The Flash Executor)]`, `[OUT - Chat 0 (Mission Control)]`, `[OUT - Chat 3 (QA Gatekeeper)]`, `[HALT - <Actor> (Rule 50 Objection)]`, `[ACK - Director (Naresh)]`, and `[SYNC - <Actor>]`.
+    - **Section 51.3 (Strict Receipt Formatting Ingot)**: Established mandatory isolated boundary dividers (`---`), standardized sub-headings (`### Execution Receipt: [REF-ID]`), structured key-value attribution bullets, and double-line-break terminal signatures.
+    - **Section 51.4 (QA Deck Operator Attribution)**: Mandated executing operator capture and HUD declaration in living QA decks.
+  - **QA Deck Sync Engine Upgrade (`scripts/syncQADeck.ts`)**:
+    - Added operator parameter capture supporting CLI argument `--operator <name>` and environment variable `QA_OPERATOR` (defaulting to `'Chat 2 (The Flash Executor)'`).
+    - Stamped `**Executing Operator:** [SYNC - <Operator>]` in header and `| **Sync Operator** | [SYNC - <Operator>] |` in Telemetry HUD.
+  - **Conduit Disambiguation (`MW-Agent-Relay-Active` Google Doc `1CtxXUBuvhAEReMQP8SqkvUJql5l6ermVlG6Y3Sg9dF8`)**:
+    - Reconciled Section 1 to `[OVER - Lead Architecture (Gemini)]`.
+    - Formatted all execution receipts (`UI-MW-148`, `GOV-MW-150`, `TOOL-MW-151`, `AUDIT-MW-152`, `AUDIT-MW-153`, `GOV-MW-154`) with isolated boundaries and explicit actor tokens (`[OUT - Chat 2 (The Flash Executor)]`).
+  - **Canonical AGENTS Drive Mirror (`MW-Canonical-AGENTS` Google Doc `1V54S7VXTajH-A6CBKvq0fVPNP-VYQQKN-HsoCuAr0JA`)**:
+    - Synchronized full canonical governance document in Google Drive to reflect Rule 51.
+- **Quality Gates & Rollout Verification**:
+  - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes cleanly with exit code 0.
+  - Sync Engines: Both `syncQADeck.ts` and `sync_relay_and_agents.js` executed with exit code 0.
+
