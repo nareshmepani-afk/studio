@@ -6732,9 +6732,17 @@
                 href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
-                <span>🔗 Open Clean Slate (Scene 3) ↗</span>
+                <span>🔗 Open Scene 3 Draft Rehydration ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Pristine Clean Slate (Part II Scene 1) ↗</span>
               </a>
             </div>
           </div>
@@ -6753,17 +6761,16 @@
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-gray-400">
                 <div class="space-y-0.5">
-                  <div class="text-emerald-400 font-semibold">Category B: Progressed State (Restored Master Memory):</div>
-                  <div>Doc ID: <code class="text-gray-200">ey96djU6qR1BrDGnvZwp</code></div>
-                  <div>Scene: <code class="text-gray-200">part-1-scene-1</code> (&quot;A Child of Two Worlds&quot;)</div>
-                  <div>Status: <code class="text-gray-200">pre-release</code> &bull; Stage: <code class="text-gray-200">2</code> &bull; Acts: <code class="text-gray-200">[&quot;act1&quot;, &quot;act2&quot;]</code></div>
-                  <div>Assets: <span class="text-emerald-300">271-word prose + 4K video.webm restored</span></div>
+                  <div class="text-emerald-400 font-semibold">Category B: Progressed State / Draft Rehydration:</div>
+                  <div>Scene 1: <code class="text-gray-200">ey96djU6qR1BrDGnvZwp</code> &bull; <span class="text-emerald-300">4K video.webm master restored</span></div>
+                  <div>Scene 2: <code class="text-gray-200">5F7e9DACtBao5lgKYAxf</code> &bull; <span class="text-gray-300">Draft (&ldquo;Looking back, what stays with me most...&rdquo;)</span></div>
+                  <div>Scene 3: <code class="text-gray-200">e3eXfEFC77JqHzXxI773</code> &bull; <span class="text-amber-300">Draft Rehydration Benchmark ([ ✏️ EDIT SCENE ])</span></div>
                 </div>
                 <div class="space-y-0.5">
-                  <div class="text-amber-400 font-semibold">Category A: Clean Slate (Zero-State Candidate):</div>
-                  <div>Primary Candidate: <code class="text-gray-200">part-1-scene-3</code> (&quot;School Days &amp; Early Wonder&quot;)</div>
-                  <div>Fallback Candidate: <code class="text-gray-200">part-1-scene-4</code> (&quot;Traditions, Feasts &amp; Sacred Days&quot;)</div>
-                  <div>Scene 2 Draft: <code class="text-gray-200">5F7e9DACtBao5lgKYAxf</code> (&quot;The House I Grew Up In&quot;)</div>
+                  <div class="text-sky-400 font-semibold">Category A: Pristine Clean Slate Benchmark:</div>
+                  <div>Primary Candidate: <code class="text-gray-200">part-2-scene-1</code> (&quot;Crossroads of Youth&quot;)</div>
+                  <div>Expectation: <span class="text-sky-300">0 Firestore records &bull; Asserts [ ✏️ Draft Scene / Begin Story ]</span></div>
+                  <div>Secondary Candidate: <code class="text-gray-200">part-1-scene-4</code> (&quot;Traditions, Feasts &amp; Sacred Days&quot;)</div>
                 </div>
               </div>
             </div>
@@ -6863,7 +6870,7 @@
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>Top Dashboard Stats Alignment:</strong> At the very top of <code class="text-sky-300">/studio</code>, verify the Master Control Stats row accurately reports semantic media separation:
                       <ul class="list-circle list-inside pl-4 pt-1 space-y-0.5 text-gray-400">
-                        <li><strong>Recorded: 2</strong> (sublabel: <em class="text-emerald-400">1 Video &bull; 1 Audio</em>)</li>
+                        <li><strong>Recorded: 2</strong> (sublabel: <em class="text-emerald-400">1 Video, 1 Audio take</em>) &bull; <span class="text-amber-300 font-bold">Assert 'Recorded: 2' (Do NOT assert 'Recorded: 5')</span></li>
                         <li><strong>Written Drafts: 3</strong> (sublabel: <em class="text-amber-400">Awaiting Recording</em>)</li>
                         <li><strong>Cinema Releases: 0</strong></li>
                         <li><strong>Total Chapters: 31</strong></li>
@@ -6926,34 +6933,55 @@
               <!-- VIEW LOCATION BANNER -->
               <div class="mb-3 p-3 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-200">
                 <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-emerald-300">
-                  <span class="text-base">🎙️</span> VIEW C: FIRESIDE COMPANION STUDIO (CLEAN SLATE SCENE 3)
+                  <span class="text-base">🎙️</span> VIEW C: FIRESIDE COMPANION STUDIO (BIFURCATED DRAFT BENCHMARK)
                 </div>
-                <div class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed">
-                  <strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-emerald-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</code><br/>
-                  <strong>What this page is:</strong> Focused, card-by-card distraction-free recording companion for Part I &bull; Scene 3 (&ldquo;School Days &amp; Early Wonder&rdquo;).
+                <div class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed space-y-1">
+                  <div><strong>Draft Rehydration Benchmark:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-emerald-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</code> (Doc <code class="text-gray-200">e3eXfEFC77JqHzXxI773</code>)</div>
+                  <div><strong>Pristine Clean Slate Benchmark:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-sky-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-1</code> (0 Firestore records)</div>
                 </div>
               </div>
 
               <div class="flex items-start justify-between gap-3">
-                <div class="space-y-1">
+                <div class="space-y-2.5">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 56.4</span>
-                    <span class="text-xs font-bold text-white">Zero-Orphan Payload Persistence on Clean Slate Drafting (Category A)</span>
+                    <span class="text-xs font-bold text-white">Bifurcated Drafting Benchmark: Scene 3 Draft Rehydration vs. Part II Scene 1 Pristine Clean Slate</span>
                   </div>
-                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
-                    <li><strong>Draft Memory in Fireside:</strong> Open Fireside on clean slate <code class="text-sky-300">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</code>. Click <strong class="text-amber-300">[ ✏️ Draft Scene / Begin Story ]</strong> and type new narrative memories. Click <strong class="text-emerald-300">[ ✓ Save Script ]</strong>.</li>
-                    <li><strong>Immediate Overview Propagation:</strong> Navigate back to View A (<code class="text-sky-300">https://dev.memoryweaver.studio/studio</code>) and verify Scene 3 immediately displays its draft status and quote preview in the grid.</li>
-                    <li><strong>Canonical Metadata Integrity:</strong> Confirm the newly persisted Firestore document contains complete canonical metadata (<code class="text-gray-200">sceneId: &quot;part-1-scene-3&quot;</code>, <code class="text-gray-200">promptId: &quot;p3&quot;</code>, <code class="text-gray-200">status: &quot;draft&quot;</code>), preventing orphan document blindness.</li>
-                  </ul>
+
+                  <!-- BENCHMARK 1 -->
+                  <div class="p-3 rounded-lg bg-black/50 border border-emerald-500/30 text-xs text-gray-300 space-y-1.5">
+                    <div class="text-emerald-400 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                      <span>✍️</span> BENCHMARK 1: SCENE 3 DRAFT REHYDRATION (DOC e3eXfEFC77JqHzXxI773)
+                    </div>
+                    <div><strong>Target URL:</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3" target="_blank" rel="noopener noreferrer" class="text-emerald-300 hover:underline font-mono">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</a></div>
+                    <div><strong>Expected Behavior:</strong> Because a draft document exists in Firestore for <code class="text-gray-300">part-1-scene-3</code>, Fireside rehydrates existing narrative prose (<em>&ldquo;Innocence, childhood friendships, and the first spark of curiosity&rdquo;</em>), displays spoken cadence metrics (<code class="text-stone-300">~5s spoken • 9 words</code>), and renders action button <strong class="text-amber-400 font-bold">[ ✏️ EDIT SCENE ]</strong>. Clicking it enters active script editing mode.</div>
+                  </div>
+
+                  <!-- BENCHMARK 2 -->
+                  <div class="p-3 rounded-lg bg-black/50 border border-sky-500/30 text-xs text-gray-300 space-y-1.5">
+                    <div class="text-sky-400 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                      <span>✨</span> BENCHMARK 2: PART II • SCENE 1 PRISTINE CLEAN SLATE (part-2-scene-1)
+                    </div>
+                    <div><strong>Target URL:</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline font-mono">https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-1</a></div>
+                    <div><strong>Expected Behavior:</strong> Because 0 documents exist in Firestore for Part II &bull; Scene 1, Fireside mounts the authentic unwritten canvas: dedicated Inspiration Deck Card (<code class="text-amber-300 font-bold">💡 STORY SPARK PROMPT</code>), sensory seed chips, and the full-width CTA <strong class="text-amber-300 font-bold">[ ✏️ Draft Scene / Begin Story ]</strong>.</div>
+                    <ul class="list-disc list-inside space-y-1 pl-2 text-gray-400">
+                      <li>Click <strong class="text-amber-300 font-bold">[ ✏️ Draft Scene / Begin Story ]</strong>, type narrative memories, and click <strong class="text-emerald-300 font-bold">[ ✓ Save Script ]</strong>.</li>
+                      <li>Navigate back to View A (<code class="text-sky-300">/studio</code>) and verify Part II &bull; Scene 1 immediately displays its draft status and quote preview in the grid.</li>
+                      <li>Confirm newly saved Firestore document contains complete canonical metadata (<code class="text-gray-200">sceneId: &quot;part-2-scene-1&quot;</code>, <code class="text-gray-200">promptId: &quot;p5&quot;</code>, <code class="text-gray-200">status: &quot;draft&quot;</code>), preventing orphan document blindness.</li>
+                    </ul>
+                  </div>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                   <button onclick="setItemVerdict(56, 4, 'pass', this)" id="btn-item-pass-56-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
                   <button onclick="setItemVerdict(56, 4, 'fail', this)" id="btn-item-fail-56-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Companion Studio (Part I Scene 3 Clean Slate)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (Scene 3 Clean Slate) ↗</a>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
+                <span class="text-[11px] font-mono text-gray-500">Targets: Scene 3 (Rehydration) &amp; Part II Scene 1 (Clean Slate)</span>
+                <div class="flex items-center gap-2">
+                  <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Scene 3 (Rehydration) ↗</a>
+                  <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Part II Scene 1 (Clean Slate) ↗</a>
+                </div>
               </div>
             </div>
           </div>
@@ -7339,20 +7367,20 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
               <a
-                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=3"
+                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-200 hover:text-emerald-100 transition flex items-center gap-1.5 shadow-sm cursor-pointer ring-1 ring-emerald-400/30"
               >
-                <span>🔗 Open Scene 1 Master Review (Act III) ↗</span>
+                <span>🔗 Open Scene 1 Master Review (?act=1) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=3"
+                href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
-                <span>🔗 Open Scene 4 Clean-Slate (Act III) ↗</span>
+                <span>🔗 Open Scene 4 Clean-Slate Capture (?act=1) ↗</span>
               </a>
               <a
                 href="https://dev.memoryweaver.studio/studio"
@@ -7399,8 +7427,8 @@
             <!-- QUICK ROUTE & SURFACE DIRECTORY -->
             <div class="text-[11px] text-gray-400 break-all space-y-1 bg-black/40 p-2.5 rounded-lg border border-gray-800">
               <div class="font-bold text-amber-300 text-[10px] uppercase tracking-wider">🗺️ Quick Route &amp; Surface Directory:</div>
-              <div><strong class="text-emerald-400">🎬 VIEW B1 (Scene 1 Master Review - Act III):</strong> <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=3" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=3</a> <span class="text-gray-500">(Items 58.1, 58.3)</span></div>
-              <div><strong class="text-sky-400">🎬 VIEW B2 (Scene 4 Clean-Slate - Act III):</strong> <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=3" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=3</a> <span class="text-gray-500">(Item 58.2)</span></div>
+              <div><strong class="text-emerald-400">🎬 VIEW B1 (Scene 1 Master Review):</strong> <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</a> <span class="text-gray-500">(Items 58.1, 58.3)</span></div>
+              <div><strong class="text-sky-400">🎬 VIEW B2 (Scene 4 Clean-Slate):</strong> <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1</a> <span class="text-gray-500">(Item 58.2)</span></div>
               <div><strong class="text-amber-400">📍 VIEW A (Dashboard Grid):</strong> <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio</a></div>
             </div>
 
@@ -7420,7 +7448,7 @@
                   <span class="text-base">🎬</span> VIEW B1: DESKTOP PRODUCTION SOUNDSTAGE (MODE 2: MASTER REEL REVIEW)
                 </div>
                 <div class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed space-y-1">
-                  <div><strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-emerald-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=3</code></div>
+                  <div><strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-emerald-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</code> <span class="text-gray-400">(advance to Act III or direct via <code class="text-emerald-400">?act=3</code>)</span></div>
                   <div><strong>Surface / Device:</strong> Desktop Browser (Full-Screen 5-Act Studio Suite — NOT Fireside mobile).</div>
                   <div><strong>Active User:</strong> <code class="text-amber-300">nareshmepani@hotmail.com</code> (UID: <code class="text-gray-300">TQdB395kXxaAGPhFxk1LVWuT8cg2</code>)</div>
                   <div><strong>Target Act:</strong> <strong class="text-emerald-300">Act III: Capture / Soundstage</strong> (Opened directly via <code class="text-emerald-300 font-mono">?act=3</code>, or click <strong>Act III</strong> in top stepper).</div>
@@ -7498,7 +7526,7 @@
                   <span class="text-base">📹</span> VIEW B2: DESKTOP PRODUCTION SOUNDSTAGE (MODE 1: CLEAN-SLATE CAPTURE)
                 </div>
                 <div class="text-[11px] text-sky-100/90 mt-1 leading-relaxed space-y-1">
-                  <div><strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-sky-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=3</code></div>
+                  <div><strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-sky-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1</code> <span class="text-gray-400">(advance to Act III or direct via <code class="text-sky-400">?act=3</code>)</span></div>
                   <div><strong>Surface / Device:</strong> Desktop Browser (Full-Screen 5-Act Studio Suite).</div>
                   <div><strong>Active User:</strong> <code class="text-amber-300">nareshmepani@hotmail.com</code></div>
                   <div><strong>Target Act:</strong> <strong class="text-sky-300">Act III: Capture / Soundstage</strong> (<code class="text-sky-300 font-mono">?act=3</code>).</div>
