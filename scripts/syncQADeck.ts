@@ -242,16 +242,28 @@ function formatMarkdownDeck(
   header: HeaderMeta,
   activeCard: TestCard,
   recentCards: TestCard[],
-  operator: string = 'Chat 2 (The Flash Executor)'
+  operator: string = 'Chat 2 (The Flash Executor)',
+  syncTrigger?: string
 ): string {
-  const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  const bstTime = new Date().toLocaleString('en-GB', {
+    timeZone: 'Europe/London',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }) + ' BST';
 
-  let md = `# MEMORY WEAVER: ACTIVE QA VERIFICATION DECK\n\n`;
-  md += `**Document Title:** MW-QA-Deck-Active  \n`;
-  md += `**Executing Operator:** [SYNC - ${operator}]  \n`;
-  md += `**Status:** LIVE EDGE SYNC ACTIVE  \n`;
-  md += `**Governance Anchor:** Rule 30 (Mandatory Interactive QA Verification Standard) & Rule 51 (Explicit Provenance Protocol)  \n`;
-  md += `**Public Staging Endpoint:** [https://dev.memoryweaver.studio/](https://dev.memoryweaver.studio/)  \n\n`;
+  const trigger = syncTrigger || `${header.targetSha} (Staging Verification)`;
+
+  let md = `# MEMORY WEAVER: ACTIVE QA DECK\n`;
+  md += `- **Sync Operator:** ${operator} via \`npm run qa:sync\`\n`;
+  md += `- **Sync Trigger:** Commit ${trigger}\n`;
+  md += `- **Last Updated:** ${bstTime}\n`;
+  md += `- **Active Reviewer:** Director (Naresh) & Lead Architecture (Gemini)\n`;
+  md += `- **Status:** LIVE EDGE SYNC ACTIVE\n`;
+  md += `- **Public Staging Endpoint:** [https://dev.memoryweaver.studio/](https://dev.memoryweaver.studio/)\n\n`;
   md += `---\n\n`;
 
   // HUD METADATA
@@ -260,12 +272,13 @@ function formatMarkdownDeck(
   md += `| :--- | :--- |\n`;
   md += `| **Active Focus Card** | **Card ${activeCard.cardNum}: ${activeCard.title}** |\n`;
   md += `| **Sync Operator** | \`[SYNC - ${operator}]\` |\n`;
+  md += `| **Sync Trigger** | \`Commit ${trigger}\` |\n`;
   md += `| **Target Commit SHA** | \`${header.targetSha}\` |\n`;
   md += `| **Active Edge SHA** | \`${header.edgeSha}\` |\n`;
   md += `| **Checklist Updated** | ${header.updatedTime} |\n`;
   md += `| **Edge Deployed Time** | ${header.edgeDeployTime} |\n`;
   md += `| **Total Test Cards** | ${header.totalCards} Registered Verification Cards |\n`;
-  md += `| **Last Synchronised** | ${timestamp} |\n\n`;
+  md += `| **Last Synchronised** | ${bstTime} |\n\n`;
   md += `---\n\n`;
 
   // ACTIVE FOCUS
@@ -340,17 +353,32 @@ export async function syncQADeck(customOperator?: string): Promise<{ docId: stri
   let operator = customOperator || process.env.QA_OPERATOR;
   if (!operator) {
     const args = process.argv.slice(2);
-    const opIdx = args.findIndex(a => a === '--operator' || a === '-o');
-    if (opIdx !== -1 && args[opIdx + 1]) {
-      operator = args[opIdx + 1];
+    const opArg = args.find(a => a.startsWith('--operator=') || a.startsWith('-o='));
+    if (opArg) {
+      operator = opArg.split('=')[1].replace(/^["']|["']$/g, '');
     } else {
-      operator = 'Chat 2 (The Flash Executor)';
+      const opIdx = args.findIndex(a => a === '--operator' || a === '-o');
+      if (opIdx !== -1 && args[opIdx + 1]) {
+        operator = args[opIdx + 1].replace(/^["']|["']$/g, '');
+      } else {
+        operator = 'Chat 2 (The Flash Executor)';
+      }
     }
+  }
+
+  // Resolve sync trigger commit metadata
+  let syncTrigger = '';
+  try {
+    const gitLog = execFileSync('git', ['log', '-1', '--pretty=format:%h (%s)'], { encoding: 'utf8' }).trim();
+    if (gitLog) syncTrigger = gitLog;
+  } catch {
+    syncTrigger = 'Local Staging Verification';
   }
 
   console.log('────────────────────────────────────────────────────────────');
   console.log('🚀 Memory Weaver QA Deck Sync Engine (TOOL-MW-151)');
   console.log(`👤 Executing Operator: [SYNC - ${operator}] (Rule 51)`);
+  console.log(`🎯 Sync Trigger:       Commit ${syncTrigger}`);
   console.log('────────────────────────────────────────────────────────────');
 
   const workspaceRoot = process.cwd();
@@ -379,7 +407,7 @@ export async function syncQADeck(customOperator?: string): Promise<{ docId: stri
   console.log(`📜 Recent Regression Context: ${recentCards.map(c => `Card ${c.cardNum}`).join(', ')}`);
 
   console.log('📝 Generating Canonical Markdown snapshot...');
-  const markdownContent = formatMarkdownDeck(header, activeCard, recentCards, operator);
+  const markdownContent = formatMarkdownDeck(header, activeCard, recentCards, operator, syncTrigger);
 
   // Discover CLI binaries
   const gdocsBin = resolveBinary('gdocs');

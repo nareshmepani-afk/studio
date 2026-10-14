@@ -1426,6 +1426,19 @@ Card headers and interactive pills must never double-render icons (e.g. `💡 �
 ## 49.3 Fallback Protocol
 - If Google Docs API encounters network timeouts or auth expirations, agents fall back cleanly to local markdown files in `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`.
 
+## 49.4 Non-Anonymous Signatures
+- Bare, anonymous tokens such as `[OVER]` and `[OUT]` are strictly prohibited across all relay transactions.
+- All dispatch entries in Section 1 MUST identify the authoring role and persona directly inside the bracketed token (e.g. `Dispatch Status: [OVER - Lead Architecture (Gemini)]` or `Dispatch Status: [OVER - Director (Naresh)]`).
+- All return entries in Section 2 MUST identify the executing role and persona directly inside the bracketed token (e.g. `Sign-Off: [OUT - Chat 2 (The Flash Executor)]`).
+
+## 49.5 Relay Document Pruning & Single-Directive Ingot Policy
+- `MW-Agent-Relay-Active` is an ultra-lean, tactical relay conduit — NOT a permanent historical archive.
+- Agents and leads MUST NEVER allow completed receipts to accumulate indefinitely into an oversized multi-page document.
+- **Single-Directive Ingot Policy**: `MW-Agent-Relay-Active` MUST contain ONLY:
+  1. Section 1: The single active directive currently under execution.
+  2. Section 2: The single immediate execution receipt responding to that directive.
+- All historical directives, execution receipts, and test telemetry are permanently recorded and preserved in `MISSION_LOG.md`.
+
 # 50. The Adversarial Partner Mandate (Zero Blind Execution)
 
 ## 50.1 Mandatory Pre-Flight Sanity Check
