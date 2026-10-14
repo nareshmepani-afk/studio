@@ -1854,7 +1854,19 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
   - Commit & Push: Committed to `dev` branch.
 
+---
 
-
-
-
+### [2026-10-14 10:45 UTC / 11:45 BST] • Checkpoint #077 — QA Clean Slate Disambiguation & Item 56.4 Calibration (AUDIT-MW-153)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Gatekeeper**: Flagged discrepancy during live staging testing of Item 56.4 Benchmark 2 (`part-2-scene-1`): user testing encountered rehydrated draft `Formative Friendships` with button `[ ✏️ EDIT SCENE ]` rather than the unwritten story canvas.
+  - ⚡ **Chat 2 (The Flash Executor)**: Executed forensic diagnostic query against staging Firestore for user `nareshmepani@hotmail.com` (`UID: TQdB395kXxaAGPhFxk1LVWuT8cg2`), identified that document `ItIDnIWZLzi1ZOHZdNQC` with `promptId: "p4"` belongs to `part-2-scene-1` (created 2026-10-08). Discovered that `promptId: "p5"` belongs to `part-2-scene-2` (which has 0 documents in Firestore), explaining why AUDIT-MW-152 mixed up `part-2-scene-1` and `part-2-scene-2`.
+- **Architectural & Governance Deliverables**:
+  - **Item 56.4 Clean Slate Target Reconciled (`qa_checklist_interactive.html`)**:
+    - Re-calibrated Benchmark 2 from `part-2-scene-1` to `part-2-scene-2` (`https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-2` &bull; `promptId: "p5"`), which has verified 0 Firestore records.
+    - Added alternate verified clean slate candidate: `part-1-scene-4` (`Traditions, Feasts & Sacred Days` &bull; `promptId: "p3_b"` &bull; 0 Firestore records).
+    - Updated direct route launchers, persona audit block, view banners, and assertion descriptions.
+  - **Living QA Deck Synchronization (`MW-QA-Deck-Active`)**:
+    - Ran `npm.cmd run qa:sync`, updating Google Drive canonical document `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c`) to exit code 0.
+- **Quality Gates & Rollout Verification**:
+  - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes cleanly with exit code 0.
+  - Verification: Clean slate assertion aligns 1:1 with authentic database state.
