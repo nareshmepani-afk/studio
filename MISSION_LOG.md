@@ -1829,5 +1829,27 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
   - Relay Protocol Receipt: Appended to Section 2 of `MW-Agent-Relay-Active` with sign-off `[OUT]`.
 
+---
+
+### [2026-10-14 06:40 UTC / 07:40 BST] • Checkpoint #076 — Card 58 Gold-Standard Template & Act III Direct Route Calibration (QA-MW-152)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Gatekeeper**: Flagged ambiguity in Card 58 Item 58.1 where URLs linked to `?act=1` (Act I Scriptorium) instead of `?act=3` (Act III Capture/Soundstage), and requested full template standardization matching the rich visual breakdown established in Card 56.
+  - ⚡ **Chat 2 (The Flash Executor)**: Overhauled Card 58 in `qa_checklist_interactive.html` adhering to Rule 30.6 (Tester Persona State Audit & Bifurcated Clean-Slate/Progressed Test Protocol). Calibrated all test links to `?act=3`, added explicit surface banners (`🖥️ DESKTOP SOUNDSTAGE 5-ACT SUITE`), authenticated user persona context (`nareshmepani@hotmail.com`), step-by-step navigation guides, ASCII visual schematics of screen layouts, and clear "What you SHOULD see" vs "What you should NOT see" assertions.
+- **Architectural & Governance Deliverables**:
+  - **Card 58 Template Standardization (`qa_checklist_interactive.html`)**:
+    - **Item 58.1 (Mode 2: Master Reel Review)**: Fully-qualified route updated to `https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=3`. Explicitly documents `RecordEditingSuite` mounting, `[ APPROVE & PROCEED TO ACT IV ➔ ]` CTA, camera/mic power suppression, and zero "STANDING BY" modal popup.
+    - **Item 58.2 (Mode 1: Clean-Slate Capture)**: Fully-qualified route updated to `https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=3`. Explicitly documents clean-slate mounting, elder privacy pre-flight checklist modal display when muted (`isMuted === true`), and `[ STEP INTO SOLO BOOTH > ]` CTA.
+    - **Item 58.3 (Retake Performance Escape Hatch)**: Explicitly guides user to purple `[ 🔄 Retake Performance ]` button on upper video toolbar, documenting Mode 2 -> Mode 1 transition, hardware power-up, and non-destructive take preservation.
+    - **Item 58.4 (Invariant Regression Suite)**: Covers all 28 automated tests across `act3_dual_mode_stage.test.tsx`, `production_control_bar_acts.test.tsx`, and `SoloStage.shield.test.tsx`.
+  - **Living QA Deck Synchronization (`scripts/syncQADeck.ts`)**:
+    - Ran `npm.cmd run qa:sync`, updating Google Drive canonical document `MW-QA-Deck-Active` (Doc ID: `17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c`) with the updated Card 58 structure.
+  - **Plane.so Board Auto-Sync (Rule 15)**:
+    - Automatically created Plane ticket #361: *"QA-MW-152: Card 58 Gold-Standard Template & Act III Direct Route Calibration"*.
+- **Quality Gates & Rollout Verification**:
+  - Local Production Build Gate: `npm.cmd run build` compiled all 46 routes with exit code 0.
+  - Commit & Push: Committed `75c754e5` and pushed to `dev`.
+  - Edge Rollout Verification: Programmatically probed `https://dev.memoryweaver.studio/api/version` confirming live active edge `commitSha: "75c754e"`.
+
+
 
 
