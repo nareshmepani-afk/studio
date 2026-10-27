@@ -13,7 +13,7 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
 }));
 
 vi.mock('@/hooks/studio/useDirectorInk', () => ({
-  detectAnchors: vi.fn(() => []),
+  detectAnchors: vi.fn(() => []), filterDominantSensoryAnchors: vi.fn((a: any) => a || []),
 }));
 
 // Mock ResizeObserver for JSDOM

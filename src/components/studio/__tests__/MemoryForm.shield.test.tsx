@@ -34,11 +34,14 @@ vi.mock('framer-motion', () => {
 });
 
 vi.mock('lucide-react', async (importOriginal) => {
-  const actual: any = await importOriginal();
+  const actual: any = { __esModule: true };
   const React = await import('react');
   const dummyIcon = (props: any) => React.createElement('div', { ...props });
   return new Proxy(actual, {
+    has: (_target, prop) => prop !== 'then' && typeof prop !== 'symbol',
+    getOwnPropertyDescriptor: (_target, prop) => prop !== 'then' && typeof prop !== 'symbol' ? { configurable: true, enumerable: true, value: dummyIcon } : undefined,
     get: (target, prop) => {
+      if (prop === 'then' || typeof prop === 'symbol') return undefined;
       if (typeof prop === 'string' && prop in target) return target[prop];
       return dummyIcon;
     }
@@ -84,7 +87,7 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
       setIsReviewing: vi.fn(),
       setReviewDrafts: vi.fn(),
       setDraggingCatalyst: vi.fn(),
-      setDrafting: vi.fn(),
+      setDrafting: vi.fn(), setIsProductionLocked: vi.fn(),
     },
     activeDrawer: null,
     pendingAnchor: null,
@@ -100,7 +103,7 @@ vi.mock('@/hooks/studio/useDirectorInk', () => ({
     detectedAnchors: [],
     decoratedHtml: ''
   }),
-  getAnchorAtCaret: () => null,
+  getAnchorAtCaret: () => null, detectAnchors: () => [], filterDominantSensoryAnchors: (a: any) => a || [],
 }));
 
 vi.mock('@/hooks/studio/useProductionCharge', () => ({
@@ -108,7 +111,7 @@ vi.mock('@/hooks/studio/useProductionCharge', () => ({
 }));
 
 vi.mock('@/hooks/studio/usePrimaryFocus', () => ({
-  usePrimaryFocus: () => ({ focusedField: null, setFocusedField: vi.fn() }),
+  usePrimaryFocus: () => vi.fn(),
 }));
 
 vi.mock('@/components/memory/CinemaPoster', () => ({

@@ -49,7 +49,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('renders authorisation prompt when no take is selected', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: '',
       isScrolling: false,
@@ -68,7 +68,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('strictly enforces selectedTake over any background state and prompts if missing', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: 'This is the main script content.',
       isScrolling: false,
@@ -87,7 +87,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('prioritises selectedTake over script', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: 'This is the selected take text.',
       script: 'This is the main script content.',
       isScrolling: false,
@@ -106,7 +106,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('enforces UK English labels "Synchronised Speed" and "Optimised Layout"', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: '',
       isScrolling: false,
@@ -126,7 +126,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('handles scroll toggle action', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: 'Script content',
       isScrolling: false,
@@ -146,7 +146,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('displays correct icon and state when scrolling is active', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: 'Script content',
       isScrolling: true,
@@ -165,7 +165,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('adjusts speed values on click', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: 'Script content',
       isScrolling: false,
@@ -193,7 +193,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('triggers mirror mode toggle', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: '',
       isScrolling: false,
@@ -213,7 +213,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('triggers font size adjustments', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: '',
       isScrolling: false,
@@ -238,7 +238,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('sets correct speed multipliers when pacing profile preset buttons are clicked', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: null,
       script: '',
       isScrolling: false,
@@ -268,7 +268,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('toggles visual cadence vocal coaching settings when clicked', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: 'This is a script text.',
       script: '',
       isScrolling: false,
@@ -298,7 +298,7 @@ describe('Teleprompter Component', () => {
   });
 
   it('displays floating cadence cue tooltips when hovering over / and // breathing marks', () => {
-    mockUseStudioState.mockReturnValueOnce({
+    mockUseStudioState.mockReturnValue({
       selectedTake: 'First clause, second clause. Next sentence.',
       script: '',
       isScrolling: false,

@@ -13,7 +13,8 @@ vi.mock('next/navigation', () => ({
 
 // Helper component to render and inspect clean view state
 function Act1TestHarness() {
-  const { isCleanView } = useStudioState();
+  const { isCleanView, mentorContext } = useStudioState();
+  React.useEffect(() => { if (mentorContext && !mentorContext.mentorModeActive) mentorContext.toggleMentor(true); }, [mentorContext]);
   return (
     <div>
       <ProductionControlBar 

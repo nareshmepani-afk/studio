@@ -1898,3 +1898,39 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - Sync Engines: Both `syncQADeck.ts` and `sync_relay_and_agents.js` executed with exit code 0.
 
 
+
+---
+
+### [2026-10-14 14:45 UTC / 15:45 BST] • Checkpoint #079 — Vitest Test Suite Stabilisation & Pre-Commit Hook Optimisation (TOOL-MW-155)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Gatekeeper**: Flagged the 45-minute Vitest hang and 4 GB V8 heap out-of-memory crash during Git commit calibration, and issued Directive `TOOL-MW-155` to harden `vitest.config.ts`, eliminate the OOM loop and module-load hang, resolve all 13 failing unit tests across 5 test suites, and split the Git hooks into a fast pre-commit check and a full pre-push gate.
+  - ⚡ **Chat 2 (The Flash Executor)**: Executed a 95-file isolated Vitest audit, diagnosed and fixed the two root-cause traps (`ProductionDeckContainer.tsx` synchronous state re-render loop and `MemoryForm.shield.test.tsx` Thenable `lucide-react` Proxy hang), resolved all 13 failing tests across 5 files, split `.husky/pre-commit` and `.husky/pre-push`, and verified all 95/95 test files pass cleanly.
+- **Architectural & Governance Deliverables**:
+  - **Phase 1: Hardened Vitest Runner (`vitest.config.ts`)**:
+    - Configured `pool: 'forks'`, `maxForks: 6` (50% of 12 CPU threads), `minForks: 1`, `testTimeout: 10000`, and `hookTimeout: 10000` to isolate worker memory and enforce strict 10-second timeouts.
+  - **Phase 2: Resolved 4 GB Heap OOM & Module-Load Hang**:
+    - **`ProductionDeckContainer.tsx` & `MemoryChainResolution.test.tsx`**: Fixed an infinite synchronous React render loop where `cp.memory.prose !== selectedProductionData?.prose` evaluated `undefined !== ""` as `true` on every render when Firestore snapshot docs omitted `prose`/`description`/`productionStage`. Added explicit `!== undefined` guards in `ProductionDeckContainer.tsx` and supplied `where`, `limit`, `doc`, `getDoc`, and `getDocs` in `MemoryChainResolution.test.tsx` (now passes 3/3 in ~50ms).
+    - **`MemoryForm.shield.test.tsx`**: Replaced the async `importOriginal()` Proxy on `lucide-react` (which intercepted `.then` during Promise resolution and hung forever as an unresolved Thenable while compiling 1,500+ icons) with a synchronous Proxy that guards `prop === 'then' || typeof prop === 'symbol'` and implements `has` and `getOwnPropertyDescriptor` traps, plus updated `useDirectorInk`, `usePrimaryFocus`, and `useStudioState` mocks (now passes 10/10 in ~800ms).
+  - **Phase 3: Triaged & Resolved All 13 Failing Tests Across 5 Files**:
+    - **`Teleprompter.tsx` & `Teleprompter.test.tsx` & `NareshUserPlan.test.tsx`**: Guarded `containerRef.current.scrollTo?.({ ... })` for JSDOM compatibility (resolving 6 failures across `Teleprompter.test.tsx` and `NareshUserPlan.test.tsx`), memoised `htmlObj` inside `formattedParagraphs` so React 19 does not detach `dangerouslySetInnerHTML` nodes on tooltip hover re-renders, and switched `mockUseStudioState.mockReturnValueOnce` to `mockReturnValue`.
+    - **`SentenceWrapper.test.tsx`**: Added `filterDominantSensoryAnchors` export to `@/hooks/studio/useDirectorInk` mock (5/5 passing).
+    - **`Act1Editor.test.tsx`**: Enabled `mentorModeActive` in `Act1TestHarness` so `MentorshipHotspot` renders in Sensory View and is suppressed when toggling `HS_ACT1_CLEAN_VIEW_BTN` (1/1 passing).
+    - **`flight_simulator_isolation.test.ts`**: Aligned Invariant 3 regex in Test 6 with `isLobbyConfirmed={isRehearsalFlight || Boolean(memoryData?.videoUrl) ? true : lobbyConfirmed}` (13/13 passing).
+  - **Phase 4: Split Git Hooks (`.husky/pre-commit` & `.husky/pre-push`)**:
+    - Updated `.husky/pre-commit` to run `npx lint-staged`, `npm run type-check`, and `npx vitest related --run`.
+    - Created `.husky/pre-push` to enforce the full `npm run test` suite prior to remote pushes.
+  - **Plane.so Board Auto-Sync (Rule 15)**:
+    - Registered Plane ticket #364 for `TOOL-MW-155`.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\vitest.config.ts`
+  - `C:\Users\home\studio\src\components\studio\ProductionDeckContainer.tsx`
+  - `C:\Users\home\studio\src\components\studio\Teleprompter.tsx`
+  - `C:\Users\home\studio\src\components\studio\__tests__\MemoryChainResolution.test.tsx`
+  - `C:\Users\home\studio\src\components\studio\__tests__\MemoryForm.shield.test.tsx`
+  - `C:\Users\home\studio\src\components\studio\__tests__\SentenceWrapper.test.tsx`
+  - `C:\Users\home\studio\src\components\studio\__tests__\Teleprompter.test.tsx`
+  - `C:\Users\home\studio\src\components\studio\__tests__\Act1Editor.test.tsx`
+  - `C:\Users\home\studio\src\test\flight_simulator_isolation.test.ts`
+  - `C:\Users\home\studio\.husky\pre-commit`
+  - `C:\Users\home\studio\.husky\pre-push`
+  - `C:\Users\home\studio\MISSION_LOG.md`

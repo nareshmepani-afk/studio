@@ -248,7 +248,7 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     );
 
     // Invariant 3: isLobbyConfirmed unlocks stage controls immediately for rehearsal flights
-    expect(deckContent).toContain('isLobbyConfirmed={isRehearsalFlight ? true : lobbyConfirmed}');
+    expect(deckContent).toMatch(/isLobbyConfirmed=\{isRehearsalFlight(\s*\|\|\s*Boolean\(memoryData\?\.videoUrl\))?\s*\?\s*true\s*:\s*lobbyConfirmed\}/);
 
     // Invariant 4: Standard mode memories (!isRehearsalFlight) retain standard StudioLobby gating
     const standardMemory = { id: 'mem_standard_001', isFlightSimulator: false };

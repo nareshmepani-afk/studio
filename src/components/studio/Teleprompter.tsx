@@ -337,7 +337,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     const activeSpan = containerRef.current.querySelector(`span[data-sentence-index="${activeSentenceIndex}"]`) as HTMLElement;
     if (activeSpan) {
       const targetTop = activeSpan.offsetTop - containerRef.current.clientHeight / 3;
-      containerRef.current.scrollTo({
+      containerRef.current.scrollTo?.({
         top: Math.max(0, targetTop),
         behavior: 'smooth'
       });
@@ -899,7 +899,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         return {
           text,
           rawText,
-          index: sentenceCounter++
+          index: sentenceCounter++, htmlObj: { __html: `${highlightSensoryAnchors(text)} ` }
         };
       });
     });
@@ -1648,7 +1648,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                               : "text-zinc-600/40"
                             : "text-zinc-100"
                         )}
-                        dangerouslySetInnerHTML={{ __html: `${highlightSensoryAnchors(sent.text)} ` }}
+                        dangerouslySetInnerHTML={(sent as any).htmlObj || { __html: `${highlightSensoryAnchors(sent.text)} ` }}
                       />
                     ))}
                   </p>

@@ -58,7 +58,11 @@ vi.mock('firebase/firestore', () => {
     }),
     query: vi.fn((ref) => ref),
     orderBy: vi.fn(),
-    doc: vi.fn(),
+    where: vi.fn(),
+    limit: vi.fn(),
+    doc: vi.fn((db, ...paths) => ({ id: paths[paths.length - 1] })),
+    getDoc: vi.fn().mockResolvedValue({ exists: () => false, data: () => ({}), id: 'mock-doc-id' }),
+    getDocs: vi.fn().mockResolvedValue({ empty: true, docs: [], forEach: vi.fn() }),
     updateDoc: vi.fn().mockResolvedValue(undefined),
     addDoc: vi.fn().mockResolvedValue({ id: 'new-doc-id' }),
     onSnapshot: vi.fn((q, callback) => {
