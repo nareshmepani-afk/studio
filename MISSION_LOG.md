@@ -1934,3 +1934,43 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\.husky\pre-commit`
   - `C:\Users\home\studio\.husky\pre-push`
   - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+
+### [2026-10-27 16:54 UTC / 16:54 GMT] • Checkpoint #080 — The Living Chronicles (Diary Studio) v2.0 RFC & Rule 49.6 Strict Relay Gate (EPIC-MW-V2-001 / RFC-MW-156 / GOV-MW-158)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architecture (Gemini)**: Dispatched Directive `EPIC-MW-V2-001 / RFC-MW-156 & GOV-MW-158` via `MW-Directive-EPIC-MW-V2-001` (`1ptZYRSM0yi8yD-GKHH7LaeZ7QQoXV8P27qenItcsTIM`) to establish the v2.0 "Two Chambers" roadmap (Heirloom Folio vs. Living Chronicles), enforce strict subcollection isolation (`users/{uid}/chronicles/{logId}`), pre-wire v1.0 media upload helpers for `AUDIT-MW-147`, and codify Rule 49.6 (The Strict Relay Gate).
+  - 🧠 **Chat 0 (Mission Control Dispatch Brain)**: Codified Rule 49.6 in `C:\Users\home\studio\.agents\AGENTS.md`, synchronised `MW-Canonical-AGENTS` in Google Drive, registered Plane.so Epic `#365` (`EPIC-MW-V2-001`), authored `C:\Users\home\studio\docs\architecture\RFC-MW-156-the-living-chronicles-diary-studio.md`, and logged the execution receipt to `MW-Agent-Relay-Active`.
+- **Architectural & Governance Deliverables**:
+  - **Rule 49.6 Codification (`C:\Users\home\studio\.agents\AGENTS.md`)**:
+    - Codified **Section 49.6 (The Strict Relay Gate — Zero Chat-Dump Invariant)**: Prohibits rendering multi-line directives, specs, or prompt payloads as pasteable markdown blocks in chat; mandates writing directly to `MW-Agent-Relay-Active` and restricting chat responses to strategic summaries, complete file paths, operational mode advice, and a single 1-line execution trigger.
+    - Synchronised canonical governance mirror `MW-Canonical-AGENTS` (`1V54S7VXTajH-A6CBKvq0fVPNP-VYQQKN-HsoCuAr0JA`) in Google Drive.
+  - **Plane.so v2.0 Roadmap Epic Registration (Rule 15)**:
+    - Registered Plane.so Ticket **#365** (`EPIC-MW-V2-001: The Living Chronicles & Publishing Foundry`, ID `a911a3be-ff3e-4ea7-b787-6dd5a1544315`) under Milestone v2.0 (Backlog).
+  - **Architectural RFC (`C:\Users\home\studio\docs\architecture\RFC-MW-156-the-living-chronicles-diary-studio.md`)**:
+    - Defined the "Two Chambers" model separating the 31-scene Heirloom Folio (`users/{uid}/memories/{memoryId}`) from the continuous Living Chronicles (`users/{uid}/chronicles/{logId}`).
+    - Specified `ChronicleEntry` TypeScript schema, Firestore security rules, composite indexes, and ambient two-layer tagging (upfront optional spark tray + silent background semantic AI classification).
+    - Detailed the 4-way Publishing Foundry outputs (Heirloom Folio feeder, Interactive Web Codex, Printed Hardcover Archival Volume with Indic Unicode subsets, and Theatrical Audio Book) and the unbreakable **Read-Only Vault Invariant** for lapsed memberships.
+    - Specified the v1.0 Zero-Cost Hook for `AUDIT-MW-147` (`targetCollection: 'memories' | 'chronicles'` parameterisation in `src/lib/media/chunkedAudioUpload.ts` and `assertZeroBlobUrls` persistence guard).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\.agents\AGENTS.md`
+  - `C:\Users\home\studio\docs\architecture\RFC-MW-156-the-living-chronicles-diary-studio.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+---
+
+### [2026-10-27 16:58 UTC / 16:58 GMT] • Checkpoint #081 — Admin Operations & Telemetry Dashboard Specification & Plane.so Backlog Registration (FEAT-MW-ADMIN-001 / SPEC-MW-157)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architecture (Gemini)**: Authored `MW-SPEC-Admin-Operations-Dashboard` (`1BsycXL3y2ivz1m16elc-QZ16J2caXJzyce4ChWYP9v8`) adapting industrial hospitality dispatch telemetry into an executive Admin Operations Console (`/admin/dashboard`) with 4 visual tiers, 10 operational health KPI cards, live debounced transaction telemetry, read-only diagnostic impersonation, GDPR Generational Vault ZIP export, and automated shadow document sweeping.
+  - 🧠 **Chat 0 (Mission Control Dispatch Brain)**: Ingested `MW-SPEC-Admin-Operations-Dashboard` via `gdocs`, registered Plane.so Ticket **#366** (`FEAT-MW-ADMIN-001`) under Admin Portal Backlog, mirrored the specification locally to `C:\Users\home\studio\docs\architecture\SPEC-MW-157-admin-operations-dashboard.md` (with strict Rule 20 British English orthography), and appended the signed execution receipt (recorded as Checkpoint `#081` as `#079` and `#080` are occupied by `TOOL-MW-155` and `EPIC-MW-V2-001`).
+- **Architectural & Governance Deliverables**:
+  - **Plane.so Ticket Registration (Rule 15)**:
+    - Registered Ticket **#366** (`FEAT-MW-ADMIN-001: Admin Operations & Telemetry Dashboard Console`, UUID `8a75221c-073d-440d-b433-5fc68b463fe0`) in the Admin Portal / System Operations Backlog.
+  - **Architectural Specification Mirror (`C:\Users\home\studio\docs\architecture\SPEC-MW-157-admin-operations-dashboard.md`)**:
+    - Documented Tier A (Global Controls & Temporal Date Range Picker), Tier B (Donut Pipeline Health Gauge, Speedometer GCS Storage Quota Dial, Executive Volume Ledger), Tier C (10 Operational Health KPI Cards including Card 03 Rule 14 Blob Invariant Alert), and Tier D (Detalle Live Telemetry Table with `<150ms` debounced search).
+    - Specified Backend Telemetry Endpoints (`/api/admin/telemetry/overview`, `/api/admin/telemetry/live-feed`) and enterprise admin tools (Read-Only Support Impersonation, One-Click GDPR Generational Vault ZIP Export, Shadow Document Sweeper, and Staging Benchmark Seed/Reset).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\docs\architecture\SPEC-MW-157-admin-operations-dashboard.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+

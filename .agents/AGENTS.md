@@ -1439,6 +1439,12 @@ Card headers and interactive pills must never double-render icons (e.g. `ðŸ’¡ ðŸ
   2. Section 2: The single immediate execution receipt responding to that directive.
 - All historical directives, execution receipts, and test telemetry are permanently recorded and preserved in `MISSION_LOG.md`.
 
+## 49.6 The Strict Relay Gate (Zero Chat-Dump Invariant)
+- Directives, specifications, prompt templates, and execution payloads targeting Antigravity agents MUST NEVER be rendered as pasteable markdown blocks in conversational chat.
+- Directives MUST be written directly to `MW-Agent-Relay-Active` via automated tools.
+- Conversational responses are restricted to strategic summaries, complete file paths, operational mode advice, and a single 1-line execution trigger.
+- Outputting pasteable multi-line directives into the chat is classified as a Critical Protocol Breach.
+
 # 50. The Adversarial Partner Mandate (Zero Blind Execution)
 
 ## 50.1 Mandatory Pre-Flight Sanity Check
