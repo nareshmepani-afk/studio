@@ -1973,4 +1973,32 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\docs\architecture\SPEC-MW-157-admin-operations-dashboard.md`
   - `C:\Users\home\studio\MISSION_LOG.md`
 
+---
+
+### [2026-10-28 15:54 UTC / 15:54 GMT] • Checkpoint #082 — Native In-App USB Camera & Microphone Discovery, Selection & Windows USB Hardware Guards (FEAT-MW-159)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Lead Architecture (Gemini)**: Issued Directive `MW-Directive-FEAT-MW-159` (`1cWndvggbwGQ83Fx0FivpchaO8hZcrnuNNfImlnS-Y1Y`) to upgrade the Act III Soundstage with native `videoinput` and `audioinput` USB device discovery, in-app source selector dropdowns in the Director's Tech Scout, dynamic HUD hardware/resolution telemetry, and four mandatory Windows USB hardware guards.
+  - ⚡ **Chat 0 ➔ Chat 2 (The Flash Executor)**: Registered Plane.so Ticket **#367** (`FEAT-MW-159`), implemented full multi-device enumeration and all 4 Windows USB guards in `src/hooks/useCamera.ts`, wired the Camera Source & Microphone Source dropdowns and dynamic HUD pill in `src/components/studio/SoloStage.tsx`, and authored the automated regression shield in `src/test/useCamera.usb.test.tsx`.
+- **Architectural & Governance Deliverables**:
+  - **Plane.so Ticket Registration (Rule 15)**:
+    - Registered Ticket **#367** (`FEAT-MW-159: Native In-App USB Camera & Microphone Discovery & Selection`, UUID `33dd9b24-a0aa-4ce4-b849-0b7a7baff5f9`).
+  - **Four Mandatory Windows USB Hardware Guards (`C:\Users\home\studio\src\hooks\useCamera.ts`)**:
+    1. **Guard 1 — Windows USB Track Teardown Order (`NotReadableError` Prevention)**: Explicitly invokes `track.stop()` on all active tracks and clears `videoRef.current.srcObject = null` (plus any attached `<video>` DOM elements) strictly prior to requesting a new `getUserMedia` stream.
+    2. **Guard 2 — External Microphone DSP & Auto-Gain Protection**: Disables browser `autoGainControl` (`autoGainControl: false`) when an external USB or wireless microphone is selected, with graceful fallback on `OverconstrainedError`.
+    3. **Guard 3 — True Negotiated Resolution & Dynamic HUD Telemetry (`track.getSettings()`)**: Reads `stream.getVideoTracks()[0].label` and maps `track.getSettings().height` (`2160` ➔ `4K`, `1080` ➔ `1080P`, `720` ➔ `720P`) into live `activeCameraLabel`, `activeMicLabel`, and `activeResolutionLabel` state.
+    4. **Guard 4 — Hardware Preference Persistence & Hot-Plug Listener**: Persists `mw_preferred_video_device_id` and `mw_preferred_audio_device_id` in `localStorage`, re-enumerates immediately post-`getUserMedia` permission grant, and attaches `navigator.mediaDevices.ondevicechange` to fall back cleanly to system default if an external USB device is unplugged mid-session.
+  - **In-App Selectors & Dynamic HUD in Director's Tech Scout (`C:\Users\home\studio\src\components\studio\SoloStage.tsx`)**:
+    - Added **Camera Source** selector dropdown (`data-testid="tech-scout-camera-select"`) inside the *Camera Angle & Lighting* card.
+    - Added **Microphone Source** selector dropdown (`data-testid="tech-scout-mic-select"`) inside the *Acoustics Check* card driving the live green audio levels visualiser.
+    - Updated `[ 🔄 Switch Camera Feed ]` (`switchCamera`) to cycle sequentially through all detected `videoDevices` by `deviceId` on desktop.
+    - Updated the top-left HUD pill (`INPUT: ...`) to display the active camera's hardware name and negotiated resolution dynamically.
+  - **Automated Regression Shield (`C:\Users\home\studio\src\test\useCamera.usb.test.tsx`)**:
+    - Authored 5 comprehensive unit tests verifying multi-device enumeration, Guard 1 track teardown ordering prior to stream re-acquisition, Guard 2 `autoGainControl: false` + `OverconstrainedError` fallback, Guard 3 height-to-resolution mapping + `switchCamera()` cycling, and Guard 4 `localStorage` persistence + `ondevicechange` hot-unplug fallback.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\hooks\useCamera.ts`
+  - `C:\Users\home\studio\src\components\studio\SoloStage.tsx`
+  - `C:\Users\home\studio\src\test\useCamera.usb.test.tsx`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+
 

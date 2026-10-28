@@ -749,6 +749,7 @@ export default function SoloStage({
     activeInput,
     switchInput,
     isWirelessLinked
+    , videoDevices = [], audioDevices = [], selectedVideoDeviceId = '', selectedAudioDeviceId = '', selectVideoDevice = () => {}, selectAudioDevice = () => {}, activeCameraLabel = 'STUDIO WEBCAM', activeMicLabel = 'DEFAULT MICROPHONE', activeResolutionLabel = '720P'
   } = useCamera({ enabled: isCameraActive });
   const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
   const [isRetakingMode, setIsRetakingMode] = useState(false);
@@ -2015,6 +2016,8 @@ export default function SoloStage({
   useEffect(() => {
     if (videoRef.current && stream && !recordedBlob) {
       videoRef.current.srcObject = stream;
+    } else if (videoRef.current && !stream) {
+      videoRef.current.srcObject = null;
     }
     
     // Auto-trigger sound check on initialization in Stage 2 (Recording)
@@ -3594,7 +3597,30 @@ export default function SoloStage({
                             <Camera className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
                             <div className="flex flex-col">
                               <span className="text-xs font-bold text-white/90">Camera Angle & Lighting</span>
-                              <span className="text-[9px] text-white/40">Optics active. Video stream is in full view.</span>
+                              <span className="text-[9px] text-white/40">Optics active ({activeCameraLabel} • {activeResolutionLabel}). Video stream is in full view.</span>
+                              <div className="mt-2 flex flex-col gap-1">
+                                <label htmlFor="tech-scout-camera-select" className="text-[8px] font-black uppercase tracking-widest text-emerald-400/80">
+                                  Camera Source (USB / Integrated)
+                                </label>
+                                <select
+                                  id="tech-scout-camera-select"
+                                  aria-label="Camera Source"
+                                  data-testid="tech-scout-camera-select"
+                                  value={selectedVideoDeviceId}
+                                  onChange={(e) => selectVideoDevice(e.target.value)}
+                                  className="w-full bg-slate-950/90 border border-white/15 hover:border-emerald-500/40 focus:border-emerald-400 text-white text-xs rounded-xl px-2.5 py-1.5 font-sans outline-none transition-colors cursor-pointer"
+                                >
+                                  {videoDevices.length === 0 ? (
+                                    <option value="">{activeCameraLabel || 'System Default Camera'}</option>
+                                  ) : (
+                                    videoDevices.map((cam, idx) => (
+                                      <option key={cam.deviceId || `cam-${idx}`} value={cam.deviceId} className="bg-slate-950 text-white">
+                                        {cam.label || `Camera ${idx + 1}`}{cam.isExternalUsb ? ' (USB)' : ''}
+                                      </option>
+                                    ))
+                                  )}
+                                </select>
+                              </div>
                             </div>
                           </div>
                           <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
@@ -3716,6 +3742,29 @@ export default function SoloStage({
                           <Mic className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
                           <div className="flex flex-col w-full min-w-0 pr-2">
                             <span className="text-xs font-bold text-white/90">Acoustics Check</span>
+                            <div className="mt-1.5 mb-1 flex flex-col gap-1">
+                              <label htmlFor="tech-scout-mic-select" className="text-[8px] font-black uppercase tracking-widest text-emerald-400/80">
+                                Microphone Source (USB / Wireless / Integrated)
+                              </label>
+                              <select
+                                id="tech-scout-mic-select"
+                                aria-label="Microphone Source"
+                                data-testid="tech-scout-mic-select"
+                                value={selectedAudioDeviceId}
+                                onChange={(e) => selectAudioDevice(e.target.value)}
+                                className="w-full bg-slate-950/90 border border-white/15 hover:border-emerald-500/40 focus:border-emerald-400 text-white text-xs rounded-xl px-2.5 py-1.5 font-sans outline-none transition-colors cursor-pointer"
+                              >
+                                {audioDevices.length === 0 ? (
+                                  <option value="">{activeMicLabel || 'System Default Microphone'}</option>
+                                ) : (
+                                  audioDevices.map((mic, idx) => (
+                                    <option key={mic.deviceId || `mic-${idx}`} value={mic.deviceId} className="bg-slate-950 text-white">
+                                      {mic.label || `Microphone ${idx + 1}`}{mic.isExternalUsb ? ' (USB / External)' : ''}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                            </div>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-[8px] text-white/40 uppercase tracking-wider font-mono">Live levels:</span>
                               <div className="flex-grow bg-white/10 h-1.5 rounded-full overflow-hidden relative">
@@ -4497,7 +4546,7 @@ export default function SoloStage({
                       <div className="flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md h-[30px]">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         <span>
-                          INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : 'STUDIO WEBCAM (720p)'}
+                          INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : `${(activeCameraLabel || 'STUDIO WEBCAM').toUpperCase()} (${activeResolutionLabel || '720P'})`}
                         </span>
                       </div>
 
