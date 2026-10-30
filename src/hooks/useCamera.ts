@@ -58,7 +58,10 @@ export function deduplicateHardwareDevices(
 ): HardwareDeviceOption[] {
   const prefix = kind === 'videoinput' ? 'Camera' : 'Microphone';
   const hasConcreteDevices = rawDevices.some(
-    (d) => d.deviceId !== 'default' && d.deviceId !== 'communications'
+    (d) =>
+      d.deviceId !== 'default' &&
+      d.deviceId !== 'communications' &&
+      !/^(default|communications)\s*[-–—:]\s*/i.test(d.label || '')
   );
 
   // Filter out virtual OS alias entries ('default' / 'communications') when concrete physical devices exist
@@ -73,18 +76,22 @@ export function deduplicateHardwareDevices(
 
   const seenLabels = new Set<string>();
   const seenDeviceIds = new Set<string>();
+  const seenGroupIds = new Set<string>();
   const result: HardwareDeviceOption[] = [];
 
   candidateDevices.forEach((d, idx) => {
     const rawLabel = d.label?.trim() || '';
     const cleanLabel = formatHardwareDeviceLabel(rawLabel, `${prefix} ${idx + 1}`);
     const normKey = rawLabel ? cleanLabel.toLowerCase() : `id:${d.deviceId || idx}`;
+    const trimmedGroupId = d.groupId?.trim() || '';
 
     if (d.deviceId && seenDeviceIds.has(d.deviceId)) return;
     if (rawLabel && seenLabels.has(normKey)) return;
+    if (trimmedGroupId && trimmedGroupId !== 'default' && seenGroupIds.has(trimmedGroupId)) return;
 
     if (d.deviceId) seenDeviceIds.add(d.deviceId);
     if (rawLabel) seenLabels.add(normKey);
+    if (trimmedGroupId && trimmedGroupId !== 'default') seenGroupIds.add(trimmedGroupId);
 
     result.push({
       deviceId: d.deviceId,

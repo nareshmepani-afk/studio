@@ -366,4 +366,108 @@ describe('FEAT-MW-159: Native USB Camera & Microphone Discovery, Selection & Har
 
     expect(formatHardwareDeviceLabel('AnkerWork C310 Webcam (291a:3367)')).toBe('AnkerWork C310 Webcam');
   });
+
+  it('deduplicates audioinput and videoinput devices by filtering out Windows virtual default/communications duplicate aliases and matching normalized labels/groupIds', () => {
+    const rawVideoDevices: MediaDeviceInfo[] = [
+      {
+        deviceId: 'default',
+        groupId: 'grp-cam-anker',
+        kind: 'videoinput',
+        label: 'Default - AnkerWork C310 Webcam (291a:3367)',
+        toJSON: () => ({}),
+      },
+      {
+        deviceId: 'cam-anker-guid',
+        groupId: 'grp-cam-anker',
+        kind: 'videoinput',
+        label: 'AnkerWork C310 Webcam (291a:3367)',
+        toJSON: () => ({}),
+      },
+      {
+        deviceId: 'cam-anker-alt-guid',
+        groupId: 'grp-cam-anker',
+        kind: 'videoinput',
+        label: 'AnkerWork C310 Webcam Stream 2',
+        toJSON: () => ({}),
+      },
+      {
+        deviceId: 'cam-builtin-guid',
+        groupId: 'grp-cam-laptop',
+        kind: 'videoinput',
+        label: 'Integrated HD Webcam',
+        toJSON: () => ({}),
+      },
+    ];
+
+    const rawAudioDevices: MediaDeviceInfo[] = [
+      {
+        deviceId: 'default',
+        groupId: 'grp-dji',
+        kind: 'audioinput',
+        label: 'Default - DJI Microphone (Wireless Microphone RX) (2ca3:b00d)',
+        toJSON: () => ({}),
+      },
+      {
+        deviceId: 'communications',
+        groupId: 'grp-dji',
+        kind: 'audioinput',
+        label: 'Communications - DJI Microphone (Wireless Microphone RX) (2ca3:b00d)',
+        toJSON: () => ({}),
+      },
+      {
+        deviceId: 'dji-guid',
+        groupId: 'grp-dji',
+        kind: 'audioinput',
+        label: 'DJI Microphone (Wireless Microphone RX) (2ca3:b00d)',
+        toJSON: () => ({}),
+      },
+      {
+        deviceId: 'dji-subchannel-guid',
+        groupId: 'grp-dji',
+        kind: 'audioinput',
+        label: 'DJI Wireless Subchannel',
+        toJSON: () => ({}),
+      },
+      {
+        deviceId: 'mic-realtek-guid',
+        groupId: 'grp-realtek',
+        kind: 'audioinput',
+        label: 'Microphone (Realtek(R) Audio)',
+        toJSON: () => ({}),
+      },
+    ];
+
+    const dedupedVideo = deduplicateHardwareDevices(rawVideoDevices, 'videoinput');
+    const dedupedAudio = deduplicateHardwareDevices(rawAudioDevices, 'audioinput');
+
+    // Video: 'default' alias and duplicate groupId 'grp-cam-anker' filtered out
+    expect(dedupedVideo).toHaveLength(2);
+    expect(dedupedVideo[0]).toMatchObject({
+      deviceId: 'cam-anker-guid',
+      label: 'AnkerWork C310 Webcam',
+      isExternalUsb: true,
+      groupId: 'grp-cam-anker',
+    });
+    expect(dedupedVideo[1]).toMatchObject({
+      deviceId: 'cam-builtin-guid',
+      label: 'Integrated HD Webcam',
+      isExternalUsb: false,
+      groupId: 'grp-cam-laptop',
+    });
+
+    // Audio: 'default' and 'communications' aliases and duplicate groupId 'grp-dji' filtered out
+    expect(dedupedAudio).toHaveLength(2);
+    expect(dedupedAudio[0]).toMatchObject({
+      deviceId: 'dji-guid',
+      label: 'DJI Microphone (Wireless Microphone RX)',
+      isExternalUsb: true,
+      groupId: 'grp-dji',
+    });
+    expect(dedupedAudio[1]).toMatchObject({
+      deviceId: 'mic-realtek-guid',
+      label: 'Microphone (Realtek(R) Audio)',
+      isExternalUsb: false,
+      groupId: 'grp-realtek',
+    });
+  });
 });
