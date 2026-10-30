@@ -28,6 +28,7 @@ interface TestItem {
   banner: string;
   steps: string[];
   launcher: LauncherLink | null;
+  verdict?: 'pass' | 'fail' | 'pending';
 }
 
 interface TestCard {
@@ -46,18 +47,22 @@ interface HeaderMeta {
   totalCards: number;
 }
 
+const CANONICAL_QA_DECK_DOC_ID = '17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c';
+
 function resolveBinary(plugin: 'gdocs' | 'gdrive'): string {
-  const exePath = path.join(
+  const binDir = path.join(
     os.homedir(),
     '.gemini',
     'antigravity',
     'plugin_data',
     plugin,
-    'bin',
-    `${plugin}-986250228.exe`
+    'bin'
   );
-  if (fs.existsSync(exePath)) {
-    return exePath;
+  if (fs.existsSync(binDir)) {
+    const exeFiles = fs.readdirSync(binDir).filter(f => f.startsWith(`${plugin}-`) && f.endsWith('.exe'));
+    if (exeFiles.length > 0) {
+      return path.join(binDir, exeFiles[0]);
+    }
   }
 
   const cmdPath = path.join(
@@ -217,12 +222,18 @@ function extractCards(html: string): TestCard[] {
           }
         : null;
 
+      const itemKey = itemNumber.replace('.', '_');
+      const keyPassRegex = new RegExp(`['"]${itemKey}['"]\\s*:\\s*['"]pass['"]`, 'i');
+      const btnPassActiveRegex = new RegExp(`id=["']btn-item-pass-${itemNumber.replace('.', '-')}["'][^>]*class=["'][^"']*\\bactive\\b`, 'i');
+      const isItemPass = keyPassRegex.test(html) || btnPassActiveRegex.test(block);
+
       items.push({
         itemNumber,
         title: itemTitle,
         banner,
         steps: liMatches,
-        launcher: itemLink
+        launcher: itemLink,
+        verdict: isItemPass ? 'pass' : 'pending'
       });
     }
 
@@ -298,13 +309,15 @@ function formatMarkdownDeck(
 
   md += `#### 📋 Interactive Verification Items:\n\n`;
   for (const item of activeCard.items) {
-    md += `##### Item ${item.itemNumber}: ${item.title}\n\n`;
+    const isPass = item.verdict === 'pass';
+    const statusBadge = isPass ? '✅ [PASS — VERIFIED]' : '⏳ [PENDING]';
+    md += `##### ${statusBadge} Item ${item.itemNumber}: ${item.title}\n\n`;
     if (item.banner) {
       md += `> **Context:** ${item.banner}\n\n`;
     }
     if (item.steps.length > 0) {
       for (const step of item.steps) {
-        md += `- [ ] ${step}\n`;
+        md += `- [${isPass ? 'x' : ' '}] ${step}\n`;
       }
       md += `\n`;
     }
@@ -389,7 +402,29 @@ export async function syncQADeck(customOperator?: string): Promise<{ docId: stri
   }
 
   console.log(`📖 Reading QA Checklist: ${htmlPath}`);
-  const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+  let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
+  // Auto-stamp current Git HEAD SHA into <title>, header-target-sha, and header-edge-sha
+  try {
+    const sha8 = execFileSync('git', ['rev-parse', '--short=8', 'HEAD'], { encoding: 'utf8' }).trim();
+    const sha7 = sha8.slice(0, 7);
+    if (sha8) {
+      const updatedHtml = htmlContent
+        .replace(/<title>Master QA Verification Suite — Grouped by Route \([^)]+\)<\/title>/i, `<title>Master QA Verification Suite — Grouped by Route (${sha8})</title>`)
+        .replace(/(<strong\s+id="header-target-sha"[^>]*>)[^<]+(<\/strong>)/i, `$1${sha8}$2`)
+        .replace(/(<strong\s+id="header-edge-sha"[^>]*>)[^<]+(<\/strong>)/i, `$1${sha7}$2`)
+        .replace(/commit:\s*['"][0-9a-f]{7,8}['"]/g, `commit: '${sha8}'`)
+        .replace(/qa_master_checklist_[0-9a-f]{7,8}_/g, `qa_master_checklist_${sha8}_`)
+        .replace(/\*\*Target Commit SHA\*\*:\s*[0-9a-f]{7,8}/g, `**Target Commit SHA**: ${sha8}`);
+      if (updatedHtml !== htmlContent) {
+        htmlContent = updatedHtml;
+        fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+        console.log(`🔖 Auto-stamped Commit SHA (${sha8}) into qa_checklist_interactive.html`);
+      }
+    }
+  } catch {
+    // non-fatal if outside git repo
+  }
 
   console.log('🔍 Parsing telemetry HUD and card hierarchy...');
   const header = extractHeaderMeta(htmlContent);
@@ -416,23 +451,24 @@ export async function syncQADeck(customOperator?: string): Promise<{ docId: stri
   console.log(`🔧 Google Docs CLI:  ${gdocsBin}`);
   console.log(`🔧 Google Drive CLI: ${gdriveBin}`);
 
-  // Search for MW-QA-Deck-Active in Google Drive
+  // Search for MW-QA-Deck-Active in Google Drive (defaulting to canonical SSOT doc ID)
   console.log('🔎 Checking Google Drive for existing "MW-QA-Deck-Active"...');
-  let existingDocId: string | null = null;
+  let existingDocId: string | null = process.env.QA_DECK_DOC_ID || CANONICAL_QA_DECK_DOC_ID;
 
   try {
     const searchRaw = execFileSync(
       gdriveBin,
       ['readonly', 'search', '--name-exact', 'MW-QA-Deck-Active', '--json'],
-      { encoding: 'utf8' }
+      { encoding: 'utf8', shell: gdriveBin.toLowerCase().endsWith('.cmd') }
     );
     const results = JSON.parse(searchRaw || '[]');
-    if (Array.isArray(results) && results.length > 0 && results[0].id) {
-      existingDocId = results[0].id;
+    if (Array.isArray(results) && results.length > 0) {
+      const canonicalMatch = results.find((r: any) => r.id === CANONICAL_QA_DECK_DOC_ID);
+      existingDocId = canonicalMatch ? canonicalMatch.id : results[0].id;
       console.log(`📎 Found existing document: ID ${existingDocId}`);
     }
   } catch (err: any) {
-    console.warn(`⚠️ Drive search warning (will attempt create): ${err.message}`);
+    console.warn(`⚠️ Drive search warning (using canonical Doc ID ${existingDocId}): ${err.message}`);
   }
 
   // Write temporary markdown file

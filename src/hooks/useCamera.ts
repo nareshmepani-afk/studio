@@ -23,12 +23,79 @@ interface UseCameraOptions {
 }
 
 const EXTERNAL_HARDWARE_REGEX =
-  /usb|wireless|rode|dji|shure|blue|yeti|fifine|elgato|samson|audio-technica|receiver|external|headset|podcast|cam link|brio|logitech|insta360|osmo|sony|canon/i;
+  /usb|wireless|anker|ankerwork|rode|dji|shure|blue|yeti|fifine|elgato|samson|audio-technica|receiver|external|headset|podcast|cam link|brio|logitech|insta360|osmo|sony|canon|\([0-9a-f]{4}:[0-9a-f]{4}\)/i;
+
+const BUILTIN_HARDWARE_REGEX =
+  /integrated|internal|built-in|realtek|facetime|macbook|surface|intel.*smart sound|front camera|back camera/i;
+
+/**
+ * Strips Windows/Chromium virtual alias prefixes ("Default - ", "Communications - ")
+ * and raw USB Vendor:Product hex identifiers like "(291a:3367)" or "(2ca3:b00d)".
+ */
+export function formatHardwareDeviceLabel(rawLabel: string = '', fallback: string = ''): string {
+  const cleaned = rawLabel
+    .replace(/^(default|communications)\s*[-–—:]\s*/i, '')
+    .replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || fallback;
+}
 
 export function isExternalHardwareDevice(label: string = '', deviceId: string = ''): boolean {
   if (EXTERNAL_HARDWARE_REGEX.test(label)) return true;
-  if (deviceId && deviceId !== 'default' && deviceId !== 'communications') return true;
+  if (/usb|external|wireless/i.test(deviceId)) return true;
+  if (BUILTIN_HARDWARE_REGEX.test(label)) return false;
   return false;
+}
+
+/**
+ * Deduplicates Windows/Chromium virtual OS aliases ("default" and "communications")
+ * and duplicate endpoint labels so each physical microphone/camera appears only once.
+ */
+export function deduplicateHardwareDevices(
+  rawDevices: MediaDeviceInfo[],
+  kind: 'videoinput' | 'audioinput'
+): HardwareDeviceOption[] {
+  const prefix = kind === 'videoinput' ? 'Camera' : 'Microphone';
+  const hasConcreteDevices = rawDevices.some(
+    (d) => d.deviceId !== 'default' && d.deviceId !== 'communications'
+  );
+
+  // Filter out virtual OS alias entries ('default' / 'communications') when concrete physical devices exist
+  const candidateDevices = hasConcreteDevices
+    ? rawDevices.filter(
+        (d) =>
+          d.deviceId !== 'default' &&
+          d.deviceId !== 'communications' &&
+          !/^(default|communications)\s*[-–—:]\s*/i.test(d.label || '')
+      )
+    : rawDevices;
+
+  const seenLabels = new Set<string>();
+  const seenDeviceIds = new Set<string>();
+  const result: HardwareDeviceOption[] = [];
+
+  candidateDevices.forEach((d, idx) => {
+    const rawLabel = d.label?.trim() || '';
+    const cleanLabel = formatHardwareDeviceLabel(rawLabel, `${prefix} ${idx + 1}`);
+    const normKey = rawLabel ? cleanLabel.toLowerCase() : `id:${d.deviceId || idx}`;
+
+    if (d.deviceId && seenDeviceIds.has(d.deviceId)) return;
+    if (rawLabel && seenLabels.has(normKey)) return;
+
+    if (d.deviceId) seenDeviceIds.add(d.deviceId);
+    if (rawLabel) seenLabels.add(normKey);
+
+    result.push({
+      deviceId: d.deviceId,
+      label: cleanLabel,
+      kind,
+      groupId: d.groupId,
+      isExternalUsb: isExternalHardwareDevice(rawLabel, d.deviceId),
+    });
+  });
+
+  return result;
 }
 
 export function mapHeightToResolutionLabel(height?: number): '4K' | '1080P' | '720P' {
@@ -142,27 +209,8 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
       const rawVideo = rawDevices.filter((d) => d.kind === 'videoinput');
       const rawAudio = rawDevices.filter((d) => d.kind === 'audioinput');
 
-      const mappedVideo: HardwareDeviceOption[] = rawVideo.map((d, idx) => {
-        const cleanLabel = d.label?.trim() || `Camera ${idx + 1}`;
-        return {
-          deviceId: d.deviceId,
-          label: cleanLabel,
-          kind: 'videoinput',
-          groupId: d.groupId,
-          isExternalUsb: isExternalHardwareDevice(cleanLabel, d.deviceId),
-        };
-      });
-
-      const mappedAudio: HardwareDeviceOption[] = rawAudio.map((d, idx) => {
-        const cleanLabel = d.label?.trim() || `Microphone ${idx + 1}`;
-        return {
-          deviceId: d.deviceId,
-          label: cleanLabel,
-          kind: 'audioinput',
-          groupId: d.groupId,
-          isExternalUsb: isExternalHardwareDevice(cleanLabel, d.deviceId),
-        };
-      });
+      const mappedVideo: HardwareDeviceOption[] = deduplicateHardwareDevices(rawVideo, 'videoinput');
+      const mappedAudio: HardwareDeviceOption[] = deduplicateHardwareDevices(rawAudio, 'audioinput');
 
       setVideoDevices(mappedVideo);
       setAudioDevices(mappedAudio);
@@ -425,8 +473,16 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
 
         negotiatedVideoId = settings?.deviceId || savedVideoId;
 
-        const matchedCam = enumerated.video.find((d) => d.deviceId === negotiatedVideoId);
-        const label = videoTrack.label?.trim() || matchedCam?.label || 'STUDIO WEBCAM';
+        const cleanedTrackLabel = formatHardwareDeviceLabel(videoTrack.label || '');
+        const matchedCam =
+          enumerated.video.find((d) => d.deviceId === negotiatedVideoId) ||
+          (cleanedTrackLabel
+            ? enumerated.video.find((d) => d.label.toLowerCase() === cleanedTrackLabel.toLowerCase())
+            : undefined);
+        if (matchedCam?.deviceId && (!negotiatedVideoId || negotiatedVideoId === 'default' || negotiatedVideoId === 'communications')) {
+          negotiatedVideoId = matchedCam.deviceId;
+        }
+        const label = cleanedTrackLabel || matchedCam?.label || 'STUDIO WEBCAM';
         setActiveCameraLabel(label);
 
         if ('getCapabilities' in videoTrack && typeof videoTrack.getCapabilities === 'function') {
@@ -450,8 +506,16 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
         const audioSettings =
           typeof audioTrack.getSettings === 'function' ? audioTrack.getSettings() : ({} as MediaTrackSettings);
         negotiatedAudioId = audioSettings?.deviceId || savedAudioId;
-        const matchedMic = enumerated.audio.find((d) => d.deviceId === negotiatedAudioId);
-        const micLabel = audioTrack.label?.trim() || matchedMic?.label || 'DEFAULT MICROPHONE';
+        const cleanedMicTrackLabel = formatHardwareDeviceLabel(audioTrack.label || '');
+        const matchedMic =
+          enumerated.audio.find((d) => d.deviceId === negotiatedAudioId) ||
+          (cleanedMicTrackLabel
+            ? enumerated.audio.find((d) => d.label.toLowerCase() === cleanedMicTrackLabel.toLowerCase())
+            : undefined);
+        if (matchedMic?.deviceId && (!negotiatedAudioId || negotiatedAudioId === 'default' || negotiatedAudioId === 'communications')) {
+          negotiatedAudioId = matchedMic.deviceId;
+        }
+        const micLabel = cleanedMicTrackLabel || matchedMic?.label || 'DEFAULT MICROPHONE';
         setActiveMicLabel(micLabel);
       }
 

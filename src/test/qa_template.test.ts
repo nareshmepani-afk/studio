@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { describe, it, expect } from 'vitest';
 import { generateQAChecklistHtml } from '../../scripts/generate_qa_checklist';
 
@@ -195,6 +197,41 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     const htmlWithPunchList = generateQAChecklistHtml(suiteWithPunchList);
     expect(htmlWithPunchList).toContain('punchlist-container-1');
     expect(htmlWithPunchList).toContain('Punch-List 1.1: Deep-Link ?id=p4_1 Initial Mount Synchronisation');
+    const liveHtmlPath = path.resolve(__dirname, '../../qa_checklist_interactive.html');
+    const liveHtml = fs.readFileSync(liveHtmlPath, 'utf8');
+    for (let c = 1; c <= 58; c++) {
+      expect(liveHtml).toContain(`id="card-${c}"`);
+      expect(liveHtml).toContain(`id="notes-${c}"`);
+      expect(liveHtml).toContain(`id="console-log-${c}"`);
+      expect(liveHtml).toContain(`id="telemetry-${c}"`);
+      expect(liveHtml).toContain(`id="dropzone-${c}"`);
+      expect(liveHtml).toContain(`handleCardPaste(event, ${c})`);
+      expect(liveHtml).toContain(`copySingleTestReport(${c}, this)`);
+    }
+    expect(liveHtml).toContain('function initSubItemFeedbackDrawers()');
+    expect(liveHtml).toContain('function toggleItemFeedbackDrawer(cardNum, itemNum');
+    expect(liveHtml).toContain('function copySingleItemReport(cardNum, itemNum, btn)');
+    expect(liveHtml).toContain('toggleItemFeedbackDrawer(cardNum, itemNum, true)');
+    expect(liveHtml).toContain('function setCardVerdict(cardNum, verdict)');
+    expect(liveHtml).toContain('function normalizeVerdictEntry(entry)');
+    expect(liveHtml).toContain('function getVerdictCode(cardNum)');
+    expect(liveHtml).not.toContain("commit: '1b0029a7'");
+    expect(liveHtml).not.toContain('**Target Commit SHA**: 1b0029a7');
+    expect(liveHtml).toContain('const DEFAULT_CARD_VERDICTS =');
+    expect(liveHtml).toContain('const DEFAULT_ITEM_VERDICTS =');
+    // Rule 30.9: exportJSON() must include itemVerdicts, itemNotes, itemConsoleLogs, itemTelemetry
+    const exportJsonIdx = liveHtml.indexOf('function exportJSON()');
+    const importJsonIdx = liveHtml.indexOf('function importJSON(');
+    const exportJsonSlice = liveHtml.slice(exportJsonIdx, importJsonIdx);
+    expect(exportJsonSlice).toContain('itemVerdicts');
+    expect(exportJsonSlice).toContain('itemNotes');
+    expect(exportJsonSlice).toContain('itemConsoleLogs');
+    expect(exportJsonSlice).toContain('itemTelemetry');
+    // Rule 30.9: updateItemProgress must auto-promote verdicts[cardNum] when passed === total
+    const updateProgIdx = liveHtml.indexOf('function updateItemProgress(cardNum)');
+    const updateProgSlice = liveHtml.slice(updateProgIdx, updateProgIdx + 1200);
+    expect(updateProgSlice).toContain("verdicts[cardNum] = { verdict: 'pass'");
+    expect(liveHtml).toContain("'58_1': 'pass'");
   });
 });
 

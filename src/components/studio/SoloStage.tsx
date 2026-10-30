@@ -3615,7 +3615,7 @@ export default function SoloStage({
                                   ) : (
                                     videoDevices.map((cam, idx) => (
                                       <option key={cam.deviceId || `cam-${idx}`} value={cam.deviceId} className="bg-slate-950 text-white">
-                                        {cam.label || `Camera ${idx + 1}`}{cam.isExternalUsb ? ' (USB)' : ''}
+                                        {cam.label || `Camera ${idx + 1}`}{cam.isExternalUsb ? (/\(usb/i.test(cam.label || '') ? '' : ' (USB)') : ' (Built-In)'}
                                       </option>
                                     ))
                                   )}
@@ -3759,7 +3759,7 @@ export default function SoloStage({
                                 ) : (
                                   audioDevices.map((mic, idx) => (
                                     <option key={mic.deviceId || `mic-${idx}`} value={mic.deviceId} className="bg-slate-950 text-white">
-                                      {mic.label || `Microphone ${idx + 1}`}{mic.isExternalUsb ? ' (USB / External)' : ''}
+                                      {mic.label || `Microphone ${idx + 1}`}{mic.isExternalUsb ? ' (USB / External)' : ' (Built-In)'}
                                     </option>
                                   ))
                                 )}

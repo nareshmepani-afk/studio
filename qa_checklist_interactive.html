@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (a47317cd)</title>
+  <title>Master QA Verification Suite — Grouped by Route (fc10d6e3)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -50,13 +50,13 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">c8eaf64b</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">fc10d6e3</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">c8eaf64</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">fc10d6e</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">28 Oct 2026, 14:47 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">28 Oct 2026, 16:57 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 14:46 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Environment: <strong class="text-amber-300">dev.memoryweaver.studio</strong></span>
         </div>
@@ -2350,7 +2350,8 @@
         <!-- Zone 3: Verdict Buttons -->
         <div class="flex flex-wrap items-center gap-3 mb-4">
           <span class="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Verdict:</span>
-          <button id="btn-pass-22" class="btn-pass px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-600 text-gray-300 hover:border-emerald-500 hover:text-emerald-300 transition cursor-pointer" onclick="setVerdict(22,'pass')">✅ PASS</button>
+          <button onclick="copySingleTestReport(22, this)" id="copy-test-btn-22" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 22</button>
+            <button id="btn-pass-22" class="btn-pass px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-600 text-gray-300 hover:border-emerald-500 hover:text-emerald-300 transition cursor-pointer" onclick="setVerdict(22,'pass')">✅ PASS</button>
           <button id="btn-fail-22" class="btn-fail px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-600 text-gray-300 hover:border-rose-500 hover:text-rose-300 transition cursor-pointer" onclick="setVerdict(22,'fail')">❌ FAIL</button>
           <button id="btn-backlog-22" class="btn-backlog px-3 py-1.5 text-xs font-bold rounded-lg border border-gray-600 text-gray-300 hover:border-amber-500 hover:text-amber-300 transition cursor-pointer" onclick="setVerdict(22,'backlog')">🟡 BACKLOG</button>
           <button onclick="resetVerdict(22)" class="ml-auto px-3 py-1.5 text-[10px] font-mono rounded-lg border border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-500 transition cursor-pointer">↺ Reset</button>
@@ -2783,7 +2784,8 @@
           <div class="flex items-center justify-between gap-3 p-3 bg-gray-900/40 rounded-xl border border-gray-800 mb-4">
             <span class="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">Test 26 Verdict:</span>
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(26, 'pass')" id="btn-pass-26" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
+              <button onclick="copySingleTestReport(26, this)" id="copy-test-btn-26" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 26</button>
+            <button onclick="setVerdict(26, 'pass')" id="btn-pass-26" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
               <button onclick="setVerdict(26, 'fail')" id="btn-fail-26" title="Click to mark FAIL" class="btn-fail px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-rose-400 hover:bg-rose-950/30 transition cursor-pointer">FAIL</button>
               <button onclick="setVerdict(26, 'backlog')" id="btn-backlog-26" title="Click to mark BACKLOG" class="btn-backlog px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-amber-400 hover:bg-amber-950/30 transition cursor-pointer">BACKLOG</button>
               <button onclick="resetCardVerdict(26)" id="btn-reset-26" title="Clear verdict for Test 26 back to Pending" class="px-2.5 py-1.5 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 transition cursor-pointer">↺ Reset</button>
@@ -2885,7 +2887,8 @@
           <div class="flex items-center justify-between gap-3 p-3 bg-gray-900/40 rounded-xl border border-gray-800 mb-4">
             <span class="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">Test 27 Verdict:</span>
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(27, 'pass')" id="btn-pass-27" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
+              <button onclick="copySingleTestReport(27, this)" id="copy-test-btn-27" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 27</button>
+            <button onclick="setVerdict(27, 'pass')" id="btn-pass-27" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
               <button onclick="setVerdict(27, 'fail')" id="btn-fail-27" title="Click to mark FAIL" class="btn-fail px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-rose-400 hover:bg-rose-950/30 transition cursor-pointer">FAIL</button>
               <button onclick="setVerdict(27, 'backlog')" id="btn-backlog-27" title="Click to mark BACKLOG" class="btn-backlog px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-amber-400 hover:bg-amber-950/30 transition cursor-pointer">BACKLOG</button>
               <button onclick="resetCardVerdict(27)" id="btn-reset-27" title="Clear verdict for Test 27 back to Pending" class="px-2.5 py-1.5 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 transition cursor-pointer">↺ Reset</button>
@@ -3091,7 +3094,8 @@
           <div class="flex items-center justify-between gap-3 p-3 bg-gray-900/40 rounded-xl border border-gray-800 mb-4">
             <span class="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">Test 29 Verdict:</span>
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(29, 'pass')" id="btn-pass-29" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
+              <button onclick="copySingleTestReport(29, this)" id="copy-test-btn-29" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 29</button>
+            <button onclick="setVerdict(29, 'pass')" id="btn-pass-29" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
               <button onclick="setVerdict(29, 'fail')" id="btn-fail-29" title="Click to mark FAIL" class="btn-fail px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-rose-400 hover:bg-rose-950/30 transition cursor-pointer">FAIL</button>
               <button onclick="setVerdict(29, 'backlog')" id="btn-backlog-29" title="Click to mark BACKLOG" class="btn-backlog px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-amber-400 hover:bg-amber-950/30 transition cursor-pointer">BACKLOG</button>
               <button onclick="resetCardVerdict(29)" id="btn-reset-29" title="Clear verdict for Test 29 back to Pending" class="px-2.5 py-1.5 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 transition cursor-pointer">↺ Reset</button>
@@ -3194,7 +3198,8 @@
           <div class="flex items-center justify-between gap-3 p-3 bg-gray-900/40 rounded-xl border border-gray-800 mb-4">
             <span class="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">Test 30 Verdict:</span>
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(30, 'pass')" id="btn-pass-30" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
+              <button onclick="copySingleTestReport(30, this)" id="copy-test-btn-30" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 30</button>
+            <button onclick="setVerdict(30, 'pass')" id="btn-pass-30" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
               <button onclick="setVerdict(30, 'fail')" id="btn-fail-30" title="Click to mark FAIL" class="btn-fail px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-rose-400 hover:bg-rose-950/30 transition cursor-pointer">FAIL</button>
               <button onclick="setVerdict(30, 'backlog')" id="btn-backlog-30" title="Click to mark BACKLOG" class="btn-backlog px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-amber-400 hover:bg-amber-950/30 transition cursor-pointer">BACKLOG</button>
               <button onclick="resetCardVerdict(30)" id="btn-reset-30" title="Clear verdict for Test 30 back to Pending" class="px-2.5 py-1.5 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 transition cursor-pointer">↺ Reset</button>
@@ -3297,7 +3302,8 @@
           <div class="flex items-center justify-between gap-3 p-3 bg-gray-900/40 rounded-xl border border-gray-800 mb-4">
             <span class="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">Test 31 Verdict:</span>
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(31, 'pass')" id="btn-pass-31" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
+              <button onclick="copySingleTestReport(31, this)" id="copy-test-btn-31" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 31</button>
+            <button onclick="setVerdict(31, 'pass')" id="btn-pass-31" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
               <button onclick="setVerdict(31, 'fail')" id="btn-fail-31" title="Click to mark FAIL" class="btn-fail px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-rose-400 hover:bg-rose-950/30 transition cursor-pointer">FAIL</button>
               <button onclick="setVerdict(31, 'backlog')" id="btn-backlog-31" title="Click to mark BACKLOG" class="btn-backlog px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-amber-400 hover:bg-amber-950/30 transition cursor-pointer">BACKLOG</button>
               <button onclick="resetCardVerdict(31)" id="btn-reset-31" title="Clear verdict for Test 31 back to Pending" class="px-2.5 py-1.5 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 transition cursor-pointer">↺ Reset</button>
@@ -3396,7 +3402,8 @@
           <div class="flex items-center justify-between gap-3 p-3 bg-gray-900/40 rounded-xl border border-gray-800 mb-4">
             <span class="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">Test 32 Verdict:</span>
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(32, 'pass')" id="btn-pass-32" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
+              <button onclick="copySingleTestReport(32, this)" id="copy-test-btn-32" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 32</button>
+            <button onclick="setVerdict(32, 'pass')" id="btn-pass-32" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
               <button onclick="setVerdict(32, 'fail')" id="btn-fail-32" title="Click to mark FAIL" class="btn-fail px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-rose-400 hover:bg-rose-950/30 transition cursor-pointer">FAIL</button>
               <button onclick="setVerdict(32, 'backlog')" id="btn-backlog-32" title="Click to mark BACKLOG" class="btn-backlog px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-amber-400 hover:bg-amber-950/30 transition cursor-pointer">BACKLOG</button>
               <button onclick="resetCardVerdict(32)" id="btn-reset-32" title="Clear verdict for Test 32 back to Pending" class="px-2.5 py-1.5 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 transition cursor-pointer">↺ Reset</button>
@@ -3495,7 +3502,8 @@
           <div class="flex items-center justify-between gap-3 p-3 bg-gray-900/40 rounded-xl border border-gray-800 mb-4">
             <span class="text-xs font-mono text-gray-400 font-bold uppercase tracking-wider">Test 33 Verdict:</span>
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(33, 'pass')" id="btn-pass-33" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
+              <button onclick="copySingleTestReport(33, this)" id="copy-test-btn-33" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 33</button>
+            <button onclick="setVerdict(33, 'pass')" id="btn-pass-33" title="Click to mark PASS" class="btn-pass px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-emerald-400 hover:bg-emerald-950/30 transition cursor-pointer">PASS</button>
               <button onclick="setVerdict(33, 'fail')" id="btn-fail-33" title="Click to mark FAIL" class="btn-fail px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-rose-400 hover:bg-rose-950/30 transition cursor-pointer">FAIL</button>
               <button onclick="setVerdict(33, 'backlog')" id="btn-backlog-33" title="Click to mark BACKLOG" class="btn-backlog px-3.5 py-1.5 rounded-lg border border-gray-700 text-xs font-bold text-amber-400 hover:bg-amber-950/30 transition cursor-pointer">BACKLOG</button>
               <button onclick="resetCardVerdict(33)" id="btn-reset-33" title="Clear verdict for Test 33 back to Pending" class="px-2.5 py-1.5 rounded-lg border border-gray-800 text-[11px] font-mono text-gray-400 hover:text-gray-200 hover:bg-gray-800/80 transition cursor-pointer">↺ Reset</button>
@@ -4189,6 +4197,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-39" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-39" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-39" ondragover="event.preventDefault()" ondrop="handleDrop(event, 39)">
               <input type="file" id="file-input-39" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(39, f))" />
@@ -4287,21 +4299,27 @@
           </div>
 
           <!-- ZONE 5: LIVE EVIDENCE VAULT -->
-          <div class="border-t border-gray-800/80 pt-4 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-gray-400">Live Staging Verification Evidence (Screenshots / Console Traces)</span>
-              <span class="text-[10px] font-mono text-gray-500">Supports paste (Ctrl+V) &amp; drag-and-drop</span>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-3 border-t border-gray-800/60">
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Feedback / Narrative Notes</label>
+              <textarea id="notes-40" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-emerald-500" placeholder="Add verification notes for MW-114..."></textarea>
             </div>
-            <div class="flex items-center gap-2">
-              <input type="file" id="file-input-40" accept="image/*" class="hidden" onchange="handleFileInput(event, 40)">
-              <button onclick="document.getElementById('file-input-40').click()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-mono text-gray-300 border border-gray-700 transition cursor-pointer">
-                📷 Upload Screenshot
-              </button>
-              <button onclick="clearCardEvidence(40)" class="px-3 py-1.5 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-xs font-mono text-red-300 border border-red-800/50 transition cursor-pointer">
-                🗑️ Clear Evidence
-              </button>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Console / Network Error Log</label>
+              <textarea id="console-log-40" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste any console warnings or errors..."></textarea>
             </div>
-            <div id="image-gallery-40" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-40" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Screenshot / Visual Evidence (Drop or Ctrl+V)</label>
+              <div id="dropzone-40" ondragover="event.preventDefault()" ondrop="handleDrop(event, 40)" onclick="document.getElementById('file-40').click()" class="border border-dashed border-gray-700 hover:border-emerald-500/50 rounded-lg p-2 text-center cursor-pointer bg-gray-950/50 transition">
+                <input type="file" id="file-40" accept="image/*" multiple class="hidden" onchange="handleFileSelect(event, 40)" />
+                <span class="text-[11px] text-gray-400">Click, Drop, or Paste Image</span>
+                <div id="gallery-40" class="flex gap-2 mt-2 flex-wrap justify-center"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -4407,6 +4425,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-41" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-41" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-41" ondragover="event.preventDefault()" ondrop="handleDrop(event, 41)">
               <input type="file" id="file-input-41" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(41, f))" />
@@ -4518,6 +4540,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-42" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-42" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-42" ondragover="event.preventDefault()" ondrop="handleDrop(event, 42)">
               <input type="file" id="file-input-42" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(42, f))" />
@@ -4638,6 +4664,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-43" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-43" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-43" ondragover="event.preventDefault()" ondrop="handleDrop(event, 43)">
               <input type="file" id="file-input-43" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(43, f))" />
@@ -4755,6 +4785,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-44" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-44" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-44" ondragover="event.preventDefault()" ondrop="handleDrop(event, 44)">
               <input type="file" id="file-input-44" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(44, f))" />
@@ -4769,7 +4803,7 @@
         </div>
 
         <!-- CARD 45: FIRESIDE CHROMATIC LOCKSTEP & ZERO-TRUNCATION ERGONOMICS (OPTION A — MW-119) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-gray-800 shadow-xl transition-all" id="card-45" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-gray-800 shadow-xl transition-all" id="card-45" tabindex="0" onpaste="handleCardPaste(event, 45)" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -4848,7 +4882,8 @@
           <!-- ZONE 4: VERDICT CONTROLS -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(45, 'pass')" id="btn-pass-45" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+              <button onclick="copySingleTestReport(45, this)" id="copy-test-btn-45" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 45</button>
+            <button onclick="setVerdict(45, 'pass')" id="btn-pass-45" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
                 PASS
               </button>
               <button onclick="setVerdict(45, 'fail')" id="btn-fail-45" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
@@ -4874,6 +4909,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-45" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-45" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-45" ondragover="event.preventDefault()" ondrop="handleDrop(event, 45)">
               <input type="file" id="file-input-45" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(45, f))" />
@@ -4889,7 +4928,7 @@
 
       
         <!-- CARD 46: GLOBAL CURRICULUM BRIDGE & UNIVERSAL PART PARITY ENGINE (ARCH-MW-122) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-gray-800 shadow-xl transition-all" id="card-46" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-gray-800 shadow-xl transition-all" id="card-46" tabindex="0" onpaste="handleCardPaste(event, 46)" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -4960,7 +4999,8 @@
           <!-- ZONE 4: VERDICT CONTROLS -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(46, 'pass')" id="btn-pass-46" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+              <button onclick="copySingleTestReport(46, this)" id="copy-test-btn-46" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 46</button>
+            <button onclick="setVerdict(46, 'pass')" id="btn-pass-46" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
                 PASS
               </button>
               <button onclick="setVerdict(46, 'fail')" id="btn-fail-46" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
@@ -4986,6 +5026,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-46" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-46" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-46" ondragover="event.preventDefault()" ondrop="handleDrop(event, 46)">
               <input type="file" id="file-input-46" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(46, f))" />
@@ -4999,7 +5043,7 @@
           </div>
         
         <!-- CARD 47: FIRESIDE CURRICULUM JUMP MATRIX DRAWER (PARTS I–VI) (FEAT-MW-125 — BACKLOG / SIZING) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-gray-800 shadow-xl transition-all opacity-80" id="card-47" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-gray-800 shadow-xl transition-all opacity-80" id="card-47" tabindex="0" onpaste="handleCardPaste(event, 47)" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -5062,7 +5106,8 @@
           <!-- ZONE 4: VERDICT CONTROLS -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(47, 'pass')" id="btn-pass-47" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+              <button onclick="copySingleTestReport(47, this)" id="copy-test-btn-47" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 47</button>
+            <button onclick="setVerdict(47, 'pass')" id="btn-pass-47" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
                 PASS
               </button>
               <button onclick="setVerdict(47, 'fail')" id="btn-fail-47" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
@@ -5088,6 +5133,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-47" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-47" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-47" ondragover="event.preventDefault()" ondrop="handleDrop(event, 47)">
               <input type="file" id="file-input-47" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(47, f))" />
@@ -5102,7 +5151,7 @@
         </div>
 
         <!-- CARD 48: OPTION A — UNIFIED RESPONSIVE PRODUCTION BOARD & SSOT CURRICULUM BRIDGE (ARCH-MW-126) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-sky-500/50 shadow-xl transition-all" id="card-48" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-sky-500/50 shadow-xl transition-all" id="card-48" tabindex="0" onpaste="handleCardPaste(event, 48)" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -5199,7 +5248,8 @@
           <!-- ZONE 4: VERDICT CONTROLS -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(48, 'pass')" id="btn-pass-48" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+              <button onclick="copySingleTestReport(48, this)" id="copy-test-btn-48" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 48</button>
+            <button onclick="setVerdict(48, 'pass')" id="btn-pass-48" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
                 PASS
               </button>
               <button onclick="setVerdict(48, 'fail')" id="btn-fail-48" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
@@ -5225,6 +5275,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-48" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-48" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-48" ondragover="event.preventDefault()" ondrop="handleDrop(event, 48)">
               <input type="file" id="file-input-48" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(48, f))" />
@@ -5239,7 +5293,7 @@
         </div>
 
         <!-- CARD 49: UNIFIED MASTER CURRICULUM SSOT & ANTHOLOGY INTEGRATION (ARCH-MW-127) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-49" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-49" tabindex="0" onpaste="handleCardPaste(event, 49)" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -5357,7 +5411,8 @@
           <!-- ZONE 4: VERDICT CONTROLS -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(49, 'pass')" id="btn-pass-49" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+              <button onclick="copySingleTestReport(49, this)" id="copy-test-btn-49" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 49</button>
+            <button onclick="setVerdict(49, 'pass')" id="btn-pass-49" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
                 PASS
               </button>
               <button onclick="setVerdict(49, 'fail')" id="btn-fail-49" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
@@ -5383,6 +5438,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-49" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-49" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-49" ondragover="event.preventDefault()" ondrop="handleDrop(event, 49)">
               <input type="file" id="file-input-49" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(49, f))" />
@@ -5397,7 +5456,7 @@
         </div>
 
         <!-- CARD 50: FIRESIDE INSPIRATION DECK DECOUPLING & DEDICATED SENSORY SEEDS TRAY (UX-MW-131) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-50" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-50" tabindex="0" onpaste="handleCardPaste(event, 50)" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -5507,7 +5566,8 @@
           <!-- ZONE 4: VERDICT CONTROLS -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(50, 'pass')" id="btn-pass-50" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+              <button onclick="copySingleTestReport(50, this)" id="copy-test-btn-50" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 50</button>
+            <button onclick="setVerdict(50, 'pass')" id="btn-pass-50" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
                 PASS
               </button>
               <button onclick="setVerdict(50, 'fail')" id="btn-fail-50" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
@@ -5533,6 +5593,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-50" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-50" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-50" ondragover="event.preventDefault()" ondrop="handleDrop(event, 50)">
               <input type="file" id="file-input-50" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(50, f))" />
@@ -5547,7 +5611,7 @@
         </div>
 
         <!-- CARD 51: SHARED NARRATIVE PRIMITIVES & DUAL-SURFACE PARITY (ARCH-MW-132) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-sky-500/50 shadow-xl transition-all" id="card-51" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-sky-500/50 shadow-xl transition-all" id="card-51" tabindex="0" onpaste="handleCardPaste(event, 51)" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -5662,7 +5726,8 @@
           <!-- ZONE 4: VERDICT CONTROLS -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(51, 'pass')" id="btn-pass-51" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+              <button onclick="copySingleTestReport(51, this)" id="copy-test-btn-51" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 51</button>
+            <button onclick="setVerdict(51, 'pass')" id="btn-pass-51" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
                 PASS
               </button>
               <button onclick="setVerdict(51, 'fail')" id="btn-fail-51" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
@@ -5688,6 +5753,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-51" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-51" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-sky-500/50 transition dropzone" id="dropzone-51" ondragover="event.preventDefault()" ondrop="handleDrop(event, 51)">
               <input type="file" id="file-input-51" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(51, f))" />
@@ -5702,7 +5771,7 @@
         </div>
 
         <!-- CARD 52: STANDARD NARRATIVE INPUT SUITE, SCRIBE'S MARGIN, DIASPORA VOICE SHIELD & 120 WPM SCRIPT CADENCE (SPEC-MW-134) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-52" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-52" tabindex="0" onpaste="handleCardPaste(event, 52)" data-category="fireside">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -5821,7 +5890,8 @@
           <!-- ZONE 4: VERDICT CONTROLS -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-800/80 flex-wrap gap-2">
             <div class="flex items-center gap-2">
-              <button onclick="setVerdict(52, 'pass')" id="btn-pass-52" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
+              <button onclick="copySingleTestReport(52, this)" id="copy-test-btn-52" class="px-2.5 py-1.5 rounded-lg bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 transition cursor-pointer">📋 Copy Test 52</button>
+            <button onclick="setVerdict(52, 'pass')" id="btn-pass-52" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-emerald-300 border border-transparent transition cursor-pointer">
                 PASS
               </button>
               <button onclick="setVerdict(52, 'fail')" id="btn-fail-52" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 hover:text-rose-400 border border-transparent transition cursor-pointer">
@@ -5847,6 +5917,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-52" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace</label>
+              <textarea id="telemetry-52" oninput="saveState()" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+            </div>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-52" ondragover="event.preventDefault()" ondrop="handleDrop(event, 52)">
               <input type="file" id="file-input-52" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(52, f))" />
@@ -5861,7 +5935,7 @@
         </div>
 
         <!-- CARD 53: BIDIRECTIONAL CROSS-SURFACE SCRIPT SYNC & ZERO-LOSS AUTOSAVE (ARCH-MW-136) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-sky-500/50 shadow-xl transition-all" id="card-53" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-sky-500/50 shadow-xl transition-all" id="card-53" data-category="fireside" tabindex="0" onpaste="handleCardPaste(event, 53)">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -5884,6 +5958,9 @@
               </h3>
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <button onclick="copySingleTestReport(53, this)" id="copy-test-btn-53" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Test 53</span>
+              </button>
               <a
                 href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
                 target="_blank"
@@ -6179,6 +6256,10 @@
                 <textarea id="console-log-53" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
             </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace (if any)</label>
+              <textarea id="telemetry-53" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste localStorage telemetry vectors or trace logs..."></textarea>
+            </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-53" ondragover="event.preventDefault()" ondrop="handleDrop(event, 53)">
               <input type="file" id="file-input-53" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(53, f))" />
               <div onclick="document.getElementById('file-input-53').click()" class="space-y-1">
@@ -6192,7 +6273,7 @@
         </div>
 
         <!-- CARD 54: THE HEIRLOOM FOLIO NAVIGATION & TOKEN SYSTEM (ARCH-MW-139 / SPEC-MW-139) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-54" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-54" data-category="fireside" tabindex="0" onpaste="handleCardPaste(event, 54)">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -6215,6 +6296,9 @@
               </h3>
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <button onclick="copySingleTestReport(54, this)" id="copy-test-btn-54" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Test 54</span>
+              </button>
               <a
                 href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
                 target="_blank"
@@ -6395,6 +6479,10 @@
                 <textarea id="console-log-54" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
             </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace (if any)</label>
+              <textarea id="telemetry-54" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste localStorage telemetry vectors or trace logs..."></textarea>
+            </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-54" ondragover="event.preventDefault()" ondrop="handleDrop(event, 54)">
               <input type="file" id="file-input-54" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(54, f))" />
               <div onclick="document.getElementById('file-input-54').click()" class="space-y-1">
@@ -6409,7 +6497,7 @@
 
         
         <!-- CARD 55: PRIMARY CTA BEACON, CLEAN EDITORIAL RULE & SAVE-FIRST FOLIO RELOAD (UI-MW-141) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-55" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-55" data-category="fireside" tabindex="0" onpaste="handleCardPaste(event, 55)">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -6432,6 +6520,9 @@
               </h3>
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <button onclick="copySingleTestReport(55, this)" id="copy-test-btn-55" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Test 55</span>
+              </button>
               <a
                 href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2"
                 target="_blank"
@@ -6668,6 +6759,10 @@
                 <textarea id="console-log-55" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
             </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace (if any)</label>
+              <textarea id="telemetry-55" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste localStorage telemetry vectors or trace logs..."></textarea>
+            </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-55" ondragover="event.preventDefault()" ondrop="handleDrop(event, 55)">
               <input type="file" id="file-input-55" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(55, f))" />
               <div onclick="document.getElementById('file-input-55').click()" class="space-y-1">
@@ -6681,7 +6776,7 @@
         </div>
 
         <!-- CARD 56: SCENE CORRELATION & RESTORED MASTER REEL VERIFICATION (BUG-MW-143) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-56" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-56" data-category="fireside" tabindex="0" onpaste="handleCardPaste(event, 56)">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -6696,7 +6791,7 @@
                   BUG-MW-143 &bull; ZERO DATA LOSS &bull; CANONICAL METADATA
                 </span>
                 <span id="item-progress-badge-56" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700">
-                  0/4 ITEMS EVALUATED
+                  0/5 ITEMS EVALUATED
                 </span>
               </div>
               <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
@@ -6704,6 +6799,9 @@
               </h3>
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <button onclick="copySingleTestReport(56, this)" id="copy-test-btn-56" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Test 56</span>
+              </button>
               <a
                 href="https://dev.memoryweaver.studio/studio"
                 target="_blank"
@@ -6987,6 +7085,44 @@
                 </div>
               </div>
             </div>
+
+            <!-- ITEM 56.5 -->
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-amber-500/40 hover:border-amber-400 transition">
+              <div class="mb-3 p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-amber-300">
+                  <span class="text-base">📋</span> QA CHECKLIST SELF-VERIFICATION (RULE 30.8 &amp; RULE 30.9): COPY REPORT &amp; EXPORT JSON PARITY
+                </div>
+                <div class="text-[11px] text-amber-100/90 mt-1 leading-relaxed space-y-1">
+                  <div><strong>Target Controls:</strong> Top HUD Bar buttons <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> and <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong>, plus inline <strong class="text-amber-300 font-bold">[ 💬 Feedback / 📸 ]</strong> drawers on sub-items.</div>
+                  <div><strong>Objective:</strong> Confirm that clicking <code>Pass</code> on sub-items (e.g. <code>58.1–58.5</code> and <code>56.1–56.5</code>) is immediately captured in both the clipboard Markdown report and the exported JSON file, and automatically promotes the parent card to <code>PASS</code> when all sub-items pass.</div>
+                </div>
+              </div>
+
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 56.5</span>
+                    <span class="text-xs font-bold text-white">Verify [ 📋 Copy Full Report for Agent ], [ 💾 Export JSON ] &amp; Automatic Parent Card Roll-Up (Rule 30.9)</span>
+                  </div>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_fc10d6e3_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(56, 5, 'pass', this)" id="btn-item-pass-56-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(56, 5, 'fail', this)" id="btn-item-fail-56-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
+                <span class="text-[11px] font-mono text-gray-500">Target: Interactive QA Checklist Self-Test (Rule 30.8 &amp; Rule 30.9)</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="copyMarkdownReport(this)" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[11px] font-mono font-bold text-amber-200 transition cursor-pointer">📋 Test Copy Full Report Now</button>
+                  <button type="button" onclick="exportJSON()" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-[11px] font-mono font-bold text-sky-200 transition cursor-pointer">💾 Test Export JSON Now</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- ZONE 4: VERDICT CONTROLS -->
@@ -7014,6 +7150,10 @@
                 <textarea id="console-log-56" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
             </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace (if any)</label>
+              <textarea id="telemetry-56" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste localStorage telemetry vectors or trace logs..."></textarea>
+            </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-56" ondragover="event.preventDefault()" ondrop="handleDrop(event, 56)">
               <input type="file" id="file-input-56" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(56, f))" />
               <div onclick="document.getElementById('file-input-56').click()" class="space-y-1">
@@ -7027,7 +7167,7 @@
         </div>
 
         <!-- CARD 57: DATA INTEGRITY DEFENCE SHIELD (TOOL-MW-145 / RFC-MW-144) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-57" data-category="fireside">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-57" data-category="fireside" tabindex="0" onpaste="handleCardPaste(event, 57)">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -7050,6 +7190,9 @@
               </h3>
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <button onclick="copySingleTestReport(57, this)" id="copy-test-btn-57" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Test 57</span>
+              </button>
               <a
                 href="https://dev.memoryweaver.studio/studio"
                 target="_blank"
@@ -7333,6 +7476,10 @@
                 <textarea id="console-log-57" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
             </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace (if any)</label>
+              <textarea id="telemetry-57" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste localStorage telemetry vectors or trace logs..."></textarea>
+            </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-57" ondragover="event.preventDefault()" ondrop="handleDrop(event, 57)">
               <input type="file" id="file-input-57" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(57, f))" />
               <div onclick="document.getElementById('file-input-57').click()" class="space-y-1">
@@ -7346,7 +7493,7 @@
         </div>
 
                 <!-- CARD 58: ACT III DUAL-MODE STAGE (UI-MW-148) -->
-        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-58" data-category="production">
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-58" data-category="production" tabindex="0" onpaste="handleCardPaste(event, 58)">
           <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
           <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
             <div class="space-y-1">
@@ -7360,8 +7507,8 @@
                 <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/10 text-sky-300 border border-sky-500/30">
                   UI-MW-148 &amp; FEAT-MW-159 &bull; DUAL-MODE STAGE &amp; USB HARDWARE
                 </span>
-                <span id="item-progress-badge-58" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700">
-                  0/5 ITEMS EVALUATED
+                <span id="item-progress-badge-58" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse">
+                  ALL 5/5 ITEMS PASSED
                 </span>
               </div>
               <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
@@ -7369,6 +7516,9 @@
               </h3>
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <button onclick="copySingleTestReport(58, this)" id="copy-test-btn-58" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Test 58</span>
+              </button>
               <a
                 href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1"
                 target="_blank"
@@ -7436,7 +7586,7 @@
             </div>
 
             <div class="text-[11px] text-gray-500 break-all space-y-0.5 pt-1 border-t border-gray-800">
-              <div>Live Edge Commit: <span class="text-emerald-400 font-bold">1cde9d3</span> (Rollout Verified via /api/version)</div>
+              <div>Live Edge Commit: <span class="text-emerald-400 font-bold">fc10d6e</span> (Rollout Verified via /api/version)</div>
               <div>Vitest Regression Suite: <code class="text-gray-300">npx vitest run src/test/act3_dual_mode_stage.test.tsx src/test/useCamera.usb.test.tsx</code> (33/33 passing)</div>
             </div>
           </div>
@@ -7511,7 +7661,7 @@
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button onclick="setItemVerdict(58, 1, 'pass', this)" id="btn-item-pass-58-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(58, 1, 'pass', this)" id="btn-item-pass-58-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer active !bg-emerald-500 !text-white !border-emerald-500 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
                   <button onclick="setItemVerdict(58, 1, 'fail', this)" id="btn-item-fail-58-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
@@ -7589,7 +7739,7 @@
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button onclick="setItemVerdict(58, 2, 'pass', this)" id="btn-item-pass-58-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(58, 2, 'pass', this)" id="btn-item-pass-58-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer active !bg-emerald-500 !text-white !border-emerald-500 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
                   <button onclick="setItemVerdict(58, 2, 'fail', this)" id="btn-item-fail-58-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
@@ -7657,7 +7807,7 @@
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button onclick="setItemVerdict(58, 3, 'pass', this)" id="btn-item-pass-58-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(58, 3, 'pass', this)" id="btn-item-pass-58-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer active !bg-emerald-500 !text-white !border-emerald-500 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
                   <button onclick="setItemVerdict(58, 3, 'fail', this)" id="btn-item-fail-58-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
@@ -7718,10 +7868,11 @@
                     <li>Select the external USB camera and external USB microphone from the dropdowns; confirm the live video preview switches cleanly without <code class="text-gray-200">NotReadableError</code> (Guard 1 track teardown) and the green <code class="text-emerald-300">Live levels</code> audio meter responds to your voice on the USB mic with <code class="text-gray-200">autoGainControl: false</code> protection (Guard 2).</li>
                     <li>Verify the top-left HUD pill (<code class="text-emerald-300">● INPUT: ...</code>) dynamically displays the active USB camera's hardware name and negotiated resolution (<code class="text-gray-200">4K</code> / <code class="text-gray-200">1080P</code> / <code class="text-gray-200">720P</code> via <code class="text-gray-200">track.getSettings()</code>, Guard 3), and clicking <strong class="text-white">[ 🔄 Switch Camera Feed ]</strong> cycles across all connected cameras by <code class="text-gray-200">deviceId</code>.</li>
                     <li>Hot-unplug or refresh the page and confirm the studio automatically remembers your preferred USB devices via <code class="text-gray-200">localStorage</code> (<code class="text-gray-200">mw_preferred_video_device_id</code> / <code class="text-gray-200">mw_preferred_audio_device_id</code>) and falls back gracefully if unplugged (Guard 4).</li>
+                    <li><strong>Punch-List 58.1 — Acoustics Check Virtual Alias Deduplication &amp; USB Hex Label Sanitizer (Trace <code class="text-sky-300">mw_telemetry_9lucngsqut</code>):</strong> Confirm Windows virtual OS aliases (<code class="text-gray-200">Default - ...</code> and <code class="text-gray-200">Communications - ...</code>) are deduplicated so each physical microphone (e.g. <strong class="text-white">DJI Microphone (Wireless Microphone RX)</strong>, <strong class="text-white">Microphone (AnkerWork C310 Webcam)</strong>, <strong class="text-white">Microphone (Realtek(R) Audio)</strong>) appears only once, raw USB VID:PID hex strings (<code class="text-gray-200">(291a:3367)</code>, <code class="text-gray-200">(2ca3:b00d)</code>) are stripped, and integrated audio (<code class="text-gray-200">Realtek(R) Audio</code>) is accurately tagged <code class="text-emerald-300">(Built-In)</code> rather than <code class="text-rose-300">(USB / External)</code>.</li>
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button onclick="setItemVerdict(58, 4, 'pass', this)" id="btn-item-pass-58-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(58, 4, 'pass', this)" id="btn-item-pass-58-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer active !bg-emerald-500 !text-white !border-emerald-500 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
                   <button onclick="setItemVerdict(58, 4, 'fail', this)" id="btn-item-fail-58-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
@@ -7756,7 +7907,7 @@
                   </ul>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <button onclick="setItemVerdict(58, 5, 'pass', this)" id="btn-item-pass-58-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(58, 5, 'pass', this)" id="btn-item-pass-58-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer active !bg-emerald-500 !text-white !border-emerald-500 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
                   <button onclick="setItemVerdict(58, 5, 'fail', this)" id="btn-item-fail-58-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
@@ -7791,6 +7942,10 @@
                 <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
                 <textarea id="console-log-58" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
               </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace (if any)</label>
+              <textarea id="telemetry-58" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste localStorage telemetry vectors or trace logs..."></textarea>
             </div>
             <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-58" ondragover="event.preventDefault()" ondrop="handleDrop(event, 58)">
               <input type="file" id="file-input-58" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(58, f))" />
@@ -7915,7 +8070,7 @@
       "[studio/production] UI-MW-148 & FEAT-MW-159: Act III Dual-Mode Stage & Native USB Camera/Mic Discovery"
     ];
 
-    let verdicts = {
+    const DEFAULT_CARD_VERDICTS = {
       1: { verdict: 'pass', timestamp: new Date().toISOString() },
       2: { verdict: 'pass', timestamp: new Date().toISOString() },
       3: { verdict: 'pass', timestamp: new Date().toISOString() },
@@ -7925,14 +8080,52 @@
       7: { verdict: 'pass', timestamp: new Date().toISOString() },
       8: { verdict: 'pass', timestamp: new Date().toISOString() },
       9: { verdict: 'pass', timestamp: new Date().toISOString() },
-      10: { verdict: 'pass', timestamp: new Date().toISOString() }
+      10: { verdict: 'pass', timestamp: new Date().toISOString() },
+      57: { verdict: 'pass', timestamp: new Date().toISOString() },
+      58: { verdict: 'pass', timestamp: new Date().toISOString() }
     };
+    let verdicts = { ...DEFAULT_CARD_VERDICTS };
+
+    function normalizeVerdictEntry(entry) {
+      if (!entry) return null;
+      if (typeof entry === 'string') {
+        return { verdict: entry.trim().toLowerCase(), timestamp: new Date().toISOString() };
+      }
+      if (typeof entry === 'object' && typeof entry.verdict === 'string') {
+        return { verdict: entry.verdict.trim().toLowerCase(), timestamp: entry.timestamp || new Date().toISOString() };
+      }
+      return null;
+    }
+
+    function normalizeVerdictsMap(map) {
+      const clean = {};
+      if (!map || typeof map !== 'object') return clean;
+      Object.keys(map).forEach(k => {
+        const norm = normalizeVerdictEntry(map[k]);
+        if (norm) clean[k] = norm;
+      });
+      return clean;
+    }
+
+    function getVerdictCode(cardNum) {
+      const norm = normalizeVerdictEntry(verdicts[cardNum]);
+      return norm ? norm.verdict : 'pending';
+    }
+
     let images = {};
     for (let i = 1; i <= TOTAL; i++) {
       images[i] = [];
     }
 
     let punchLists = {
+      58: [
+        {
+          id: 'pl-58-1',
+          text: 'Punch-List 58.1 — Acoustics Check Virtual Alias Deduplication & USB VID:PID Label Sanitizer (Trace mw_telemetry_9lucngsqut): Windows Default/Communications duplicate aliases removed, (291a:3367)/(2ca3:b00d) hex codes stripped, and Realtek(R) Audio classified as (Built-In).',
+          url: 'https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=3',
+          checked: false
+        }
+      ],
       49: [
         {
           id: 'pl-49-1',
@@ -7944,7 +8137,7 @@
     };
 
     function isActionable(cardNum) {
-      return !verdicts[cardNum] || verdicts[cardNum].verdict !== 'pass';
+      return getVerdictCode(cardNum) !== 'pass';
     }
 
     function insertCardInCanonicalOrder(card, cardNum) {
@@ -8057,6 +8250,7 @@
         }
       }
 
+      initSubItemFeedbackDrawers();
       loadState();
       renderDeckAndArchive();
       updateTally();
@@ -8254,9 +8448,13 @@
       }, 2500);
     }
 
+    function setCardVerdict(cardNum, verdict) {
+      return setVerdict(cardNum, verdict);
+    }
+
     function setVerdict(cardNum, verdict) {
       // Toggle OFF if already active (unclick support)
-      if (verdicts[cardNum] && verdicts[cardNum].verdict === verdict) {
+      if (getVerdictCode(cardNum) === verdict) {
         resetCardVerdict(cardNum);
         return;
       }
@@ -8268,6 +8466,15 @@
       saveState();
       updateTally();
       renderDeckAndArchive();
+      if (verdict === 'fail') {
+        const notesEl = document.getElementById(`notes-${cardNum}`);
+        if (notesEl) {
+          notesEl.focus();
+          if (typeof notesEl.scrollIntoView === 'function') {
+            notesEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }
       showToast(`Test ${cardNum} marked ${verdict.toUpperCase()} (Click again to unclick)`);
     }
 
@@ -8299,19 +8506,25 @@
       showToast(`Test ${cardNum} verdict cleared (Pending)`);
     }
 
-    let itemVerdicts = {
+    const DEFAULT_ITEM_VERDICTS = {
       '57_1': 'pass',
       '57_2': 'pass',
       '57_3': 'pass',
       '57_4': 'pass',
-      '57_5': 'pass'
+      '57_5': 'pass',
+      '58_1': 'pass',
+      '58_2': 'pass',
+      '58_3': 'pass',
+      '58_4': 'pass',
+      '58_5': 'pass'
     };
+    let itemVerdicts = { ...DEFAULT_ITEM_VERDICTS };
 
     const CARD_ITEM_COUNTS = {
       53: 10,
       54: 5,
       55: 5,
-      56: 4,
+      56: 5,
       57: 5,
       58: 5
     };
@@ -8331,6 +8544,15 @@
         if (passed === total) {
           badge.textContent = `ALL ${total}/${total} ITEMS PASSED`;
           badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse';
+          if (getVerdictCode(cardNum) !== 'pass') {
+            verdicts[cardNum] = { verdict: 'pass', timestamp: new Date().toISOString() };
+            ['pass', 'fail', 'retest', 'pending'].forEach(v => {
+              document.getElementById(`btn-${v}-${cardNum}`)?.classList.remove('active');
+            });
+            document.getElementById(`btn-pass-${cardNum}`)?.classList.add('active');
+            updateTally();
+            renderDeckAndArchive();
+          }
         } else if (failed > 0) {
           badge.textContent = `${passed}/${total} PASSED (${failed} FAILED)`;
           badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-300 border border-rose-500/30';
@@ -8342,6 +8564,183 @@
           badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700';
         }
       }
+    }
+
+    let itemNotes = {};
+    let itemConsoleLogs = {};
+    let itemTelemetry = {};
+    let itemImages = {};
+
+    function toggleItemFeedbackDrawer(cardNum, itemNum, forceOpen = false) {
+      const drawer = document.getElementById(`item-feedback-drawer-${cardNum}-${itemNum}`);
+      if (!drawer) return;
+      if (forceOpen) {
+        drawer.classList.remove('hidden');
+      } else {
+        drawer.classList.toggle('hidden');
+      }
+      if (!drawer.classList.contains('hidden')) {
+        const notesInput = document.getElementById(`item-notes-${cardNum}-${itemNum}`);
+        if (notesInput) notesInput.focus();
+      }
+    }
+
+    function addItemImage(cardNum, itemNum, file) {
+      if (!file) return;
+      const key = `${cardNum}_${itemNum}`;
+      if (!itemImages[key]) itemImages[key] = [];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        itemImages[key].push(e.target.result);
+        renderItemGallery(cardNum, itemNum);
+        saveState();
+        showToast(`Screenshot attached to Item ${cardNum}.${itemNum}`);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeItemImage(cardNum, itemNum, idx) {
+      const key = `${cardNum}_${itemNum}`;
+      if (!itemImages[key]) return;
+      itemImages[key].splice(idx, 1);
+      renderItemGallery(cardNum, itemNum);
+      saveState();
+    }
+
+    function handleItemDrop(event, cardNum, itemNum) {
+      event.preventDefault();
+      event.stopPropagation();
+      document.getElementById(`item-dropzone-${cardNum}-${itemNum}`)?.classList.remove('dropzone-active');
+      const files = Array.from(event.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      files.forEach(f => addItemImage(cardNum, itemNum, f));
+    }
+
+    function handleItemPaste(event, cardNum, itemNum) {
+      const items = Array.from(event.clipboardData?.items || []);
+      const imageItems = items.filter(item => item.type.startsWith('image/'));
+      if (imageItems.length > 0) {
+        event.stopPropagation();
+        toggleItemFeedbackDrawer(cardNum, itemNum, true);
+        imageItems.forEach(item => addItemImage(cardNum, itemNum, item.getAsFile()));
+      }
+    }
+
+    function renderItemGallery(cardNum, itemNum) {
+      const key = `${cardNum}_${itemNum}`;
+      const list = itemImages[key] || [];
+      const gallery = document.getElementById(`item-gallery-${cardNum}-${itemNum}`);
+      const countEl = document.getElementById(`item-img-count-${cardNum}-${itemNum}`);
+      const btnBadge = document.getElementById(`btn-item-fb-badge-${cardNum}-${itemNum}`);
+      if (gallery) {
+        gallery.innerHTML = '';
+        list.forEach((url, idx) => {
+          const div = document.createElement('div');
+          div.className = 'relative group rounded-lg overflow-hidden border border-gray-700 aspect-video bg-black';
+          div.innerHTML = `
+            <img src="${url}" class="w-full h-full object-cover" />
+            <button onclick="removeItemImage(${cardNum}, ${itemNum}, ${idx})" class="absolute top-1 right-1 bg-red-600/80 hover:bg-red-600 text-white rounded px-1 text-[10px] opacity-0 group-hover:opacity-100 transition cursor-pointer">✕</button>
+          `;
+          gallery.appendChild(div);
+        });
+      }
+      if (countEl) {
+        countEl.textContent = `${list.length} screenshot${list.length === 1 ? '' : 's'} attached`;
+      }
+      if (btnBadge) {
+        const hasData = list.length > 0 || (itemNotes[key] && itemNotes[key].trim()) || (itemConsoleLogs[key] && itemConsoleLogs[key].trim()) || (itemTelemetry[key] && itemTelemetry[key].trim());
+        btnBadge.textContent = hasData ? `💬 Feedback (${list.length}📸)` : '💬 Feedback / 📸';
+      }
+    }
+
+    function syncItemInputsToState(cardNum, itemNum) {
+      const key = `${cardNum}_${itemNum}`;
+      itemNotes[key] = document.getElementById(`item-notes-${cardNum}-${itemNum}`)?.value || '';
+      itemConsoleLogs[key] = document.getElementById(`item-console-${cardNum}-${itemNum}`)?.value || '';
+      itemTelemetry[key] = document.getElementById(`item-telemetry-${cardNum}-${itemNum}`)?.value || '';
+      renderItemGallery(cardNum, itemNum);
+      saveState();
+    }
+
+    function copySingleItemReport(cardNum, itemNum, btn) {
+      const key = `${cardNum}_${itemNum}`;
+      const verdict = (itemVerdicts[key] || 'PENDING').toUpperCase();
+      const note = document.getElementById(`item-notes-${cardNum}-${itemNum}`)?.value.trim() || itemNotes[key] || 'None provided';
+      const consoleLog = document.getElementById(`item-console-${cardNum}-${itemNum}`)?.value.trim() || itemConsoleLogs[key] || 'None provided';
+      const telemetry = document.getElementById(`item-telemetry-${cardNum}-${itemNum}`)?.value.trim() || itemTelemetry[key] || 'None provided';
+      const shots = (itemImages[key] || []).length;
+      const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'fc10d6e';
+      const report = `### [Item ${cardNum}.${itemNum} — Card ${cardNum}]
+- Active Edge SHA: ${edgeSha}
+- Verdict: ${verdict}
+- Feedback / Question: ${note}
+- Console Error Log: ${consoleLog}
+- Telemetry Event Trace: ${telemetry}
+- Screenshots Attached: ${shots}`;
+      copyTextToClipboard(report, btn);
+    }
+
+    function initSubItemFeedbackDrawers() {
+      const passBtns = document.querySelectorAll('[id^="btn-item-pass-"]');
+      passBtns.forEach(passBtn => {
+        const parts = passBtn.id.replace('btn-item-pass-', '').split('-');
+        const cardNum = parseInt(parts[0], 10);
+        const itemNum = parseInt(parts[1], 10);
+        if (isNaN(cardNum) || isNaN(itemNum)) return;
+        const btnContainer = passBtn.parentElement;
+        const itemCard = passBtn.closest('div.p-4, div.p-3');
+        if (!btnContainer || !itemCard) return;
+
+        itemCard.setAttribute('tabindex', '0');
+        itemCard.setAttribute('onpaste', `handleItemPaste(event, ${cardNum}, ${itemNum})`);
+
+        if (!document.getElementById(`btn-item-feedback-${cardNum}-${itemNum}`)) {
+          const fbBtn = document.createElement('button');
+          fbBtn.id = `btn-item-feedback-${cardNum}-${itemNum}`;
+          fbBtn.type = 'button';
+          fbBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold border border-gray-700 bg-gray-800/80 text-amber-300 hover:border-amber-500/50 hover:text-amber-200 transition cursor-pointer';
+          fbBtn.title = 'Add feedback note, question, screenshot, console log, or telemetry for this item';
+          fbBtn.setAttribute('onclick', `toggleItemFeedbackDrawer(${cardNum}, ${itemNum})`);
+          fbBtn.innerHTML = `<span id="btn-item-fb-badge-${cardNum}-${itemNum}">💬 Feedback / 📸</span>`;
+          btnContainer.appendChild(fbBtn);
+        }
+
+        if (!document.getElementById(`item-feedback-drawer-${cardNum}-${itemNum}`)) {
+          const drawer = document.createElement('div');
+          drawer.id = `item-feedback-drawer-${cardNum}-${itemNum}`;
+          drawer.className = 'hidden mt-3 pt-3 border-t border-amber-500/30 bg-black/50 rounded-xl p-3 space-y-2.5';
+          drawer.innerHTML = `
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span class="text-[11px] font-mono font-bold text-amber-300 uppercase tracking-wider">🛠️ Item ${cardNum}.${itemNum} Feedback, Screenshot &amp; Telemetry Tray</span>
+              <button type="button" onclick="copySingleItemReport(${cardNum}, ${itemNum}, this)" id="copy-item-btn-${cardNum}-${itemNum}" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[11px] font-mono font-bold text-amber-200 transition cursor-pointer">
+                📋 Copy Item ${cardNum}.${itemNum} Report
+              </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+              <div>
+                <label class="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Narrative Feedback / Question</label>
+                <textarea id="item-notes-${cardNum}-${itemNum}" oninput="syncItemInputsToState(${cardNum}, ${itemNum})" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-gray-200 placeholder-gray-600 focus:border-amber-500 focus:outline-none" placeholder="Describe what failed, ask a question, or note observations for Item ${cardNum}.${itemNum}..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Console Error &amp; Network Log</label>
+                <textarea id="item-console-${cardNum}-${itemNum}" oninput="syncItemInputsToState(${cardNum}, ${itemNum})" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:border-rose-500 focus:outline-none" placeholder="Paste any console exceptions or errors..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Telemetry Event Trace</label>
+                <textarea id="item-telemetry-${cardNum}-${itemNum}" oninput="syncItemInputsToState(${cardNum}, ${itemNum})" rows="2" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:border-sky-500 focus:outline-none" placeholder="Paste telemetry trace or localStorage vector..."></textarea>
+              </div>
+            </div>
+            <div id="item-dropzone-${cardNum}-${itemNum}" ondragover="event.preventDefault(); this.classList.add('dropzone-active');" ondragleave="this.classList.remove('dropzone-active');" ondrop="handleItemDrop(event, ${cardNum}, ${itemNum})" class="p-2.5 bg-gray-900/50 rounded-xl border border-dashed border-gray-700 text-center cursor-pointer hover:border-amber-500/50 transition">
+              <input type="file" id="item-file-input-${cardNum}-${itemNum}" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addItemImage(${cardNum}, ${itemNum}, f))" />
+              <div onclick="document.getElementById('item-file-input-${cardNum}-${itemNum}').click()" class="flex items-center justify-center gap-2 text-xs text-gray-300">
+                <span>📸 Drag &amp; drop screenshot for Item ${cardNum}.${itemNum}, <span class="text-amber-400 underline font-medium">browse</span>, or press <strong>Ctrl+V</strong> on this item</span>
+                <span id="item-img-count-${cardNum}-${itemNum}" class="text-[10px] text-gray-400 font-mono">(0 screenshots attached)</span>
+              </div>
+            </div>
+            <div id="item-gallery-${cardNum}-${itemNum}" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+          `;
+          itemCard.appendChild(drawer);
+        }
+      });
     }
 
     function setItemVerdict(cardNum, itemNum, verdict, btn) {
@@ -8368,6 +8767,8 @@
         btn.classList.add('active', '!bg-emerald-500', '!text-white', '!border-emerald-500');
       } else {
         btn.classList.add('active', '!bg-rose-500', '!text-white', '!border-rose-500');
+        // Automatically open the inline Feedback / Screenshot / Telemetry drawer when an item fails!
+        toggleItemFeedbackDrawer(cardNum, itemNum, true);
       }
       updateItemProgress(cardNum);
       saveState();
@@ -8375,9 +8776,10 @@
     }
 
     function updateTally() {
-      const pass = Object.values(verdicts).filter(v => v.verdict === 'pass').length;
-      const fail = Object.values(verdicts).filter(v => v.verdict === 'fail').length;
-      const retest = Object.values(verdicts).filter(v => v.verdict === 'retest' || v.verdict === 'backlog').length;
+      const normList = Object.values(verdicts).map(normalizeVerdictEntry).filter(Boolean);
+      const pass = normList.filter(v => v.verdict === 'pass').length;
+      const fail = normList.filter(v => v.verdict === 'fail').length;
+      const retest = normList.filter(v => v.verdict === 'retest' || v.verdict === 'backlog').length;
       const evaluated = pass + fail + retest;
       const pending = TOTAL - evaluated;
 
@@ -8559,7 +8961,7 @@
     function getNotes(cardNum) { return document.getElementById(`notes-${cardNum}`)?.value.trim() || ''; }
     function getConsoleLog(cardNum) { return document.getElementById(`console-log-${cardNum}`)?.value.trim() || ''; }
     function getTelemetry(cardNum) { return document.getElementById(`telemetry-${cardNum}`)?.value.trim() || ''; }
-    function getVerdict(cardNum) { return verdicts[cardNum] ? verdicts[cardNum].verdict.toUpperCase() : 'PENDING'; }
+    function getVerdict(cardNum) { return getVerdictCode(cardNum).toUpperCase(); }
 
     function getPunchList(cardNum) { return punchLists[cardNum] || []; }
 
@@ -8737,14 +9139,15 @@
     }
 
     function generateMarkdownReport() {
-      const pass = Object.values(verdicts).filter(v => v.verdict === 'pass').length;
-      const fail = Object.values(verdicts).filter(v => v.verdict === 'fail').length;
-      const retest = Object.values(verdicts).filter(v => v.verdict === 'retest' || v.verdict === 'backlog').length;
+      const normList = Object.values(verdicts).map(normalizeVerdictEntry).filter(Boolean);
+      const pass = normList.filter(v => v.verdict === 'pass').length;
+      const fail = normList.filter(v => v.verdict === 'fail').length;
+      const retest = normList.filter(v => v.verdict === 'retest' || v.verdict === 'backlog').length;
       const pending = TOTAL - (pass + fail + retest);
 
-      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '08 Oct 2026, 16:36 BST';
-      const edgeDeploy = document.getElementById('header-edge-deploy-time')?.textContent || '08 Oct 2026, 16:29 BST';
-      const edgeSha = document.getElementById('header-edge-sha')?.textContent || '1b0029a';
+      const templateUpdated = document.getElementById('header-updated-time')?.textContent || '29 Oct 2026, 20:25 GMT';
+      const edgeDeploy = document.getElementById('header-edge-deploy-time')?.textContent || '29 Oct 2026, 16:50 GMT';
+      const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'fc10d6e';
       const nowFormatted = new Date().toLocaleString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -8755,7 +9158,7 @@
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 1b0029a7 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: fc10d6e3 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -8765,17 +9168,31 @@
         if (i === 7) {
           report += `\n## 🎬 Route Group 2: https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp\n`;
         } else if (i === 8) {
-          report += `\n## 📱 Route Group 3: https://dev.memoryweaver.studio/studio/fireside, Studio Elevation Ratchet (MW-88-T2) & Curriculum Sync (MW-88-T3 to T10, MW-100, MW-105-A, MW-106, MW-107, MW-108, MW-110, MW-111, MW-114, MW-115, OPS-116, MW-117 & MW-118)\n`;
+          report += `\n## 📱 Route Group 3: https://dev.memoryweaver.studio/studio/fireside, Studio Elevation Ratchet & Curriculum Sync (Cards 8–58)\n`;
+        }
+
+        let subItemsBlock = '';
+        if (CARD_ITEM_COUNTS[i]) {
+          subItemsBlock = `- Sub-Item Breakdown:\n`;
+          for (let sub = 1; sub <= CARD_ITEM_COUNTS[i]; sub++) {
+            const k = `${i}_${sub}`;
+            const iv = (itemVerdicts[k] || 'PENDING').toUpperCase();
+            const iNote = itemNotes[k] ? ` | Note: ${itemNotes[k]}` : '';
+            const iCon = itemConsoleLogs[k] ? ` | Console: ${itemConsoleLogs[k]}` : '';
+            const iTel = itemTelemetry[k] ? ` | Telemetry: ${itemTelemetry[k]}` : '';
+            const iShots = (itemImages[k] || []).length ? ` | Screenshots: ${itemImages[k].length}` : '';
+            subItemsBlock += `  - Item ${i}.${sub}: ${iv}${iNote}${iCon}${iTel}${iShots}\n`;
+          }
         }
 
         report += `
-### [Test ${i}: ${testTitles[i]}]
+### [Test ${i}: ${testTitles[i] || 'Card ' + i}]
 - Verdict: ${getVerdict(i)}
 - Console Error Log: ${getConsoleLog(i) || 'None provided'}
 - Telemetry Event Trace: ${getTelemetry(i) || 'None provided'}
 - Narrative Feedback / Notes: ${getNotes(i) || 'None provided'}
-- Screenshots in Vault: ${images[i].length}
-`;
+- Screenshots in Vault: ${(images[i] || []).length}
+${subItemsBlock}`;
         const plItems = punchLists[i] || [];
         if (plItems.length > 0) {
           report += `- In-Flight Punch-List Resolutions:\n`;
@@ -8806,13 +9223,26 @@
       if (plItems.length > 0) {
         plText = `\n- In-Flight Punch-List Resolutions:\n` + plItems.map(it => `  - [${it.checked ? 'x' : ' '}] ${it.text}`).join('\n');
       }
+      let subItemsText = '';
+      if (CARD_ITEM_COUNTS[cardNum]) {
+        subItemsText = '\n- Sub-Item Breakdown:';
+        for (let i = 1; i <= CARD_ITEM_COUNTS[cardNum]; i++) {
+          const k = `${cardNum}_${i}`;
+          const iv = (itemVerdicts[k] || 'PENDING').toUpperCase();
+          const iNote = itemNotes[k] ? ` | Note: ${itemNotes[k]}` : '';
+          const iCon = itemConsoleLogs[k] ? ` | Console: ${itemConsoleLogs[k]}` : '';
+          const iTel = itemTelemetry[k] ? ` | Telemetry: ${itemTelemetry[k]}` : '';
+          const iShots = (itemImages[k] || []).length ? ` | Screenshots: ${itemImages[k].length}` : '';
+          subItemsText += `\n  - Item ${cardNum}.${i}: ${iv}${iNote}${iCon}${iTel}${iShots}`;
+        }
+      }
       const report = `### [Test ${cardNum}: ${testTitles[cardNum]}]
 - Audit: Exported at ${nowFormatted} | Checklist Version: ${templateUpdated} | Active SHA: ${edgeSha}
 - Verdict: ${getVerdict(cardNum)}
 - Console Error Log: ${getConsoleLog(cardNum) || 'None provided'}
 - Telemetry Trace: ${getTelemetry(cardNum) || 'None provided'}
 - Narrative Feedback / Notes: ${getNotes(cardNum) || 'None provided'}
-- Screenshots: ${images[cardNum].length}${plText}`;
+- Screenshots: ${images[cardNum].length}${subItemsText}${plText}`;
       copyTextToClipboard(report, btn);
     }
 
@@ -8827,7 +9257,7 @@
       });
       const payload = {
         meta: {
-          commit: '1b0029a7',
+          commit: 'fc10d6e3',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -8837,6 +9267,10 @@
           totalTests: TOTAL
         },
         verdicts,
+        itemVerdicts,
+        itemNotes,
+        itemConsoleLogs,
+        itemTelemetry,
         notes: {},
         consoleLogs: {},
         telemetry: {},
@@ -8851,7 +9285,7 @@
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_1b0029a7_${Date.now()}.json`;
+      a.download = `qa_master_checklist_fc10d6e3_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }
@@ -8864,7 +9298,7 @@
         try {
           const payload = JSON.parse(e.target.result);
           if (payload.verdicts) {
-            verdicts = payload.verdicts;
+            verdicts = { ...DEFAULT_CARD_VERDICTS, ...normalizeVerdictsMap(payload.verdicts) };
             Object.keys(verdicts).forEach(k => {
               const cardNum = parseInt(k, 10);
               const v = verdicts[k].verdict;
@@ -8892,6 +9326,13 @@
               if (el) el.value = payload.telemetry[k];
             });
           }
+          if (payload.itemVerdicts) {
+            itemVerdicts = { ...DEFAULT_ITEM_VERDICTS, ...itemVerdicts, ...payload.itemVerdicts };
+            applyItemVerdictsToDOM();
+          }
+          if (payload.itemNotes) itemNotes = { ...itemNotes, ...payload.itemNotes };
+          if (payload.itemConsoleLogs) itemConsoleLogs = { ...itemConsoleLogs, ...payload.itemConsoleLogs };
+          if (payload.itemTelemetry) itemTelemetry = { ...itemTelemetry, ...payload.itemTelemetry };
           saveState();
           updateTally();
           renderDeckAndArchive();
@@ -8903,10 +9344,16 @@
       reader.readAsText(file);
     }
 
+    const UNIVERSAL_STORAGE_KEY = 'mw_qa_state_v1_latest';
+
     function saveState() {
       const state = {
         verdicts,
         itemVerdicts,
+        itemNotes,
+        itemConsoleLogs,
+        itemTelemetry,
+        itemImages,
         notes: {},
         consoleLogs: {},
         telemetry: {},
@@ -8918,81 +9365,129 @@
         state.consoleLogs[i] = getConsoleLog(i);
         state.telemetry[i] = getTelemetry(i);
       }
+      const serialized = JSON.stringify(state);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(STORAGE_KEY, serialized);
+        localStorage.setItem(UNIVERSAL_STORAGE_KEY, serialized);
       } catch(e) {
         console.warn('localStorage save failed (quota limit):', e);
       }
+      try {
+        // Also persist lightweight verdict & note state in window.name so reloads across file:// paths never drop PASS clicks
+        window.name = 'MW_QA_STATE:' + JSON.stringify({ verdicts, itemVerdicts, itemNotes, itemConsoleLogs, itemTelemetry, notes: state.notes, punchLists });
+      } catch(e) {}
+    }
+
+    function applyItemVerdictsToDOM() {
+      Object.keys(itemVerdicts).forEach(k => {
+        const v = itemVerdicts[k];
+        const [c, i] = k.split('_');
+        const btn = document.getElementById(`btn-item-${v}-${c}-${i}`);
+        if (btn) {
+          btn.classList.remove('text-gray-400', 'border-gray-800');
+          if (v === 'pass') {
+            btn.classList.add('active', '!bg-emerald-500', '!text-white', '!border-emerald-500');
+          } else {
+            btn.classList.add('active', '!bg-rose-500', '!text-white', '!border-rose-500');
+          }
+        }
+      });
+      Object.keys(CARD_ITEM_COUNTS).forEach(c => updateItemProgress(parseInt(c, 10)));
     }
 
     function loadState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const state = JSON.parse(raw);
-          if (state.verdicts) verdicts = state.verdicts;
-          if (state.itemVerdicts) {
-            itemVerdicts = state.itemVerdicts;
-            Object.keys(itemVerdicts).forEach(k => {
-              const v = itemVerdicts[k];
-              const [c, i] = k.split('_');
-              const btn = document.getElementById(`btn-item-${v}-${c}-${i}`);
-              if (btn) {
-                btn.classList.remove('text-gray-400', 'border-gray-800');
-                if (v === 'pass') {
-                  btn.classList.add('active', '!bg-emerald-500', '!text-white', '!border-emerald-500');
-                } else {
-                  btn.classList.add('active', '!bg-rose-500', '!text-white', '!border-rose-500');
-                }
-              }
-            });
-            updateItemProgress(53);
-            updateItemProgress(54);
-            updateItemProgress(55);
-            updateItemProgress(56);
-            updateItemProgress(57);
-            updateItemProgress(58);
-          } else {
-            updateItemProgress(53);
-            updateItemProgress(54);
-            updateItemProgress(55);
-            updateItemProgress(56);
-            updateItemProgress(57);
-            updateItemProgress(58);
+        const snapshots = [];
+        try {
+          if (window.name && window.name.startsWith('MW_QA_STATE:')) {
+            snapshots.push(JSON.parse(window.name.slice('MW_QA_STATE:'.length)));
           }
+        } catch(e) {}
+        try {
+          for (let idx = 0; idx < localStorage.length; idx++) {
+            const key = localStorage.key(idx);
+            if (key && (key.startsWith('MW_QA_') || key === UNIVERSAL_STORAGE_KEY)) {
+              const rawItem = localStorage.getItem(key);
+              if (rawItem) snapshots.push(JSON.parse(rawItem));
+            }
+          }
+          const primaryRaw = localStorage.getItem( UNIVERSAL_STORAGE_KEY ) || localStorage.getItem(STORAGE_KEY);
+          if (primaryRaw) snapshots.push(JSON.parse(primaryRaw));
+        } catch(e) {}
+
+        // Non-destructively union-merge defaults from HTML with all saved browser snapshots
+        snapshots.forEach(state => {
+          if (!state || typeof state !== 'object') return;
+          if (state.verdicts) {
+            verdicts = { ...DEFAULT_CARD_VERDICTS, ...verdicts, ...normalizeVerdictsMap(state.verdicts) };
+          }
+          if (state.itemVerdicts) {
+            itemVerdicts = { ...DEFAULT_ITEM_VERDICTS, ...itemVerdicts, ...state.itemVerdicts };
+          }
+          if (state.itemNotes) itemNotes = { ...itemNotes, ...state.itemNotes };
+          if (state.itemConsoleLogs) itemConsoleLogs = { ...itemConsoleLogs, ...state.itemConsoleLogs };
+          if (state.itemTelemetry) itemTelemetry = { ...itemTelemetry, ...state.itemTelemetry };
+          if (state.itemImages) itemImages = { ...itemImages, ...state.itemImages };
           if (state.punchLists) {
             punchLists = { ...punchLists, ...state.punchLists };
           }
           if (state.notes) {
             Object.keys(state.notes).forEach(k => {
               const el = document.getElementById(`notes-${k}`);
-              if (el) el.value = state.notes[k];
+              if (el && state.notes[k]) el.value = state.notes[k];
             });
           }
           if (state.consoleLogs) {
             Object.keys(state.consoleLogs).forEach(k => {
               const el = document.getElementById(`console-log-${k}`);
-              if (el) el.value = state.consoleLogs[k];
+              if (el && state.consoleLogs[k]) el.value = state.consoleLogs[k];
             });
           }
           if (state.telemetry) {
             Object.keys(state.telemetry).forEach(k => {
               const el = document.getElementById(`telemetry-${k}`);
-              if (el) el.value = state.telemetry[k];
+              if (el && state.telemetry[k]) el.value = state.telemetry[k];
             });
           }
           if (state.images) {
-            images = state.images;
-            for (let i = 1; i <= TOTAL; i++) {
-              if (!images[i]) images[i] = [];
-              renderGallery(i);
+            Object.keys(state.images).forEach(k => {
+              if (Array.isArray(state.images[k]) && state.images[k].length > 0) {
+                images[k] = state.images[k];
+              }
+            });
+          }
+        });
+
+        // Always ensure HTML-baked DEFAULT_ITEM_VERDICTS (e.g. '58_1': 'pass') are preserved
+        itemVerdicts = { ...DEFAULT_ITEM_VERDICTS, ...itemVerdicts };
+        applyItemVerdictsToDOM();
+        Object.keys(CARD_ITEM_COUNTS).forEach(c => {
+          const total = CARD_ITEM_COUNTS[c];
+          for (let i = 1; i <= total; i++) {
+            const key = `${c}_${i}`;
+            const nEl = document.getElementById(`item-notes-${c}-${i}`);
+            if (nEl && itemNotes[key]) nEl.value = itemNotes[key];
+            const cEl = document.getElementById(`item-console-${c}-${i}`);
+            if (cEl && itemConsoleLogs[key]) cEl.value = itemConsoleLogs[key];
+            const tEl = document.getElementById(`item-telemetry-${c}-${i}`);
+            if (tEl && itemTelemetry[key]) tEl.value = itemTelemetry[key];
+            renderItemGallery(c, i);
+            if (itemVerdicts[key] === 'fail' || itemNotes[key] || itemConsoleLogs[key] || itemTelemetry[key] || (itemImages[key] && itemImages[key].length > 0)) {
+              toggleItemFeedbackDrawer(c, i, true);
             }
           }
+        });
+
+        for (let i = 1; i <= TOTAL; i++) {
+          if (!images[i]) images[i] = [];
+          renderGallery(i);
         }
+
+        verdicts = { ...DEFAULT_CARD_VERDICTS, ...normalizeVerdictsMap(verdicts) };
         initPunchLists();
         Object.keys(verdicts).forEach(k => {
           const cardNum = parseInt(k, 10);
-          const v = verdicts[k].verdict;
+          const v = getVerdictCode(cardNum);
           ['pass', 'fail', 'retest', 'pending'].forEach(vt => {
             document.getElementById(`btn-${vt}-${cardNum}`)?.classList.remove('active');
           });
