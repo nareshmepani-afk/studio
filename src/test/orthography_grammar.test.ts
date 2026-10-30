@@ -427,10 +427,11 @@ describe('MW-108: Universal Orthography, Spell-Check & In-App Grammar Polish Sta
 
       await waitFor(() => {
         expect(checkSpy).toHaveBeenCalled();
+        const textarea = screen.getByTestId('HS_FIRESIDE_SCRIPT_TEXTAREA') as HTMLTextAreaElement;
+        expect(textarea.value).toBe('My childhood home was made of red brick and stood by the sea.');
       });
 
       const textarea = screen.getByTestId('HS_FIRESIDE_SCRIPT_TEXTAREA') as HTMLTextAreaElement;
-      expect(textarea.value).toBe('My childhood home was made of red brick and stood by the sea.');
 
       const revertBtn = screen.getByTestId('HS_FIRESIDE_SCRIPT_REVERT_BTN');
       expect(revertBtn).toBeTruthy();
