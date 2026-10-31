@@ -121,16 +121,16 @@ export const mockPromptGroups: PromptGroup[] = [
   {
     id: 'part-ii',
     title: {
-      en: 'Part II: Crossroads and Identity',
+      en: 'Part II: Formative Years & Early Echoes',
       gu: 'ભાગ II: આંતરછેદ અને ઓળખ',
     },
     prompts: [
       {
         id: 'p4',
-        title: 'Formative Friendships',
+        title: 'Early Mentors & Kinship',
         description: 'Key relationships that shaped your youth.',
         text: {
-          en: 'Formative Friendships – Key relationships that shaped your youth',
+          en: 'Early Mentors & Kinship – Key relationships that shaped your youth',
           gu: 'રચનાત્મક મિત્રતા – તમારા યુવાનીને આકાર આપનાર મુખ્ય સંબંધો',
         },
         sensoryPrompts: [
@@ -154,10 +154,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p5',
-        title: 'First Encounters with Hardship',
+        title: 'The First Hardships & The Shape of Loss',
         description: 'Processing early loss or significant challenges.',
         text: {
-          en: 'First Encounters with Hardship – Processing early loss or challenges',
+          en: 'The First Hardships & The Shape of Loss – Processing early loss or challenges',
           gu: 'મુશ્કેલી સાથે પ્રથમ મુલાકાત – પ્રારંભિક નુકસાન અથવા પડકારોની પ્રક્રિયા',
         },
         sensoryPrompts: [
@@ -181,10 +181,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p6',
-        title: 'Crossroads and Choices',
+        title: 'Crossroads of Youth',
         description: 'Identity formation and pivotal adolescent decisions.',
         text: {
-          en: 'Crossroads and Choices – Identity formation and pivotal decisions',
+          en: 'Crossroads of Youth – Identity formation and pivotal decisions',
           gu: 'આંતરછેદ અને પસંદગીઓ - ઓળખની રચના અને મુખ્ય નિર્ણયો',
         },
         sensoryPrompts: [
@@ -208,10 +208,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p7',
-        title: 'Learning the Hard Way',
+        title: 'Lessons Learned the Hard Way',
         description: 'Valuable lessons from mistakes and setbacks.',
         text: {
-          en: 'Learning the Hard Way – Lessons from mistakes and setbacks',
+          en: 'Lessons Learned the Hard Way – Lessons from mistakes and setbacks',
           gu: 'અઘરી રીતે શીખવું - ભૂલો અને આંચકામાંથી પાઠ',
         },
         sensoryPrompts: [

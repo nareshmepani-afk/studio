@@ -1994,11 +1994,35 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
     - Updated the top-left HUD pill (`INPUT: ...`) to display the active camera's hardware name and negotiated resolution dynamically.
   - **Automated Regression Shield (`C:\Users\home\studio\src\test\useCamera.usb.test.tsx`)**:
     - Authored 5 comprehensive unit tests verifying multi-device enumeration, Guard 1 track teardown ordering prior to stream re-acquisition, Guard 2 `autoGainControl: false` + `OverconstrainedError` fallback, Guard 3 height-to-resolution mapping + `switchCamera()` cycling, and Guard 4 `localStorage` persistence + `ondevicechange` hot-unplug fallback.
+---
+
+### [2026-10-31 12:25 UTC / 12:25 GMT] • Checkpoint #083 — 1:1 Desktop Studio & Fireside Curriculum Parity (Path A: Master Cinematic Curriculum) & Soundstage Telemetry Guards (FEAT-MW-160)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Gatekeeper**: Flagged Item 56.4 Part II taxonomy discrepancy between Fireside Mobile (`Crossroads and Identity` / `First Encounters with Hardship`) and Desktop Studio (`Formative Years & Early Echoes` / `The First Hardships & The Shape of Loss`). Selected Path A (Master Cinematic Curriculum) across both platforms.
+  - ⚡ **Chat 2 (The Flash Executor)**: Reconciled all 14 divergent `localizedTitles.en` and `FIRESIDE_PROMPT_SPARKS` titles in `src/lib/curriculum/masterStoryStructure.ts` and `src/lib/firesidePrompts.ts`, synchronised `mockData.ts`, updated test suites, and applied 3 surgical guards: (1) Acoustics Check >92% peak clipping indicator badge in `SoloStage.tsx`, (2) Top-left INPUT HUD pill max-width truncate and native title tooltip in `SoloStage.tsx`, and (3) Clean multi-line title wrapping in `SingleCardPromptCarousel.tsx`.
+- **Architectural & Governance Deliverables:**
+  - **14/14 Curriculum Taxonomy Unification (Path A)**:
+    - Unified Part I Scene 3 (`School Days & Early Wonder`), Part II Header (`Part II: Formative Years & Early Echoes`) & Scenes 1-4 (`Early Mentors & Kinship`, `The First Hardships & The Shape of Loss`, `Crossroads of Youth`, `Lessons Learned the Hard Way`), Part III Header (`Part III: Love, Partnership & Commitment`) & Scenes 3-4 (`Love, Partnership & Companionship`, `The Arrival of Children`), Part IV Header (`Part IV: Trials, Triumphs & Milestones`), Part V Header (`Part V: Wisdom, Hard-Won Truths & Values`), Part VI Header (`Part VI: The Continuing Story & Heirloom Legacy`) & Scenes 4-5 (`Words to Remember Me By`, `Time Travel: The Power of Looking Back`).
+  - **Three Surgical Hardware & UI Guards**:
+    1. **Acoustics Check Peak Clipping Badge (`SoloStage.tsx`)**: Live indicator badge flips to pulsing rose `[ Peak Clipping ]` when peak levels exceed 92%, with meter bar glowing rose/amber.
+    2. **Dynamic HUD Input Pill Protection (`SoloStage.tsx`)**: Responsive max-width truncate (`max-w-[280px] sm:max-w-[420px]`) prevents long hardware names from overflowing the soundstage header, with full name in native title tooltip.
+    3. **Fireside Mobile Title Wrapping (`SingleCardPromptCarousel.tsx`)**: Removed single-line `truncate` from headers, ensuring longer titles wrap gracefully across mobile viewports.
+  - **Regression Shield & Vitest Verifications**:
+    - Added Section 5 to `src/test/curriculum_ssot_arch_mw_127.test.ts` (15/15 passing).
+    - Verified `src/test/fireside_prompt_carousel.test.tsx` (24/24 passing), `src/test/fireside_booth_entry.test.tsx` (6/6 passing), and `src/test/qa_template.test.ts` (12/12 passing).
 - **Target Files Impacted:**
-  - `C:\Users\home\studio\src\hooks\useCamera.ts`
+  - `C:\Users\home\studio\src\lib\curriculum\masterStoryStructure.ts`
+  - `C:\Users\home\studio\src\lib\firesidePrompts.ts`
+  - `C:\Users\home\studio\src\lib\mockData.ts`
   - `C:\Users\home\studio\src\components\studio\SoloStage.tsx`
-  - `C:\Users\home\studio\src\test\useCamera.usb.test.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\test\curriculum_ssot_arch_mw_127.test.ts`
+  - `C:\Users\home\studio\src\test\fireside_prompt_carousel.test.tsx`
+  - `C:\Users\home\studio\src\test\fireside_booth_entry.test.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
   - `C:\Users\home\studio\MISSION_LOG.md`
+
 
 
 

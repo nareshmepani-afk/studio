@@ -154,7 +154,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 3,
         title: 'School Days & Early Wonder',
         localizedTitles: {
-          en: 'Innocence and Curiosity',
+          en: 'School Days & Early Wonder',
           gu: 'નિર્દોષતા અને જિજ્ઞાસા',
           pa: 'ਮਾਸੂਮੀਅਤ ਅਤੇ ਉਤਸੁਕਤਾ',
           hi: 'मासूमियत और जिज्ञासा',
@@ -206,7 +206,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     partNumber: 2,
     title: 'Part II: Formative Years & Early Echoes',
     localizedTitles: {
-      en: 'Part II: Crossroads and Identity',
+      en: 'Part II: Formative Years & Early Echoes',
       gu: 'ભાગ II: આંતરછેદ અને ઓળખ',
       pa: 'ਭਾਗ II: ਚੌਰਾਹੇ ਅਤੇ ਪਛਾਣ',
       hi: 'भाग II: मोड़ और पहचान',
@@ -221,7 +221,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 1,
         title: 'Early Mentors & Kinship',
         localizedTitles: {
-          en: 'Formative Friendships',
+          en: 'Early Mentors & Kinship',
           gu: 'રચનાત્મક મિત્રતા',
           pa: 'ਬਚਪਨ ਦੀ ਦੋਸਤੀ',
           hi: 'बचपन की दोस्ती',
@@ -244,7 +244,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 2,
         title: 'The First Hardships & The Shape of Loss',
         localizedTitles: {
-          en: 'First Encounters with Hardship',
+          en: 'The First Hardships & The Shape of Loss',
           gu: 'મુશ્કેલી સાથે પ્રથમ મુલાકાત',
           pa: 'ਮੁਸ਼ਕਿਲਾਂ ਨਾਲ ਪਹਿਲਾ ਸਾਹਮਣਾ',
           hi: 'मुश्किलों से पहला सामना',
@@ -267,7 +267,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 3,
         title: 'Crossroads of Youth',
         localizedTitles: {
-          en: 'Crossroads and Choices',
+          en: 'Crossroads of Youth',
           gu: 'આંતરછેદ અને પસંદગીઓ',
           pa: 'ਚੌਰਾਹੇ ਅਤੇ ਫੈસਲੇ',
           hi: 'मोड़ और फैसले',
@@ -290,7 +290,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 4,
         title: 'Lessons Learned the Hard Way',
         localizedTitles: {
-          en: 'Learning the Hard Way',
+          en: 'Lessons Learned the Hard Way',
           gu: 'અઘરી રીતે શીખવું',
           pa: 'ਮੁਸ਼ਕਿਲ ਰਾਹਾਂ ਤੋਂ ਸਿੱਖਿਆ',
           hi: 'कठिन राहों से सीख',
@@ -313,7 +313,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     partNumber: 3,
     title: 'Part III: Love, Partnership & Commitment',
     localizedTitles: {
-      en: 'Part III: Love and Commitment',
+      en: 'Part III: Love, Partnership & Commitment',
       gu: 'ભાગ III: પ્રેમ અને પ્રતિબદ્ધતા',
       pa: 'ਭਾਗ III: ਪਿਆਰ ਅਤੇ ਵਚਨਬੱਧਤਾ',
       hi: 'भाग III: प्रेम और प्रतिबद्धता',
@@ -374,7 +374,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 3,
         title: 'Love, Partnership & Companionship',
         localizedTitles: {
-          en: 'Falling in Love',
+          en: 'Love, Partnership & Companionship',
           gu: 'પ્રેમમાં પડવું',
           pa: 'ਪਿਆਰ ਵਿੱਚ ਪੈਣਾ',
           hi: 'प्यार में पड़ना',
@@ -397,7 +397,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 4,
         title: 'The Arrival of Children',
         localizedTitles: {
-          en: 'The Birth of Children',
+          en: 'The Arrival of Children',
           gu: 'બાળકોનો જન્મ',
           pa: 'ਬੱਚਿਆਂ ਦਾ ਜਨਮ',
           hi: 'बच्चों का जन्म',
@@ -420,7 +420,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     partNumber: 4,
     title: 'Part IV: Trials, Triumphs & Milestones',
     localizedTitles: {
-      en: 'Part IV: Trials and Resilience',
+      en: 'Part IV: Trials, Triumphs & Milestones',
       gu: 'ભાગ IV: પરીક્ષણો અને સ્થિતિસ્થાપકતા',
       pa: 'ਭਾਗ IV: ਇਮਤਿਹਾਨ ਅਤੇ ਹੌਸਲਾ',
       hi: 'भाग IV: परीक्षाएं और धैर्य',
@@ -527,7 +527,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     partNumber: 5,
     title: 'Part V: Wisdom, Hard-Won Truths & Values',
     localizedTitles: {
-      en: 'Part V: Wisdom and Reflection',
+      en: 'Part V: Wisdom, Hard-Won Truths & Values',
       gu: 'ભાગ V: જ્ઞાન અને પ્રતિબિંબ',
       pa: 'ਭਾਗ V: ਸਿਆਣਪ અને ਵਿਚਾਰ',
       hi: 'भाग V: ज्ञान और चिंतन',
@@ -634,7 +634,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
     partNumber: 6,
     title: 'Part VI: The Continuing Story & Heirloom Legacy',
     localizedTitles: {
-      en: 'Part VI: Legacy & Horizons',
+      en: 'Part VI: The Continuing Story & Heirloom Legacy',
       gu: 'ભાગ VI: વારસો અને ક્ષિતિજો',
       pa: 'ਭਾਗ VI: ਵਿਰਾਸਤ ਅਤੇ ਦਿਸਹੱਦੇ',
       hi: 'भाग VI: विरासत और क्षितिज',
@@ -718,7 +718,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 4,
         title: 'Words to Remember Me By',
         localizedTitles: {
-          en: 'The Story Continuing',
+          en: 'Words to Remember Me By',
           gu: 'વાર્તા ચાલુ છે',
           pa: 'ਚੱਲਦੀ ਕਹਾਣੀ',
           hi: 'चलती कहानी',
@@ -741,7 +741,7 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         sceneNumber: 5,
         title: 'Time Travel: The Power of Looking Back',
         localizedTitles: {
-          en: 'Time Travel',
+          en: 'Time Travel: The Power of Looking Back',
           gu: 'સમય પ્રવાસ',
           pa: 'ਸਮੇਂ ਦੀ ਯਾਤਰਾ',
           hi: 'समय की यात्रा',

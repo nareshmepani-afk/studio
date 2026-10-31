@@ -980,13 +980,13 @@ export function SingleCardPromptCarousel({
             >
               ‹
             </button>
-            <div className="flex flex-col items-center min-w-0 px-1">
-              <span className="text-sm sm:text-base font-serif text-white font-normal leading-tight truncate max-w-full">
+            <div className="flex flex-col items-center min-w-0 px-1 text-center max-w-full">
+              <span className="text-sm sm:text-base font-serif text-white font-normal leading-tight text-center break-words max-w-full">
                 {activePartHeading}
               </span>
               <span
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
-                className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
+                className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug text-center break-words max-w-full whitespace-normal"
               >
                 {activePartRoman} • Scene {activeSceneNumInPart} of {totalScenesInActivePart} • {primaryCardTitle}
               </span>
@@ -1323,9 +1323,9 @@ export function SingleCardPromptCarousel({
               <div className="mb-3">
                 <h3
                   data-testid="carousel-card-primary-title"
-                  className="text-base sm:text-lg font-semibold text-amber-400/95 tracking-wide flex items-center gap-2 leading-snug"
+                  className="text-base sm:text-lg font-semibold text-amber-400/95 tracking-wide leading-snug break-words whitespace-normal"
                 >
-                  <span>{primaryCardTitle}</span>
+                  <span className="break-words whitespace-normal">{primaryCardTitle}</span>
                 </h3>
                 {showSecondarySubtitle && secondaryCardTitle && secondaryCardTitle !== primaryCardTitle && (
                   <p

@@ -1933,7 +1933,7 @@ import { ChapterSpineRail, ChapterSpineScene } from '@/components/navigation/Cha
 const SPINE_SCENES: ChapterSpineScene[] = [
   { id: 'part-1-scene-1', index: 0, title: 'A Child of Two Worlds', partNumber: 1, partTitle: 'Part I: Roots and Foundations', hasCompletedReel: false, hasDraftProse: false, takesCount: 0 },
   { id: 'part-1-scene-2', index: 1, title: 'The House I Grew Up In', partNumber: 1, partTitle: 'Part I: Roots and Foundations', hasCompletedReel: true, hasDraftProse: true, takesCount: 2 },
-  { id: 'part-1-scene-3', index: 2, title: 'Innocence and Curiosity', partNumber: 1, partTitle: 'Part I: Roots and Foundations', hasCompletedReel: false, hasDraftProse: true, takesCount: 0 },
+  { id: 'part-1-scene-3', index: 2, title: 'School Days & Early Wonder', partNumber: 1, partTitle: 'Part I: Roots and Foundations', hasCompletedReel: false, hasDraftProse: true, takesCount: 0 },
 ];
 
 describe('Suite 12 � MW-100: ChapterSpineRail', () => {
@@ -2053,7 +2053,7 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     const testScenes = [
       { id: 'part-1-scene-1', index: 0, title: 'A Child of Two Worlds', partNumber: 1, partTitle: 'Part I', hasCompletedReel: true, hasDraftProse: true, takesCount: 1 },
       { id: 'part-1-scene-2', index: 1, title: 'The House I Grew Up In', partNumber: 1, partTitle: 'Part I', hasCompletedReel: false, hasDraftProse: true, takesCount: 0 },
-      { id: 'part-1-scene-3', index: 2, title: 'Innocence and Curiosity', partNumber: 1, partTitle: 'Part I', hasCompletedReel: false, hasDraftProse: false, takesCount: 0 },
+      { id: 'part-1-scene-3', index: 2, title: 'School Days & Early Wonder', partNumber: 1, partTitle: 'Part I', hasCompletedReel: false, hasDraftProse: false, takesCount: 0 },
     ];
     const { getByTestId, unmount } = render(
       React.createElement(ChapterSpineRail, {
@@ -2338,8 +2338,8 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_NEXT_SCENE'));
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II • Scene 1 of 4');
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toMatch(/Story \d+ of/);
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Formative Friendships');
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · Formative Friendships');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Early Mentors & Kinship');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · Early Mentors & Kinship');
 
     // Step forward 1 scene via Spine Rail Next Chevron (Part II - Scene 1 -> Part II - Scene 2)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
@@ -2347,30 +2347,30 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toMatch(/Story \d+ of/);
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('2 ·');
 
-    // MW-114: Step forward to Part II Scene 3 (Crossroads and Choices)
+    // MW-114: Step forward to Part II Scene 3 (Crossroads of Youth)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II • Scene 3 of 4');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Crossroads and Choices');
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('3 · Crossroads and Choices');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Crossroads of Youth');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('3 · Crossroads of Youth');
 
-    // MW-114: Step forward to Part II Scene 4 (Learning the Hard Way)
+    // MW-114: Step forward to Part II Scene 4 (Lessons Learned the Hard Way)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN'));
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part II • Scene 4 of 4');
-    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Learning the Hard Way');
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Learning the Hard Way');
+    expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Lessons Learned the Hard Way');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Lessons Learned the Hard Way');
 
     // Jump forward to Part III Scene 1 via Header Stepper
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_NEXT_SCENE'));
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part III • Scene 1 of 4');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('1 · Journeys Within and Without');
 
-    // Step to Part III Scene 3 (Falling in Love)
+    // Step to Part III Scene 3 (Love, Partnership & Companionship)
     fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN')); // Scene 2: Facing Reality
-    fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN')); // Scene 3: Falling in Love
+    fireEvent.click(getByTestId('HS_SPINE_NEXT_BTN')); // Scene 3: Love, Partnership & Companionship
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).toContain('Part III • Scene 3 of 4');
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toContain('Scene 1 of 1');
     expect(getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE').textContent).not.toMatch(/Story \d+ of/);
-    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('3 · Falling in Love');
+    expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('3 · Love, Partnership & Companionship');
 
     // Jump backward to Part I Scene 1 via Header Stepper
     fireEvent.click(getByTestId('HS_FIRESIDE_HEADER_PREV_SCENE')); // Part II
@@ -2395,7 +2395,7 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     const subtitle = getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE');
     expect(subtitle.textContent).toContain('Part VI • Scene 4 of 5');
     expect(subtitle.textContent).not.toMatch(/Story \d+ of/);
-    expect(subtitle.textContent).toContain('The Story Continuing');
+    expect(subtitle.textContent).toContain('Words to Remember Me By');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · Words to Remember Me By');
 
     // Verify card story progress pill also shows canonical Scene X of Total (5 in Part VI)

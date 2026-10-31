@@ -200,4 +200,40 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
       });
     });
   });
+
+  describe('5. Path A: Master Cinematic Curriculum & Fireside 1:1 Parity', () => {
+    it('guarantees 100% title parity between canonical part.title and localizedTitles.en across all 6 core parts', () => {
+      const coreParts = MASTER_STORY_STRUCTURE.filter((p) => !p.isAnthology && !p.isDemo);
+      expect(coreParts).toHaveLength(6);
+      coreParts.forEach((part) => {
+        expect(
+          part.localizedTitles?.en,
+          `Part ${part.partNumber} localizedTitles.en should match canonical title`
+        ).toBe(part.title);
+      });
+    });
+
+    it('guarantees 100% title parity between canonical scene.title, scene.localizedTitles.en, and FIRESIDE_PROMPT_SPARKS across all 25 core scenes', () => {
+      const coreParts = MASTER_STORY_STRUCTURE.filter((p) => !p.isAnthology && !p.isDemo);
+      coreParts.forEach((part) => {
+        part.scenes.forEach((scene) => {
+          expect(
+            scene.localizedTitles?.en,
+            `Scene ${scene.id} localizedTitles.en should match scene.title`
+          ).toBe(scene.title);
+
+          const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === scene.id);
+          expect(spark, `Missing prompt spark for ${scene.id}`).toBeDefined();
+          expect(
+            spark?.title,
+            `Spark title for ${scene.id} should match canonical scene.title`
+          ).toBe(scene.title);
+          expect(
+            spark?.localizedTitles?.en,
+            `Spark localizedTitles.en for ${scene.id} should match canonical scene.title`
+          ).toBe(scene.title);
+        });
+      });
+    });
+  });
 });

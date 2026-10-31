@@ -3769,17 +3769,33 @@ export default function SoloStage({
                               <span className="text-[8px] text-white/40 uppercase tracking-wider font-mono">Live levels:</span>
                               <div className="flex-grow bg-white/10 h-1.5 rounded-full overflow-hidden relative">
                                 <div 
-                                  className="bg-emerald-400 h-full rounded-full transition-all duration-75 shadow-[0_0_8px_rgba(52,211,153,0.6)]" 
-                                  style={{ width: `${volume}%` }} 
+                                  className={`h-full rounded-full transition-all duration-75 ${
+                                    volume > 92
+                                      ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]'
+                                      : volume > 75
+                                        ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                                        : 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
+                                  }`} 
+                                  style={{ width: `${Math.min(volume, 100)}%` }} 
                                 />
                               </div>
-                              <span className="text-[9px] font-mono font-bold text-emerald-400 shrink-0">{volume}%</span>
+                              <span className={`text-[9px] font-mono font-bold shrink-0 ${volume > 92 ? 'text-rose-400' : 'text-emerald-400'}`}>{volume}%</span>
                             </div>
                           </div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
-                          {volume > 5 ? 'Active' : 'Listening'}
-                        </span>
+                        {volume > 92 ? (
+                          <span 
+                            data-testid="tech-scout-clipping-badge"
+                            className="px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-[8px] font-black uppercase tracking-wider text-rose-300 animate-pulse shrink-0"
+                            title="Audio input peak level exceeds 92% - Reduce microphone gain to prevent clipping"
+                          >
+                            Peak Clipping
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
+                            {volume > 5 ? 'Active' : 'Listening'}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -4543,12 +4559,20 @@ export default function SoloStage({
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md h-[30px]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>
-                          INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : `${(activeCameraLabel || 'STUDIO WEBCAM').toUpperCase()} (${activeResolutionLabel || '720P'})`}
-                        </span>
-                      </div>
+                      {(() => {
+                        const inputLabel = `INPUT: ${activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : `${(activeCameraLabel || 'STUDIO WEBCAM').toUpperCase()} (${activeResolutionLabel || '720P'})`}`;
+                        return (
+                          <div 
+                            className="flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md h-[30px] max-w-[280px] sm:max-w-[420px]"
+                            title={inputLabel}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                            <span className="truncate">
+                              {inputLabel}
+                            </span>
+                          </div>
+                        );
+                      })()}
 
                       {/* Persistent Theater Mode Fullscreen Trigger */}
                       <button
