@@ -57,5 +57,10 @@ service cloud.firestore {
     match /gift_vouchers/{voucherCode} {
       allow read, write: if false;
     }
+
+    // QA Suite & Active Testing Deck (Native Cloud QA Suite / Admin QA)
+    match /qa_suites/{allPaths=**} {
+      allow read, write: if true;
+    }
   }
 }

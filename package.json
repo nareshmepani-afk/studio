@@ -20,6 +20,8 @@
     "validate": "npm run lint && npm run type-check && npm run test",
     "sync:vault-manifest": "node scripts/syncVaultManifest.mjs",
     "qa:sync": "tsx scripts/syncQADeck.ts",
+    "qa:status": "tsx scripts/read-qa-status.ts",
+    "qa:seed": "tsx scripts/seed-qa-firestore.ts",
     "prepare": "husky"
   },
   "dependencies": {
