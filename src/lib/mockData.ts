@@ -127,10 +127,10 @@ export const mockPromptGroups: PromptGroup[] = [
     prompts: [
       {
         id: 'p4',
-        title: 'Early Mentors & Kinship',
+        title: 'Echoes of a Brother, Sister or Friends',
         description: 'Key relationships that shaped your youth.',
         text: {
-          en: 'Early Mentors & Kinship – Key relationships that shaped your youth',
+          en: 'Echoes of a Brother, Sister or Friends – Key relationships that shaped your youth',
           gu: 'રચનાત્મક મિત્રતા – તમારા યુવાનીને આકાર આપનાર મુખ્ય સંબંધો',
         },
         sensoryPrompts: [
@@ -154,10 +154,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p5',
-        title: 'The First Hardships & The Shape of Loss',
+        title: 'The Shape of Loss',
         description: 'Processing early loss or significant challenges.',
         text: {
-          en: 'The First Hardships & The Shape of Loss – Processing early loss or challenges',
+          en: 'The Shape of Loss – Processing early loss or challenges',
           gu: 'મુશ્કેલી સાથે પ્રથમ મુલાકાત – પ્રારંભિક નુકસાન અથવા પડકારોની પ્રક્રિયા',
         },
         sensoryPrompts: [
@@ -181,10 +181,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p6',
-        title: 'Crossroads of Youth',
+        title: 'Crossroads and Choices',
         description: 'Identity formation and pivotal adolescent decisions.',
         text: {
-          en: 'Crossroads of Youth – Identity formation and pivotal decisions',
+          en: 'Crossroads and Choices – Identity formation and pivotal decisions',
           gu: 'આંતરછેદ અને પસંદગીઓ - ઓળખની રચના અને મુખ્ય નિર્ણયો',
         },
         sensoryPrompts: [
@@ -208,10 +208,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p7',
-        title: 'Lessons Learned the Hard Way',
+        title: 'Learning the Hard Way',
         description: 'Valuable lessons from mistakes and setbacks.',
         text: {
-          en: 'Lessons Learned the Hard Way – Lessons from mistakes and setbacks',
+          en: 'Learning the Hard Way – Lessons from mistakes and setbacks',
           gu: 'અઘરી રીતે શીખવું - ભૂલો અને આંચકામાંથી પાઠ',
         },
         sensoryPrompts: [
@@ -271,10 +271,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p9',
-        title: 'Facing Reality',
+        title: 'A Person Becoming',
         description: 'The transition to full adulthood and independence.',
         text: {
-          en: 'Facing Reality – Transition to adulthood and independence',
+          en: 'A Person Becoming – Transition to adulthood and independence',
           gu: 'વાસ્તવિકતાનો સામનો કરવો – પુખ્તાવસ્થા અને સ્વતંત્રતા તરફ સંક્રમણ',
         },
         sensoryPrompts: [
@@ -298,10 +298,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p10',
-        title: 'Falling in Love',
+        title: 'Falling in Love with Life',
         description: 'Your experiences with partnership and marriage.',
         text: {
-          en: 'Falling in Love – Your experiences with partnership and marriage',
+          en: 'Falling in Love with Life – Your experiences with partnership and marriage',
           gu: 'પ્રેમમાં પડવું – ભાગીદારી અને લગ્ન સાથેના તમારા અનુભવો',
         },
         sensoryPrompts: [
@@ -361,10 +361,10 @@ export const mockPromptGroups: PromptGroup[] = [
     prompts: [
       {
         id: 'p12',
-        title: 'Holding On and Letting Go',
+        title: 'Holding On, Letting Go',
         description: 'Navigating financial, emotional, or spiritual trials.',
         text: {
-          en: 'Holding On and Letting Go – Navigating life\'s various challenges',
+          en: 'Holding On, Letting Go – Navigating life\'s various challenges',
           gu: 'પકડી રાખવું અને છોડી દેવું - જીવનના વિવિધ પડકારોને નેવિગેટ કરવું',
         },
         sensoryPrompts: [
@@ -478,10 +478,10 @@ export const mockPromptGroups: PromptGroup[] = [
     prompts: [
       {
         id: 'p16',
-        title: 'Letters to Those Watching',
+        title: 'Letters to Those Who Are Watching',
         description: 'Advice for the next generation.',
         text: {
-          en: 'Letters to Those Watching – Advice for next generation',
+          en: 'Letters to Those Who Are Watching – Advice for next generation',
           gu: 'જોનારાઓને પત્રો - આગામી પેઢી માટે સલાહ',
         },
         sensoryPrompts: [
@@ -649,10 +649,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p22',
-        title: 'Final Experiment with Truth',
+        title: 'My Final Experiment with Truth',
         description: 'Living authentically with your core convictions.',
         text: {
-          en: 'Final Experiment with Truth – Core convictions',
+          en: 'My Final Experiment with Truth – Core convictions',
           gu: 'સત્ય સાથે અંતિમ પ્રયોગ - મુખ્ય માન્યતાઓ',
         },
         sensoryPrompts: [
@@ -676,10 +676,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p23',
-        title: 'The Story Continuing',
+        title: 'The Story Continues',
         description: 'Final thoughts on your legacy and the great unknown.',
         text: {
-          en: 'The Story Continuing – Legacy and final reflections',
+          en: 'The Story Continues – Legacy and final reflections',
           gu: 'વાર્તા ચાલુ છે - વારસો અને અંતિમ પ્રતિબિંબ',
         },
         sensoryPrompts: [
@@ -703,10 +703,10 @@ export const mockPromptGroups: PromptGroup[] = [
       },
       {
         id: 'p24',
-        title: 'Time Travel',
+        title: 'Time Travel, Reflections',
         description: 'The importance of reflection and looking back.',
         text: {
-          en: 'Time Travel – The importance of reflection',
+          en: 'Time Travel, Reflections – The importance of reflection',
           gu: 'સમય પ્રવાસ - પ્રતિબિંબનું મહત્વ',
         },
         sensoryPrompts: [

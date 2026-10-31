@@ -110,9 +110,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_innocence_curiosity',
     category: 'childhood',
-    title: 'School Days & Early Wonder',
+    title: 'Innocence and Curiosity',
     localizedTitles: {
-      en: 'School Days & Early Wonder',
+      en: 'Innocence and Curiosity',
       gu: 'નિર્દોષતા અને જિજ્ઞાસા',
       pa: 'ਮਾਸੂਮੀਅਤ ਅਤੇ ਉਤਸੁਕਤਾ',
       hi: 'मासूमियत और जिज्ञासा',
@@ -206,9 +206,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_humour_mishap',
     category: 'humour',
-    title: 'Early Mentors & Kinship',
+    title: 'Echoes of a Brother, Sister or Friends',
     localizedTitles: {
-      en: 'Early Mentors & Kinship',
+      en: 'Echoes of a Brother, Sister or Friends',
       gu: 'રચનાત્મક મિત્રતા',
       pa: 'ਬਚਪਨ ਦੀ ਦੋਸਤੀ',
       hi: 'बचपन की दोस्ती',
@@ -253,9 +253,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_wisdom_hardship',
     category: 'wisdom',
-    title: 'The First Hardships & The Shape of Loss',
+    title: 'The Shape of Loss',
     localizedTitles: {
-      en: 'The First Hardships & The Shape of Loss',
+      en: 'The Shape of Loss',
       gu: 'મુશ્કેલી સાથે પ્રથમ મુલાકાત',
       pa: 'ਮੁਸ਼ਕਿਲਾਂ ਨਾਲ ਪਹਿਲਾ ਸਾਹਮਣਾ',
       hi: 'मुश्किलों से पहला सामना',
@@ -300,9 +300,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_lessons_vocation',
     category: 'lessons',
-    title: 'Crossroads of Youth',
+    title: 'Crossroads and Choices',
     localizedTitles: {
-      en: 'Crossroads of Youth',
+      en: 'Crossroads and Choices',
       gu: 'આંતરછેદ અને પસંદગીઓ',
       pa: 'ਚੌਰਾਹੇ ਅਤੇ ਫੈਸਲੇ',
       hi: 'मोड़ और फैसले',
@@ -347,9 +347,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_learning_hard_way',
     category: 'lessons',
-    title: 'Lessons Learned the Hard Way',
+    title: 'Learning the Hard Way',
     localizedTitles: {
-      en: 'Lessons Learned the Hard Way',
+      en: 'Learning the Hard Way',
       gu: 'અઘરી રીતે શીખવું',
       pa: 'ਮੁਸ਼ਕਿਲ ਰਾਹਾਂ ਤੋਂ ਸਿੱਖਿਆ',
       hi: 'कठिन राहों से सीख',
@@ -443,9 +443,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_facing_reality',
     category: 'lessons',
-    title: 'Facing Reality',
+    title: 'A Person Becoming',
     localizedTitles: {
-      en: 'Facing Reality',
+      en: 'A Person Becoming',
       gu: 'વાસ્તવિકતાનો સામનો કરવો',
       pa: 'ਅਸਲੀਅਤ ਦਾ ਸਾਹਮਣਾ',
       hi: 'हकीकत का सामना',
@@ -490,9 +490,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_love_partner',
     category: 'love',
-    title: 'Love, Partnership & Companionship',
+    title: 'Falling in Love with Life',
     localizedTitles: {
-      en: 'Love, Partnership & Companionship',
+      en: 'Falling in Love with Life',
       gu: 'પ્રેમમાં પડવું',
       pa: 'ਪਿਆਰ ਵਿੱਚ ਪੈਣਾ',
       hi: 'प्यार में पड़ना',
@@ -537,9 +537,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_birth_children',
     category: 'love',
-    title: 'The Arrival of Children',
+    title: 'The Birth of Children',
     localizedTitles: {
-      en: 'The Arrival of Children',
+      en: 'The Birth of Children',
       gu: 'બાળકોનો જન્મ',
       pa: 'ਬੱਚਿਆਂ ਦਾ ਜਨਮ',
       hi: 'बच्चों का जन्म',
@@ -586,9 +586,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_trials_holding_on',
     category: 'wisdom',
-    title: 'Holding On and Letting Go',
+    title: 'Holding On, Letting Go',
     localizedTitles: {
-      en: 'Holding On and Letting Go',
+      en: 'Holding On, Letting Go',
       gu: 'પકડી રાખવું અને છોડી દેવું',
       pa: 'ਸੰਭਾਲਣਾ ਅਤੇ ਛੱਡਣਾ',
       hi: 'थामे रखना और जाने देना',
@@ -776,9 +776,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_letters_watching',
     category: 'legacy',
-    title: 'Letters to Those Watching',
+    title: 'Letters to Those Who Are Watching',
     localizedTitles: {
-      en: 'Letters to Those Watching',
+      en: 'Letters to Those Who Are Watching',
       gu: 'જોનારાઓને પત્રો',
       pa: 'ਦੇਖਣ ਵਾਲਿਆਂ ਨੂੰ ਚਿੱਠੀਆਂ',
       hi: 'देखने वालों को पत्र',
@@ -1060,9 +1060,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_experiment_truth',
     category: 'legacy',
-    title: 'Living Authentically',
+    title: 'My Final Experiment with Truth',
     localizedTitles: {
-      en: 'Living Authentically',
+      en: 'My Final Experiment with Truth',
       gu: 'પ્રામાણિકપણે જીવવું',
       pa: 'ਸੱਚੀ ਜ਼ਿੰਦਗੀ ਜਿਊਣਾ',
       hi: 'सच्चाई से जीना',
@@ -1107,9 +1107,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_legacy_blessing',
     category: 'legacy',
-    title: 'Words to Remember Me By',
+    title: 'The Story Continues',
     localizedTitles: {
-      en: 'Words to Remember Me By',
+      en: 'The Story Continues',
       gu: 'વાર્તા ચાલુ છે',
       pa: 'ਚੱਲਦੀ ਕਹਾਣੀ',
       hi: 'चलती कहानी',
@@ -1154,9 +1154,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
   {
     id: 'spark_time_travel',
     category: 'legacy',
-    title: 'Time Travel: The Power of Looking Back',
+    title: 'Time Travel, Reflections',
     localizedTitles: {
-      en: 'Time Travel: The Power of Looking Back',
+      en: 'Time Travel, Reflections',
       gu: 'સમય પ્રવાસ',
       pa: 'ਸਮੇਂ ਦੀ ਯਾਤਰਾ',
       hi: 'समय की यात्रा',

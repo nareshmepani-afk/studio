@@ -2023,6 +2023,55 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\qa_checklist_interactive.html`
   - `C:\Users\home\studio\MISSION_LOG.md`
 
+---
+
+### [2026-10-31 13:45 UTC / 13:45 GMT] • Checkpoint #084 — Option 2: Poetic Title Restoration Across 6-Part / 25-Scene Structure & Backlog Registration (FEAT-MW-161 / FEAT-MW-162)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Gatekeeper**: Reviewed Path A vs. original narrative vision. Selected Option 2 (Poetic Title Restoration across 6-Part / 25-Scene structure, retaining p3_b "Traditions, Feasts & Sacred Days") to restore all authentic, deeply evocative original prompt titles while preserving the optimal 4-scene chapter recording rhythm and diaspora cultural anchor.
+  - ⚡ **Chat 2 (The Flash Executor)**: Restored 13 poetic titles across `masterStoryStructure.ts`, `firesidePrompts.ts`, and `mockData.ts`, verified the 3 surgical UI guards in `SoloStage.tsx` and `SingleCardPromptCarousel.tsx`, registered Option 3 (Adaptive Inclusivity Branching & Sensory Catalyst Tags) in Plane.so as ticket #368 (`FEAT-MW-162`), updated test suites, verified full typecheck and local production build (46/46 routes passing).
+- **Architectural & Governance Deliverables:**
+  - **13 Poetic Titles Restored Across Master Curriculum SSOT**:
+    - `part-1-scene-3` (`p3`): **Innocence and Curiosity** (restored from *School Days & Early Wonder*)
+    - `part-1-scene-4` (`p3_b`): **Traditions, Feasts & Sacred Days** (retained as diaspora cultural pillar)
+    - `part-2-scene-1` (`p4`): **Echoes of a Brother, Sister or Friends** (restored from *Early Mentors & Kinship*)
+    - `part-2-scene-2` (`p5`): **The Shape of Loss** (restored from *The First Hardships & The Shape of Loss*)
+    - `part-2-scene-3` (`p6`): **Crossroads and Choices** (restored from *Crossroads of Youth*)
+    - `part-2-scene-4` (`p7`): **Learning the Hard Way** (restored from *Lessons Learned the Hard Way*)
+    - `part-3-scene-2` (`p9`): **A Person Becoming** (restored from *Facing Reality*)
+    - `part-3-scene-3` (`p10`): **Falling in Love with Life** (restored from *Love, Partnership & Companionship*)
+    - `part-3-scene-4` (`p11`): **The Birth of Children** (restored from *The Arrival of Children*)
+    - `part-4-scene-1` (`p12`): **Holding On, Letting Go** (restored from *Holding On and Letting Go*)
+    - `part-5-scene-1` (`p16`): **Letters to Those Who Are Watching** (restored from *Letters to Those Watching*)
+    - `part-6-scene-3` (`p22`): **My Final Experiment with Truth** (restored from *Living Authentically*)
+    - `part-6-scene-4` (`p23`): **The Story Continues** (restored from *Words to Remember Me By*)
+    - `part-6-scene-5` (`p24`): **Time Travel, Reflections** (restored from *Time Travel: The Power of Looking Back*)
+  - **Plane.so Backlog Registration (Rule 15)**:
+    - Registered Issue **#368** (`FEAT-MW-162: Adaptive Inclusivity Branching & Sensory Catalyst Tags (v1.2)`).
+  - **Verified Three Surgical Hardware & UI Guards**:
+    1. **Acoustics Check Peak Clipping Badge (`SoloStage.tsx`)**: Live indicator badge flips to pulsing rose `[ Peak Clipping ]` when peak levels exceed 92%, with meter bar glowing rose/amber.
+    2. **Dynamic HUD Input Pill Protection (`SoloStage.tsx`)**: Responsive max-width truncate (`max-w-[280px] sm:max-w-[420px]`) prevents long hardware names from overflowing soundstage header, with full name in native title tooltip.
+    3. **Fireside Mobile Title Wrapping (`SingleCardPromptCarousel.tsx`)**: Removed single-line `truncate` from headers, ensuring longer titles wrap gracefully across mobile viewports.
+  - **Regression Shield & Vitest Verifications**:
+    - `src/test/curriculum_ssot_arch_mw_127.test.ts` (15/15 passing).
+    - `src/test/fireside_prompt_carousel.test.tsx` (24/24 passing).
+    - `src/test/fireside_booth_entry.test.tsx` (6/6 passing).
+    - `src/test/fireside_sync.test.ts` (71/71 passing).
+    - `src/test/qa_template.test.ts` (12/12 passing).
+    - `npx.cmd tsc --noEmit` exited with code 0.
+    - `npm.cmd run build` compiled all 46 routes cleanly with exit code 0.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\lib\curriculum\masterStoryStructure.ts`
+  - `C:\Users\home\studio\src\lib\firesidePrompts.ts`
+  - `C:\Users\home\studio\src\lib\mockData.ts`
+  - `C:\Users\home\studio\src\components\studio\SoloStage.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\test\curriculum_ssot_arch_mw_127.test.ts`
+  - `C:\Users\home\studio\src\test\fireside_prompt_carousel.test.tsx`
+  - `C:\Users\home\studio\src\test\fireside_booth_entry.test.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
 
 
 

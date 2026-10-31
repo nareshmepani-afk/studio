@@ -47,7 +47,7 @@ describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fir
     const sceneP3 = resolveSceneFromPromptId('p3');
     expect(sceneP3).toBeDefined();
     expect(sceneP3?.id).toBe('part-1-scene-3');
-    expect(sceneP3?.title).toBe('School Days & Early Wonder');
+    expect(sceneP3?.title).toBe('Innocence and Curiosity');
 
     const sceneP3b = resolveSceneFromPromptId('p3_b');
     expect(sceneP3b).toBeDefined();
@@ -87,9 +87,9 @@ describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fir
     const sceneTitles = part3?.scenes.map((s) => s.title);
     expect(sceneTitles).toEqual([
       'Journeys Within and Without',
-      'Facing Reality',
-      'Love, Partnership & Companionship',
-      'The Arrival of Children',
+      'A Person Becoming',
+      'Falling in Love with Life',
+      'The Birth of Children',
     ]);
 
     part3?.scenes.forEach((scene) => {
@@ -103,6 +103,6 @@ describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fir
     expect(resolvedScene?.id).toBe('part-2-scene-1');
     const targetSpark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === resolvedScene?.id);
     expect(targetSpark?.id).toBe('spark_humour_mishap');
-    expect(targetSpark?.title).toBe('Early Mentors & Kinship');
+    expect(targetSpark?.title).toBe('Echoes of a Brother, Sister or Friends');
   });
 });

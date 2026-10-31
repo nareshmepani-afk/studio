@@ -228,7 +228,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       expect(FIRESIDE_PROMPT_SPARKS[1].localizedTitles?.gu).toBe('હું જે ઘરમાં મોટો થયો');
 
       expect(FIRESIDE_PROMPT_SPARKS[2].linkedSceneId).toBe('part-1-scene-3');
-      expect(FIRESIDE_PROMPT_SPARKS[2].title).toBe('School Days & Early Wonder');
+      expect(FIRESIDE_PROMPT_SPARKS[2].title).toBe('Innocence and Curiosity');
       expect(FIRESIDE_PROMPT_SPARKS[2].localizedTitles?.gu).toBe('નિર્દોષતા અને જિજ્ઞાસા');
 
       const part1 = getPartForScene('part-1-scene-1');

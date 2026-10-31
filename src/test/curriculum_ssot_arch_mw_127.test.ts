@@ -38,7 +38,7 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
       const part6Scene5 = coreParts[5].scenes[4];
       expect(part6Scene5.id).toBe('part-6-scene-5');
       expect(part6Scene5.promptId).toBe('p24');
-      expect(part6Scene5.title).toBe('Time Travel: The Power of Looking Back');
+      expect(part6Scene5.title).toBe('Time Travel, Reflections');
       expect(part6Scene5.sceneNumber).toBe(5);
     });
 
