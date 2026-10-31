@@ -25,7 +25,7 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
       ]);
     });
 
-    it('has 25 core memoir scenes across Parts I through VI (Part VI has 5 scenes)', () => {
+    it('has 24 core memoir scenes across Parts I through VI (perfect symmetric 4 scenes each)', () => {
       const coreParts = MASTER_STORY_STRUCTURE.filter((p) => !p.isAnthology && !p.isDemo);
       expect(coreParts).toHaveLength(6);
       expect(coreParts[0].scenes).toHaveLength(4); // Part I
@@ -33,13 +33,13 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
       expect(coreParts[2].scenes).toHaveLength(4); // Part III
       expect(coreParts[3].scenes).toHaveLength(4); // Part IV
       expect(coreParts[4].scenes).toHaveLength(4); // Part V
-      expect(coreParts[5].scenes).toHaveLength(5); // Part VI expanded
+      expect(coreParts[5].scenes).toHaveLength(4); // Part VI streamlined
 
-      const part6Scene5 = coreParts[5].scenes[4];
-      expect(part6Scene5.id).toBe('part-6-scene-5');
-      expect(part6Scene5.promptId).toBe('p24');
-      expect(part6Scene5.title).toBe('Time Travel, Reflections');
-      expect(part6Scene5.sceneNumber).toBe(5);
+      const part6Scene4 = coreParts[5].scenes[3];
+      expect(part6Scene4.id).toBe('part-6-scene-4');
+      expect(part6Scene4.promptId).toBe('p23');
+      expect(part6Scene4.title).toBe('The Story Continues');
+      expect(part6Scene4.sceneNumber).toBe(4);
     });
 
     it('integrates Family Storytelling as an authentic 6-scene anthology (Part 7)', () => {
@@ -71,11 +71,11 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
       expect(demoPart?.scenes).toHaveLength(1);
       expect(demoPart?.scenes[0].promptId).toBe('p_einstein');
 
-      // Total non-demo scenes is exactly 31
+      // Total non-demo scenes is exactly 30 (24 core + 6 anthology)
       const totalMemoirScenes = MASTER_STORY_STRUCTURE
         .filter((p) => !p.isDemo)
         .reduce((sum, p) => sum + p.scenes.length, 0);
-      expect(totalMemoirScenes).toBe(31);
+      expect(totalMemoirScenes).toBe(30);
 
       // getNextSceneId from the last anthology scene does NOT transition into demo
       const nextAfterAnthology = getNextSceneId('family-scene-6');
@@ -124,9 +124,10 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
       expect(p3_b?.id).toBe('part-1-scene-4');
     });
 
-    it('resolves capstone p24 and demo p_einstein correctly', () => {
+    it('resolves capstone alias p24 to part-6-scene-4 and demo p_einstein correctly', () => {
       const p24 = resolveSceneFromPromptId('p24');
-      expect(p24?.id).toBe('part-6-scene-5');
+      expect(p24?.id).toBe('part-6-scene-4');
+      expect(p24?.promptId).toBe('p23');
 
       const einstein = resolveSceneFromPromptId('p_einstein');
       expect(einstein?.id).toBe('demo-einstein-scene');
@@ -134,8 +135,8 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
   });
 
   describe('3. Fireside Prompt Sparks 1:1 Universal Parity', () => {
-    it('has exactly 31 prompt sparks matching all 31 non-demo memoir scenes', () => {
-      expect(FIRESIDE_PROMPT_SPARKS).toHaveLength(31);
+    it('has exactly 30 prompt sparks matching all 30 non-demo memoir scenes', () => {
+      expect(FIRESIDE_PROMPT_SPARKS).toHaveLength(30);
 
       const nonDemoScenes = MASTER_STORY_STRUCTURE
         .filter((p) => !p.isDemo)
@@ -147,11 +148,12 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
       });
     });
 
-    it('includes spark_time_travel with multilingual diaspora translations', () => {
-      const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.id === 'spark_time_travel');
+    it('includes spark_legacy_blessing (The Story Continues) with multilingual diaspora translations', () => {
+      const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.id === 'spark_legacy_blessing');
       expect(spark).toBeDefined();
-      expect(spark?.linkedSceneId).toBe('part-6-scene-5');
-      expect(spark?.sparks.en).toContain('time travel for your soul');
+      expect(spark?.linkedSceneId).toBe('part-6-scene-4');
+      expect(spark?.title).toBe('The Story Continues');
+      expect(spark?.sparks.en).toContain('great-grandchildren');
       expect(spark?.sparks.gu).toBeDefined();
       expect(spark?.sparks.pa).toBeDefined();
       expect(spark?.sparks.hi).toBeDefined();
@@ -213,7 +215,7 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
       });
     });
 
-    it('guarantees 100% title parity between canonical scene.title, scene.localizedTitles.en, and FIRESIDE_PROMPT_SPARKS across all 25 core scenes', () => {
+    it('guarantees 100% title parity between canonical scene.title, scene.localizedTitles.en, and FIRESIDE_PROMPT_SPARKS across all 24 core scenes', () => {
       const coreParts = MASTER_STORY_STRUCTURE.filter((p) => !p.isAnthology && !p.isDemo);
       coreParts.forEach((part) => {
         part.scenes.forEach((scene) => {

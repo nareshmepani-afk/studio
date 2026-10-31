@@ -1152,53 +1152,6 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
     },
   },
   {
-    id: 'spark_time_travel',
-    category: 'legacy',
-    title: 'Time Travel, Reflections',
-    localizedTitles: {
-      en: 'Time Travel, Reflections',
-      gu: 'સમય પ્રવાસ',
-      pa: 'ਸਮੇਂ ਦੀ ਯਾਤਰਾ',
-      hi: 'समय की यात्रा',
-    },
-    linkedSceneId: 'part-6-scene-5',
-    suggestedMediaMode: 'video',
-    sparks: {
-      en: 'Consider this entire journey as time travel for your soul. Why is it vital to revisit older memories, reflect on the person you used to be, and understand how far you have come?',
-      gu: 'આ સમગ્ર જીવનયાત્રાને તમારી આત્મા માટે સમય પ્રવાસ તરીકે જુઓ. જૂની યાદોને ફરી વાગોળવી, તમે અગાઉ કેવા હતા તેનું ચિંતન કરવું અને તમે ક્યાં સુધી પહોંચ્યા તે સમજવું કેમ મહત્વપૂર્ણ છે?',
-      pa: 'ਇਸ ਸਾਰੇ ਸਫ਼ਰ ਨੂੰ ਆਪਣੇ ਮਨ ਲਈ ਇੱਕ ਸਮੇਂ ਦੀ ਯਾਤਰਾ ਸਮਝੋ। ਪੁਰਾਣੀਆਂ ਯਾਦਾਂ ਨੂੰ ਮੁੜ ਚੇਤੇ ਕਰਨਾ ਅਤੇ ਇਹ ਵੇਖਣਾ ਕਿ ਤੁਸੀਂ ਕਿੰਨਾ ਲੰਮਾ ਪੈਂਡਾ ਤੈਅ ਕੀਤਾ ਹੈ, ਕਿਉਂ ਜ਼ਰੂਰੀ ਹੈ?',
-      hi: 'इस पूरी जीवन यात्रा को अपनी रूह के लिए समय की एक यात्रा समझिए। पुरानी यादों को फिर से जीना, अपने बीते कल को समझना और यह महसूस करना कि आप कितनी दूर आ चुके हैं, क्यों जरूरी है?',
-    },
-    followUpQuestions: {
-      en: [
-        'What value do you find in looking back and appreciating your evolution as a person?',
-        'How does reflecting upon the past help you embrace the present with peace?',
-        'What would you say to the younger version of yourself who once worried so much?',
-      ],
-      gu: [
-        'પાછળ વળીને જોવાથી અને તમારા પોતાના આંતરિક વિકાસની કદર કરવાથી તમને શું સંતોષ મળે છે?',
-        'ભૂતકાળનું ચિંતન કરવાથી વર્તમાનને શાંતિથી સ્વીકારવામાં કેવી મદદ મળે છે?',
-        'તમે તમારા એ નાના સ્વરૂપને શું કહેશો જે એક સમયે ખૂબ ચિંતા કરતું હતું?',
-      ],
-      pa: [
-        'ਪਿੱਛੇ ਮੁੜ ਕੇ ਵੇਖਣ ਅਤੇ ਆਪਣੇ ਵਿਕਾਸ ਦੀ ਕਦਰ ਕਰਨ ਨਾਲ ਤੁਹਾਨੂੰ ਕੀ ਸਕੂਨ ਮਿਲਦਾ ਹੈ?',
-        'ਬੀਤੇ ਸਮੇਂ ਨੂੰ ਸਮਝਣ ਨਾਲ ਅੱਜ ਦੀ ਜ਼ਿੰਦਗੀ ਨੂੰ ਸ਼ਾਂਤੀ ਨਾਲ ਜਿਊਣ ਵਿੱਚ ਕਿਵੇਂ ਮਦਦ ਮਿਲਦੀ ਹੈ?',
-        'ਤੁਸੀਂ ਆਪਣੇ ਉਸ ਬਚਪਨ ਜਾਂ ਜਵਾਨੀ ਦੇ ਰੂਪ ਨੂੰ ਕੀ ਕਹੋਗੇ ਜੋ ਬਹੁਤ ਫ਼ਿਕਰ ਕਰਦਾ ਹੁੰਦਾ ਸੀ?',
-      ],
-      hi: [
-        'पीछे मुड़कर देखने और अपनी जीवन यात्रा को सराहने से आपको क्या संतोष मिलता है?',
-        'अतीत को समझने से आज के पलों को शांति और सहजता से जीने में कैसे मदद मिलती है?',
-        'अपने उस पुराने रूप से आप आज क्या कहेंगे जो कभी बहुत परेशान रहता था?',
-      ],
-    },
-    recommendedPhotoPrompt: {
-      en: 'Find a vintage snapshot of you in your youth placed beside a present-day photograph.',
-      gu: 'તમારી યુવાનીની જૂની તસવીર સાથે આજની કોઈ તાજી તસવીર સાથે રાખીને શોધો.',
-      pa: 'ਆਪਣੀ ਜਵਾਨੀ ਵੇਲੇ ਦੀ ਕੋਈ ਪੁਰਾਣੀ ਤਸਵੀਰ ਅੱਜ ਦੀ ਤਸਵੀਰ ਦੇ ਨਾਲ ਰੱਖ ਕੇ ਲੱਭੋ।',
-      hi: 'अपनी जवानी के दिनों की कोई पुरानी तस्वीर आज की तस्वीर के साथ रखकर निकालिए।',
-    },
-  },
-  {
     id: 'spark_family_elders',
     category: 'roots',
     title: 'Memories of Elders',
@@ -1486,6 +1439,9 @@ export const FIRESIDE_PROMPT_SPARKS: FiresidePromptSpark[] = [
  * Look up a prompt spark by its unique ID
  */
 export function getPromptById(id: string): FiresidePromptSpark | undefined {
+  if (id === 'spark_time_travel') {
+    return FIRESIDE_PROMPT_SPARKS.find((prompt) => prompt.id === 'spark_legacy_blessing');
+  }
   return FIRESIDE_PROMPT_SPARKS.find((prompt) => prompt.id === id);
 }
 

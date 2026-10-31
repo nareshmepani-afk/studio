@@ -701,33 +701,6 @@ export const mockPromptGroups: PromptGroup[] = [
 ],
         isFlaggedForReuse: false,
       },
-      {
-        id: 'p24',
-        title: 'Time Travel, Reflections',
-        description: 'The importance of reflection and looking back.',
-        text: {
-          en: 'Time Travel, Reflections – The importance of reflection',
-          gu: 'સમય પ્રવાસ - પ્રતિબિંબનું મહત્વ',
-        },
-        sensoryPrompts: [
-          {
-                    id: "sense1",
-                    label: "The dizzying feeling of remembering",
-                    placeholder: "e.g. A rush of blood, a wide-eyed stare..."
-          },
-          {
-                    id: "sense2",
-                    label: "The sound of a flashback",
-                    placeholder: "e.g. A distorted voice, a fading bell..."
-          },
-          {
-                    id: "sense3",
-                    label: "Smell of a childhood home",
-                    placeholder: "e.g. Pine cleaner, old spices..."
-          }
-],
-        isFlaggedForReuse: false,
-      },
     ],
   },
   {

@@ -13,7 +13,7 @@ export const premiumPromptIds = new Set([
   // Part V
   'p16', 'p17', 'p18', 'p19',
   // Part VI
-  'p20', 'p21', 'p22', 'p23', 'p24',
+  'p20', 'p21', 'p22', 'p23',
   // Family Storytelling
   'fs1_1', 'fs2_1', 'fs3_1', 'fs4_1', 'fs5_1', 'fs6_1'
 ]);

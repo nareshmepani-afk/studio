@@ -728,44 +728,25 @@ export const MASTER_STORY_STRUCTURE: MasterStoryPart[] = [
         suggestedMediaMode: 'video',
         defaultStatus: 'locked',
         keySensoryQuestions: {
-          en: ['If your great-grandchildren listen to your voice 100 years from now, what blessing do you leave them?'],
-          gu: ['સો વર્ષ પછી તમારી નવી પેઢી તમારો અવાજ સાંભળે, તો તમે તેમને કયો આશીર્વાદ આપશો?'],
-          pa: ['ਸੌ ਸਾਲ ਬਾਅਦ ਤੁਹਾਡੀ ਨਵੀਂ ਪੀੜ੍ਹੀ ਤੁਹਾਡੀ ਆਵਾਜ਼ ਸੁਣੇ, ਤਾਂ ਤੁਸੀਂ ਉਹਨਾਂ ਨੂੰ ਕੀ ਅਸੀਸ ਦੇਵੋਗੇ?'],
-          hi: ['सौ साल बाद जब आपकी आने वाली पीढ़ी आपकी आवाज सुने, तो आप उन्हें क्या आशीर्वाद देंगे?'],
-        },
-      },
-      {
-        id: 'part-6-scene-5',
-        partNumber: 6,
-        partTitle: 'Part VI: The Continuing Story & Heirloom Legacy',
-        sceneNumber: 5,
-        title: 'Time Travel, Reflections',
-        localizedTitles: {
-          en: 'Time Travel, Reflections',
-          gu: 'સમય પ્રવાસ',
-          pa: 'ਸਮੇਂ ਦੀ ਯਾਤਰਾ',
-          hi: 'समय की यात्रा',
-        },
-        subtitle: 'The importance of reflection, integration, and honouring how far you have travelled',
-        promptId: 'p24',
-        suggestedMediaMode: 'video',
-        defaultStatus: 'locked',
-        keySensoryQuestions: {
           en: [
-            'Why is it vital to pause and reflect upon the journey and experiences of your life?',
-            'What does looking back reveal about the person you have steadily become?',
+            'If your great-grandchildren listen to your voice 100 years from now, what blessing do you leave them?',
+            'As you pause and reflect upon the journey and experiences of your life, what does this continuous journey reveal about who you have become?',
+            'What sense of peace, gratitude, or wonder do you carry forward into the future as your story continues?',
           ],
           gu: [
-            'જીવનની આખી મુસાફરી પર પાછળ વળીને જોવું અને તેનું મૂલ્યાંકન કરવું કેમ જરૂરી છે?',
-            'પાછળ જોવાથી તમને તમારા પોતાના વિકાસ વિશે શું સમજાય છે?',
+            'સો વર્ષ પછી તમારી નવી પેઢી તમારો અવાજ સાંભળે, તો તમે તેમને કયો આશીર્વાદ આપશો?',
+            'જીવનની આખી મુસાફરી પર પાછળ વળીને જોતાં, આ પ્રવાસ તમારા પોતાના વિકાસ વિશે શું દર્શાવે છે?',
+            'તમારી વાર્તા આગળ વધે તેમ તમે ભવિષ્યમાં શાંતિ, કૃતજ્ઞતા કે આશાની કઈ ભાવના સાથે આગળ વધો છો?',
           ],
           pa: [
-            'ਜ਼ਿੰਦਗੀ ਦੇ ਸਫ਼ਰ ਨੂੰ ਪਿੱਛੇ ਮੁੜ ਕੇ ਵੇਖਣਾ ਅਤੇ ਸਮਝਣਾ ਕਿਉਂ ਜ਼ਰੂਰੀ ਹੈ?',
-            'ਪਿੱਛੇ ਵੇਖਣ ਨਾਲ ਤੁਹਾਨੂੰ ਆਪਣੇ ਬਾਰੇ ਕੀ ਨਵੀਂ ਸਮਝ ਮਿਲਦੀ ਹੈ?',
+            'ਸੌ ਸਾਲ ਬਾਅਦ ਤੁਹਾਡੀ ਨਵੀਂ ਪੀੜ੍ਹੀ ਤੁਹਾਡੀ ਆਵਾਜ਼ ਸੁਣੇ, ਤਾਂ ਤੁਸੀਂ ਉਹਨਾਂ ਨੂੰ ਕੀ ਅਸੀਸ ਦੇਵੋਗੇ?',
+            'ਜ਼ਿੰਦਗੀ ਦੇ ਸਫ਼ਰ ਨੂੰ ਪਿੱਛੇ ਮੁੜ ਕੇ ਵੇਖਦਿਆਂ, ਇਹ ਤੁਹਾਡੇ ਬਾਰੇ ਕੀ ਨਵੀਂ ਸਮਝ ਬਖ਼ਸ਼ਦਾ ਹੈ?',
+            'ਜਿਵੇਂ ਤੁਹਾਡੀ ਕਹਾਣੀ ਅੱਗੇ ਵਧਦੀ ਹੈ, ਤੁਸੀਂ ਭਵਿੱਖ ਲਈ ਕਿਹੜੀ ਸ਼ਾਂਤੀ ਅਤੇ ਆਸ ਦਾ ਅਹਿਸਾਸ ਲੈ ਕੇ ਤੁਰਦੇ ਹੋ?',
           ],
           hi: [
-            'जिंदगी के सफर को पीछे मुड़कर देखना और उसका अनुभव करना क्यों जरूरी है?',
-            'पीछे देखने से आपको अपने व्यक्तित्व के विकास के बारे में क्या समझ आता है?',
+            'सौ साल बाद जब आपकी आने वाली पीढ़ी आपकी आवाज सुने, तो आप उन्हें क्या आशीर्वाद देंगे?',
+            'जिंदगी के पूरे सफर को पीछे मुड़कर देखते हुए, यह यात्रा आपके व्यक्तित्व के विकास के बारे में क्या दर्शाती है?',
+            'जैसे आपकी कहानी आगे बढ़ती है, आप भविष्य के लिए शांति, कृतज्ञता या उम्मीद का कौन सा भाव साथ लेकर चलते हैं?',
           ],
         },
       },
@@ -1012,6 +993,13 @@ export function getPartForScene(sceneId?: string): MasterStoryPart {
  */
 export function resolveSceneFromPromptId(promptId: string): MasterStoryScene | undefined {
   if (!promptId) return undefined;
+  const normalized = promptId.trim();
+
+  // Backward compatibility alias for streamlined capstone (p24 / part-6-scene-5 -> part-6-scene-4)
+  if (normalized === 'p24' || normalized === 'p24_1' || normalized === 'part-6-scene-5') {
+    return getSceneById('part-6-scene-4');
+  }
+
   // Pass 1: Exact match on promptId or scene id
   for (const part of MASTER_STORY_STRUCTURE) {
     const exact = part.scenes.find((s) => s.promptId === promptId || s.id === promptId);

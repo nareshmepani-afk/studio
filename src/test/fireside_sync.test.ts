@@ -2393,14 +2393,14 @@ describe('Suite 14: MW-100-C — Unified Orientation Dock, Chevron Steppers & Ro
     );
 
     const subtitle = getByTestId('HS_FIRESIDE_HEADER_SCENE_SUBTITLE');
-    expect(subtitle.textContent).toContain('Part VI • Scene 4 of 5');
+    expect(subtitle.textContent).toContain('Part VI • Scene 4 of 4');
     expect(subtitle.textContent).not.toMatch(/Story \d+ of/);
     expect(subtitle.textContent).toContain('The Story Continues');
     expect(getByTestId('HS_SPINE_ACTIVE_SCENE').textContent).toContain('4 · The Story Continues');
 
-    // Verify card story progress pill also shows canonical Scene X of Total (5 in Part VI)
+    // Verify card story progress pill also shows canonical Scene X of Total (4 in Part VI)
     const progressPill = getByTestId('carousel-story-progress-pill');
-    expect(progressPill.textContent).toBe('Scene 4 of 5');
+    expect(progressPill.textContent).toBe('Scene 4 of 4');
     expect(progressPill.textContent).not.toMatch(/Story \d+ of/);
 
     unmount();

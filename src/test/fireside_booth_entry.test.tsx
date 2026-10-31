@@ -17,12 +17,10 @@ describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fir
       expect(part.partNumber).toBe(idx + 1);
       expect(part.id).toBe(['part-i', 'part-ii', 'part-iii', 'part-iv', 'part-v', 'part-vi'][idx]);
     });
-    // Parts I-V have 4 scenes each
-    coreParts.slice(0, 5).forEach((part) => {
+    // Parts I-VI have 4 scenes each (perfect symmetric 6x4 = 24 architecture)
+    coreParts.forEach((part) => {
       expect(part.scenes).toHaveLength(4);
     });
-    // Part VI has 5 scenes (expanded with Time Travel)
-    expect(coreParts[5].scenes).toHaveLength(5);
 
     // Family Storytelling Anthology
     const familyPart = MASTER_STORY_STRUCTURE.find((p) => p.id === 'family-storytelling');
@@ -36,11 +34,11 @@ describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fir
     expect(demoPart?.isDemo).toBe(true);
     expect(demoPart?.scenes).toHaveLength(1);
 
-    // Total non-demo memoir scenes = 25 core + 6 anthology = 31 scenes
+    // Total non-demo memoir scenes = 24 core + 6 anthology = 30 scenes
     const totalMemoirScenes = MASTER_STORY_STRUCTURE
       .filter((p) => !p.isDemo)
       .reduce((acc, p) => acc + p.scenes.length, 0);
-    expect(totalMemoirScenes).toBe(31);
+    expect(totalMemoirScenes).toBe(30);
   });
 
   it('2. Correctly resolves p3 and p3_b distinctly via exact-match in resolveSceneFromPromptId', () => {
@@ -55,8 +53,8 @@ describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fir
     expect(sceneP3b?.title).toBe('Traditions, Feasts & Sacred Days');
   });
 
-  it('3. Guarantees FIRESIDE_PROMPT_SPARKS has complete 1:1 coverage for all 31 non-demo canonical scenes', () => {
-    expect(FIRESIDE_PROMPT_SPARKS).toHaveLength(31);
+  it('3. Guarantees FIRESIDE_PROMPT_SPARKS has complete 1:1 coverage for all 30 non-demo canonical scenes', () => {
+    expect(FIRESIDE_PROMPT_SPARKS).toHaveLength(30);
     MASTER_STORY_STRUCTURE.filter((p) => !p.isDemo).forEach((part) => {
       part.scenes.forEach((scene) => {
         const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === scene.id);

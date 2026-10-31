@@ -2072,6 +2072,48 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\qa_checklist_interactive.html`
   - `C:\Users\home\studio\MISSION_LOG.md`
 
+---
+
+### [2026-10-31 14:45 UTC / 14:45 GMT] • Checkpoint #085 — Ultimate Hybrid 6x4 = 24 Symmetric Architecture & Part VI Streamlining (FEAT-MW-163)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Gatekeeper**: Ratified the Ultimate Hybrid Architecture: standardising the canonical curriculum on 6 parts with exactly 4 scenes each (perfect symmetric 24-scene core memoir). Preserves Part I Scene 4 (*Traditions, Feasts & Sacred Days* as a diaspora cultural pillar), separates romance and domestic partnership in Part III from hardship in Part IV to prevent emotional whiplash, eliminates elder fatigue with symmetric 4-scene cognitive milestones, and streamlines Part VI by synthesising *Time Travel, Reflections* directly into Scene 4 (*The Story Continues*).
+  - ⚡ **Chat 2 (The Flash Executor)**: Executed `ultimate_hybrid_curriculum_plan.md` across `masterStoryStructure.ts`, `firesidePrompts.ts`, `mockData.ts`, `premiumPrompts.ts`, and test suites; configured two-pass backward-compatibility mapping for legacy `p24` and `part-6-scene-5` tokens to `part-6-scene-4`; updated QA card #47; verified Vitest regression suites (128/128 tests passing across curriculum, booth entry, sync, and QA suites); verified full `tsc --noEmit` exit 0; completed local Next.js production build (`npm.cmd run build`) with all 46 routes compiling cleanly to exit 0.
+- **Architectural & Governance Deliverables:**
+  - **Symmetric 6x4 = 24 Core Memoir Scenes**:
+    - Exactly 4 scenes per part across Parts I through VI (24 core memoir scenes total).
+    - Preserves all 6 Family Storytelling anthology scenes (Part VII), bringing total non-demo memoir scenes to 30.
+    - Preserves historical showcase (Einstein demo) as Part VIII.
+  - **Part VI Streamlining & Zero-Orphan Synthesis**:
+    - Streamlined Part VI from 5 scenes to 4 scenes:
+      - `part-6-scene-1` (`p20`): *What Still Lies Ahead*
+      - `part-6-scene-2` (`p21`): *If I Could Do It Again*
+      - `part-6-scene-3` (`p22`): *My Final Experiment with Truth*
+      - `part-6-scene-4` (`p23`): *The Story Continues*
+    - Retired standalone `p24` (`spark_time_travel`) while weaving reflection and time travel prompts into `p23` sensory questions.
+    - Added resilient backward compatibility in `resolveSceneFromPromptId` and `getPromptById` to resolve `p24`, `p24_1`, and `part-6-scene-5` aliases seamlessly without breaking legacy Firestore records.
+  - **Premium & Mock Data Synchronisation**:
+    - Synchronised `premiumPromptIds` in `src/lib/premiumPrompts.ts` to 4 prompts for Part VI (`['p20', 'p21', 'p22', 'p23']`).
+    - Synchronised `mockPromptGroups` in `src/lib/mockData.ts` to 4 prompts for Part VI.
+  - **Regression Shield & Vitest Verifications**:
+    - `src/test/curriculum_ssot_arch_mw_127.test.ts` (15/15 passing).
+    - `src/test/fireside_prompt_carousel.test.tsx` (24/24 passing).
+    - `src/test/fireside_booth_entry.test.tsx` (6/6 passing).
+    - `src/test/fireside_sync.test.ts` (71/71 passing).
+    - `src/test/qa_template.test.ts` (12/12 passing).
+    - `npx.cmd tsc --noEmit` exited with code 0.
+    - `npm.cmd run build` compiled all 46 routes cleanly with exit code 0.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\lib\curriculum\masterStoryStructure.ts`
+  - `C:\Users\home\studio\src\lib\firesidePrompts.ts`
+  - `C:\Users\home\studio\src\lib\mockData.ts`
+  - `C:\Users\home\studio\src\lib\premiumPrompts.ts`
+  - `C:\Users\home\studio\src\test\curriculum_ssot_arch_mw_127.test.ts`
+  - `C:\Users\home\studio\src\test\fireside_booth_entry.test.tsx`
+  - `C:\Users\home\studio\src\test\fireside_sync.test.ts`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+
 
 
 
