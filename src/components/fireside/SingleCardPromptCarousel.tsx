@@ -269,11 +269,19 @@ export function SingleCardPromptCarousel({
     return undefined;
   }, [getSceneMemory, currentSpark.linkedSceneId, currentSpark.id, activeSceneMemory]);
 
+  // Reset editing mode and local overrides ONLY when navigating to a different spark card (BUG-MW-143 / Item 56.4)
   useEffect(() => {
     setLocalProseOverride(null);
     setIsEditingScript(false);
     setHighlightedSensoryType(null);
-  }, [currentSpark.id, currentSceneMemory?.prose]);
+  }, [currentSpark.id]);
+
+  // Cleanly release local optimistic override once server prose catches up
+  useEffect(() => {
+    if (localProseOverride !== null && currentSceneMemory?.prose?.trim() === localProseOverride) {
+      setLocalProseOverride(null);
+    }
+  }, [currentSceneMemory?.prose, localProseOverride]);
 
   const rawSceneProse = currentSceneMemory?.prose?.trim() || '';
   const activeProse =

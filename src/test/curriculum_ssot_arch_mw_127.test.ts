@@ -5,6 +5,8 @@ import {
   getSceneById,
   getPartForScene,
   getNextSceneId,
+  TELEPROMPTER_SCHEMA,
+  getTeleprompterScene,
 } from '@/lib/curriculum/masterStoryStructure';
 import { FIRESIDE_PROMPT_SPARKS } from '@/lib/firesidePrompts';
 
@@ -236,6 +238,143 @@ describe('ARCH-MW-127: Unified Master Curriculum SSOT & Anthology Integration Su
           ).toBe(scene.title);
         });
       });
+    });
+
+    it('locks in the immutable canonical snapshot for all 6 Part Titles and 24 Scene Titles (Anti-Regression Vault Lock)', () => {
+      const IMMUTABLE_CURRICULUM_SNAPSHOT = [
+        {
+          partNumber: 1,
+          title: 'Part I: Roots and Foundations',
+          scenes: [
+            { id: 'part-1-scene-1', promptId: 'p1', title: 'A Child of Two Worlds' },
+            { id: 'part-1-scene-2', promptId: 'p2', title: 'The House I Grew Up In' },
+            { id: 'part-1-scene-3', promptId: 'p3', title: 'Innocence and Curiosity' },
+            { id: 'part-1-scene-4', promptId: 'p3_b', title: 'Traditions, Feasts & Sacred Days' },
+          ],
+        },
+        {
+          partNumber: 2,
+          title: 'Part II: Formative Years & Early Echoes',
+          scenes: [
+            { id: 'part-2-scene-1', promptId: 'p4', title: 'Echoes of a Brother, Sister or Friends' },
+            { id: 'part-2-scene-2', promptId: 'p5', title: 'The Shape of Loss' },
+            { id: 'part-2-scene-3', promptId: 'p6', title: 'Crossroads and Choices' },
+            { id: 'part-2-scene-4', promptId: 'p7', title: 'Learning the Hard Way' },
+          ],
+        },
+        {
+          partNumber: 3,
+          title: 'Part III: Love, Partnership & Commitment',
+          scenes: [
+            { id: 'part-3-scene-1', promptId: 'p8', title: 'Journeys Within and Without' },
+            { id: 'part-3-scene-2', promptId: 'p9', title: 'A Person Becoming' },
+            { id: 'part-3-scene-3', promptId: 'p10', title: 'Falling in Love with Life' },
+            { id: 'part-3-scene-4', promptId: 'p11', title: 'The Birth of Children' },
+          ],
+        },
+        {
+          partNumber: 4,
+          title: 'Part IV: Trials, Triumphs & Milestones',
+          scenes: [
+            { id: 'part-4-scene-1', promptId: 'p12', title: 'Holding On, Letting Go' },
+            { id: 'part-4-scene-2', promptId: 'p13', title: 'The Test of Fire' },
+            { id: 'part-4-scene-3', promptId: 'p14', title: 'Faith in the Invisible' },
+            { id: 'part-4-scene-4', promptId: 'p15', title: 'Wounds into Wisdom' },
+          ],
+        },
+        {
+          partNumber: 5,
+          title: 'Part V: Wisdom, Hard-Won Truths & Values',
+          scenes: [
+            { id: 'part-5-scene-1', promptId: 'p16', title: 'Letters to Those Who Are Watching' },
+            { id: 'part-5-scene-2', promptId: 'p17', title: 'Conversations with Myself' },
+            { id: 'part-5-scene-3', promptId: 'p18', title: 'The Person in the Mirror' },
+            { id: 'part-5-scene-4', promptId: 'p19', title: 'The Quiet Victories' },
+          ],
+        },
+        {
+          partNumber: 6,
+          title: 'Part VI: The Continuing Story & Heirloom Legacy',
+          scenes: [
+            { id: 'part-6-scene-1', promptId: 'p20', title: 'What Still Lies Ahead' },
+            { id: 'part-6-scene-2', promptId: 'p21', title: 'If I Could Do It Again' },
+            { id: 'part-6-scene-3', promptId: 'p22', title: 'My Final Experiment with Truth' },
+            { id: 'part-6-scene-4', promptId: 'p23', title: 'The Story Continues' },
+          ],
+        },
+      ];
+
+      const coreParts = MASTER_STORY_STRUCTURE.filter((p) => !p.isAnthology && !p.isDemo);
+      expect(coreParts).toHaveLength(6);
+
+      IMMUTABLE_CURRICULUM_SNAPSHOT.forEach((expectedPart, pIdx) => {
+        const actualPart = coreParts[pIdx];
+        expect(actualPart.partNumber).toBe(expectedPart.partNumber);
+        expect(actualPart.title).toBe(expectedPart.title);
+        expect(actualPart.localizedTitles.en).toBe(expectedPart.title);
+        expect(actualPart.scenes).toHaveLength(4);
+
+        expectedPart.scenes.forEach((expectedScene, sIdx) => {
+          const actualScene = actualPart.scenes[sIdx];
+          expect(actualScene.id).toBe(expectedScene.id);
+          expect(actualScene.promptId).toBe(expectedScene.promptId);
+          expect(actualScene.title).toBe(expectedScene.title);
+          expect(actualScene.localizedTitles?.en).toBe(expectedScene.title);
+
+          const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === expectedScene.id);
+          expect(spark).toBeDefined();
+          expect(spark?.title).toBe(expectedScene.title);
+          expect(spark?.localizedTitles?.en).toBe(expectedScene.title);
+        });
+      });
+    });
+  });
+
+  describe('6. Teleprompter Schema (v1.63) SPEC-MW-163 Invariants', () => {
+    it('contains exactly 24 teleprompter prompts across 6 symmetric parts matching canonical titles', () => {
+      expect(TELEPROMPTER_SCHEMA.parts).toHaveLength(6);
+      expect(TELEPROMPTER_SCHEMA.total_scenes).toBe(24);
+      expect(TELEPROMPTER_SCHEMA.schema_version).toBe('v1.63');
+
+      let totalScenes = 0;
+      TELEPROMPTER_SCHEMA.parts.forEach((part, pIdx) => {
+        expect(part.scenes).toHaveLength(4);
+        totalScenes += part.scenes.length;
+
+        part.scenes.forEach((scene, sIdx) => {
+          expect(scene.teleprompter_prompt).toBeDefined();
+          expect(scene.teleprompter_prompt.length).toBeGreaterThan(20);
+          expect(scene.directorial_cue).toBeDefined();
+          expect(scene.directorial_cue.length).toBeGreaterThan(15);
+          expect(scene.target_runtime_minutes).toBe('3–5');
+
+          const masterPart = MASTER_STORY_STRUCTURE[pIdx];
+          const masterScene = masterPart.scenes[sIdx];
+          expect(scene.title).toBe(masterScene.title);
+          expect(scene.canonical_scene_id).toBe(masterScene.id);
+          expect(scene.prompt_id).toBe(masterScene.promptId);
+        });
+      });
+      expect(totalScenes).toBe(24);
+    });
+
+    it('resolves getTeleprompterScene by numeric scene_id, canonical scene ID, prompt ID, and legacy alias', () => {
+      const s11 = getTeleprompterScene('1.1');
+      expect(s11?.title).toBe('A Child of Two Worlds');
+      expect(s11?.prompt_id).toBe('p1');
+
+      const sCanonical = getTeleprompterScene('part-2-scene-3');
+      expect(sCanonical?.title).toBe('Crossroads and Choices');
+      expect(sCanonical?.scene_id).toBe('2.3');
+
+      const sPrompt = getTeleprompterScene('p14');
+      expect(sPrompt?.title).toBe('Faith in the Invisible');
+      expect(sPrompt?.scene_id).toBe('4.3');
+
+      // Legacy capstone fallback alias
+      const sLegacyAlias = getTeleprompterScene('p24');
+      expect(sLegacyAlias?.title).toBe('The Story Continues');
+      expect(sLegacyAlias?.scene_id).toBe('6.4');
     });
   });
 });

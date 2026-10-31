@@ -537,6 +537,26 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
         expect(soundscapeSpan.className).not.toContain('rounded-sm');
       }
     });
+
+    it('MW-143 / Item 56.4: does NOT auto-close Armchair Script Editor when background autosave updates currentSceneMemory.prose', async () => {
+      const { rerender } = render(<SingleCardPromptCarousel activeSceneMemory={mockMemoryWithProse} />);
+
+      // Open the Armchair Script Editor
+      const container = screen.getByTestId('fireside-click-to-type-container');
+      fireEvent.click(container);
+      expect(screen.getByTestId('fireside-armchair-script-editor')).toBeInTheDocument();
+
+      // Simulate a background autosave updating activeSceneMemory.prose
+      const updatedMemory = {
+        ...mockMemoryWithProse,
+        prose: 'The grandfather clock chimed in the old house. New words added while typing...',
+      };
+      rerender(<SingleCardPromptCarousel activeSceneMemory={updatedMemory} />);
+
+      // The editor MUST remain open so the user can continue typing uninterrupted!
+      expect(screen.getByTestId('fireside-armchair-script-editor')).toBeInTheDocument();
+      expect(screen.queryByTestId('fireside-active-script-body')).not.toBeInTheDocument();
+    });
   });
 });
 

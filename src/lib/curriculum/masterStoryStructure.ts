@@ -1060,3 +1060,5 @@ export function getNextSceneId(currentSceneId: string): string | null {
   return null;
 }
 
+
+export * from './teleprompterSchema';

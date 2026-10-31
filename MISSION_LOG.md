@@ -2113,6 +2113,30 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\qa_checklist_interactive.html`
   - `C:\Users\home\studio\MISSION_LOG.md`
 
+---
+
+### [2026-10-31 18:00 UTC / 18:00 GMT] • Checkpoint #086 — Armchair Script Autosave Stability (BUG-MW-143 / Item 56.4) & Teleprompter Schema SSOT Integration (SPEC-MW-163)
+- **Partner Disciplines:**
+  - 👤 **Creative Director & Gatekeeper**: Reported Staging QA Verification edge feedback for SHA `d21e24d` (Item 56.4: premature textarea closure during narrative drafting on `/studio/fireside`). Provided the complete 24-scene Teleprompter Schema (`SPEC-MW-163` v1.63) with directorial cues and prompts for elder storytellers.
+  - ⚡ **Chat 2 (The Flash Executor)**:
+    - Root-caused Item 56.4: The 2,000ms debounced autosave (`onSaveProse`) triggered parent prop updates (`currentSceneMemory.prose`), which was included in `SingleCardPromptCarousel.tsx`'s card-switch `useEffect` dependency array, erroneously resetting `isEditingScript(false)` and collapsing the textarea while typing.
+    - Decoupled `currentSceneMemory?.prose` from the card-switch effect (`[currentSpark.id]`), maintaining editor open state during background saves, and clearing `localProseOverride` only when remote prose catches up to local text.
+    - Added automated regression test in `src/test/fireside_prompt_carousel.test.tsx` verifying uninterrupted typing across multiple debounced autosaves (25/25 passing).
+    - Integrated Teleprompter Schema SSOT (`SPEC-MW-163`) into `src/lib/curriculum/teleprompterSchema.ts`, with re-export in `masterStoryStructure.ts` and helper `getTeleprompterScene()`.
+    - Added immutable canonical snapshot and teleprompter invariant tests in `src/test/curriculum_ssot_arch_mw_127.test.ts` (18/18 passing).
+    - Updated NotebookLM architecture reference spec `docs/architecture/SPEC-MW-163-ultimate-hybrid-curriculum-standard-notebooklm.md` and conversation artifact.
+    - Updated Item 56.4 in `qa_checklist_interactive.html` and verified `qa_template.test.ts` (12/12 passing).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\lib\curriculum\teleprompterSchema.ts`
+  - `C:\Users\home\studio\src\lib\curriculum\masterStoryStructure.ts`
+  - `C:\Users\home\studio\src\test\fireside_prompt_carousel.test.tsx`
+  - `C:\Users\home\studio\src\test\curriculum_ssot_arch_mw_127.test.ts`
+  - `C:\Users\home\studio\docs\architecture\SPEC-MW-163-ultimate-hybrid-curriculum-standard-notebooklm.md`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+
 
 
 
