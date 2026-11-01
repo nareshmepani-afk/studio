@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (df12ef38)</title>
+  <title>Master QA Verification Suite — Grouped by Route (7b9a4338)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -50,15 +50,19 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">df12ef38</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">7b9a4338</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">df12ef3</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">7b9a433</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">28 Oct 2026, 16:57 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Environment: <strong class="text-amber-300">dev.memoryweaver.studio</strong></span>
+          <span class="text-xs font-mono text-gray-500">•</span>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30">
+            ☁️ CLOUD SYNCED (memory-weaver-dev)
+          </span>
         </div>
         <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
           <span>🎯 Master Verification Suite (Grouped by Route)</span>
@@ -118,6 +122,13 @@
         </div>
 
         <div class="flex items-center gap-2 flex-wrap">
+          <!-- ADMIN HUB & CLI SHORTCUTS -->
+          <a href="/admin" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs tracking-wide transition flex items-center gap-1.5 cursor-pointer">
+            <span>← Admin Hub</span>
+          </a>
+          <button id="btn-copy-cli" onclick="copyCliCommand(this)" class="px-3.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 font-bold text-xs font-mono transition flex items-center gap-1.5 cursor-pointer" title="Copy agent triage command">
+            <span>⚡ npm run qa:status</span>
+          </button>
           <button id="btn-copy-full" onclick="copyMarkdownReport(this)" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs tracking-wide transition shadow-lg shadow-amber-500/10 flex items-center gap-1.5 cursor-pointer">
             <span>📋 Copy Full Report for Agent</span>
           </button>
@@ -7104,7 +7115,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_df12ef38_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_7b9a4338_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -8001,6 +8012,57 @@
 
   <script>
     const TOTAL = 58;
+    function copyCliCommand(btn) {
+      navigator.clipboard.writeText('npm run qa:status');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span>✓ Copied Directive!</span>';
+      setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+    }
+
+    // Inbound cloud verdict updater
+    window.__applyCloudVerdict = function(id, verdict, notes, telemetry) {
+      if (!id) return;
+      if (id.includes('.')) {
+        // Sub-item, e.g. "56.1"
+        const [cNum, iNum] = id.split('.');
+        const key = `${cNum}_${iNum}`;
+        const vLower = (verdict || 'pending').toLowerCase();
+        if (vLower !== 'pending') {
+          itemVerdicts[key] = vLower;
+        } else {
+          delete itemVerdicts[key];
+        }
+        // Update DOM button
+        ['pass', 'fail', 'retest'].forEach(v => {
+          const btn = document.getElementById(`btn-${v}-${cNum}-${iNum}`);
+          if (btn) {
+            if (v === vLower) {
+              btn.classList.add('active', v === 'pass' ? '!bg-emerald-500' : '!bg-rose-500', '!text-white');
+            } else {
+              btn.classList.remove('active', '!bg-emerald-500', '!text-white', '!bg-rose-500');
+            }
+          }
+        });
+        updateItemProgress(cNum);
+      } else {
+        // Parent card, e.g. "56"
+        const cardNum = parseInt(id);
+        const vLower = (verdict || 'pending').toLowerCase();
+        verdicts[cardNum] = { verdict: vLower, timestamp: new Date().toISOString() };
+        ['pass', 'fail', 'retest', 'pending'].forEach(v => {
+          const btn = document.getElementById(`btn-${v}-${cardNum}`);
+          if (btn) {
+            if (v === vLower) {
+              btn.classList.add('active');
+            } else {
+              btn.classList.remove('active');
+            }
+          }
+        });
+      }
+      updateHUD();
+    };
+
     const STORAGE_KEY = 'MW_QA_ROUTE_GROUPED_3187cca9';
     let currentFilter = 'all';
     let currentViewMode = 'active';
@@ -8458,6 +8520,9 @@
         return;
       }
       verdicts[cardNum] = { verdict, timestamp: new Date().toISOString() };
+      if (window.__syncDocToFirestore) {
+        window.__syncDocToFirestore(String(cardNum), { verdict: verdict.toUpperCase() });
+      }
       ['pass', 'fail', 'retest', 'pending'].forEach(v => {
         document.getElementById(`btn-${v}-${cardNum}`)?.classList.remove('active');
       });
@@ -8757,6 +8822,9 @@
         return;
       }
       itemVerdicts[key] = verdict;
+      if (window.__syncDocToFirestore) {
+        window.__syncDocToFirestore(`${cardNum}.${itemNum}`, { verdict: verdict.toUpperCase() });
+      }
       const parent = btn.parentElement;
       if (parent) {
         parent.querySelectorAll('.item-verdict-btn').forEach(b => {
@@ -9160,7 +9228,7 @@
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: df12ef38 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 7b9a4338 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -9259,7 +9327,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: 'df12ef38',
+          commit: '7b9a4338',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -9287,7 +9355,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_df12ef38_${Date.now()}.json`;
+      a.download = `qa_master_checklist_7b9a4338_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }
@@ -9545,6 +9613,57 @@ ${subItemsBlock}`;
       updateTally();
       renderDeckAndArchive();
       showToast('All checklist state reset.');
+    }
+  </script>
+
+  <!-- FIREBASE CLOUD FIRESTORE REAL-TIME SYNC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const stagingConfig = {
+      apiKey: "AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98",
+      authDomain: 'memory-weaver-dev.firebaseapp.com',
+      projectId: "memory-weaver-dev",
+      storageBucket: "memory-weaver-dev.firebasestorage.app",
+      messagingSenderId: "98973313245",
+      appId: "1:98973313245:web:bbe45fb78d08d0563c1334",
+    };
+
+    try {
+      const app = initializeApp(stagingConfig, 'qa-active-deck-bridge');
+      const db = getFirestore(app);
+      const colRef = collection(db, 'qa_suites/active_deck/items');
+
+      window.__syncDocToFirestore = async function(itemId, updates) {
+        try {
+          const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', String(itemId));
+          await setDoc(itemRef, {
+            ...updates,
+            updatedAt: Date.now(),
+            updatedBy: 'tester@dev.memoryweaver.studio'
+          }, { merge: true });
+        } catch (e) {
+          console.warn('[Cloud Sync] Failed to update Firestore:', e);
+        }
+      };
+
+      let initialLoad = true;
+      onSnapshot(colRef, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const data = change.doc.data();
+          const id = change.doc.id;
+          if (!initialLoad && data && window.__applyCloudVerdict) {
+            window.__applyCloudVerdict(id, data.verdict, data.notes, data.telemetryTrace);
+          }
+        });
+        initialLoad = false;
+      }, (err) => {
+        console.warn('[Cloud Sync] onSnapshot subscription warning:', err);
+      });
+      console.log('🟢 [QA Cloud Engine] Real-time Firestore bridge active (memory-weaver-dev)');
+    } catch (e) {
+      console.warn('[Cloud Sync] Init error:', e);
     }
   </script>
 </body>
