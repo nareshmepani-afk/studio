@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (2216f080)</title>
+  <title>Master QA Verification Suite — Grouped by Route (34224ba3)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -50,9 +50,9 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">2216f080</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">34224ba3</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">2216f08</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">34224ba</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">28 Oct 2026, 16:57 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -7115,7 +7115,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_2216f080_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_34224ba3_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -8063,6 +8063,26 @@
       updateHUD();
     };
 
+    window.__applyCloudScreenshots = function(id, screenshots) {
+      if (!id || !Array.isArray(screenshots) || screenshots.length === 0) return;
+      if (id.includes('.')) {
+        const [cNum, iNum] = id.split('.');
+        const key = `${cNum}_${iNum}`;
+        if (!itemImages[key]) itemImages[key] = [];
+        let changed = false;
+        screenshots.forEach(url => {
+          if (!itemImages[key].includes(url)) {
+            itemImages[key].push(url);
+            changed = true;
+          }
+        });
+        if (changed) {
+          renderItemGallery(parseInt(cNum, 10), parseInt(iNum, 10));
+          saveState();
+        }
+      }
+    };
+
     const STORAGE_KEY = 'MW_QA_ROUTE_GROUPED_3187cca9';
     let currentFilter = 'all';
     let currentViewMode = 'active';
@@ -8657,10 +8677,33 @@
       const key = `${cardNum}_${itemNum}`;
       if (!itemImages[key]) itemImages[key] = [];
       const reader = new FileReader();
-      reader.onload = (e) => {
-        itemImages[key].push(e.target.result);
+      reader.onload = async (e) => {
+        const localData = e.target.result;
+        const currentIdx = itemImages[key].length;
+        itemImages[key].push(localData);
         renderItemGallery(cardNum, itemNum);
         saveState();
+
+        if (window.__uploadQaScreenshot) {
+          showToast(`Uploading screenshot to Cloud Storage...`);
+          try {
+            const cloudUrl = await window.__uploadQaScreenshot(cardNum, `${cardNum}.${itemNum}`, file);
+            if (cloudUrl) {
+              itemImages[key][currentIdx] = cloudUrl;
+              renderItemGallery(cardNum, itemNum);
+              saveState();
+              if (window.__syncDocToFirestore) {
+                window.__syncDocToFirestore(`${cardNum}.${itemNum}`, {
+                  screenshots: itemImages[key].filter(s => s && s.startsWith('http'))
+                });
+              }
+              showToast(`☁️ Screenshot uploaded to Cloud Storage!`);
+              return;
+            }
+          } catch (err) {
+            console.warn('[QA Cloud Storage] auto-upload failed:', err);
+          }
+        }
         showToast(`Screenshot attached to Item ${cardNum}.${itemNum}`);
       };
       reader.readAsDataURL(file);
@@ -8672,6 +8715,11 @@
       itemImages[key].splice(idx, 1);
       renderItemGallery(cardNum, itemNum);
       saveState();
+      if (window.__syncDocToFirestore) {
+        window.__syncDocToFirestore(`${cardNum}.${itemNum}`, {
+          screenshots: itemImages[key].filter(s => s && s.startsWith('http'))
+        });
+      }
     }
 
     function handleItemDrop(event, cardNum, itemNum) {
@@ -8703,9 +8751,11 @@
         list.forEach((url, idx) => {
           const div = document.createElement('div');
           div.className = 'relative group rounded-lg overflow-hidden border border-gray-700 aspect-video bg-black';
+          const isCloud = url && url.startsWith('http');
           div.innerHTML = `
-            <img src="${url}" class="w-full h-full object-cover" />
-            <button onclick="removeItemImage(${cardNum}, ${itemNum}, ${idx})" class="absolute top-1 right-1 bg-red-600/80 hover:bg-red-600 text-white rounded px-1 text-[10px] opacity-0 group-hover:opacity-100 transition cursor-pointer">✕</button>
+            <img src="${url}" class="w-full h-full object-cover cursor-pointer" onclick="window.open('${url}', '_blank')" title="${isCloud ? 'Click to open full 4K screenshot in new tab' : 'Local screenshot'}" />
+            ${isCloud ? `<span class="absolute bottom-1 left-1 bg-black/80 text-amber-300 rounded px-1.5 py-0.5 text-[9px] font-mono border border-amber-500/30">☁️ Cloud</span>` : `<span class="absolute bottom-1 left-1 bg-black/80 text-gray-400 rounded px-1.5 py-0.5 text-[9px] font-mono">Local</span>`}
+            <button onclick="removeItemImage(${cardNum}, ${itemNum}, ${idx})" class="absolute top-1 right-1 bg-red-600/80 hover:bg-red-600 text-white rounded px-1.5 py-0.5 text-[10px] opacity-0 group-hover:opacity-100 transition cursor-pointer" title="Delete screenshot">✕</button>
           `;
           gallery.appendChild(div);
         });
@@ -8726,23 +8776,70 @@
       itemTelemetry[key] = document.getElementById(`item-telemetry-${cardNum}-${itemNum}`)?.value || '';
       renderItemGallery(cardNum, itemNum);
       saveState();
+      if (window.__syncDocToFirestore) {
+        window.__syncDocToFirestore(`${cardNum}.${itemNum}`, {
+          notes: itemNotes[key],
+          telemetryTrace: itemTelemetry[key]
+        });
+      }
     }
 
-    function copySingleItemReport(cardNum, itemNum, btn) {
+    async function copySingleItemReport(cardNum, itemNum, btn) {
       const key = `${cardNum}_${itemNum}`;
       const verdict = (itemVerdicts[key] || 'PENDING').toUpperCase();
       const note = document.getElementById(`item-notes-${cardNum}-${itemNum}`)?.value.trim() || itemNotes[key] || 'None provided';
       const consoleLog = document.getElementById(`item-console-${cardNum}-${itemNum}`)?.value.trim() || itemConsoleLogs[key] || 'None provided';
       const telemetry = document.getElementById(`item-telemetry-${cardNum}-${itemNum}`)?.value.trim() || itemTelemetry[key] || 'None provided';
-      const shots = (itemImages[key] || []).length;
+      const shotList = itemImages[key] || [];
       const edgeSha = document.getElementById('header-edge-sha')?.textContent || 'fc10d6e';
+
+      // If any screenshots are data URLs and cloud upload is available, upload them now
+      if (window.__uploadQaScreenshot && shotList.some(s => s && s.startsWith('data:'))) {
+        const origText = btn ? btn.innerHTML : '';
+        if (btn) btn.innerHTML = '<span>☁️ Uploading shots...</span>';
+        for (let i = 0; i < shotList.length; i++) {
+          if (shotList[i] && shotList[i].startsWith('data:')) {
+            try {
+              const res = await fetch(shotList[i]);
+              const blob = await res.blob();
+              const cloudUrl = await window.__uploadQaScreenshot(cardNum, `${cardNum}.${itemNum}`, blob);
+              if (cloudUrl) {
+                shotList[i] = cloudUrl;
+              }
+            } catch(e) {
+              console.warn('Failed to upload data URL to cloud:', e);
+            }
+          }
+        }
+        itemImages[key] = shotList;
+        renderItemGallery(cardNum, itemNum);
+        saveState();
+        if (window.__syncDocToFirestore) {
+          window.__syncDocToFirestore(`${cardNum}.${itemNum}`, {
+            screenshots: shotList.filter(u => u && u.startsWith('http'))
+          });
+        }
+        if (btn) btn.innerHTML = origText;
+      }
+
+      let shotsSection = `- Screenshots Attached: ${shotList.length}`;
+      if (shotList.length > 0) {
+        shotsSection += '\n' + shotList.map((url, i) => {
+          if (url && url.startsWith('http')) {
+            return `  - Screenshot ${i + 1}: ${url}`;
+          } else {
+            return `  - Screenshot ${i + 1}: [Local image attached in browser]`;
+          }
+        }).join('\n');
+      }
+
       const report = `### [Item ${cardNum}.${itemNum} — Card ${cardNum}]
 - Active Edge SHA: ${edgeSha}
 - Verdict: ${verdict}
 - Feedback / Question: ${note}
 - Console Error Log: ${consoleLog}
 - Telemetry Event Trace: ${telemetry}
-- Screenshots Attached: ${shots}`;
+${shotsSection}`;
       copyTextToClipboard(report, btn);
     }
 
@@ -9228,7 +9325,7 @@
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 2216f080 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 34224ba3 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -9250,7 +9347,12 @@
             const iNote = itemNotes[k] ? ` | Note: ${itemNotes[k]}` : '';
             const iCon = itemConsoleLogs[k] ? ` | Console: ${itemConsoleLogs[k]}` : '';
             const iTel = itemTelemetry[k] ? ` | Telemetry: ${itemTelemetry[k]}` : '';
-            const iShots = (itemImages[k] || []).length ? ` | Screenshots: ${itemImages[k].length}` : '';
+            const shots = itemImages[k] || [];
+          let iShots = '';
+          if (shots.length > 0) {
+            const urls = shots.filter(u => u && u.startsWith('http'));
+            iShots = urls.length > 0 ? ` | Screenshots (${shots.length}): ${urls.map((u, idx) => `[#${idx + 1}](${u})`).join(', ')}` : ` | Screenshots: ${shots.length}`;
+          }
             subItemsBlock += `  - Item ${i}.${sub}: ${iv}${iNote}${iCon}${iTel}${iShots}\n`;
           }
         }
@@ -9327,7 +9429,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: '2216f080',
+          commit: '34224ba3',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -9355,7 +9457,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_2216f080_${Date.now()}.json`;
+      a.download = `qa_master_checklist_34224ba3_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }
@@ -9620,6 +9722,7 @@ ${subItemsBlock}`;
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
     const stagingConfig = {
       apiKey: "AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98",
@@ -9633,7 +9736,23 @@ ${subItemsBlock}`;
     try {
       const app = initializeApp(stagingConfig, 'qa-active-deck-bridge');
       const db = getFirestore(app);
+      const storage = getStorage(app);
       const colRef = collection(db, 'qa_suites/active_deck/items');
+
+      window.__uploadQaScreenshot = async function(cardNum, itemId, fileOrBlob) {
+        try {
+          const filename = `${itemId}_${Date.now()}.png`;
+          const storageRef = ref(storage, `qa-evidence/${cardNum}/${filename}`);
+          const snapshot = await uploadBytes(storageRef, fileOrBlob, {
+            contentType: fileOrBlob.type || 'image/png'
+          });
+          const downloadUrl = await getDownloadURL(snapshot.ref);
+          return downloadUrl;
+        } catch (err) {
+          console.warn('[QA Cloud Storage] Upload failed:', err);
+          return null;
+        }
+      };
 
       window.__syncDocToFirestore = async function(itemId, updates) {
         try {
@@ -9655,6 +9774,9 @@ ${subItemsBlock}`;
           const id = change.doc.id;
           if (!initialLoad && data && window.__applyCloudVerdict) {
             window.__applyCloudVerdict(id, data.verdict, data.notes, data.telemetryTrace);
+            if (data.screenshots && Array.isArray(data.screenshots) && data.screenshots.length > 0 && window.__applyCloudScreenshots) {
+              window.__applyCloudScreenshots(id, data.screenshots);
+            }
           }
         });
         initialLoad = false;
