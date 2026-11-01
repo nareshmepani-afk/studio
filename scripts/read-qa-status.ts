@@ -1,27 +1,22 @@
-import dotenv from 'dotenv';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
 
-dotenv.config({ path: '.env.local' });
+const stagingConfig = {
+  apiKey: 'AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98',
+  authDomain: 'memory-weaver-dev.firebaseapp.com',
+  projectId: 'memory-weaver-dev',
+  storageBucket: 'memory-weaver-dev.firebasestorage.app',
+  messagingSenderId: '98973313245',
+  appId: '1:98973313245:web:bbe45fb78d08d0563c1334',
+};
 
-const rawSa = process.env.SERVICE_ACCOUNT_JSON;
-if (!rawSa) {
-  console.error('❌ SERVICE_ACCOUNT_JSON missing in .env.local');
-  process.exit(1);
-}
-
-const serviceAccount = JSON.parse(rawSa);
-if (serviceAccount.private_key) {
-  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-}
-
-const app = getApps().length ? getApps()[0] : initializeApp({ credential: cert(serviceAccount) });
+const app = getApps().length ? getApps()[0] : initializeApp(stagingConfig);
 const db = getFirestore(app);
 
 const COLLECTION_PATH = 'qa_suites/active_deck/items';
 
 export async function readQaStatus() {
-  const snapshot = await db.collection(COLLECTION_PATH).get();
+  const snapshot = await getDocs(collection(db, COLLECTION_PATH));
   const items: any[] = [];
   snapshot.forEach((d) => items.push(d.data()));
 
@@ -31,13 +26,13 @@ export async function readQaStatus() {
   const retest = items.filter((i) => i.verdict === 'RETEST').length;
   const pending = total - (pass + fail + retest);
 
-  console.log(`\n📊 CLOUD QA STATUS [qa_suites/active_deck/items]`);
+  console.log(`\n📊 CLOUD QA STATUS [qa_suites/active_deck/items] (memory-weaver-dev)`);
   console.log(`Total: ${total} | PASS: ${pass} | FAIL: ${fail} | RETEST: ${retest} | PENDING: ${pending}\n`);
 
   const actionables = items.filter((i) => i.verdict === 'FAIL' || i.verdict === 'RETEST');
   if (actionables.length === 0) {
     console.log('🟢 ALL TESTED ITEMS PASSING — Zero failed or re-test cards in Cloud Firestore.');
-    return;
+    process.exit(0);
   }
 
   console.log(`🚨 ACTIONABLE ITEMS REQUIRING ATTENTION (${actionables.length}):`);
@@ -50,6 +45,7 @@ export async function readQaStatus() {
     if (item.screenshots?.length) console.log(`Screenshots: ${item.screenshots.join('\n             ')}`);
   });
   console.log(`──────────────────────────────────────────\n`);
+  process.exit(0);
 }
 
 if (require.main === module) {

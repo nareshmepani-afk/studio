@@ -23,7 +23,8 @@ import { MissionControlConsole } from '@/components/admin/MissionControlConsole'
 import { getBackendEnvironmentDetails } from './actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { Gift, Rocket } from 'lucide-react';
+import { Gift, Rocket, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminDashboardContent() {
   const { user, logout, loading: authLoading } = useAuth();
@@ -242,6 +243,17 @@ export default function AdminDashboardContent() {
                 </svg>
                 Knowledge Hub
               </button>
+
+              <Link
+                href="/admin/qa"
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition duration-200"
+              >
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  <span>QA Testing Suite</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">/admin/qa ↗</span>
+              </Link>
 
               <div className="pt-2 border-t border-slate-800/60 mt-2">
                 <button
