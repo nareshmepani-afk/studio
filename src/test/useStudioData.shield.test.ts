@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useStudioData } from '@/hooks/studio/useStudioData';
 
@@ -41,8 +41,35 @@ vi.mock('@/lib/firebase', () => ({
   db: {},
 }));
 
+let originalBroadcastChannel: any;
+let mockChannels: Map<string, any[]> = new Map();
+
 describe('useStudioData Loading Shield', () => {
   beforeEach(() => {
+    mockChannels = new Map();
+    originalBroadcastChannel = globalThis.BroadcastChannel;
+    globalThis.BroadcastChannel = class MockBroadcastChannel {
+      name: string;
+      onmessage: ((e: any) => void) | null = null;
+      constructor(name: string) {
+        this.name = name;
+        const list = mockChannels.get(name) || [];
+        list.push(this);
+        mockChannels.set(name, list);
+      }
+      postMessage(data: any) {
+        const list = mockChannels.get(this.name) || [];
+        list.forEach((target) => {
+          if (target !== this && target.onmessage) {
+            target.onmessage({ data } as MessageEvent);
+          }
+        });
+      }
+      close() {
+        const list = mockChannels.get(this.name) || [];
+        mockChannels.set(this.name, list.filter((ch) => ch !== this));
+      }
+    } as any;
     mockAuthLoading = true;
     mockUser = null;
     memoriesCallback = null;
@@ -153,5 +180,68 @@ describe('useStudioData Loading Shield', () => {
     expect(p1Chapter?.memory).toBeDefined();
     expect(p1Chapter?.memory?.id).toBe('part-1-scene-1');
     expect(p1Chapter?.memory?.prose).toContain('epic journey');
+  });
+
+  it('preserves documents lacking createdAt and sorts them via updatedAt', () => {
+    mockAuthLoading = false;
+    mockUser = { uid: 'user_naresh_123' };
+
+    const { result } = renderHook(() => useStudioData('user_naresh_123'));
+
+    const mockMemories = [
+      {
+        id: 'part-2-scene-2',
+        title: 'The Shape of Loss',
+        prose: 'Looking back, what stays with me most...',
+        status: 'draft',
+        updatedAt: 1793532000000,
+      },
+      {
+        id: 'part-1-scene-1',
+        title: 'A Child of Two Worlds',
+        prose: 'First journey...',
+        status: 'draft',
+        createdAt: '2026-06-29T12:00:00.000Z',
+      },
+    ];
+
+    act(() => {
+      if (memoriesCallback) {
+        memoriesCallback({
+          docs: mockMemories.map(m => ({
+            id: m.id,
+            data: () => m,
+          })),
+        });
+      }
+    });
+
+    expect(result.current.memories.length).toBe(2);
+    expect(result.current.memories[0].id).toBe('part-2-scene-2');
+  });
+
+  it('updates memory state in real-time when BroadcastChannel receives mw_script_sync message', () => {
+    mockAuthLoading = false;
+    mockUser = { uid: 'user_naresh_123' };
+
+    const { result } = renderHook(() => useStudioData('user_naresh_123'));
+
+    act(() => {
+      const channel = new BroadcastChannel('mw_script_sync');
+      channel.postMessage({
+        sceneId: 'part-2-scene-2',
+        prose: 'Live broadcast prose from Fireside companion',
+        timestamp: Date.now(),
+      });
+    });
+
+    const targetMem = result.current.memories.find(m => m.id === 'part-2-scene-2');
+    expect(targetMem).toBeDefined();
+    expect(targetMem?.prose).toBe('Live broadcast prose from Fireside companion');
+    expect(targetMem?.status).toBe('draft');
+  });
+
+  afterEach(() => {
+    globalThis.BroadcastChannel = originalBroadcastChannel;
   });
 });

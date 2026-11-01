@@ -5,7 +5,8 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Memory, PromptGroup, StoryRequest } from '@/types';
-import { MASTER_STORY_STRUCTURE, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
+import { MASTER_STORY_STRUCTURE, resolveSceneFromPromptId, resolvePromptIdFromSceneId, getSceneById } from '@/lib/curriculum/masterStoryStructure';
+import type { ScriptSyncMessage } from '@/components/studio/shared/NarrativeScriptInput';
 import { useLanguage } from '@/hooks/useLanguage';
 
 export interface UnifiedChapter {
@@ -35,6 +36,52 @@ export function useStudioData(userId: string | undefined) {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [requests, setRequests] = useState<StoryRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Cross-Surface Broadcast Listener: Live-update memories when typing in another tab (e.g. Fireside)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('BroadcastChannel' in window)) return;
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('mw_script_sync');
+      channel.onmessage = (event: MessageEvent<ScriptSyncMessage>) => {
+        const msg = event.data;
+        if (!msg || !msg.sceneId || typeof msg.prose !== 'string') return;
+        setMemories((prev) => {
+          const index = prev.findIndex((m) => m.id === msg.sceneId || (m as any).sceneId === msg.sceneId || m.promptId === msg.sceneId);
+          if (index !== -1) {
+            const next = [...prev];
+            next[index] = {
+              ...next[index],
+              prose: msg.prose,
+              description: msg.prose,
+              status: next[index].status || 'draft',
+              updatedAt: new Date(msg.timestamp || Date.now()).toISOString(),
+            };
+            return next;
+          } else {
+            const resolvedPromptId = resolvePromptIdFromSceneId(msg.sceneId);
+            const sceneDef = getSceneById(msg.sceneId);
+            const newMem: Memory = {
+              id: msg.sceneId,
+              promptId: resolvedPromptId || msg.sceneId,
+              sceneId: msg.sceneId,
+              title: sceneDef?.title || 'Draft Scene',
+              prose: msg.prose,
+              description: msg.prose,
+              status: 'draft',
+              productionStage: 0,
+              createdAt: new Date(msg.timestamp || Date.now()).toISOString(),
+              updatedAt: new Date(msg.timestamp || Date.now()).toISOString(),
+            } as any;
+            return [newMem, ...prev];
+          }
+        });
+      };
+    } catch {}
+    return () => {
+      try { channel?.close(); } catch {}
+    };
+  }, []);
   
   // Guard refs to track last known data strings
   const lastMemoriesJSON = useRef<string>('');
@@ -63,14 +110,18 @@ export function useStudioData(userId: string | undefined) {
 
     setIsLoading(true);
 
-    // Subscribe to Memories
+    // Subscribe to Memories (Client-side sorted to prevent silent drops on missing createdAt)
     const memoriesRef = collection(db, 'users', userId, 'memories');
-    const qMemories = query(memoriesRef, orderBy('createdAt', 'desc'));
     
-    const unsubMemories = onSnapshot(qMemories, (snapshot) => {
+    const unsubMemories = onSnapshot(memoriesRef, (snapshot) => {
       const mems = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Memory))
-        .filter(m => !m.isFlightSimulator && (m as any).sceneId !== 'prologue-flight-simulator' && m.id !== 'first_flight_rehearsal');
+        .filter(m => !m.isFlightSimulator && (m as any).sceneId !== 'prologue-flight-simulator' && m.id !== 'first_flight_rehearsal')
+        .sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : (a.updatedAt ? new Date(a.updatedAt).getTime() : 0);
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : (b.updatedAt ? new Date(b.updatedAt).getTime() : 0);
+          return timeB - timeA;
+        });
       const memsJSON = JSON.stringify(mems);
       
       if (memsJSON !== lastMemoriesJSON.current) {

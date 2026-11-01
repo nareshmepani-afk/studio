@@ -1049,6 +1049,7 @@ export function useCurriculumVault({
         description: updatedProseText,
         sensoryAnchors: preservedSensoryAnchors,
         lastEditedSurface: 'fireside_mobile',
+        createdAt: current.createdAt || nowIso,
         updatedAt: nowEpoch,
         lastModified: nowIso,
       };
@@ -1059,12 +1060,14 @@ export function useCurriculumVault({
         title: current.title || sceneDef?.title || '',
         chapterId: sceneDef ? `part-${sceneDef.partNumber}` : 'part-1',
         partNumber: sceneDef?.partNumber || 1,
-        status: current.currentStatus || 'draft',
+        status: (current.takes && current.takes.length > 0) ? (current.currentStatus || 'captured') : 'draft',
         prose: updatedProseText,
         description: updatedProseText, // Rule 14 dual-sync
         sensoryAnchors: preservedSensoryAnchors,
         lastEditedSurface: 'fireside_mobile',
+        createdAt: current.createdAt || nowIso,
         updatedAt: nowEpoch,
+        lastModified: nowIso,
       };
 
       // Rule 12 Optimistic UI: 0ms synchronous state update before network resolution

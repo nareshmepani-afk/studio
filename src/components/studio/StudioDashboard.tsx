@@ -347,7 +347,8 @@ export function StudioDashboard({
         <div className="space-y-24">
           {chapters.map((chapter) => {
               const isGroupPremium = chapter.id !== 'part-i';
-              const canAccessGroup = !isGroupPremium || directorPassStatus === 'paid_host_pass_active';
+              const isPrivilegedUser = user?.membershipTier === 'generational_vault' || (user as any)?.role === 'Super Admin';
+              const canAccessGroup = !isGroupPremium || directorPassStatus === 'paid_host_pass_active' || isPrivilegedUser;
 
               return (
                 <section key={chapter.id} className="relative">
@@ -370,7 +371,7 @@ export function StudioDashboard({
                     {chapter.prompts.map((cp, promptIdx) => {
                       const isCompleted = !!cp.memory;
                       const isPremium = premiumPromptIds.has(cp.id);
-                      const canAccess = !isPremium || directorPassStatus === 'paid_host_pass_active';
+                      const canAccess = !isPremium || directorPassStatus === 'paid_host_pass_active' || isPrivilegedUser;
 
                       const effectiveOnStartChapter = (promptId: string, isCompleted: boolean) => {
                         if (canAccess) {
@@ -426,7 +427,7 @@ export function StudioDashboard({
                           <div 
                             data-hotspot-id={`HS_STUDIO_ADD_CUSTOM_MEMORY_${chapter.id}`}
                             onClick={() => {
-                              const hasActivePass = directorPassStatus === 'free_host_pass_active' || directorPassStatus === 'paid_host_pass_active';
+                              const hasActivePass = directorPassStatus === 'free_host_pass_active' || directorPassStatus === 'paid_host_pass_active' || isPrivilegedUser;
                               if (!hasActivePass) {
                                 setUpsellFeature("creating new scenes");
                                 setIsUpsellOpen(true);
