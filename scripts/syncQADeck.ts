@@ -409,17 +409,27 @@ export async function syncQADeck(customOperator?: string): Promise<{ docId: stri
     const sha8 = execFileSync('git', ['rev-parse', '--short=8', 'HEAD'], { encoding: 'utf8' }).trim();
     const sha7 = sha8.slice(0, 7);
     if (sha8) {
+      const nowUtc = new Date().toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'UTC',
+        timeZoneName: 'short'
+      });
       const updatedHtml = htmlContent
         .replace(/<title>Master QA Verification Suite — Grouped by Route \([^)]+\)<\/title>/i, `<title>Master QA Verification Suite — Grouped by Route (${sha8})</title>`)
         .replace(/(<strong\s+id="header-target-sha"[^>]*>)[^<]+(<\/strong>)/i, `$1${sha8}$2`)
         .replace(/(<strong\s+id="header-edge-sha"[^>]*>)[^<]+(<\/strong>)/i, `$1${sha7}$2`)
+        .replace(/(<strong\s+id="header-updated-time"[^>]*>)[^<]+(<\/strong>)/i, `$1${nowUtc}$2`)
         .replace(/commit:\s*['"][0-9a-f]{7,8}['"]/g, `commit: '${sha8}'`)
         .replace(/qa_master_checklist_[0-9a-f]{7,8}_/g, `qa_master_checklist_${sha8}_`)
         .replace(/\*\*Target Commit SHA\*\*:\s*[0-9a-f]{7,8}/g, `**Target Commit SHA**: ${sha8}`);
       if (updatedHtml !== htmlContent) {
         htmlContent = updatedHtml;
         fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-        console.log(`🔖 Auto-stamped Commit SHA (${sha8}) into qa_checklist_interactive.html`);
+        console.log(`🔖 Auto-stamped Commit SHA (${sha8}) and Timestamp (${nowUtc}) into qa_checklist_interactive.html`);
       }
     }
   } catch {

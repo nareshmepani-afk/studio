@@ -450,13 +450,34 @@ export function useCurriculumVault({
   // ---------------------------------------------------------------------------
   const getSceneMemory = useCallback(
     (sceneIdOrPromptId: string): UnifiedCurriculumMemory => {
+      const sceneDef = resolveSceneFromPromptId(sceneIdOrPromptId) || getSceneById(sceneIdOrPromptId);
+      const canonicalSceneId = sceneDef?.id || sceneIdOrPromptId;
+
+      // Clean Slate Override (Staging Testing Shield)
+      if (typeof window !== 'undefined') {
+        try {
+          const searchParams = new URLSearchParams(window.location.search);
+          if (searchParams.get('clean_slate') === 'true') {
+            const target = searchParams.get('id') || searchParams.get('prompt') || null;
+            if (!target || target === canonicalSceneId || target === sceneDef?.promptId || target === sceneIdOrPromptId) {
+              return createEmptyCurriculumMemory({
+                id: `memoir_${canonicalSceneId}`,
+                userId: effectiveUserId,
+                sceneId: canonicalSceneId,
+                partNumber: sceneDef?.partNumber ?? 1,
+                sceneNumber: sceneDef?.sceneNumber ?? 1,
+                sceneTitle: sceneDef?.title ?? canonicalSceneId,
+                originSurface: 'fireside_mobile',
+              });
+            }
+          }
+        } catch {}
+      }
+
       const activeMap = Object.keys(scenes).length > 0 ? scenes : scenesRef.current;
       if (activeMap[sceneIdOrPromptId]) {
         return activeMap[sceneIdOrPromptId];
       }
-
-      const sceneDef = resolveSceneFromPromptId(sceneIdOrPromptId) || getSceneById(sceneIdOrPromptId);
-      const canonicalSceneId = sceneDef?.id || sceneIdOrPromptId;
 
       if (activeMap[canonicalSceneId]) {
         return activeMap[canonicalSceneId];

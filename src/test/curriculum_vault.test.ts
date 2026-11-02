@@ -706,5 +706,39 @@ describe('MW-88-T1: useCurriculumVault & Bi-Directional Bridge Suite', () => {
       { merge: true }
     );
   });
-});
 
+  it('19. returns pristine unwritten state for active scene when ?clean_slate=true is in URL', () => {
+    const originalLocation = window.location;
+    delete (window as any).location;
+    window.location = new URL('https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true') as any;
+
+    const { result } = renderHook(() => useCurriculumVault({ userId: 'user-123' }));
+
+    act(() => {
+      if (mockSnapshotCallback) {
+        mockSnapshotCallback({
+          docs: [
+            {
+              id: 'doc-scene-2',
+              data: () => ({
+                id: 'doc-scene-2',
+                sceneId: 'part-1-scene-2',
+                promptId: 'p2',
+                prose: 'Existing drafted text from prior session',
+                takes: [{ id: 'take-1', durationSeconds: 15, isPreferred: true }],
+                productionStage: 2,
+              }),
+            },
+          ],
+        });
+      }
+    });
+
+    const sceneMemory = result.current.getSceneMemory('part-1-scene-2');
+    expect(sceneMemory.prose).toBe('');
+    expect(sceneMemory.takes).toEqual([]);
+    expect(sceneMemory.productionStage ?? 0).toBe(0);
+
+    (window as any).location = originalLocation;
+  });
+});

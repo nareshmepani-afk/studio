@@ -160,9 +160,34 @@ export function useStudioData(userId: string | undefined) {
   }, [userId, user?.uid]);
 
   const chapters = useMemo(() => {
+    // Clean Slate Override (Staging Testing Shield)
+    let cleanSlateSceneId: string | null = null;
+    let isGlobalCleanSlate = false;
+    if (typeof window !== 'undefined') {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('clean_slate') === 'true') {
+          cleanSlateSceneId = searchParams.get('id') || searchParams.get('prompt') || null;
+          isGlobalCleanSlate = !cleanSlateSceneId;
+        }
+      } catch {}
+    }
+
     return MASTER_STORY_STRUCTURE.map((part): UnifiedChapter => {
       // 1. Correlate canonical scenes defined in the master curriculum
       const canonicalPrompts = part.scenes.map((scene): CorrelatedPrompt => {
+        // If clean_slate override is active for this scene or globally, return pristine unwritten state
+        const isSceneCleanSlate = isGlobalCleanSlate || (cleanSlateSceneId !== null && (cleanSlateSceneId === scene.id || cleanSlateSceneId === scene.promptId));
+        if (isSceneCleanSlate) {
+          return {
+            id: scene.promptId,
+            title: scene.title,
+            description: scene.subtitle,
+            memory: undefined,
+            requests: [],
+          };
+        }
+
         // Trace forward: Follow the chain of memory pointer documents to find the latest leaf memory.
         // CANDIDATE RESOLUTION SHIELD: If multiple memory documents exist matching the prompt,
         // prioritise authentic non-test memories and completed/in-progress takes over unrecorded stage-0 test drafts.
@@ -333,6 +358,7 @@ export function useStudioData(userId: string | undefined) {
   // Compares authentic document count (M) with resolved card count (N) to detect document shadowing in real time.
   useEffect(() => {
     if (isLoading || !memories || memories.length === 0 || chapters.length === 0) return;
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('clean_slate') === 'true') return;
 
     const evaluation = evaluateDataShadowingAnomaly(memories, chapters);
 
@@ -372,9 +398,31 @@ export function useStudioData(userId: string | undefined) {
     }
   }, [isLoading, memories, chapters, userId]);
 
+  const filteredMemories = useMemo(() => {
+    if (typeof window === 'undefined') return memories;
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('clean_slate') === 'true') {
+        const cleanSlateSceneId = searchParams.get('id') || searchParams.get('prompt') || null;
+        if (!cleanSlateSceneId) return [];
+        return memories.filter((m) => {
+          if (m.id === cleanSlateSceneId || (m as any).sceneId === cleanSlateSceneId || m.promptId === cleanSlateSceneId) {
+            return false;
+          }
+          if (m.promptId) {
+            const resolved = resolveSceneFromPromptId(m.promptId);
+            if (resolved && resolved.id === cleanSlateSceneId) return false;
+          }
+          return true;
+        });
+      }
+    } catch {}
+    return memories;
+  }, [memories]);
+
   return {
     chapters,
-    memories,
+    memories: filteredMemories,
     requests,
     stats,
     isLoading

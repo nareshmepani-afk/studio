@@ -241,6 +241,50 @@ describe('useStudioData Loading Shield', () => {
     expect(targetMem?.status).toBe('draft');
   });
 
+  it('suppresses memory rehydration and returns unwritten pristine state when ?clean_slate=true is in URL', () => {
+    mockAuthLoading = false;
+    mockUser = { uid: 'user_naresh_123' };
+
+    const originalLocation = window.location;
+    delete (window as any).location;
+    window.location = new URL('https://dev.memoryweaver.studio/studio?id=part-1-scene-2&clean_slate=true') as any;
+
+    const { result } = renderHook(() => useStudioData('user_naresh_123'));
+
+    const mockMemories = [
+      {
+        id: 'part-1-scene-2',
+        promptId: 'p2',
+        title: 'The Brass Spice Tin',
+        prose: 'Existing draft narrative from earlier test session...',
+        status: 'draft',
+        createdAt: '2026-10-20T12:00:00.000Z',
+      },
+    ];
+
+    act(() => {
+      if (memoriesCallback) {
+        memoriesCallback({
+          docs: mockMemories.map((m) => ({
+            id: m.id,
+            data: () => m,
+          })),
+        });
+      }
+    });
+
+    const p2Prompt = result.current.chapters
+      .flatMap((c) => c.prompts)
+      .find((p) => p.id === 'p2');
+
+    expect(p2Prompt).toBeDefined();
+    // Memory MUST be suppressed by clean_slate=true
+    expect(p2Prompt?.memory).toBeUndefined();
+    expect(result.current.memories.find((m) => m.id === 'part-1-scene-2')).toBeUndefined();
+
+    (window as any).location = originalLocation;
+  });
+
   afterEach(() => {
     globalThis.BroadcastChannel = originalBroadcastChannel;
   });
