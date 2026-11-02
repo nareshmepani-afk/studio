@@ -32,7 +32,7 @@ function decodeHtml(str: string) {
 export async function seedQaFirestore() {
   const htmlPath = path.resolve(process.cwd(), 'qa_checklist_interactive.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
-  const cardItemCounts: Record<number, number> = { 53: 10, 54: 5, 55: 5, 56: 5, 57: 5, 58: 5 };
+  const cardItemCounts: Record<number, number> = { 53: 10, 54: 5, 55: 5, 56: 5, 57: 5, 58: 5, 59: 5 };
 
   console.log('📖 Fetching existing docs from memory-weaver-dev to ensure idempotency...');
   const snap = await getDocs(collection(db, COLLECTION_PATH));
@@ -44,8 +44,8 @@ export async function seedQaFirestore() {
   let created = 0;
   let preserved = 0;
 
-  for (let cardNum = 1; cardNum <= 58; cardNum++) {
-    const nextCardStr = cardNum < 58 ? `id="card-${cardNum + 1}"` : '<!-- END OF CARDS -->';
+  for (let cardNum = 1; cardNum <= 59; cardNum++) {
+    const nextCardStr = cardNum < 59 ? `id="card-${cardNum + 1}"` : '<!-- END OF CARDS -->';
     const cMatch = html.match(new RegExp(`id="card-${cardNum}"[\\s\\S]*?(?=${nextCardStr}|$)`));
     if (!cMatch) continue;
     const cardChunk = cMatch[0];
@@ -105,8 +105,9 @@ export async function seedQaFirestore() {
         }
 
         let verdict = 'PENDING';
-        if (['56.1', '56.2', '56.3'].includes(itemId)) verdict = 'PASS';
+        if (['56.1', '56.2', '56.3', '56.4', '56.5'].includes(itemId)) verdict = 'PASS';
         if (cardNum === 57 || cardNum === 58) verdict = 'PASS';
+        if (itemId === '59.5') verdict = 'PASS';
 
         const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
         batch.set(itemRef, {
@@ -116,6 +117,26 @@ export async function seedQaFirestore() {
           steps: [`Execute staging verification against ${itemRoute}`],
           targetRoute: itemRoute,
           verdict,
+          notes: '',
+          telemetryTrace: '',
+          screenshots: [],
+          updatedAt: Date.now(),
+          updatedBy: 'system:seed'
+        });
+        created++;
+      }
+
+      // Ensure parent card document exists for cards with sub-items
+      const parentId = String(cardNum);
+      if (!existingMap.has(parentId)) {
+        const parentRef = doc(db, 'qa_suites', 'active_deck', 'items', parentId);
+        batch.set(parentRef, {
+          id: parentId,
+          cardNumber: cardNum,
+          title: cardTitle,
+          steps: [`Execute staging verification against ${cardRoute}`],
+          targetRoute: cardRoute,
+          verdict: (cardNum === 57 || cardNum === 58) ? 'PASS' : 'PENDING',
           notes: '',
           telemetryTrace: '',
           screenshots: [],

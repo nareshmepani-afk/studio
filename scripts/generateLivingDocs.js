@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 
@@ -124,6 +125,20 @@ try {
     });
   });
   fs.writeFileSync(jsonOutputPath, JSON.stringify(searchIndex, null, 2), 'utf8');
+
+  // Synchronise QA interactive checklist to static public & server-side route module
+  const qaHtmlPath = path.resolve(__dirname, '../qa_checklist_interactive.html');
+  if (fs.existsSync(qaHtmlPath)) {
+    const qaHtml = fs.readFileSync(qaHtmlPath, 'utf8');
+    const publicQaPath = path.resolve(__dirname, '../public/qa_checklist_interactive.html');
+    fs.writeFileSync(publicQaPath, qaHtml, 'utf8');
+    const qaModulePath = path.resolve(__dirname, '../src/lib/qa/qaHtmlContent.ts');
+    const qaModuleContent = 'export const QA_HTML_STRING = ' + JSON.stringify(qaHtml) + ';\n';
+    fs.writeFileSync(qaModulePath, qaModuleContent, 'utf8');
+    console.log('QA INTERACTIVE SUITE EMBEDDED // /admin/qa IN LOCKSTEP WITH QA CHECKLIST');
+  }
+
+
 
   // Alignment requirement console log
   console.log("LIVING MANIFEST COMPILED SUCCESSFULLY // OPERATIONAL SHIELD VERIFIED GREEN");

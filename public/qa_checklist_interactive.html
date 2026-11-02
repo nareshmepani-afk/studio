@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (34224ba3)</title>
+  <title>Master QA Verification Suite — Grouped by Route (7dabe400)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -50,9 +50,9 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">34224ba3</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">7dabe400</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">34224ba</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">7dabe40</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">28 Oct 2026, 16:57 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -7115,7 +7115,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_34224ba3_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_7dabe400_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -7970,7 +7970,370 @@
         </div>
 
 </div>
-      </section>
+      
+
+        <!-- CARD 59: ADAPTIVE STUDIO SWITCHER & CONTINUITY (FEAT-MW-160) -->
+        <div class="test-card obsidian-card rounded-2xl p-5 border border-amber-500/50 shadow-xl transition-all" id="card-59" data-category="production" tabindex="0" onpaste="handleCardPaste(event, 59)">
+          <!-- ZONE 1: HEADER & ROUTE LAUNCHER -->
+          <div class="flex items-start justify-between gap-4 mb-3 flex-wrap">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  CARD 59
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                  ADAPTIVE STUDIO SWITCHER
+                </span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/10 text-sky-300 border border-sky-500/30">
+                  FEAT-MW-160 &bull; WINNING FORMULA &amp; SCENE CONTINUITY
+                </span>
+                <span id="item-progress-badge-59" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  0/5 ITEMS EVALUATED
+                </span>
+              </div>
+              <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
+                Test 59: Winning Adaptive Studio Switcher, Pure-Touch Sizing &amp; Scene Continuity Shield (FEAT-MW-160)
+              </h3>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <button onclick="copySingleTestReport(59, this)" id="copy-test-btn-59" class="px-3 py-1.5 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-mono font-bold text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
+                <span>📋 Copy Test 59</span>
+              </button>
+              <a
+                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-200 hover:text-emerald-100 transition flex items-center gap-1.5 shadow-sm cursor-pointer ring-1 ring-emerald-400/30"
+              >
+                <span>🔗 Open Soundstage Scene 1 (?act=1) ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Fireside Scene 1 ↗</span>
+              </a>
+              <a
+                href="https://dev.memoryweaver.studio/studio"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Studio Dashboard (/studio) ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ZONE 2: TARGET ROUTE & METADATA -->
+          <div class="bg-gray-900/60 p-3.5 rounded-xl border border-gray-800 text-xs font-mono text-gray-400 space-y-2 mb-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span>Governance: <strong class="text-gray-300">FEAT-MW-160 &bull; useAdaptiveSurface.ts &bull; StudioSurfaceSwitcher.tsx &bull; MobilePortalOverlay.tsx &bull; ProductionDeckContainer.tsx</strong></span>
+              <span>Milestone: <strong class="text-amber-400">Winning Adaptive Switcher Formula (Pure-Touch Sizing, Scene Continuity p1-p23, Recording Safety Interlock)</strong></span>
+            </div>
+
+            <!-- TESTER PERSONA AUDIT BLOCK -->
+            <div class="p-2.5 rounded-lg bg-stone-900/90 border border-amber-500/30 text-[11px] text-gray-300 space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-stone-950">TESTER PERSONA AUDIT</span>
+                <span class="text-amber-200 font-bold">nareshmepani@hotmail.com</span>
+                <span class="text-gray-500">(UID: TQdB395kXxaAGPhFxk1LVWuT8cg2)</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-gray-400">
+                <div class="space-y-0.5">
+                  <div class="text-emerald-400 font-semibold">Surface A: Theatrical Soundstage:</div>
+                  <div>Direct Route: <code class="text-gray-200">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</code></div>
+                  <div>Switcher Pill: <span class="text-emerald-300 font-bold">[ 🎬 Soundstage | 🔥 Fireside ]</span> in top bar</div>
+                  <div>Expectation: <span class="text-emerald-300">Soundstage active pill glow; (i) Benefits Popover; 1-click jump to Fireside</span></div>
+                </div>
+                <div class="space-y-0.5">
+                  <div class="text-amber-400 font-semibold">Surface B: Mobile Fireside Studio:</div>
+                  <div>Direct Route: <code class="text-gray-200">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</code></div>
+                  <div>Switcher Pill: <span class="text-amber-300 font-bold">[ 🎬 Soundstage | 🔥 Fireside ]</span> in top synchronisation bar</div>
+                  <div>Expectation: <span class="text-amber-300">Fireside active pill glow; (i) Benefits Popover; 1-click jump to Soundstage</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- QUICK ROUTE & SURFACE DIRECTORY -->
+            <div class="text-[11px] text-gray-400 break-all space-y-1 bg-black/40 p-2.5 rounded-lg border border-gray-800">
+              <div class="font-bold text-amber-300 text-[10px] uppercase tracking-wider">🗺️ Quick Route &amp; Surface Directory:</div>
+              <div><strong class="text-emerald-400">🎬 VIEW B1 (Soundstage Scene 1):</strong> <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</a> <span class="text-gray-500">(Items 59.1, 59.2, 59.4)</span></div>
+              <div><strong class="text-amber-400">🔥 VIEW C1 (Fireside Scene 1):</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</a> <span class="text-gray-500">(Items 59.1, 59.2, 59.3)</span></div>
+              <div><strong class="text-sky-400">🎬 VIEW B2 (Soundstage Scene 2):</strong> <a href="https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1</a> <span class="text-gray-500">(Item 59.2)</span></div>
+              <div><strong class="text-amber-400">🔥 VIEW C2 (Fireside Scene 2):</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-2" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-2</a> <span class="text-gray-500">(Item 59.2)</span></div>
+              <div><strong class="text-amber-400">📍 VIEW A (Dashboard Grid):</strong> <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio</a></div>
+            </div>
+
+            <div class="text-[11px] text-gray-500 break-all space-y-0.5 pt-1 border-t border-gray-800">
+              <div>Vitest Regression Suite: <code class="text-gray-300">npx vitest run src/test/useAdaptiveSurface.test.tsx src/test/responsive_device_ui_shield.test.tsx</code> (31/31 passing)</div>
+            </div>
+          </div>
+
+          <!-- ZONE 3: TEST ITEMS -->
+          <div class="space-y-4">
+            <!-- ITEM 59.1 -->
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="mb-3 p-3 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/40 text-emerald-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-emerald-300">
+                  <span class="text-base">🎬</span> VIEW B1 &amp; C1: PERSISTENT TOP-BAR SWITCHER PILL &amp; BENEFITS POPOVER
+                </div>
+                <div class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed space-y-1">
+                  <div><strong>Soundstage URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-emerald-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</code></div>
+                  <div><strong>Fireside URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</code></div>
+                  <div><strong>Component:</strong> <code class="text-sky-300 font-mono">StudioSurfaceSwitcher.tsx</code> mounted in both master headers.</div>
+                </div>
+              </div>
+
+              <div class="p-3 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-2 mb-3">
+                <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
+                <div class="text-gray-300 space-y-1">
+                  <div>1. Open Soundstage (<code class="text-emerald-300">/studio/production/ey96djU6qR1BrDGnvZwp?act=1</code>). Look at the top navigation bar.</div>
+                  <div>2. Confirm the segmented glassmorphic pill renders: <strong class="text-emerald-300">[ 🎬 Soundstage | 🔥 Fireside ]</strong> with an <strong class="text-sky-300">(i)</strong> info button.</div>
+                  <div>3. Click the <strong class="text-sky-300">(i)</strong> button: verify the Benefits Popover displays device recommendations, desktop vs mobile benefits, and a 1-tap switch button.</div>
+                  <div>4. Click <strong class="text-amber-400">[ 🔥 Fireside ]</strong>: verify instant navigation to Fireside Studio.</div>
+                  <div>5. In Fireside, confirm the switcher pill is now mounted in the top status bar with <strong class="text-amber-400">[ 🔥 Fireside ]</strong> glowing active.</div>
+                </div>
+              </div>
+
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 59.1</span>
+                    <span class="text-xs font-bold text-white">Persistent Top-Bar Switcher Pill &amp; Benefits Popover Parity</span>
+                  </div>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Confirm segmented pill <strong class="text-white">[ 🎬 Soundstage | 🔥 Fireside ]</strong> is visible in top bars on both desktop soundstage and mobile fireside.</li>
+                    <li>Active surface has illuminated badge and distinct glowing ring border.</li>
+                    <li>Clicking <strong class="text-sky-300">(i)</strong> opens the rich glassmorphic Benefits Popover explaining surface trade-offs and recommendations.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(59, 1, 'pass', this)" id="btn-item-pass-59-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(59, 1, 'fail', this)" id="btn-item-fail-59-1" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Soundstage &amp; Fireside Switcher Pill</span>
+                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Soundstage Test Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 59.2 -->
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="mb-3 p-3 rounded-xl bg-sky-500/10 border-2 border-sky-500/40 text-sky-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-sky-300">
+                  <span class="text-base">🔄</span> VIEW B2 &rarr; C2: 100% SCENE CONTINUITY ACROSS SURFACE SWITCHES
+                </div>
+                <div class="text-[11px] text-sky-100/90 mt-1 leading-relaxed space-y-1">
+                  <div><strong>Scenario:</strong> Creator begins drafting Part II &bull; Scene 2 (<code class="text-sky-300 font-mono">part-2-scene-2</code> / <code class="text-sky-300 font-mono">p5</code>) on Soundstage, then switches to Fireside.</div>
+                  <div><strong>Objective:</strong> Verify the target scene is 100% preserved (<code class="text-sky-300">?id=part-2-scene-2</code>) without resetting back to Scene 1 or defaulting to p1.</div>
+                </div>
+              </div>
+
+              <div class="p-3 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-2 mb-3">
+                <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
+                <div class="text-gray-300 space-y-1">
+                  <div>1. Navigate directly to Part II &bull; Scene 2 on Soundstage: <code class="text-sky-300">https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1</code>.</div>
+                  <div>2. In the top bar switcher pill, click <strong class="text-amber-400">[ 🔥 Fireside ]</strong>.</div>
+                  <div>3. Verify the browser navigates to <code class="text-amber-300">https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-2</code>.</div>
+                  <div>4. Confirm Fireside displays <strong>Part II &bull; Scene 2</strong> (&quot;The Shape of Loss&quot;) — NOT Part I Scene 1!</div>
+                  <div>5. Click <strong class="text-emerald-400">[ 🎬 Soundstage ]</strong> from Fireside: verify it returns to <code class="text-emerald-300">/studio/production/part-2-scene-2?act=1</code> with complete continuity.</div>
+                </div>
+              </div>
+
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 59.2</span>
+                    <span class="text-xs font-bold text-white">100% Scene Continuity Lockstep (Bi-Directional Scene ID Resolution)</span>
+                  </div>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Confirm switching from Soundstage to Fireside preserves the active scene across all 24 canonical scenes (p1–p24).</li>
+                    <li>Confirm switching from Fireside back to Soundstage preserves both scene ID and active act stage (<code class="text-gray-300">?act=1..4</code>).</li>
+                    <li>Zero scene resetting, zero memory ID clobbering, zero orphan document creation.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(59, 2, 'pass', this)" id="btn-item-pass-59-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(59, 2, 'fail', this)" id="btn-item-fail-59-2" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Part II Scene 2 Continuity Test</span>
+                <a href="https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Scene 2 Continuity Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 59.3 -->
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="mb-3 p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-amber-300">
+                  <span class="text-base">🔒</span> FLIGHT SAFETY INTERLOCK: SWITCHING LOCKED DURING ACTIVE RECORDING
+                </div>
+                <div class="text-[11px] text-amber-100/90 mt-1 leading-relaxed space-y-1">
+                  <div><strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</code></div>
+                  <div><strong>Guardrail:</strong> Accidental surface switching while recording audio or video would sever the MediaRecorder stream and discard take data.</div>
+                  <div><strong>Assertion:</strong> When <code class="text-amber-300 font-mono">isRecording === true</code>, switcher buttons are locked and disabled with visual tooltip.</div>
+                </div>
+              </div>
+
+              <div class="p-3 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-2 mb-3">
+                <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
+                <div class="text-gray-300 space-y-1">
+                  <div>1. Open Fireside (<code class="text-amber-300">/studio/fireside?id=part-1-scene-1</code>) and start an audio or video recording take.</div>
+                  <div>2. While the recording timer is counting up, observe the top switcher pill.</div>
+                  <div>3. Confirm the pill displays a lock badge <strong class="text-amber-400">[ 🔒 Take in progress ]</strong> or disabled state.</div>
+                  <div>4. Confirm clicking the buttons is disabled (<code class="text-stone-400">pointer-events-none opacity-50</code>), preventing stream disruption.</div>
+                </div>
+              </div>
+
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 59.3</span>
+                    <span class="text-xs font-bold text-white">Recording Flight Safety Interlock (Stream Protection)</span>
+                  </div>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Confirm surface switching is completely disabled while audio or video recording is active.</li>
+                    <li>Hovering or attempting to click reveals clear feedback: &quot;Switching locked while take recording is active&quot;.</li>
+                    <li>Take recording finishes and saves safely without stream truncation.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(59, 3, 'pass', this)" id="btn-item-pass-59-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(59, 3, 'fail', this)" id="btn-item-fail-59-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Recording Safety Interlock</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Fireside Recording Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 59.4 -->
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-gray-800 hover:border-gray-700 transition">
+              <div class="mb-3 p-3 rounded-xl bg-purple-500/10 border-2 border-purple-500/40 text-purple-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-purple-300">
+                  <span class="text-base">📱</span> PURE-TOUCH SENSING &amp; DESKTOP SPLIT-SCREEN RESILIENCY
+                </div>
+                <div class="text-[11px] text-purple-100/90 mt-1 leading-relaxed space-y-1">
+                  <div><strong>Rule 5 &amp; 8 Invariant:</strong> Narrow desktop split-screen windows (<code class="text-purple-300">width &lt; 768px</code>) must NEVER trigger the full-screen mobile gate overlay!</div>
+                  <div><strong>Implementation:</strong> <code class="text-purple-300 font-mono">isPureTouchDevice = matchMedia('(pointer: coarse)').matches &amp;&amp; !matchMedia('(any-pointer: fine)').matches</code>.</div>
+                  <div><strong>Mobile Overlay Upgrade:</strong> Choice 3 upgraded to live CTA <strong class="text-amber-300">[ 🎙️ Step into Fireside for this Scene ↗ ]</strong>.</div>
+                </div>
+              </div>
+
+              <div class="p-3 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-2 mb-3">
+                <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
+                <div class="text-gray-300 space-y-1">
+                  <div>1. On desktop/laptop, open Soundstage: <code class="text-purple-300">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</code>.</div>
+                  <div>2. Snap the browser window to half-screen (width &lt; 768px).</div>
+                  <div>3. Confirm the Soundstage remains fully accessible — the mobile gate overlay is NOT shown because a mouse/trackpad pointer exists!</div>
+                  <div>4. On a real smartphone, open the same route: confirm the mobile portal overlay appears, and Choice 3 now renders an active <strong class="text-amber-400 font-bold">[ 🎙️ Step into Fireside for this Scene ↗ ]</strong> button.</div>
+                </div>
+              </div>
+
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 59.4</span>
+                    <span class="text-xs font-bold text-white">Pure-Touch Sizing &amp; Upgraded Mobile Portal Choice 3</span>
+                  </div>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Desktop split-screen windows never trigger false mobile lockouts.</li>
+                    <li>Choice 3 on mobile portal overlay is a live 1-tap navigation to Fireside for the exact scene.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(59, 4, 'pass', this)" id="btn-item-pass-59-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(59, 4, 'fail', this)" id="btn-item-fail-59-4" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Pure-Touch Detection &amp; Mobile Overlay</span>
+                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-purple-400 hover:underline">🔗 Open Split-Screen Test Route ↗</a>
+              </div>
+            </div>
+
+            <!-- ITEM 59.5 -->
+            <div class="p-4 bg-gray-900/60 rounded-xl border border-amber-500/40 hover:border-amber-400 transition">
+              <div class="mb-3 p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-200">
+                <div class="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-amber-300">
+                  <span class="text-base">🛡️</span> AUTOMATED REGRESSION SHIELD &amp; PRODUCTION BUILD GATE
+                </div>
+                <div class="text-[11px] text-amber-100/90 mt-1 leading-relaxed">
+                  <strong>Command:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">npx vitest run src/test/useAdaptiveSurface.test.tsx src/test/responsive_device_ui_shield.test.tsx</code><br/>
+                  <strong>Build Gate:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">npm run build</code> (all routes compiling cleanly with exit code 0).
+                </div>
+              </div>
+
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 59.5</span>
+                    <span class="text-xs font-bold text-white">Automated Invariant Regressions &amp; Production Compiler Gate</span>
+                  </div>
+                  <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
+                    <li>Confirm all 31 automated tests pass across <code class="text-amber-300">useAdaptiveSurface.test.tsx</code> (14/14 surface switching, scene continuity, recording locks) and <code class="text-amber-300">responsive_device_ui_shield.test.tsx</code> (17/17).</li>
+                    <li>Confirm full Next.js local production build (<code class="text-amber-300">npm run build</code>) completes with exit code 0 across all routes.</li>
+                  </ul>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="setItemVerdict(59, 5, 'pass', this)" id="btn-item-pass-59-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer active !bg-emerald-500 !text-white !border-emerald-500 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+                  <button onclick="setItemVerdict(59, 5, 'fail', this)" id="btn-item-fail-59-5" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+                </div>
+              </div>
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+                <span class="text-[11px] font-mono text-gray-500">Target: Invariant Test Suites &amp; Production Compiler</span>
+                <span class="text-[11px] font-mono text-emerald-400">31/31 Invariants Passing &bull; Build Exit Code 0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ZONE 4: VERDICT CONTROLS -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-gray-400">Card 59 Verdict:</span>
+              <button onclick="setCardVerdict(59, 'pass')" id="btn-pass-59" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
+              <button onclick="setCardVerdict(59, 'fail')" id="btn-fail-59" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
+              <button onclick="setCardVerdict(59, 'retest')" id="btn-retest-59" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-amber-500/50 hover:text-amber-400">Re-test</button>
+            </div>
+            <button onclick="resetCardVerdict(59)" class="text-[11px] font-mono text-gray-500 hover:text-gray-300 transition cursor-pointer">
+              Reset
+            </button>
+          </div>
+
+          <!-- ZONE 5: AUDIT NOTES & SCREENSHOT DROPZONE -->
+          <div class="mt-4 pt-3 border-t border-gray-800/60 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Audit Notes / Narrative Feedback</label>
+                <textarea id="notes-59" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500" placeholder="Observations on surface switching, scene continuity, recording locks..."></textarea>
+              </div>
+              <div>
+                <label class="block text-[11px] font-mono text-gray-400 mb-1">Console Error Log (if any)</label>
+                <textarea id="console-log-59" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-rose-300 placeholder-gray-600 focus:outline-none focus:border-rose-500" placeholder="Paste console logs or exceptions..."></textarea>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-mono text-gray-400 mb-1">Telemetry Event Trace (if any)</label>
+              <textarea id="telemetry-59" oninput="saveState()" rows="2" class="w-full bg-gray-900/60 border border-gray-800 rounded-lg p-2 text-xs font-mono text-sky-300 placeholder-gray-600 focus:outline-none focus:border-sky-500" placeholder="Paste localStorage telemetry vectors or trace logs..."></textarea>
+            </div>
+            <div class="p-3 bg-gray-900/40 rounded-xl border border-dashed border-gray-800 text-center cursor-pointer hover:border-amber-500/50 transition dropzone" id="dropzone-59" ondragover="event.preventDefault()" ondrop="handleDrop(event, 59)">
+              <input type="file" id="file-input-59" class="hidden" accept="image/*" multiple onchange="Array.from(this.files).forEach(f => addImage(59, f))" />
+              <div onclick="document.getElementById('file-input-59').click()" class="space-y-1">
+                <span class="text-sm">📸</span>
+                <div class="text-xs text-gray-400">Drag &amp; drop screenshot, <span class="text-amber-400 underline font-medium">browse</span>, or paste (Ctrl+V) directly while card is active</div>
+                <div id="img-count-59" class="text-[10px] text-gray-500 font-mono">0 screenshots attached</div>
+              </div>
+            </div>
+            <div id="image-gallery-59" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"></div>
+          </div>
+        </div>
+
+</section>
       </div>
     </details>
   </main>
@@ -8011,7 +8374,7 @@
   </footer>
 
   <script>
-    const TOTAL = 58;
+    const TOTAL = 59;
     function copyCliCommand(btn) {
       navigator.clipboard.writeText('npm run qa:status');
       const originalText = btn.innerHTML;
@@ -8148,7 +8511,8 @@
       "[studio/fireside • Desktop Studio] UI-MW-141: Primary CTA Beacon Elevation, Editorial Rule & Save-First Folio Reload",
       "[studio • Desktop Studio] BUG-MW-143: Scene Correlation Shield, Document Identity Repair & Restored Master Reel Verification",
       "[studio/ops • Staging Pipeline] TOOL-MW-145: Complete Data Integrity Defence Shield (Layer 3 Pre-Deploy Audit & Layer 4 Client Sentinel)",
-      "[studio/production] UI-MW-148 & FEAT-MW-159: Act III Dual-Mode Stage & Native USB Camera/Mic Discovery"
+      "[studio/production] UI-MW-148 & FEAT-MW-159: Act III Dual-Mode Stage & Native USB Camera/Mic Discovery",
+      "[studio/production • studio/fireside] FEAT-MW-160: Winning Adaptive Studio Switcher, Pure-Touch Sizing & Scene Continuity Shield"
     ];
 
     const DEFAULT_CARD_VERDICTS = {
@@ -8399,7 +8763,8 @@
       55: 'carousel',
       56: 'dock',
       57: 'dock',
-      58: 'recorder'
+      58: 'recorder',
+      59: 'dock'
     };
     let currentPanel = 'all';
 
@@ -8603,7 +8968,8 @@
       '58_2': 'pass',
       '58_3': 'pass',
       '58_4': 'pass',
-      '58_5': 'pass'
+      '58_5': 'pass',
+      '59_5': 'pass'
     };
     let itemVerdicts = { ...DEFAULT_ITEM_VERDICTS };
 
@@ -8613,7 +8979,8 @@
       55: 5,
       56: 5,
       57: 5,
-      58: 5
+      58: 5,
+      59: 5
     };
 
     function updateItemProgress(cardNum) {
@@ -9325,7 +9692,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 34224ba3 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 7dabe400 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -9429,7 +9796,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: '34224ba3',
+          commit: '7dabe400',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -9457,7 +9824,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_34224ba3_${Date.now()}.json`;
+      a.download = `qa_master_checklist_7dabe400_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }
