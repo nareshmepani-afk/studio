@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (11395fa9)</title>
+  <title>Master QA Verification Suite — Grouped by Route (1cdd929e)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -50,11 +50,11 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">11395fa9</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">1cdd929e</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">11395fa</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">1cdd929</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">02 Nov 2026, 14:55 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">02 Nov 2026, 15:33 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -7118,7 +7118,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_11395fa9_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_1cdd929e_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -8176,7 +8176,8 @@
                   <span class="text-base">🔒</span> FLIGHT SAFETY INTERLOCK: SWITCHING LOCKED DURING ACTIVE RECORDING
                 </div>
                 <div class="text-[11px] text-amber-100/90 mt-1 leading-relaxed space-y-1">
-                  <div><strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</code></div>
+                  <div><strong>Target URL:</strong> <code class="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono font-bold">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&amp;record=true</code></div>
+                  <div><strong>Direct Record Override:</strong> The <code class="text-amber-300 font-mono">&amp;record=true</code> parameter mounts the live recording booth immediately, even if earlier takes exist in your Generational Vault.</div>
                   <div><strong>Guardrail:</strong> Accidental surface switching while recording audio or video would sever the MediaRecorder stream and discard take data.</div>
                   <div><strong>Assertion:</strong> When <code class="text-amber-300 font-mono">isRecording === true</code>, switcher buttons are locked and disabled with visual tooltip.</div>
                 </div>
@@ -8185,10 +8186,11 @@
               <div class="p-3 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-2 mb-3">
                 <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                 <div class="text-gray-300 space-y-1">
-                  <div>1. Open Fireside (<code class="text-amber-300">/studio/fireside?id=part-1-scene-1</code>) and start an audio or video recording take.</div>
-                  <div>2. While the recording timer is counting up, observe the top switcher pill.</div>
-                  <div>3. Confirm the pill displays a lock badge <strong class="text-amber-400">[ 🔒 Take in progress ]</strong> or disabled state.</div>
-                  <div>4. Confirm clicking the buttons is disabled (<code class="text-stone-400">pointer-events-none opacity-50</code>), preventing stream disruption.</div>
+                  <div>1. Open Fireside with active record override (<code class="text-amber-300">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&amp;record=true</code>) or alternative unrecorded scene (<code class="text-emerald-300">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3</code>).</div>
+                  <div>2. Click <strong class="text-amber-400 font-bold">[ 🔴 Record ]</strong> (or <strong class="text-amber-400 font-bold">[ Record Voice Memo ]</strong>) to start an audio or video recording take.</div>
+                  <div>3. While the recording timer is counting up, observe the top switcher pill <strong class="text-amber-300">[ 🎬 Soundstage | 🔥 Fireside ]</strong>.</div>
+                  <div>4. Confirm the pill displays the locked state: <strong class="text-rose-400">[ 🔒 LOCKED ]</strong> badge is visible, buttons have <code class="text-stone-400">opacity-40 cursor-not-allowed</code>, and clicking reveals warning toast: <em>&quot;Please stop your active take before switching studio surfaces.&quot;</em></div>
+                  <div>5. Stop the recording take: confirm the lock is released and switcher buttons return to interactive state.</div>
                 </div>
               </div>
 
@@ -8200,7 +8202,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li>Confirm surface switching is completely disabled while audio or video recording is active.</li>
-                    <li>Hovering or attempting to click reveals clear feedback: &quot;Switching locked while take recording is active&quot;.</li>
+                    <li>Hovering or attempting to click reveals clear feedback: &quot;Switching locked while take recording is active&quot; / warning toast.</li>
                     <li>Take recording finishes and saves safely without stream truncation.</li>
                   </ul>
                 </div>
@@ -8209,9 +8211,12 @@
                   <button onclick="setItemVerdict(59, 3, 'fail', this)" id="btn-item-fail-59-3" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
                 </div>
               </div>
-              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
+              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
                 <span class="text-[11px] font-mono text-gray-500">Target: Recording Safety Interlock</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Fireside Recording Route ↗</a>
+                <div class="flex items-center gap-2">
+                  <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&amp;record=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Fireside Recording Route (Scene 1 &amp;record=true) ↗</a>
+                  <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Alternative Unrecorded Route (Scene 3) ↗</a>
+                </div>
               </div>
             </div>
 
@@ -9695,7 +9700,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 11395fa9 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 1cdd929e | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -9799,7 +9804,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: '11395fa9',
+          commit: '1cdd929e',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -9827,7 +9832,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_11395fa9_${Date.now()}.json`;
+      a.download = `qa_master_checklist_1cdd929e_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }

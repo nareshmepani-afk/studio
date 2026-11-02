@@ -98,6 +98,7 @@ export default function FiresideStudioClient() {
   const initialLangParam = searchParams.get('lang') as FiresideLanguage | null;
   const initialPromptParam = searchParams.get('prompt') || undefined;
   const initialIdParam = searchParams.get('id') || undefined;
+  const isDirectRecordRequested = searchParams?.get('record') === 'true' || searchParams?.get('retake') === 'true' || searchParams?.get('act') === '3';
 
   const validLangs: FiresideLanguage[] = ['en', 'gu', 'pa', 'hi'];
   const resolvedLang: FiresideLanguage = initialLangParam && validLangs.includes(initialLangParam)
@@ -120,7 +121,7 @@ export default function FiresideStudioClient() {
   const [isFiresideRecording, setIsFiresideRecording] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const [isBonusDrawerOpen, setIsBonusDrawerOpen] = useState<boolean>(false);
-  const [forceRecordMode, setForceRecordMode] = useState<boolean>(false);
+  const [forceRecordMode, setForceRecordMode] = useState<boolean>(Boolean(isDirectRecordRequested));
   const [isReviewingTake, setIsReviewingTake] = useState<boolean>(false);
   const [isSecuringToVault, setIsSecuringToVault] = useState<boolean>(false);
   const [securingProgress, setSecuringProgress] = useState<number>(0);
@@ -374,7 +375,10 @@ export default function FiresideStudioClient() {
     if (initialLangParam && validLangs.includes(initialLangParam)) {
       setActiveLanguage(initialLangParam);
     }
-  }, [initialLangParam]);
+    if (searchParams?.get('record') === 'true' || searchParams?.get('retake') === 'true' || searchParams?.get('act') === '3') {
+      setForceRecordMode(true);
+    }
+  }, [initialLangParam, searchParams]);
 
   // Auto-dismiss toast when viewport reaches active studio / Heirloom Photo Digitisation hyperlink position
   useEffect(() => {
@@ -1252,6 +1256,7 @@ export default function FiresideStudioClient() {
                   onRecordingComplete={handleAudioRecordingComplete}
                   onKeepRecording={handleKeepRecording}
                   onReset={handleResetAudioRecording}
+                  onRecordingChange={setIsFiresideRecording}
                   className="w-full"
                 />
               </div>
