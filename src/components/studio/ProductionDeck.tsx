@@ -25,6 +25,7 @@ import { validateAct1RequiredFields, isAct1Complete, scrollToFirstMissingCatalys
 import { cn } from '@/lib/utils';
 import { ResizableDivider } from './ResizableDivider';
 import { ProductionControlBar } from './ProductionControlBar';
+import { StudioSurfaceSwitcher } from './StudioSurfaceSwitcher';
 import { ProductionPreFlight } from './overlays/ProductionPreFlight';
 import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudioState';
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
@@ -106,6 +107,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     // 1. Unified Global State
     const { 
         currentStage, 
+        isRecording,
         modality, 
         isDirectorOpen,
         isReviewing, 
@@ -1482,6 +1484,13 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
                                 {/* Right Cluster: Hardware Privacy Shield & Studio Utilities */}
                                 <div className="flex items-center gap-2 flex-wrap">
+                                    {/* Studio Surface Switcher Pill */}
+                                    <StudioSurfaceSwitcher
+                                      currentSurface="soundstage"
+                                      currentSceneId={memoryData?.id || memoryData?.promptId}
+                                      actStage={currentStage + 1}
+                                      isRecording={isRecording}
+                                    />
                                     {/* Milestone MW-89: Universal Hardware Privacy Shield (OPTICS SEVERED / LIVE / INACTIVE) */}
                                     <OpticsPrivacyShield compact />
                                   {/* CLEAN READ MODE / SENSORY VIEW TOGGLE (HEADER HOTSPOT) */}

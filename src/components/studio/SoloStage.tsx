@@ -36,6 +36,7 @@ import DirectorsNotepad from './DirectorsNotepad';
 import { MentorshipHotspot } from './MentorshipHotspot';
 import { generateDirectorsNotepad } from '@/actions/aiWeaver';
 import { ProductionControlBar } from './ProductionControlBar';
+import { StudioSurfaceSwitcher } from './StudioSurfaceSwitcher';
 import CinemaStageSwitch from './CinemaStageSwitch';
 import { Memory, FusionManifest, PremiereMode } from '@/types';
 import { resolveMemoryMilestones } from '@/lib/curriculum/milestoneTruth';
@@ -3082,6 +3083,16 @@ export default function SoloStage({
           {mounted && captureModality === 'raw' && (
             <div className="absolute top-6 right-8 z-[35] bg-black/60 backdrop-blur-md border border-white/10 px-4 py-1.5 rounded-full font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 pointer-events-none select-none">
               MODE: UNTETHERED AUDIO-VISUAL CAPTURE
+            </div>
+          )}
+          {mounted && !isMuted && !isTableReadActive && (
+            <div className="absolute top-6 right-8 z-[36]">
+              <StudioSurfaceSwitcher
+                currentSurface="soundstage"
+                currentSceneId={data?.id || data?.promptId}
+                actStage={productionStage + 1}
+                isRecording={isRecording}
+              />
             </div>
           )}
           <video 

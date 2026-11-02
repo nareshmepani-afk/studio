@@ -25,6 +25,8 @@ vi.mock('framer-motion', () => {
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/studio/production/mem-naresh-1',
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('sonner', () => ({

@@ -28,6 +28,7 @@ import {
 } from '@/components/fireside/FiresideModeSwitch';
 import { SingleCardPromptCarousel } from '@/components/fireside/SingleCardPromptCarousel';
 import { OrientationSoundcheckDock } from '@/components/fireside/OrientationSoundcheckDock';
+import { StudioSurfaceSwitcher } from '@/components/studio/StudioSurfaceSwitcher';
 import { TactileVoiceRecorder, TactileVoiceRecorderRef } from '@/components/fireside/TactileVoiceRecorder';
 import { FiresideVideoRecorder, FiresideVideoRecorderRef } from '@/components/fireside/FiresideVideoRecorder';
 import { AlbumPhotoCaptureTray, AlbumPhotoCaptureTrayRef } from '@/components/fireside/AlbumPhotoCaptureTray';
@@ -116,6 +117,7 @@ export default function FiresideStudioClient() {
   const [recordedVideoDuration, setRecordedVideoDuration] = useState<number>(0);
   const [notification, setNotification] = useState<string | null>(null);
   const [showDesktopBanner, setShowDesktopBanner] = useState<boolean>(false);
+  const [isFiresideRecording, setIsFiresideRecording] = useState<boolean>(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const [isBonusDrawerOpen, setIsBonusDrawerOpen] = useState<boolean>(false);
   const [forceRecordMode, setForceRecordMode] = useState<boolean>(false);
@@ -913,11 +915,19 @@ export default function FiresideStudioClient() {
 
         {/* 2. Reassuring Vault Synchronisation HUD Strip */}
         <div className="w-full bg-stone-950/85 border-b border-stone-800/60 py-2 px-3 sm:px-6 backdrop-blur-md">
-          <div className="max-w-5xl mx-auto flex items-center justify-between text-xs">
-            <span className="text-stone-400 font-serif text-xs flex items-center gap-1.5">
+          <div className="max-w-5xl mx-auto flex items-center justify-between text-xs gap-2">
+            <span className="text-stone-400 font-serif text-xs flex items-center gap-1.5 shrink-0">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               <span className="font-medium text-stone-300">Fireside Studio</span>
             </span>
+
+            {/* Persistent Top-Bar Segmented Switcher Pill */}
+            <StudioSurfaceSwitcher
+              currentSurface="fireside"
+              currentSceneId={effectiveSceneId || searchParams?.get('id') || 'part-1-scene-1'}
+              actStage={selectedActStage || 1}
+              isRecording={isFiresideRecording}
+            />
 
             <div className="flex items-center shrink-0">
               {isSaving ? (
@@ -1159,6 +1169,7 @@ export default function FiresideStudioClient() {
                 onRecordingComplete={handleVideoRecordingComplete}
                 onKeepRecording={handleKeepRecording}
                 onReset={handleResetVideoRecording}
+                onRecordingChange={setIsFiresideRecording}
                 className="w-full"
               />
             </div>

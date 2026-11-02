@@ -199,7 +199,7 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     expect(htmlWithPunchList).toContain('Punch-List 1.1: Deep-Link ?id=p4_1 Initial Mount Synchronisation');
     const liveHtmlPath = path.resolve(__dirname, '../../qa_checklist_interactive.html');
     const liveHtml = fs.readFileSync(liveHtmlPath, 'utf8');
-    for (let c = 1; c <= 58; c++) {
+    for (let c = 1; c <= 59; c++) {
       expect(liveHtml).toContain(`id="card-${c}"`);
       expect(liveHtml).toContain(`id="notes-${c}"`);
       expect(liveHtml).toContain(`id="console-log-${c}"`);

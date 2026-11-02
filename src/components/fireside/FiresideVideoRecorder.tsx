@@ -64,6 +64,7 @@ export interface FiresideVideoRecorderProps {
   onRecordingComplete?: (videoBlob: Blob, durationSeconds: number) => void;
   onKeepRecording?: (videoBlob: Blob, durationSeconds: number) => void;
   onReset?: () => void;
+  onRecordingChange?: (isRecording: boolean) => void;
   className?: string;
 }
 
@@ -79,6 +80,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       onRecordingComplete,
       onKeepRecording,
       onReset,
+      onRecordingChange,
       className = '',
     },
     ref
@@ -164,6 +166,11 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
     const promptText = promptSpark
       ? promptSpark.sparks[activeLanguage] || promptSpark.sparks.en
       : 'Look into the camera and share what comes to heart.';
+
+    
+    useEffect(() => {
+      onRecordingChange?.(status === 'recording' || status === 'paused');
+    }, [status, onRecordingChange]);
 
     const isRecording = status === 'recording';
     const isPaused = status === 'paused';

@@ -17,6 +17,7 @@ import { FIRST_FLIGHT_FIXTURE } from '@/lib/fixtures/firstFlightFixture';
 import { MobilePortalOverlay } from './overlays/MobilePortalOverlay';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
+import { useAdaptiveSurface, resolveFiresideSceneId } from '@/hooks/useAdaptiveSurface';
 import { resolvePromptIdFromSceneId } from '@/lib/curriculum/masterStoryStructure';
 
 interface ProductionDeckContainerProps {
@@ -35,9 +36,10 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   // we must return null to ensure the "layering" doesn't block the dashboard.
   const isProductionRoute = pathname?.includes('/production/');
 
+  const { isPureTouchDevice, preferredSurface } = useAdaptiveSurface();
   const { width: windowWidth, isFoldableOrTabletCanvas } = useFoldableCanvas();
   const isRemoteLens = searchParams.get('room') === 'solo' || searchParams.get('mode') === 'remote-lens';
-  const showMobileGuard = windowWidth > 0 && windowWidth < 768 && !isFoldableOrTabletCanvas && !isRemoteLens;
+  const showMobileGuard = isPureTouchDevice && windowWidth > 0 && windowWidth < 768 && !isFoldableOrTabletCanvas && !isRemoteLens && preferredSurface !== 'soundstage';
   
   const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
   const [resolvedAsyncTemplate, setResolvedAsyncTemplate] = useState<any>(null);
@@ -567,6 +569,10 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         }}
         onExit={() => {
           router.push('/studio');
+        }}
+        onLaunchFireside={() => {
+          const targetScene = resolveFiresideSceneId(promptId || 'part-1-scene-1');
+          router.push(`/studio/fireside?id=${encodeURIComponent(targetScene)}`);
         }}
       />
     );

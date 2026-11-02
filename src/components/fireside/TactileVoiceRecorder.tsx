@@ -64,6 +64,7 @@ export interface TactileVoiceRecorderProps {
   onRecordingComplete?: (audioBlob: Blob, durationSeconds: number) => void;
   onKeepRecording?: (audioBlob: Blob, durationSeconds: number) => void;
   onReset?: () => void;
+  onRecordingChange?: (isRecording: boolean) => void;
   className?: string;
 }
 
@@ -80,6 +81,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
       onRecordingComplete,
       onKeepRecording,
       onReset,
+      onRecordingChange,
       className = '',
     },
     ref
@@ -154,6 +156,11 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
   }), [startRecording, stopRecording, resetRecording, releaseHardwareStream, status]);
 
   // ---------------------------------------------------------------------------
+  
+  useEffect(() => {
+    onRecordingChange?.(status === 'recording' || status === 'paused');
+  }, [status, onRecordingChange]);
+
   // Audio Playback Preview State (When status === 'saved')
   // ---------------------------------------------------------------------------
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);

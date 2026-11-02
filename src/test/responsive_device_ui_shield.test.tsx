@@ -164,11 +164,11 @@ describe('Responsive Device UI & Viewport Contract Shield', () => {
       const lensButton = screen.getByRole('button', { name: /launch mobile lens mode/i });
       expect(lensButton).toBeDefined();
 
-      // Choice 3: Fireside Audio Mode Teaser
-      expect(screen.getByText(/Choice 3 • In Production/i)).toBeDefined();
-      expect(screen.getByText(/Fireside Audio Mode/i)).toBeDefined();
-      expect(screen.getByText(/MW-87/i)).toBeDefined();
-      expect(screen.getByText(/A couch-friendly voice recorder for your phone is in production/i)).toBeDefined();
+      // Choice 3: Fireside Mobile Studio Booth (Live Adaptive Studio Switcher)
+      expect(screen.getByText(/Choice 3 • Mobile Studio/i)).toBeDefined();
+      expect(screen.getByText(/Fireside Mobile Studio Booth/i)).toBeDefined();
+      expect(screen.getByTestId('mobile-overlay-launch-fireside-btn')).toBeDefined();
+      expect(screen.getByText(/Step straight into the touch-friendly Fireside studio/i)).toBeDefined();
 
       // Fallback: Copy URL and Exit
       expect(screen.getByRole('button', { name: /copy soundstage url/i })).toBeDefined();

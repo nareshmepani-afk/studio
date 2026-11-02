@@ -4,10 +4,13 @@ import React, { useState } from 'react';
 import { Film, Mail, Camera, Mic, Check, Copy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendStudioTransitionAction } from '@/actions/sendStudioTransitionAction';
+import { useRouter } from 'next/navigation';
+import { resolveFiresideSceneId } from '@/hooks/useAdaptiveSurface';
 
 interface MobilePortalOverlayProps {
   onActivateRemoteLens: () => void;
   onExit: () => void;
+  onLaunchFireside?: () => void;
   userEmail?: string;
   promptId?: string;
   memoryTitle?: string;
@@ -18,8 +21,10 @@ export const MobilePortalOverlay: React.FC<MobilePortalOverlayProps> = ({
   onExit,
   userEmail = '',
   promptId,
-  memoryTitle
+  memoryTitle,
+  onLaunchFireside,
 }) => {
+  const router = useRouter();
   const [emailInput, setEmailInput] = useState(userEmail);
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
@@ -57,6 +62,16 @@ export const MobilePortalOverlay: React.FC<MobilePortalOverlayProps> = ({
     } finally {
       setIsSending(false);
     }
+  };
+
+  
+  const handleLaunchFireside = () => {
+    if (onLaunchFireside) {
+      onLaunchFireside();
+      return;
+    }
+    const targetSceneId = resolveFiresideSceneId(promptId || 'part-1-scene-1');
+    router.push(`/studio/fireside?id=${encodeURIComponent(targetSceneId)}`);
   };
 
   const handleCopyLink = () => {
@@ -205,29 +220,39 @@ export const MobilePortalOverlay: React.FC<MobilePortalOverlayProps> = ({
             </button>
           </div>
 
-          {/* CHOICE 3: FIRESIDE AUDIO MODE (COMING SOON TEASER) */}
-          <div className="rounded-2xl bg-gray-900/60 border border-amber-500/20 p-4 space-y-2">
+          {/* CHOICE 3: FIRESIDE MOBILE STUDIO BOOTH */}
+          <div className="rounded-2xl bg-gradient-to-b from-amber-950/40 to-gray-950 border border-amber-500/40 p-4 space-y-3 shadow-xl">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/20 shrink-0 mt-0.5">
+              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 mt-0.5">
                 <Mic className="w-4 h-4" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-amber-300/90 uppercase tracking-wide">
-                    Choice 3 • In Production
+                  <span className="text-xs font-bold text-amber-300 uppercase tracking-wide">
+                    Choice 3 • Mobile Studio
                   </span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                    MW-87
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    Live
                   </span>
                 </div>
                 <h3 className="text-sm font-bold text-white font-sans flex items-center gap-1.5">
-                  <span>🎙️ Fireside Audio Mode</span>
+                  <span>🎙️ Fireside Mobile Studio Booth</span>
                 </h3>
-                <p className="text-[11px] text-gray-400 leading-relaxed font-sans">
-                  A couch-friendly voice recorder for your phone is in production. For now, open your soundstage on an iPad, laptop, or PC.
+                <p className="text-[11px] text-gray-300 leading-relaxed font-sans">
+                  Step straight into the touch-friendly Fireside studio to record this scene with tactile audio, teleprompter scroll, and photo digitisation.
                 </p>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleLaunchFireside}
+              data-testid="mobile-overlay-launch-fireside-btn"
+              className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-stone-950 text-xs font-bold uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 font-mono"
+            >
+              <Mic className="w-3.5 h-3.5 text-stone-950" />
+              <span>Step into Fireside for this Scene ↗</span>
+            </button>
           </div>
 
         </div>
