@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
 import { useAdaptiveSurface, resolveFiresideSceneId } from '@/hooks/useAdaptiveSurface';
 import { resolvePromptIdFromSceneId } from '@/lib/curriculum/masterStoryStructure';
+import { getQaFixtureDocId, createQaFixtureMemory } from '@/lib/qa/qaFixtureSeeder';
 
 interface ProductionDeckContainerProps {
   promptId: string;
@@ -126,6 +127,44 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
       if (!promptId || isReady || (selectedProductionData?.id === promptId && isReady)) return;
 
       try {
+        const isCleanSlate = searchParams.get('clean_slate') === 'true';
+        const qaSeed = searchParams.get('qa_seed');
+
+        // QA Sandbox Fixture Override (GOV-MW-163)
+        if (qaSeed && user?.uid) {
+          const fixtureId = getQaFixtureDocId(user.uid, qaSeed);
+          let fixtureSnap = await getDoc(doc(db, 'users', user.uid, 'memories', fixtureId));
+          if (!fixtureSnap.exists()) {
+            fixtureSnap = await getDoc(doc(db, 'memories', fixtureId));
+          }
+          if (active && fixtureSnap.exists()) {
+            const fetchedMemory = { id: fixtureSnap.id, ...fixtureSnap.data() };
+            setSelectedProductionData(fetchedMemory);
+            setIsReady(true);
+            setIsNotFound(false);
+            lastLoadedId.current = promptId;
+            return;
+          } else if (active) {
+            const newFixture = createQaFixtureMemory({
+              itemId: qaSeed,
+              userId: user.uid,
+              sceneId: promptId,
+              promptId: resolvePromptIdFromSceneId(promptId) || promptId,
+            });
+            setSelectedProductionData(newFixture);
+            setIsReady(true);
+            setIsNotFound(false);
+            lastLoadedId.current = promptId;
+            return;
+          }
+        }
+
+        // Clean Slate Override: Skip restoring previous user drafts to show pristine unwritten stage
+        if (isCleanSlate) {
+          console.log(`[ProductionDeckContainer] Clean slate active for "${promptId}". Skipping user memory hydration.`);
+          return;
+        }
+
         console.log(`[ProductionDeckContainer] Executing direct Firestore lookup for prompt/document ID "${promptId}"...`);
         
         // 1. Direct document lookup in root collection

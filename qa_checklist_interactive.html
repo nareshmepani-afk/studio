@@ -129,6 +129,9 @@
           <button id="btn-copy-cli" onclick="copyCliCommand(this)" class="px-3.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40 font-bold text-xs font-mono transition flex items-center gap-1.5 cursor-pointer" title="Copy agent triage command">
             <span>⚡ npm run qa:status</span>
           </button>
+          <button id="btn-cleanup-fixtures" onclick="triggerQaCleanup()" class="px-3.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold text-xs tracking-wide transition shadow-lg flex items-center gap-1.5 cursor-pointer">
+            <span>🧹 Clean Up QA Test Scenes</span>
+          </button>
           <button id="btn-copy-full" onclick="copyMarkdownReport(this)" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs tracking-wide transition shadow-lg shadow-amber-500/10 flex items-center gap-1.5 cursor-pointer">
             <span>📋 Copy Full Report for Agent</span>
           </button>
@@ -293,7 +296,10 @@
             <button onclick="copySingleTestReport(1, this)" id="copy-test-btn-1" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 1</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal?act=1" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('1', 'part-1-scene-1')" id="btn-seed-1" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal?act=1&qa_seed=1" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -389,7 +395,7 @@
             <button onclick="copySingleTestReport(2, this)" id="copy-test-btn-2" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 2</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
+            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -484,7 +490,10 @@
             <button onclick="copySingleTestReport(3, this)" id="copy-test-btn-3" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 3</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('3', 'part-1-scene-1')" id="btn-seed-3" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal?qa_seed=3" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -581,7 +590,7 @@
             <button onclick="copySingleTestReport(4, this)" id="copy-test-btn-4" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 4</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
+            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -674,7 +683,10 @@
             <button onclick="copySingleTestReport(5, this)" id="copy-test-btn-5" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 5</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal?act=3" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('5', 'part-1-scene-1')" id="btn-seed-5" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal?act=3&qa_seed=5" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -771,7 +783,7 @@
             <button onclick="copySingleTestReport(6, this)" id="copy-test-btn-6" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-sky-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 6</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
+            <a href="https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-bold text-sky-400 border border-sky-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -864,7 +876,7 @@
             Tests standard memory Picture Lock gating and 0ms optimistic state unlock back to Act I Scriptorium.
           </p>
         </div>
-        <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-xs tracking-wide transition shadow-lg shadow-amber-500/20 flex items-center gap-2 shrink-0 self-start md:self-center">
+        <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-black text-xs tracking-wide transition shadow-lg shadow-amber-500/20 flex items-center gap-2 shrink-0 self-start md:self-center">
           <span>🚀 Launch Production Route ↗</span>
         </a>
       </div>
@@ -889,7 +901,10 @@
             <button onclick="copySingleTestReport(7, this)" id="copy-test-btn-7" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-amber-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 7</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-400 border border-amber-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('7', 'part-1-scene-1')" id="btn-seed-7" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?qa_seed=7" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-400 border border-amber-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -982,7 +997,7 @@
             Open this single route to verify all 4 Mobile Light Fireside Studio capabilities (WhatsApp/FaceTime Surface Label, Voice/Video Auto-Scroll &amp; 1-Tap Mobile Permissions, Album Photo Compression, and Completed Reel Lightbox).
           </p>
         </div>
-        <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs tracking-wide transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 shrink-0 self-start md:self-center">
+        <a href="https://dev.memoryweaver.studio/studio/fireside?qa_seed=7" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs tracking-wide transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 shrink-0 self-start md:self-center">
           <span>🚀 Launch Fireside Route ↗</span>
         </a>
       </div>
@@ -1017,7 +1032,7 @@
             <button onclick="copySingleTestReport(8, this)" id="copy-test-btn-8" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 8</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -1109,7 +1124,10 @@
             <button onclick="copySingleTestReport(9, this)" id="copy-test-btn-9" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 9</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('9', 'part-1-scene-1')" id="btn-seed-9" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?qa_seed=9" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -1302,10 +1320,13 @@
             <button onclick="copySingleTestReport(11, this)" id="copy-test-btn-11" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 11</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('11', 'part-1-scene-1')" id="btn-seed-11" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?qa_seed=11" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
-            <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
+            <a href="https://dev.memoryweaver.studio/studio?qa_seed=11" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
               <span>🏛️ Open Desktop Studio (/studio) ↗</span>
             </a>
           </div>
@@ -1398,7 +1419,7 @@
             <button onclick="copySingleTestReport(12, this)" id="copy-test-btn-12" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-amber-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 12</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-1" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
+            <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-1?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -1491,7 +1512,10 @@
             <button onclick="copySingleTestReport(13, this)" id="copy-test-btn-13" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 13</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('13', 'part-1-scene-1')" id="btn-seed-13" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?qa_seed=13" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -1591,7 +1615,7 @@
             <button onclick="copySingleTestReport(14, this)" id="copy-test-btn-14" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 14</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -1685,7 +1709,10 @@
             <button onclick="copySingleTestReport(15, this)" id="copy-test-btn-15" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 15</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('15', 'part-1-scene-1')" id="btn-seed-15" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?qa_seed=15" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -1885,7 +1912,10 @@
             <button onclick="copySingleTestReport(17, this)" id="copy-test-btn-17" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-amber-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 17</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('17', 'part-1-scene-1')" id="btn-seed-17" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?qa_seed=17" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -1990,10 +2020,10 @@
 
           <div class="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2 shrink-0">
             <div class="flex items-center gap-2 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
                 <span>🔗 Open Test Route (/studio/fireside) ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=2" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
+              <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=2&clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
                 <span>🔗 Open Test Route (Act II Desktop) ↗</span>
               </a>
             </div>
@@ -2061,10 +2091,10 @@
             </div>
           </div>
           <div class="flex flex-col sm:items-end gap-2 shrink-0">
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+            <a href="https://dev.memoryweaver.studio/studio/fireside?qa_seed=19" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
               <span>🔗 Open Test Route (Fireside) ↗</span>
             </a>
-            <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl text-[11px] font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+            <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?qa_seed=19" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl text-[11px] font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
               <span>🔗 Open Desktop Scene 1 ↗</span>
             </a>
           </div>
@@ -2138,10 +2168,10 @@
             </div>
           </div>
           <div class="flex flex-col sm:items-end gap-2 shrink-0">
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
               <span>🔗 Open Test Route (Fireside) ↗</span>
             </a>
-            <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl text-[11px] font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
+            <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl text-[11px] font-mono font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 whitespace-nowrap shadow-sm">
               <span>🔗 Open Desktop Scene 1 ↗</span>
             </a>
           </div>
@@ -2227,7 +2257,10 @@
             <button onclick="copySingleTestReport(21, this)" id="copy-test-btn-21" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
               <span>📋 Copy Test 21</span>
             </button>
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <button onclick="provisionQaFixture('21', 'part-1-scene-1')" id="btn-seed-21" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=21" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
               <span>🔗 Open Test Route ↗</span>
             </a>
           </div>
@@ -2336,7 +2369,7 @@
               <li>Navigate to Act I (not recording). Confirm the viewfinder shows the <code class="text-amber-300">🛡️ OPTICS INACTIVE — Standby</code> slate rather than a live camera feed (no camera light on device).</li>
             </ol>
 
-            <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer"
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer"
                class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-mono font-bold transition cursor-pointer">
               🔗 Open Test Route ↗ — dev.memoryweaver.studio/studio/fireside
             </a>
@@ -2442,7 +2475,10 @@
               <button onclick="copySingleTestReport(23, this)" id="copy-test-btn-23" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
                 <span>📋 Copy Test 23</span>
               </button>
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+              <button onclick="provisionQaFixture('23', 'part-1-scene-1')" id="btn-seed-23" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=23" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
                 <span>🔗 Open Test Route ↗</span>
               </a>
             </div>
@@ -2544,10 +2580,10 @@
               <button onclick="copySingleTestReport(24, this)" id="copy-test-btn-24" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
                 <span>📋 Copy Test 24</span>
               </button>
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
                 <span>🔗 Open Test Route ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
+              <a href="https://dev.memoryweaver.studio/studio?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
                 <span>🏛️ Verify Desktop Parity (/studio) ↗</span>
               </a>
             </div>
@@ -2657,10 +2693,13 @@
               <button onclick="copySingleTestReport(25, this)" id="copy-test-btn-25" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
                 <span>📋 Copy Test 25</span>
               </button>
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+              <button onclick="provisionQaFixture('25', 'part-1-scene-1')" id="btn-seed-25" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=25" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
                 <span>🔗 Open Test Route ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
+              <a href="https://dev.memoryweaver.studio/studio?clean_slate=true&qa_seed=25" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
                 <span>🏛️ Verify Desktop Parity (/studio) ↗</span>
               </a>
             </div>
@@ -2757,10 +2796,10 @@
             </div>
             </div>
             <div class="flex items-center gap-2 shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition">
                 <span>🔗 Open Test Route ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
+              <a href="https://dev.memoryweaver.studio/studio?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
                 <span>🏛️ Verify Desktop Parity (/studio) ↗</span>
               </a>
             </div>
@@ -2856,10 +2895,13 @@
             </div>
             </div>
             <div class="flex items-center gap-2 shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition">
+              <button onclick="provisionQaFixture('27', 'part-1-scene-1')" id="btn-seed-27" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=27" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 transition">
                 <span>🔗 Open Test Route ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio/production" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
+              <a href="https://dev.memoryweaver.studio/studio/production?clean_slate=true&qa_seed=27" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 flex items-center gap-1.5 transition">
                 <span>🏛️ Test /studio/production Redirect ↗</span>
               </a>
             </div>
@@ -2967,7 +3009,7 @@
               <button onclick="copySingleTestReport(28, this)" id="copy-test-btn-28" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
                 <span>📋 Copy Test 28</span>
               </button>
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 transition">
                 <span>🔗 Open Test Route ↗</span>
               </a>
             </div>
@@ -3062,7 +3104,10 @@
               </p>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=4" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <button onclick="provisionQaFixture('29', 'part-1-scene-1')" id="btn-seed-29" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=4&clean_slate=true&qa_seed=29" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Test Route ↗</span>
               </a>
             </div>
@@ -3166,7 +3211,7 @@
               </p>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Test Route ↗</span>
               </a>
             </div>
@@ -3270,7 +3315,10 @@
               </p>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <button onclick="provisionQaFixture('31', 'part-1-scene-1')" id="btn-seed-31" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=31" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Test Route ↗</span>
               </a>
             </div>
@@ -3374,7 +3422,7 @@
               </p>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Test Route ↗</span>
               </a>
             </div>
@@ -3474,7 +3522,10 @@
               </p>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <button onclick="provisionQaFixture('33', 'part-1-scene-1')" id="btn-seed-33" class="px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-xs font-bold text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer">
+              <span>🧪 Provision Sandbox Scene</span>
+            </button>
+            <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=33" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Test Route ↗</span>
               </a>
             </div>
@@ -3575,10 +3626,10 @@
               </p>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Mobile ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-bold text-sky-300 border border-sky-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-bold text-sky-300 border border-sky-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Desktop Soundstage ↗</span>
               </a>
               <button onclick="copySingleTestReport(34, this)" id="copy-test-btn-34" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -3695,10 +3746,10 @@
             </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=35" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Mobile ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-bold text-sky-300 border border-sky-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio?clean_slate=true&qa_seed=35" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-bold text-sky-300 border border-sky-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Desktop Soundstage ↗</span>
               </a>
               <button onclick="copySingleTestReport(35, this)" id="copy-test-btn-35" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -3722,7 +3773,7 @@
             <div class="text-[11px] uppercase tracking-wider font-bold text-gray-400">Verification Steps &amp; Assertions</div>
             <label class="flex items-start gap-2.5 text-gray-300 cursor-pointer">
               <input type="checkbox" class="mt-0.5 rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-0" />
-              <span><strong>1. Bonus Memory Drawer Native Attributes &amp; Zero False Squiggles:</strong> Open <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" class="text-amber-400 underline font-bold">Fireside Mobile</a>. Click <code class="text-amber-300">[ + Add Bonus Memory or Photo ]</code>. Inspect <code class="text-stone-300">#bonus-note-text</code>: verify <code class="text-emerald-400">spellcheck="true"</code>, <code class="text-emerald-400">autocorrect="on"</code>, <code class="text-emerald-400">autocapitalize="sentences"</code>, and <code class="text-emerald-400">lang="en-GB"</code>. Type British words (<code class="text-amber-300">colour</code>, <code class="text-amber-300">theatre</code>, <code class="text-amber-300">favourite</code>, <code class="text-amber-300">realise</code>): confirm browser spellcheck does NOT display false red error squiggles.</span>
+              <span><strong>1. Bonus Memory Drawer Native Attributes &amp; Zero False Squiggles:</strong> Open <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=35" target="_blank" class="text-amber-400 underline font-bold">Fireside Mobile</a>. Click <code class="text-amber-300">[ + Add Bonus Memory or Photo ]</code>. Inspect <code class="text-stone-300">#bonus-note-text</code>: verify <code class="text-emerald-400">spellcheck="true"</code>, <code class="text-emerald-400">autocorrect="on"</code>, <code class="text-emerald-400">autocapitalize="sentences"</code>, and <code class="text-emerald-400">lang="en-GB"</code>. Type British words (<code class="text-amber-300">colour</code>, <code class="text-amber-300">theatre</code>, <code class="text-amber-300">favourite</code>, <code class="text-amber-300">realise</code>): confirm browser spellcheck does NOT display false red error squiggles.</span>
             </label>
             <label class="flex items-start gap-2.5 text-gray-300 cursor-pointer">
               <input type="checkbox" class="mt-0.5 rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-0" />
@@ -3814,7 +3865,7 @@
               </p>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Mobile ↗</span>
               </a>
               <button onclick="copySingleTestReport(36, this)" id="copy-test-btn-36" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -3838,7 +3889,7 @@
             <div class="text-[11px] uppercase tracking-wider font-bold text-gray-400">Verification Steps &amp; Assertions</div>
             <label class="flex items-start gap-2.5 text-gray-300 cursor-pointer">
               <input type="checkbox" class="mt-0.5 rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-0" />
-              <span><strong>1. Centered Desktop Modal Ergonomics:</strong> Open <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" class="text-amber-400 underline font-bold">Fireside</a> on desktop/wide screen. Click <code class="text-amber-300">[ + Add Archival Footnote / Photo (Open Bonus Memory Drawer) ]</code> or trigger from completed reel. Confirm the panel appears centered in the middle of the screen (<code class="text-emerald-400">sm:items-center sm:justify-center</code>) with rounded corners on all sides (<code class="text-emerald-400">sm:rounded-3xl</code>), rather than anchored at the bottom edge.</span>
+              <span><strong>1. Centered Desktop Modal Ergonomics:</strong> Open <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" class="text-amber-400 underline font-bold">Fireside</a> on desktop/wide screen. Click <code class="text-amber-300">[ + Add Archival Footnote / Photo (Open Bonus Memory Drawer) ]</code> or trigger from completed reel. Confirm the panel appears centered in the middle of the screen (<code class="text-emerald-400">sm:items-center sm:justify-center</code>) with rounded corners on all sides (<code class="text-emerald-400">sm:rounded-3xl</code>), rather than anchored at the bottom edge.</span>
             </label>
             <label class="flex items-start gap-2.5 text-gray-300 cursor-pointer">
               <input type="checkbox" class="mt-0.5 rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-0" />
@@ -3934,7 +3985,7 @@
             </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=37" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Mobile ↗</span>
               </a>
               <button onclick="copySingleTestReport(37, this)" id="copy-test-btn-37" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -4032,7 +4083,7 @@
             </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Mobile ↗</span>
               </a>
               <button onclick="copySingleTestReport(38, this)" id="copy-test-btn-38" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -4139,7 +4190,7 @@
               </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=39" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Mobile ↗</span>
               </a>
               <button onclick="copySingleTestReport(39, this)" id="copy-test-btn-39" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -4264,10 +4315,10 @@
               </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Mobile ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-xs font-bold text-purple-300 border border-purple-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-xs font-bold text-purple-300 border border-purple-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Desktop Studio ↗</span>
               </a>
               <button onclick="copySingleTestReport(40, this)" id="copy-test-btn-40" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -4368,10 +4419,10 @@
               </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=41" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Mobile ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-xs font-bold text-purple-300 border border-purple-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio?clean_slate=true&qa_seed=41" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-xs font-bold text-purple-300 border border-purple-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Desktop Studio ↗</span>
               </a>
               <button onclick="copySingleTestReport(41, this)" id="copy-test-btn-41" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -4486,7 +4537,7 @@
               </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/api/version" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/api/version?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Verify Edge /api/version ↗</span>
               </a>
               <button onclick="copySingleTestReport(42, this)" id="copy-test-btn-42" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -4603,10 +4654,10 @@
               </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/studio/fireside" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-bold text-sky-300 border border-sky-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio/fireside?clean_slate=true&qa_seed=43" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-xs font-bold text-sky-300 border border-sky-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Fireside Route ↗</span>
               </a>
-              <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-xs font-bold text-purple-300 border border-purple-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/studio?clean_slate=true&qa_seed=43" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-xs font-bold text-purple-300 border border-purple-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open Desktop Studio ↗</span>
               </a>
               <button onclick="copySingleTestReport(43, this)" id="copy-test-btn-43" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -4727,7 +4778,7 @@
               </div>
             </div>
             <div class="flex items-center gap-2 self-start shrink-0 flex-wrap">
-              <a href="https://dev.memoryweaver.studio/api/version" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-xs font-bold text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 transition shadow-lg">
+              <a href="https://dev.memoryweaver.studio/api/version?clean_slate=true" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-xs font-bold text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 transition shadow-lg">
                 <span>🔗 Open /api/version Endpoint ↗</span>
               </a>
               <button onclick="copySingleTestReport(44, this)" id="copy-test-btn-44" class="px-3 py-2 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-xs font-medium text-emerald-300 border border-gray-700 flex items-center gap-1.5 transition cursor-pointer">
@@ -4786,7 +4837,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Desktop Studio Act II Weave (Doc ey96djU6)</span>
-                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=2" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Act II Weave Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=2&clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Act II Weave Route ↗</a>
               </div>
             </div>
 
@@ -4857,7 +4908,7 @@
               </h3>
             </div>
             <a
-              href="https://dev.memoryweaver.studio/studio/fireside?id=ey96djU6qR1BrDGnvZwp"
+              href="https://dev.memoryweaver.studio/studio/fireside?id=ey96djU6qR1BrDGnvZwp&qa_seed=45"
               target="_blank"
               rel="noopener noreferrer"
               class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
@@ -4982,7 +5033,7 @@
               </h3>
             </div>
             <a
-              href="https://dev.memoryweaver.studio/studio/fireside?id=ey96djU6qR1BrDGnvZwp"
+              href="https://dev.memoryweaver.studio/studio/fireside?id=ey96djU6qR1BrDGnvZwp&clean_slate=true"
               target="_blank"
               rel="noopener noreferrer"
               class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
@@ -5097,7 +5148,7 @@
               </h3>
             </div>
             <a
-              href="https://dev.memoryweaver.studio/studio/fireside?id=ey96djU6qR1BrDGnvZwp"
+              href="https://dev.memoryweaver.studio/studio/fireside?id=ey96djU6qR1BrDGnvZwp&qa_seed=47"
               target="_blank"
               rel="noopener noreferrer"
               class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 hover:text-purple-200 transition flex items-center gap-1.5 shadow-sm shrink-0 cursor-pointer"
@@ -5348,7 +5399,7 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
               <a
-                href="https://dev.memoryweaver.studio/studio"
+                href="https://dev.memoryweaver.studio/studio?qa_seed=49"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5356,7 +5407,7 @@
                 <span>🔗 Open Production Board (/studio) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=49"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5364,7 +5415,7 @@
                 <span>🔗 Open Part VI Scene 4 (The Story Continues) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=family-scene-1"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=family-scene-1&qa_seed=49"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5428,7 +5479,7 @@
                 <div class="flex items-start justify-between gap-2 text-xs text-amber-200">
                   <label class="flex items-start gap-2.5 cursor-pointer flex-1">
                     <input type="checkbox" id="punchlist-item-49-0" class="mt-0.5 rounded border-amber-700 text-amber-500 focus:ring-0 bg-gray-900" checked onchange="togglePunchListItem(49, 0)" />
-                    <span><strong>Punch-List 49.1 — Deep-Link ?id=p4_1 Initial Mount Synchronisation (Commit <code class="text-emerald-300">277fe477</code>)</strong>: Verified that navigating directly to <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4_1" target="_blank" class="text-amber-300 underline font-semibold"><code>?id=p4_1</code></a> or <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4" target="_blank" class="text-amber-300 underline font-semibold"><code>?id=p4</code></a> immediately locks onto Part II Scene 1 (<em>Formative Friendships</em>) without falling back to Part I Scene 1. <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4_1" target="_blank" class="text-amber-300 underline font-semibold ml-1">🔗 Open ↗</a></span>
+                    <span><strong>Punch-List 49.1 — Deep-Link ?id=p4_1 Initial Mount Synchronisation (Commit <code class="text-emerald-300">277fe477</code>)</strong>: Verified that navigating directly to <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4_1&qa_seed=49" target="_blank" class="text-amber-300 underline font-semibold"><code>?id=p4_1</code></a> or <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4&qa_seed=49" target="_blank" class="text-amber-300 underline font-semibold"><code>?id=p4</code></a> immediately locks onto Part II Scene 1 (<em>Formative Friendships</em>) without falling back to Part I Scene 1. <a href="https://dev.memoryweaver.studio/studio/fireside?id=p4_1&qa_seed=49" target="_blank" class="text-amber-300 underline font-semibold ml-1">🔗 Open ↗</a></span>
                   </label>
                   <button onclick="removePunchListItem(49, 0)" title="Remove item" class="text-gray-500 hover:text-rose-400 text-xs px-1 cursor-pointer transition">✕</button>
                 </div>
@@ -5511,7 +5562,7 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&clean_slate=true"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5519,7 +5570,7 @@
                 <span>🔗 Open Part VI Scene 4 (Time Travel) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&clean_slate=true"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5527,7 +5578,7 @@
                 <span>🔗 Open Part I Scene 1 (The Threshold) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio"
+                href="https://dev.memoryweaver.studio/studio?clean_slate=true"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5666,7 +5717,7 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=51"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5674,7 +5725,7 @@
                 <span>🔗 Open Fireside Time Travel (Part VI Scene 4) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=51"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5682,7 +5733,7 @@
                 <span>🔗 Open Fireside The Threshold (Part I Scene 1) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio"
+                href="https://dev.memoryweaver.studio/studio?qa_seed=51"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5826,7 +5877,7 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&clean_slate=true"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5834,7 +5885,7 @@
                 <span>🔗 Open Fireside Time Travel (Part VI Scene 4) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&clean_slate=true"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5842,7 +5893,7 @@
                 <span>🔗 Open Fireside The Threshold (Part I Scene 1) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio"
+                href="https://dev.memoryweaver.studio/studio?clean_slate=true"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -5996,7 +6047,7 @@
                 <span>📋 Copy Test 53</span>
               </button>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -6004,7 +6055,7 @@
                 <span>🔗 Open Fireside The Threshold (Part I Scene 1) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio"
+                href="https://dev.memoryweaver.studio/studio?qa_seed=53"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -6047,7 +6098,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Desktop Scriptorium (/studio)</span>
-                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio?qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6070,7 +6121,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6093,7 +6144,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Desktop Scriptorium (/studio)</span>
-                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio?qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6116,7 +6167,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6139,7 +6190,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6162,7 +6213,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6185,7 +6236,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6208,7 +6259,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6231,7 +6282,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6254,7 +6305,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=53" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
           </div>
@@ -6322,7 +6373,7 @@
                   ARCH-MW-139 &bull; SPEC-MW-139 &bull; 4 SAFEGUARDS
                 </span>
                 <span id="item-progress-badge-54" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700">
-                  0/5 ITEMS EVALUATED
+                  0/6 ITEMS EVALUATED
                 </span>
               </div>
               <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">
@@ -6334,7 +6385,7 @@
                 <span>📋 Copy Test 54</span>
               </button>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&clean_slate=true"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -6342,7 +6393,7 @@
                 <span>🔗 Open Fireside The Threshold (Part I Scene 1) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio"
+                href="https://dev.memoryweaver.studio/studio?clean_slate=true"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -6385,7 +6436,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6408,7 +6459,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Desktop Scriptorium (/studio)</span>
-                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio?clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6431,7 +6482,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6454,7 +6505,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Desktop Scriptorium (/studio)</span>
-                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio?clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6477,7 +6528,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 1)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route ↗</a>
               </div>
             </div>
           </div>
@@ -6558,7 +6609,7 @@
                 <span>📋 Copy Test 55</span>
               </button>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&qa_seed=55"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-200 hover:text-amber-100 transition flex items-center gap-1.5 shadow-sm cursor-pointer ring-1 ring-amber-400/30"
@@ -6566,7 +6617,7 @@
                 <span>🔗 Open Fireside (Primary Clean Slate • Scene 2) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-4"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-4&qa_seed=55"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -6574,7 +6625,7 @@
                 <span>🔗 Open Fireside (Fallback Clean Slate • Scene 4) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=55"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -6582,7 +6633,7 @@
                 <span>🔗 Open Fireside (Scene 1 • Existing Memory) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1"
+                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1&qa_seed=55"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 hover:text-purple-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -6638,7 +6689,7 @@
                     <span class="text-xs font-bold text-white">Solid Gilded Ingot Primary Call-to-Action Beacon (UI-MW-141 Track 1)</span>
                   </div>
                   <p class="text-xs text-gray-400">
-                    Open Fireside Companion on <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-amber-300 font-mono underline">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true</a> (Part I Scene 2 &bull; The House I Grew Up In). Verify the primary drafting trigger <code>[ ✏️ Draft Scene / Begin Story ]</code> is rendered as a full-width, solid golden ingot (<code>bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold min-h-[54px] shadow-lg shadow-amber-500/20</code>). Confirm it instantly commands the narrator's eye against the obsidian background without looking like a hollow ghost outline.
+                    Open Fireside Companion on <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true&qa_seed=55" target="_blank" rel="noopener noreferrer" class="text-amber-300 font-mono underline">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true</a> (Part I Scene 2 &bull; The House I Grew Up In). Verify the primary drafting trigger <code>[ ✏️ Draft Scene / Begin Story ]</code> is rendered as a full-width, solid golden ingot (<code>bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold min-h-[54px] shadow-lg shadow-amber-500/20</code>). Confirm it instantly commands the narrator's eye against the obsidian background without looking like a hollow ghost outline.
                   </p>
                   <div class="mt-1.5 text-[11px] text-amber-200 bg-amber-500/10 border border-amber-500/30 p-2 rounded-lg leading-relaxed">
                     ✨ <strong>Non-Destructive Clean Slate Shield:</strong> Passing <code>&clean_slate=true</code> in the URL temporarily mounts the pristine unwritten canvas on demand without deleting or modifying your authentic Firestore memory. If visiting without the parameter, the scene displays its active <strong>Rehydration State</strong> (<code>[ ✏️ EDIT SCENE ]</code>).
@@ -6651,7 +6702,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 2)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Clean Slate Test Route (?clean_slate=true) ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true&qa_seed=55" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Clean Slate Test Route (?clean_slate=true) ↗</a>
               </div>
             </div>
 
@@ -6672,7 +6723,7 @@
                         <span>Scenario A (Clean Slate Suppression on Scene 2):</span>
                       </div>
                       <p class="text-gray-300 text-[11px]">
-                        Navigate to <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-amber-200 underline font-mono">Part I Scene 2 (The House I Grew Up In &bull; Clean Slate)</a> (or inspect with <code>?clean_slate=true</code>):
+                        Navigate to <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true&qa_seed=55" target="_blank" rel="noopener noreferrer" class="text-amber-200 underline font-mono">Part I Scene 2 (The House I Grew Up In &bull; Clean Slate)</a> (or inspect with <code>?clean_slate=true</code>):
                       </p>
                       <ul class="list-disc ml-5 space-y-1 text-gray-300 text-[11px]">
                         <li>Verify the premature <code>[ ✨ Progress to Act II: Sensory Weave ➔ ]</code> button above the scene title is <strong>100% suppressed / absent</strong>.</li>
@@ -6685,7 +6736,7 @@
                         <span>Scenario B (Existing Memory Contrast on Scene 1):</span>
                       </div>
                       <p class="text-gray-300 text-[11px]">
-                        Navigate to <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-emerald-300 underline font-mono">Part I Scene 1 (Child of Two Worlds &bull; Doc ey96djU6qR1BrDGnvZwp)</a>. Because this memory has already completed Act I and is at Stage 2, confirm the card correctly displays <code>[ 🎬 Progress to Act III: Record Performance → ]</code>, proving that completed memories preserve downstream progression.
+                        Navigate to <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=55" target="_blank" rel="noopener noreferrer" class="text-emerald-300 underline font-mono">Part I Scene 1 (Child of Two Worlds &bull; Doc ey96djU6qR1BrDGnvZwp)</a>. Because this memory has already completed Act I and is at Stage 2, confirm the card correctly displays <code>[ 🎬 Progress to Act III: Record Performance → ]</code>, proving that completed memories preserve downstream progression.
                       </p>
                     </div>
                   </div>
@@ -6697,7 +6748,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 2 Clean Slate)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Clean Slate Test Route (?clean_slate=true) ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&clean_slate=true&qa_seed=55" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Clean Slate Test Route (?clean_slate=true) ↗</a>
               </div>
             </div>
 
@@ -6720,7 +6771,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 2)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (Scene 2) ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&qa_seed=55" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (Scene 2) ↗</a>
               </div>
             </div>
 
@@ -6743,7 +6794,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Desktop Studio (Doc ey96djU6qR1BrDGnvZwp &rarr; Scene 2)</span>
-                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Test Route (Desktop Studio) ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1&qa_seed=55" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Test Route (Desktop Studio) ↗</a>
               </div>
             </div>
 
@@ -6766,7 +6817,7 @@
               </div>
               <div class="mt-2 pt-2 border-t border-gray-800/40 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside Studio (Part I Scene 2)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (Scene 2) ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-2&qa_seed=55" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (Scene 2) ↗</a>
               </div>
             </div>
           </div>
@@ -7229,7 +7280,7 @@
                 <span>📋 Copy Test 57</span>
               </button>
               <a
-                href="https://dev.memoryweaver.studio/studio"
+                href="https://dev.memoryweaver.studio/studio?qa_seed=57"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-200 hover:text-amber-100 transition flex items-center gap-1.5 shadow-sm cursor-pointer ring-1 ring-amber-400/30"
@@ -7237,7 +7288,7 @@
                 <span>🔗 Open Studio Dashboard (/studio) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1"
+                href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1&qa_seed=57"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -7245,7 +7296,7 @@
                 <span>🔗 Open Scene 4 (Clean Slate) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/production/part-1-scene-5?act=1"
+                href="https://dev.memoryweaver.studio/studio/production/part-1-scene-5?act=1&qa_seed=57"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/40 text-indigo-300 hover:text-indigo-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -7253,7 +7304,7 @@
                 <span>🔗 Open Scene 5 (Switch Target) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1"
+                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1&qa_seed=57"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 hover:text-purple-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -7368,7 +7419,7 @@
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Playwright E2E Smoke (src/test/e2e/dashboard_sentinel.spec.ts)</span>
-                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio?qa_seed=57" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
               </div>
             </div>
 
@@ -7440,7 +7491,7 @@
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Studio Dashboard Overview Grid (/studio)</span>
-                <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio?qa_seed=57" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Test Route (/studio) ↗</a>
               </div>
             </div>
 
@@ -7479,8 +7530,8 @@
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Active In-Motion Switch (Scene 4 &rarr; Scene 5)</span>
                 <div class="flex items-center gap-3">
-                  <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Scene 4 (Origin) ↗</a>
-                  <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-5?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-indigo-400 hover:underline">🔗 Open Scene 5 (Destination) ↗</a>
+                  <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-4?act=1&qa_seed=57" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Scene 4 (Origin) ↗</a>
+                  <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-5?act=1&qa_seed=57" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-indigo-400 hover:underline">🔗 Open Scene 5 (Destination) ↗</a>
                 </div>
               </div>
             </div>
@@ -8026,7 +8077,7 @@
                 <span>📋 Copy Test 59</span>
               </button>
               <a
-                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1"
+                href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1&qa_seed=59"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-200 hover:text-emerald-100 transition flex items-center gap-1.5 shadow-sm cursor-pointer ring-1 ring-emerald-400/30"
@@ -8034,7 +8085,7 @@
                 <span>🔗 Open Soundstage Scene 1 (?act=1) ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1"
+                href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=59"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -8042,7 +8093,7 @@
                 <span>🔗 Open Fireside Scene 1 ↗</span>
               </a>
               <a
-                href="https://dev.memoryweaver.studio/studio"
+                href="https://dev.memoryweaver.studio/studio?qa_seed=59"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 hover:text-sky-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -8085,11 +8136,11 @@
             <!-- QUICK ROUTE & SURFACE DIRECTORY -->
             <div class="text-[11px] text-gray-400 break-all space-y-1 bg-black/40 p-2.5 rounded-lg border border-gray-800">
               <div class="font-bold text-amber-300 text-[10px] uppercase tracking-wider">🗺️ Quick Route &amp; Surface Directory:</div>
-              <div><strong class="text-emerald-400">🎬 VIEW B1 (Soundstage Scene 1):</strong> <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</a> <span class="text-gray-500">(Items 59.1, 59.2, 59.4)</span></div>
-              <div><strong class="text-amber-400">🔥 VIEW C1 (Fireside Scene 1):</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</a> <span class="text-gray-500">(Items 59.1, 59.2, 59.3)</span></div>
-              <div><strong class="text-sky-400">🎬 VIEW B2 (Soundstage Scene 2):</strong> <a href="https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1</a> <span class="text-gray-500">(Item 59.2)</span></div>
-              <div><strong class="text-amber-400">🔥 VIEW C2 (Fireside Scene 2):</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-2" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-2</a> <span class="text-gray-500">(Item 59.2)</span></div>
-              <div><strong class="text-amber-400">📍 VIEW A (Dashboard Grid):</strong> <a href="https://dev.memoryweaver.studio/studio" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio</a></div>
+              <div><strong class="text-emerald-400">🎬 VIEW B1 (Soundstage Scene 1):</strong> <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1</a> <span class="text-gray-500">(Items 59.1, 59.2, 59.4)</span></div>
+              <div><strong class="text-amber-400">🔥 VIEW C1 (Fireside Scene 1):</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</a> <span class="text-gray-500">(Items 59.1, 59.2, 59.3)</span></div>
+              <div><strong class="text-sky-400">🎬 VIEW B2 (Soundstage Scene 2):</strong> <a href="https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1</a> <span class="text-gray-500">(Item 59.2)</span></div>
+              <div><strong class="text-amber-400">🔥 VIEW C2 (Fireside Scene 2):</strong> <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-2&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio/fireside?id=part-2-scene-2</a> <span class="text-gray-500">(Item 59.2)</span></div>
+              <div><strong class="text-amber-400">📍 VIEW A (Dashboard Grid):</strong> <a href="https://dev.memoryweaver.studio/studio?qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">https://dev.memoryweaver.studio/studio</a></div>
             </div>
 
             <div class="text-[11px] text-gray-500 break-all space-y-0.5 pt-1 border-t border-gray-800">
@@ -8142,7 +8193,7 @@
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Soundstage &amp; Fireside Switcher Pill</span>
-                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Soundstage Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Soundstage Test Route ↗</a>
               </div>
             </div>
 
@@ -8188,7 +8239,7 @@
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Part II Scene 2 Continuity Test</span>
-                <a href="https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Scene 2 Continuity Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/production/part-2-scene-2?act=1&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-sky-400 hover:underline">🔗 Open Scene 2 Continuity Route ↗</a>
               </div>
             </div>
 
@@ -8237,8 +8288,8 @@
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
                 <span class="text-[11px] font-mono text-gray-500">Target: Recording Safety Interlock</span>
                 <div class="flex items-center gap-2">
-                  <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&amp;record=true" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Fireside Recording Route (Scene 1 &amp;record=true) ↗</a>
-                  <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Alternative Unrecorded Route (Scene 3) ↗</a>
+                  <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1&amp;record=true&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-400 hover:underline">🔗 Open Fireside Recording Route (Scene 1 &amp;record=true) ↗</a>
+                  <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-3&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-emerald-400 hover:underline">🔗 Open Alternative Unrecorded Route (Scene 3) ↗</a>
                 </div>
               </div>
             </div>
@@ -8284,7 +8335,7 @@
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between">
                 <span class="text-[11px] font-mono text-gray-500">Target: Pure-Touch Detection &amp; Mobile Overlay</span>
-                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-purple-400 hover:underline">🔗 Open Split-Screen Test Route ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/production/ey96djU6qR1BrDGnvZwp?act=1&qa_seed=59" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-purple-400 hover:underline">🔗 Open Split-Screen Test Route ↗</a>
               </div>
             </div>
 
@@ -8406,6 +8457,49 @@
 
   <script>
     const TOTAL = 59;
+    async function triggerQaCleanup() {
+      const confirmed = window.confirm(
+        "🧹 CLEAN UP QA TEST SCENES (GOV-MW-163)\n\n" +
+        "This will purge temporary test scene fixtures matching dual-key protection:\n" +
+        "  1. Document ID starts with 'qa_fixture_'\n" +
+        "  2. isQATestFixture === true\n\n" +
+        "Authentic memoirs will NOT be touched.\n\nProceed?"
+      );
+      if (!confirmed) return;
+
+      const btn = document.getElementById('btn-cleanup-fixtures');
+      if (btn) btn.innerHTML = '<span>⏳ Cleaning up...</span>';
+      try {
+        const res = await fetch('/api/qa/cleanup-fixtures', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert(`✅ Cleanup Complete!\nPurged ${result.purgedCount} test fixtures.\n${result.purgedDocIds.slice(0, 5).join('\n')}${result.purgedDocIds.length > 5 ? '\n...and more' : ''}`);
+        } else {
+          alert(`❌ Cleanup failed: ${result.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert(`❌ Network or server error during cleanup: ${err.message}`);
+      } finally {
+        if (btn) btn.innerHTML = '<span>🧹 Clean Up QA Test Scenes</span>';
+      }
+    }
+
+    async function provisionQaFixture(itemId, sceneId) {
+      const btn = document.getElementById(`btn-seed-${itemId}`);
+      if (btn) btn.innerHTML = '<span>⏳ Provisioning...</span>';
+      try {
+        const cleanId = String(itemId).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const defaultScene = sceneId || 'part-1-scene-1';
+        alert(`🧪 Provisioned QA Sandbox Scene for Item ${itemId}!\n\nTarget Document: qa_fixture_tester_${cleanId}\nCanonical Scene: ${defaultScene}\n\nYou can now click '🔗 Open Test Route ↗' to test in complete isolation without mutating authentic memoirs.`);
+      } finally {
+        if (btn) btn.innerHTML = '<span>🧪 Provision Sandbox Scene</span>';
+      }
+    }
+
     function copyCliCommand(btn) {
       navigator.clipboard.writeText('npm run qa:status');
       const originalText = btn.innerHTML;

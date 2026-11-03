@@ -32,7 +32,8 @@ function decodeHtml(str: string) {
 export async function seedQaFirestore() {
   const htmlPath = path.resolve(process.cwd(), 'qa_checklist_interactive.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
-  const cardItemCounts: Record<number, number> = { 53: 10, 54: 5, 55: 5, 56: 5, 57: 5, 58: 5, 59: 5 };
+  // Card 55 updated to 6 items (GOV-MW-163)
+  const cardItemCounts: Record<number, number> = { 53: 10, 54: 5, 55: 6, 56: 5, 57: 5, 58: 5, 59: 5 };
 
   console.log('📖 Fetching existing docs from memory-weaver-dev to ensure idempotency...');
   const snap = await getDocs(collection(db, COLLECTION_PATH));
@@ -65,6 +66,13 @@ export async function seedQaFirestore() {
       const itemId = String(cardNum);
       const existing = existingMap.get(itemId);
       if (existing) {
+        // Strict metadata-only merge: update targetRoute and title, preserving verdicts/notes/traces/screenshots
+        const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
+        batch.set(itemRef, {
+          title: cardTitle,
+          targetRoute: cardRoute,
+          steps: [`Execute staging verification against ${cardRoute}`],
+        }, { merge: true });
         preserved++;
       } else {
         const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
@@ -87,10 +95,6 @@ export async function seedQaFirestore() {
       for (let sub = 1; sub <= count; sub++) {
         const itemId = `${cardNum}.${sub}`;
         const existing = existingMap.get(itemId);
-        if (existing) {
-          preserved++;
-          continue;
-        }
 
         const itemBlockMatch = cardChunk.match(new RegExp(`Item\\s+${cardNum}\\.${sub}[\\s\\S]*?(?=Item\\s+${cardNum}\\.${sub + 1}|$)`));
         let itemTitle = `Item ${itemId}: Verification Item`;
@@ -102,6 +106,18 @@ export async function seedQaFirestore() {
 
           const rMatch = itemBlockMatch[0].match(/href="(https:\/\/dev\.memoryweaver\.studio[^"]+)"/);
           if (rMatch) itemRoute = rMatch[1];
+        }
+
+        if (existing) {
+          // Strict metadata-only merge: strictly preserve verdict, notes, telemetryTrace, and screenshots
+          const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
+          batch.set(itemRef, {
+            title: itemTitle,
+            targetRoute: itemRoute,
+            steps: [`Execute staging verification against ${itemRoute}`],
+          }, { merge: true });
+          preserved++;
+          continue;
         }
 
         let verdict = 'PENDING';
@@ -128,8 +144,14 @@ export async function seedQaFirestore() {
 
       // Ensure parent card document exists for cards with sub-items
       const parentId = String(cardNum);
-      if (!existingMap.has(parentId)) {
-        const parentRef = doc(db, 'qa_suites', 'active_deck', 'items', parentId);
+      const parentRef = doc(db, 'qa_suites', 'active_deck', 'items', parentId);
+      if (existingMap.has(parentId)) {
+        batch.set(parentRef, {
+          title: cardTitle,
+          targetRoute: cardRoute,
+          steps: [`Execute staging verification against ${cardRoute}`],
+        }, { merge: true });
+      } else {
         batch.set(parentRef, {
           id: parentId,
           cardNumber: cardNum,
@@ -148,11 +170,11 @@ export async function seedQaFirestore() {
     }
   }
 
-  if (created > 0) {
-    console.log(`Committing batch (${created} new items)...`);
+  if (created > 0 || preserved > 0) {
+    console.log(`Committing batch (${created} new items, ${preserved} preserved items merged)...`);
     await batch.commit();
   }
-  console.log(`✅ Seed Complete: Created ${created} new items, Preserved ${preserved} existing cloud items.`);
+  console.log(`✅ Seed Complete: Created ${created} new items, Preserved & Merged ${preserved} existing cloud items without overwriting verdicts, notes, traces, or screenshots.`);
   process.exit(0);
 }
 

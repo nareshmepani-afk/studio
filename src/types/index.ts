@@ -84,6 +84,9 @@ export interface Memory {
   mediaAttachments?: MediaAttachment[];
   imageUrl?: string;
   isLegacy?: boolean;
+  isQATestFixture?: boolean;
+  isTestFixture?: boolean;
+  qaItemId?: string;
   sensoryConfig?: SensoryPromptTemplate[];
   chapterTitle?: string;
   usePoster?: boolean;

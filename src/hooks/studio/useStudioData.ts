@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Memory, PromptGroup, StoryRequest } from '@/types';
 import { MASTER_STORY_STRUCTURE, resolveSceneFromPromptId, resolvePromptIdFromSceneId, getSceneById } from '@/lib/curriculum/masterStoryStructure';
+import { getQaFixtureDocId, createQaFixtureMemory } from '@/lib/qa/qaFixtureSeeder';
 import type { ScriptSyncMessage } from '@/components/studio/shared/NarrativeScriptInput';
 import { useLanguage } from '@/hooks/useLanguage';
 
@@ -160,15 +161,22 @@ export function useStudioData(userId: string | undefined) {
   }, [userId, user?.uid]);
 
   const chapters = useMemo(() => {
-    // Clean Slate Override (Staging Testing Shield)
+    // Clean Slate & QA Seed Overrides (Staging Testing Shield - GOV-MW-163)
     let cleanSlateSceneId: string | null = null;
     let isGlobalCleanSlate = false;
+    let qaSeedItemId: string | null = null;
+    let qaTargetSceneId: string | null = null;
+
     if (typeof window !== 'undefined') {
       try {
         const searchParams = new URLSearchParams(window.location.search);
         if (searchParams.get('clean_slate') === 'true') {
           cleanSlateSceneId = searchParams.get('id') || searchParams.get('prompt') || null;
           isGlobalCleanSlate = !cleanSlateSceneId;
+        }
+        qaSeedItemId = searchParams.get('qa_seed') || null;
+        if (qaSeedItemId) {
+          qaTargetSceneId = searchParams.get('id') || searchParams.get('prompt') || null;
         }
       } catch {}
     }
@@ -186,6 +194,28 @@ export function useStudioData(userId: string | undefined) {
             memory: undefined,
             requests: [],
           };
+        }
+
+        // QA Sandbox Fixture Override: If qa_seed is active for this scene, bind deterministic sandbox fixture
+        if (qaSeedItemId) {
+          const isTargetScene = !qaTargetSceneId || qaTargetSceneId === scene.id || qaTargetSceneId === scene.promptId;
+          if (isTargetScene) {
+            const fixtureId = getQaFixtureDocId(userId || 'guest', qaSeedItemId);
+            const existingFixture = memories.find((m) => m.id === fixtureId);
+            const boundMemory = existingFixture || createQaFixtureMemory({
+              itemId: qaSeedItemId,
+              userId: userId || 'anonymous',
+              sceneId: scene.id,
+              promptId: scene.promptId,
+            });
+            return {
+              id: scene.promptId,
+              title: scene.title,
+              description: scene.subtitle,
+              memory: boundMemory,
+              requests: [],
+            };
+          }
         }
 
         // Trace forward: Follow the chain of memory pointer documents to find the latest leaf memory.
@@ -358,7 +388,7 @@ export function useStudioData(userId: string | undefined) {
   // Compares authentic document count (M) with resolved card count (N) to detect document shadowing in real time.
   useEffect(() => {
     if (isLoading || !memories || memories.length === 0 || chapters.length === 0) return;
-    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('clean_slate') === 'true') return;
+    if (typeof window !== 'undefined' && (new URLSearchParams(window.location.search).get('clean_slate') === 'true' || new URLSearchParams(window.location.search).get('qa_seed'))) return;
 
     const evaluation = evaluateDataShadowingAnomaly(memories, chapters);
 

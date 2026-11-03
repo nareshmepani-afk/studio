@@ -42,6 +42,7 @@ import {
 export { resolveEditingAuthority } from '@/types/curriculum';
 export type { StoryMoodTag, EditingAuthority, SurfaceOrigin, MemoirReel, MemoirTakeStatus } from '@/types/curriculum';
 import { sanitizeMemoryPayloadForStorage } from '@/lib/memoryPersistenceGuard';
+import { getQaFixtureDocId } from '@/lib/qa/qaFixtureSeeder';
 
 export interface UseCurriculumVaultOptions {
   userId?: string | null;
@@ -471,6 +472,32 @@ export function useCurriculumVault({
               });
             }
           }
+          // QA Sandbox Seed Override (GOV-MW-163)
+          const qaSeed = searchParams.get('qa_seed');
+          if (qaSeed) {
+            const target = searchParams.get('id') || searchParams.get('prompt') || null;
+            if (!target || target === canonicalSceneId || target === sceneDef?.promptId || target === sceneIdOrPromptId) {
+              const fixtureId = getQaFixtureDocId(effectiveUserId || 'qa_user', qaSeed);
+              const activeMap = Object.keys(scenes).length > 0 ? scenes : scenesRef.current;
+              if (activeMap[fixtureId]) {
+                return activeMap[fixtureId];
+              }
+              return {
+                ...createEmptyCurriculumMemory({
+                  id: fixtureId,
+                  userId: effectiveUserId,
+                  sceneId: canonicalSceneId,
+                  partNumber: sceneDef?.partNumber ?? 1,
+                  sceneNumber: sceneDef?.sceneNumber ?? 1,
+                  sceneTitle: sceneDef?.title ?? canonicalSceneId,
+                  originSurface: 'fireside_mobile',
+                }),
+                isQATestFixture: true,
+                isTestFixture: true,
+                qaItemId: qaSeed,
+              } as any;
+            }
+          }
         } catch {}
       }
 
@@ -498,6 +525,22 @@ export function useCurriculumVault({
 
   const resolveDocIdForScene = useCallback(
     (sceneId: string): string => {
+      // QA Sandbox Seed Override (GOV-MW-163)
+      if (typeof window !== 'undefined') {
+        try {
+          const searchParams = new URLSearchParams(window.location.search);
+          const qaSeed = searchParams.get('qa_seed');
+          if (qaSeed) {
+            const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+            const canonicalSceneId = sceneDef?.id || sceneId;
+            const target = searchParams.get('id') || searchParams.get('prompt') || null;
+            if (!target || target === canonicalSceneId || target === sceneDef?.promptId || target === sceneId) {
+              return getQaFixtureDocId(effectiveUserId || 'qa_user', qaSeed);
+            }
+          }
+        } catch {}
+      }
+
       const activeMap = Object.keys(scenesRef.current).length > 0 ? scenesRef.current : scenes;
       const mem = activeMap[sceneId];
       if (mem && mem.id && !mem.id.startsWith('memoir_')) {
@@ -716,6 +759,10 @@ export function useCurriculumVault({
           }
 
           const cleanPayload = sanitizeMemoryPayloadForStorage(payload);
+          if (targetDocId.startsWith('qa_fixture_')) {
+            cleanPayload.isQATestFixture = true;
+            cleanPayload.isTestFixture = true;
+          }
           await setDoc(memoryDocRef, cleanPayload, { merge: true });
 
           if (memoirId) {
@@ -1113,6 +1160,10 @@ export function useCurriculumVault({
         try {
           const targetDocId = resolveDocIdForScene(canonicalSceneId);
           const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+          if (targetDocId.startsWith('qa_fixture_')) {
+            payload.isQATestFixture = true;
+            payload.isTestFixture = true;
+          }
 
           await setDoc(memoryDocRef, payload, { merge: true });
 

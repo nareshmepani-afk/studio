@@ -420,6 +420,41 @@ Whenever introducing a query parameter override or state guardrail:
   1. **Narrative Prose Rule**: Unauthorized opening year clauses (`In <YEAR>,`) are replaced with natural narrative phrasing (`"In those early years,"` or `"Before that turning point,"`), and standalone unauthorized years are replaced with contextual references (`"that era"`), preserving prose fluidity without changing authentic facts.
   2. **Sensory Anchor Chip Rule**: Short UI sensory chips (e.g. `RHYTHMIC SOUND OF SEA WAVES IN 1956`) MUST cleanly strip unauthorized `" IN <YEAR>"` / `" in <YEAR>"` suffixes rather than inserting sentence clauses (e.g. resolving cleanly to `"Rhythmic sound of sea waves"`).
 
+# 30.12. Mandatory 3-Bucket Taxonomy & Zero-State Isolation Standard for QA Checklist Authoring & Amendments (GOV-MW-163)
+
+## 30.12.1 Mandatory 3-Bucket Taxonomy Classification
+When authoring or amending ANY test card (`#card-N`) or sub-item (`Item N.M`) in `qa_checklist_interactive.html` or `/admin/qa`, the agent MUST explicitly classify the test item into one of three canonical operational buckets:
+
+1. **Bucket 1: Zero-State / Read-Only UI Verification**:
+   - *Scope*: Verifying unwritten canvas states, solid gilded ingot CTA beacons, empty sensory trays, unwritten chapter placeholders, and suppressed downstream progression buttons.
+   - *Mandatory Launcher Parameter*: The test route URL MUST include `?clean_slate=true` (or `&clean_slate=true`).
+   - *Strict Prohibition*: Agents are **STRICTLY FORBIDDEN** from authoring zero-state tests that point to bare canonical scene routes (e.g. `/studio/fireside?id=part-1-scene-2`) without `?clean_slate=true`. Authentic tester accounts possess persistent database records; omitting `?clean_slate=true` will inevitably cause false negative failures due to pre-existing data.
+   - *Visual Badge*: Must declare badge: `❄️ CLEAN SLATE (READ-ONLY)`.
+
+2. **Bucket 2: Mutation, Recording, AI-Weave & Write Verification**:
+   - *Scope*: Verifying narrative typing and autosave, Weave AI generation, audio/video take recording, act progression (Act I -> Act II), draft resets, and scene modifications.
+   - *Mandatory Launcher Parameter*: The test route URL MUST provide a deterministic sandbox fixture launcher: `?qa_seed=<itemId>` (e.g. `?id=part-1-scene-1&qa_seed=59.3`).
+   - *Deterministic Sandbox Binding*: The runtime MUST bind the scene to an isolated test document:
+     `docId = qa_fixture_${userId}_${itemId.replace('.', '_')}`
+   - *Strict Prohibition*: Agents are **STRICTLY FORBIDDEN** from pointing mutation or recording tests directly to authentic user memories (e.g. `ey96djU6qR1BrDGnvZwp`) or un-seeded canonical scenes. Doing so corrupts authentic user data and triggers "Take in progress" or "Master reel locked" gates.
+   - *Visual Button & Badge*: Must provide dedicated `[ 🧪 Launch Sandbox Scene (?qa_seed=N.M) ↗ ]` button and badge `🧪 SANDBOX FIXTURE`.
+
+3. **Bucket 3: Direct Hardware, Platform & Authentication Verification**:
+   - *Scope*: Verifying USB camera/mic discovery, media stream teardown, screen resizing/foldable responsive styling, `/staging-lock` perimeter authentication, Stripe billing checkout, `/api/version` edge checks, and administrative email operations.
+   - *Mandatory Route*: Direct canonical staging URL without synthetic interception.
+   - *Visual Badge*: Must declare badge: `⚡ DIRECT PLATFORM`.
+
+## 30.12.2 Dual-Key Test Scene Cleanup Engine
+- The top HUD of `qa_checklist_interactive.html` and `/admin/qa` MUST provide a dedicated **[ 🧹 Clean Up QA Test Scenes ]** action button.
+- Clicking triggers a safety confirmation modal and invokes `cleanUpAllQaFixtures(userId)`.
+- **Absolute Preservation of Authentic User Data**: The cleanup engine is cryptographically restricted to deleting ONLY documents matching `id >= 'qa_fixture_' && id <= 'qa_fixture_\uf8ff'`. Under NO circumstances may authentic user memoirs or recordings be purged.
+
+## 30.12.3 Strict Metadata-Only Firestore Seeding Invariant (`seed-qa-firestore.ts`)
+- When running `scripts/seed-qa-firestore.ts` to sync or seed Firestore collection `qa_suites/active_deck/items`:
+  1. The script MUST perform a **strict metadata-only merge** on existing documents.
+  2. The script updates `title`, `steps`, `targetRoute`, `bucket`, and `syncedAt`.
+  3. **Zero-Overwrite Invariant**: The script is **STRICTLY FORBIDDEN** from overwriting or resetting existing `verdict`, `notes`, `telemetryTrace`, or `screenshots`. Any seed operation that wipes a tester's verified `PASS` verdict or uploaded test screenshot is an immediate Critical Process Violation.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
