@@ -232,6 +232,11 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     const updateProgSlice = liveHtml.slice(updateProgIdx, updateProgIdx + 1200);
     expect(updateProgSlice).toContain("verdicts[cardNum] = { verdict: 'pass'");
     expect(liveHtml).toContain("'58_1': 'pass'");
+    // SSOT Curriculum Consistency Shield: Invariant against hallucinated scene titles in QA Checklist
+    expect(liveHtml).not.toContain('The Brass Spice Tin');
+    expect(liveHtml).not.toContain('The Family Album');
+    expect(liveHtml).toContain('The House I Grew Up In');
+    expect(liveHtml).toContain('Traditions, Feasts &amp; Sacred Days');
   });
 });
 

@@ -42,7 +42,7 @@ const mockScenes: FolioSceneToken[] = [
     id: 'scene-2',
     index: 1,
     sceneNumber: 2,
-    title: 'The Brass Spice Tin',
+    title: 'The House I Grew Up In',
     partNumber: 1,
     partTitle: 'PART I: Roots & Foundations',
     hasCompletedReel: false,

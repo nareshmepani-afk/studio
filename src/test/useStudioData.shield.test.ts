@@ -255,7 +255,7 @@ describe('useStudioData Loading Shield', () => {
       {
         id: 'part-1-scene-2',
         promptId: 'p2',
-        title: 'The Brass Spice Tin',
+        title: 'The House I Grew Up In',
         prose: 'Existing draft narrative from earlier test session...',
         status: 'draft',
         createdAt: '2026-10-20T12:00:00.000Z',
