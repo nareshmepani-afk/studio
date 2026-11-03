@@ -379,6 +379,31 @@ Zone 1 MUST NOT render a single ambiguous link. It must provide dedicated, clear
 - **Automatic Parent Card Roll-Up (`updateItemProgress`)**: Whenever all sub-items on a multi-item card (`CARD_ITEM_COUNTS[cardNum]`) reach `pass` (`passed === total`), `updateItemProgress(cardNum)` MUST automatically promote `verdicts[cardNum] = { verdict: 'pass', timestamp: ... }`, activate `#btn-pass-N`, and update the HUD tally and Verified Reel Archive without requiring a redundant click at the bottom of the card. Likewise, when baking a verified multi-item card into HTML defaults, the agent MUST add all sub-items to `DEFAULT_ITEM_VERDICTS` AND the parent card number to `DEFAULT_CARD_VERDICTS`.
 - **Legacy Verdict Schema Normalisation (`normalizeVerdictEntry` & `getVerdictCode`)**: Because browser `localStorage` may contain historical snapshots where `verdicts[N]` was stored as a plain string (`"pass"`) rather than `{ verdict: "pass", timestamp: "..." }`, `loadState()`, `importJSON()`, `getVerdict()`, `isActionable()`, and `updateTally()` MUST always normalize entries via `normalizeVerdictEntry()` / `getVerdictCode()` so `.toUpperCase()` never throws a `TypeError` during report generation.
 
+# 30.10. Mandatory Deterministic Query Parameter Overrides & Live Database State Independence (GOV-MW-161)
+
+## 30.10.1 The Persistent Staging Database Reality
+- **The "Clean Slate Fallacy"**: Agents frequently suffer from developer bias—assuming that testing routes (`/studio/fireside?id=part-1-scene-1`) will execute against empty, freshly initialised databases. On public staging (`dev.memoryweaver.studio`), authentic tester accounts (`nareshmepani@hotmail.com`, `nareshmepani@googlemail.com`) possess persistent Firestore memories, multiple recorded video/audio takes, and complex stage progressions.
+- **The State Machine Masking Phenomenon**: When a memory scene achieves completion (`isSceneCompleted === true`), the platform intentionally unmounts earlier drafting and recording controls, replacing them with downstream review surfaces (e.g. `FiresideCompletedReelCard`). Authoring a test case that expects an uncompleted recording or drafting control without an override on an already-completed scene is an immediate test failure.
+
+## 30.10.2 Mandatory Deterministic Staging Overrides Standard
+Every user-facing test route authored in `qa_checklist_interactive.html` or chat handoffs MUST utilise deterministic staging query parameter overrides:
+1. **Clean-Slate Override (`?clean_slate=true` / `&clean_slate=true`)**:
+   - *Requirement*: Mandatory for any test asserting unwritten canvas states, empty sensory seed chips, or suppression of premature downstream stage progression.
+   - *Architecture*: Implemented non-destructively in client memory hooks (`useStudioData.ts` and `useCurriculumVault.ts`) to return a pristine zero-state memory without modifying or deleting authentic Firestore records.
+2. **Direct Recording Floor Override (`&record=true` / `&retake=true` / `&act=3`)**:
+   - *Requirement*: Mandatory for any test asserting microphone/camera activation, countdown timers, take recording, video/audio memo toggles, or stream safety interlocks (e.g. Item 59.3).
+   - *Architecture*: Implemented in `FiresideStudioClient.tsx` to force `forceRecordMode = true`, bypassing the completed reel card and instantly mounting the recording booth for an additional take even on scenes with 10+ existing takes.
+3. **Dual-Route Link Standard in Checklist Cards**:
+   - When authoring checklist cards for state-dependent actions, the agent MUST provide two explicit clickable route buttons:
+     - **Primary Action Button**: The canonical route with the deterministic override (e.g. `[ 🔗 Open Recording Route (&record=true) ↗ ]`).
+     - **Alternative Candidate Button**: A verified zero-take / unprogressed candidate scene (e.g. `[ 🔗 Open Alternative Unrecorded Route (Scene 3) ↗ ]`).
+
+## 30.10.3 Cross-Surface Implementation Parity Mandate
+Whenever introducing a query parameter override or state guardrail:
+- **Full-Platform Parity**: The override MUST be implemented across ALL relevant surfaces (Desktop Soundstage and Mobile Fireside). Modifying Desktop hooks while leaving Fireside un-updated (or vice versa) is strictly prohibited.
+- **Bi-Directional Stream Lock Parity**: All recording surfaces (`FiresideVideoRecorder` AND `TactileVoiceRecorder`) must wire their recording callbacks (`onRecordingChange`) to global surface state so that flight safety interlocks function identically across both video and voice recording modes.
+- **Automated Regression Shield**: Automated unit tests in `src/test/` MUST verify that both surfaces honour the override parameter and that template tests in `src/test/qa_template.test.ts` pass before commit.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
