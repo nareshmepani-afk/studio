@@ -404,6 +404,22 @@ Whenever introducing a query parameter override or state guardrail:
 - **Bi-Directional Stream Lock Parity**: All recording surfaces (`FiresideVideoRecorder` AND `TactileVoiceRecorder`) must wire their recording callbacks (`onRecordingChange`) to global surface state so that flight safety interlocks function identically across both video and voice recording modes.
 - **Automated Regression Shield**: Automated unit tests in `src/test/` MUST verify that both surfaces honour the override parameter and that template tests in `src/test/qa_template.test.ts` pass before commit.
 
+# 30.11. Mandatory Closed-Domain Biographical & Temporal Grounding Invariant (Truth Shield - GOV-MW-162)
+
+## 30.11.1 The Factual Horizon Invariant (Zero Temporal Extrapolation)
+- **Absolute Prohibition on Biographical Hallucination**: In an oral history and memoir application, AI-fabricated calendar years, dates, ages, medical causes, or historical facts violate the narrator's authentic trust and discredit the platform.
+- **Undated Event Relative Grounding**: If the narrator recounts ancestral or personal events without specifying an exact calendar year (e.g. parents sailing from Kutch to Kenya), AI synthesis prompts and models are strictly FORBIDDEN from inventing or extrapolating a specific year (such as "In 1956"). Undated events MUST be framed using respectful relative phrasing ("In those early years,", "Generations before that turning point,", "Long before my own memory began,").
+
+## 30.11.2 Ban on Synthetic Few-Shot Template Injection
+- **Elimination of Template Bleed**: Prompts must NEVER contain synthetic opening sentence examples with specific narrative verbs or placeholder years (e.g. banning `(e.g., "In ${anchorYearStr}, a young family stepped forward...")`). LLMs treat few-shot examples as mandatory fill-in-the-blank templates and fabricate unmentioned dates to fit the sentence structure.
+
+## 30.11.3 Deterministic Dual-Mode Temporal Sanitization (`sanitizeTemporalFidelity`)
+- **Algorithmic Guard**: All AI-synthesized narrative scripts and sensory anchor chips MUST pass through deterministic post-processing before persisting to database or returning to UI.
+- **Allow-List Extraction**: An authorized year Allow-List is extracted from the user's declared narrative prose, metadata `dateComponents.year`, and mathematical timeline horizon (`anchorYear + durationQuantity`).
+- **Differentiated Grammar Rules**:
+  1. **Narrative Prose Rule**: Unauthorized opening year clauses (`In <YEAR>,`) are replaced with natural narrative phrasing (`"In those early years,"` or `"Before that turning point,"`), and standalone unauthorized years are replaced with contextual references (`"that era"`), preserving prose fluidity without changing authentic facts.
+  2. **Sensory Anchor Chip Rule**: Short UI sensory chips (e.g. `RHYTHMIC SOUND OF SEA WAVES IN 1956`) MUST cleanly strip unauthorized `" IN <YEAR>"` / `" in <YEAR>"` suffixes rather than inserting sentence clauses (e.g. resolving cleanly to `"Rhythmic sound of sea waves"`).
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)

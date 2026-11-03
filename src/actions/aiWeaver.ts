@@ -10,6 +10,11 @@ import { revalidatePath } from 'next/cache';
 import { getSession } from '@/lib/session';
 import { ScriptBlock } from '@/types';
 import { cookies } from 'next/headers';
+import {
+  buildAllowedYearSet,
+  sanitizeProseTemporalFidelity,
+  sanitizeSensoryAnchorTemporalFidelity,
+} from '@/lib/truthShield';
 
 // Parse service account for Vertex AI SDK
 const serviceAccountRaw = process.env.SERVICE_ACCOUNT_JSON;
@@ -978,6 +983,7 @@ export async function generateDraftOptions(
   
   const anchorYearStr = parsedAnchorYear !== null ? `${parsedAnchorYear}` : (memory_date !== 'Unknown' ? memory_date : 'Historical Era');
   const temporalSpanStr = (parsedAnchorYear !== null && endYear !== null) ? `${parsedAnchorYear}–${endYear}` : anchorYearStr;
+    const allowedYears = buildAllowedYearSet(description, parsedAnchorYear, durationQuantity);
 
   const rawWordCount = description.trim().split(/\s+/).filter(Boolean).length;
   const targetScale = Math.max(rawWordCount, 230);
@@ -1002,7 +1008,7 @@ export async function generateDraftOptions(
     - REQUIRED OPENING INGRESS BY SCORE ANGLE:
       1. THE SOUL-PRINT: Start with an internal reflection or spiritual bedrock values statement (e.g., "Strength was the only currency my family ever traded in...", "We were born of soil, sweat, and unyielding quiet resolve...").
       2. THE ATMOSPHERIC WEAVE: Start directly with a vivid, visceral sensory or environmental contrast (e.g., "Sun-baked Kenyan earth gave way to the freezing drizzle of London tarmac...", "A wall of grey English mist greeted the plane as it touched down...").
-      3. THE FLOW: Start with spoken momentum, temporal landmark, or direct narrative action (e.g., "In ${anchorYearStr}, a young family stepped forward...", "Long before the voyage across dark waters, our ancestors walked the dry fields of Madhapur...").
+      3. THE FLOW: Start with spoken momentum or direct narrative action emerging organically from the narrator's authentic prose keywords.
       4. THE MEMORY WEAVE (Master Fusion): Start with a grand master thesis fusing heritage and adaptation (e.g., "Across three continents and six decades, our family story remains a single continuous arc of survival...").
 
     [TIMELESS TEMPORAL CALCULATION HORIZON & ACCURACY MANDATE]
@@ -1010,7 +1016,7 @@ export async function generateDraftOptions(
     - TIMELINE SPAN HORIZON: ${temporalSpanStr} (${durationQuantity} ${durationUnit}).
     - TEMPORAL FIDELITY RULE: Honor the user's MEMORY MARK anchor year (${anchorYearStr}) as the primary temporal baseline, allowing narrative events to span seamlessly across ${temporalSpanStr}. Both the initial anchor year (${anchorYearStr}) and span completion years (e.g. ${endYear || 'subsequent years'}) are mathematically valid narrative anchors.
     - BAN AMBIGUOUS RELATIVE TEMPORAL PHRASES: NEVER write floating relative phrases like "Rewind thirty years", "A few decades ago", "Thirty years back", or "Some years ago".
-    - TIMELESS ORAL HISTORY RULE: Monologues are preserved for 30–100+ years into the future. All temporal references MUST be explicitly anchored with exact calendar years (e.g. "In ${anchorYearStr}...").
+    - TIMELESS ORAL HISTORY & ZERO TEMPORAL EXTRAPOLATION RULE (GOV-MW-162): Monologues are preserved for 30–100+ years into the future. Only use calendar years explicitly declared in [DATA ANCHORS] or the primary anchor (${anchorYearStr}). If the narrator recounts earlier ancestral events without specifying an exact calendar year, use respectful relative phrasing ('In those early years,', 'Generations before that turning point,', 'Long before my own memory began,'). You are STRICTLY FORBIDDEN from inventing or extrapolating unstated calendar years (such as 1956, 1960, etc.) to fill historical gaps.
 
     [STRICT VOCABULARY & FACTUAL FIDELITY MANDATE - CRITICAL]
     - FACTUAL FIDELITY: Strictly adhere to the exact facts, terminology, and historical details provided in User Memory.
@@ -1129,6 +1135,22 @@ export async function generateDraftOptions(
     });
 
     if (!output) throw new Error("AI Weaver failed to generate output.");
+
+    // GOV-MW-162 Truth Shield: Deterministic multi-layer temporal sanitization
+    output.polishedOriginalHook = sanitizeProseTemporalFidelity(output.polishedOriginalHook, allowedYears);
+    if (output.visions && Array.isArray(output.visions)) {
+      output.visions = output.visions.map((v: any) => ({
+        ...v,
+        cleanScript: sanitizeProseTemporalFidelity(sanitizeProse(v.cleanScript), allowedYears),
+        preFlightBrief: v.preFlightBrief ? {
+          ...v.preFlightBrief,
+          sensoryAnchors: Array.isArray(v.preFlightBrief.sensoryAnchors)
+            ? v.preFlightBrief.sensoryAnchors.map((a: string) => sanitizeSensoryAnchorTemporalFidelity(a, allowedYears))
+            : v.preFlightBrief.sensoryAnchors
+        } : v.preFlightBrief
+      }));
+    }
+
     return output;
   } catch (error: any) {
     console.error("[AI Weaver] Draft Options Failure. Executing resilient fallback spectrum...", error);
@@ -1264,6 +1286,14 @@ export async function generateDirectorialBrief(
       });
     }, { retries: 2 });
 
+    if (output?.preFlightBrief) {
+      const allowedYears = buildAllowedYearSet(cleanScript);
+      if (Array.isArray(output.preFlightBrief.sensoryAnchors)) {
+        output.preFlightBrief.sensoryAnchors = output.preFlightBrief.sensoryAnchors.map((a: string) =>
+          sanitizeSensoryAnchorTemporalFidelity(a, allowedYears)
+        );
+      }
+    }
     return output?.preFlightBrief || null;
   } catch (error) {
     console.error("[AI Weaver] generateDirectorialBrief failure:", error);
