@@ -26,7 +26,13 @@ import { Button } from '@/components/ui/button';
 import { QRCodeCanvas } from 'qrcode.react';
 import { generateInterviewQuestion, analyzeFraming } from '@/actions/aiWeaver';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
-import { useCamera } from '@/hooks/useCamera';
+import {
+  useCamera,
+  formatHardwareDeviceLabel,
+  deduplicateHardwareDevices,
+  isExternalHardwareDevice,
+  type HardwareDeviceOption,
+} from '@/hooks/useCamera';
 import { useMediaRecorder, type EDLTrackSegment } from '@/hooks/use-media-recorder';
 import { useAudioLevel } from '@/hooks/use-audio-level';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
@@ -57,6 +63,110 @@ import { QRController } from './QRController';
 import { BeatSheet } from './BeatSheet';
 import { useTableRead } from '@/hooks/studio/useTableRead';
 
+/**
+ * Sanitises and deduplicates hardware device options for the Soundstage UI (Punch-List 58.1).
+ * 1. Strips raw USB VID:PID hex suffixes like (291a:3367) and (2ca3:b00d) from display labels without mutating raw deviceId values.
+ * 2. Deduplicates Windows "Default -" and "Communications -" shadow audio endpoints so each physical microphone renders once.
+ * 3. Formats "Realtek(R) Audio" cleanly with a (Built-In) badge.
+ */
+export function cleanStudioHardwareLabel(rawLabel: string = '', fallback: string = ''): string {
+  const cleaned = String(rawLabel || '')
+    .replace(/^(default|communications)\s*[-–—:]\s*/i, '')
+    .replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || fallback;
+}
+
+export function sanitizeStudioHardwareDevices(
+  devices: HardwareDeviceOption[],
+  kind: 'videoinput' | 'audioinput'
+): HardwareDeviceOption[] {
+  if (!Array.isArray(devices) || devices.length === 0) return [];
+  const prefix = kind === 'videoinput' ? 'Camera' : 'Microphone';
+  const builtinRegex = /integrated|internal|built-in|realtek|facetime|macbook|surface|intel.*smart sound|front camera|back camera/i;
+  const externalRegex = /usb|wireless|anker|ankerwork|rode|dji|shure|blue|yeti|fifine|elgato|samson|audio-technica|receiver|external|headset|podcast|cam link|brio|logitech|insta360|osmo|sony|canon|\([0-9a-f]{4}:[0-9a-f]{4}\)/i;
+
+  const hasConcreteDevices = devices.some(
+    (d) =>
+      d.deviceId !== 'default' &&
+      d.deviceId !== 'communications' &&
+      !/^(default|communications)\s*[-–—:]\s*/i.test(d.label || '')
+  );
+
+  const candidateDevices = hasConcreteDevices
+    ? devices.filter(
+        (d) =>
+          d.deviceId !== 'default' &&
+          d.deviceId !== 'communications' &&
+          !/^(default|communications)\s*[-–—:]\s*/i.test(d.label || '')
+      )
+    : devices;
+
+  const seenLabels = new Set<string>();
+  const seenDeviceIds = new Set<string>();
+  const seenGroupIds = new Set<string>();
+  const result: HardwareDeviceOption[] = [];
+
+  candidateDevices.forEach((d, idx) => {
+    const rawLabel = d.label?.trim() || '';
+    const cleanLabel = cleanStudioHardwareLabel(rawLabel, `${prefix} ${idx + 1}`);
+    const normKey = rawLabel ? cleanLabel.toLowerCase() : `id:${d.deviceId || idx}`;
+    const trimmedGroupId = d.groupId?.trim() || '';
+
+    if (d.deviceId && seenDeviceIds.has(d.deviceId)) return;
+    if (rawLabel && seenLabels.has(normKey)) return;
+    if (trimmedGroupId && trimmedGroupId !== 'default' && seenGroupIds.has(trimmedGroupId)) return;
+
+    if (d.deviceId) seenDeviceIds.add(d.deviceId);
+    if (rawLabel) seenLabels.add(normKey);
+    if (trimmedGroupId && trimmedGroupId !== 'default') seenGroupIds.add(trimmedGroupId);
+
+    const isBuiltin = builtinRegex.test(rawLabel);
+    const isExternal = isBuiltin
+      ? false
+      : typeof d.isExternalUsb === 'boolean'
+        ? d.isExternalUsb
+        : externalRegex.test(rawLabel) || /usb|external|wireless/i.test(d.deviceId || '');
+
+    result.push({
+      deviceId: d.deviceId,
+      label: cleanLabel,
+      kind,
+      groupId: d.groupId,
+      isExternalUsb: isExternal,
+    });
+  });
+
+  return result;
+}
+
+export function formatStudioHardwareOptionLabel(
+  device: Partial<HardwareDeviceOption>,
+  idx: number,
+  kind: 'videoinput' | 'audioinput'
+): string {
+  const fallback = kind === 'videoinput' ? `Camera ${idx + 1}` : `Microphone ${idx + 1}`;
+  const cleanLabel = cleanStudioHardwareLabel(device.label || '', fallback);
+  const isRealtekOrBuiltin =
+    /integrated|internal|built-in|realtek|facetime|macbook|surface|intel.*smart sound|front camera|back camera/i.test(
+      device.label || cleanLabel
+    );
+  const externalRegex = /usb|wireless|anker|ankerwork|rode|dji|shure|blue|yeti|fifine|elgato|samson|audio-technica|receiver|external|headset|podcast|cam link|brio|logitech|insta360|osmo|sony|canon|\([0-9a-f]{4}:[0-9a-f]{4}\)/i;
+  const isExternal = isRealtekOrBuiltin
+    ? false
+    : typeof device.isExternalUsb === 'boolean'
+      ? device.isExternalUsb
+      : externalRegex.test(device.label || cleanLabel) || /usb|external|wireless/i.test(device.deviceId || '');
+
+  if (kind === 'videoinput') {
+    const suffix = isExternal ? (/\(usb/i.test(cleanLabel) ? '' : ' (USB)') : ' (Built-In)';
+    return /\((built-in|usb)\)$/i.test(cleanLabel) ? cleanLabel : `${cleanLabel}${suffix}`;
+  }
+
+  const suffix = isExternal ? ' (USB / External)' : ' (Built-In)';
+  return /\((built-in|usb \/ external)\)$/i.test(cleanLabel) ? cleanLabel : `${cleanLabel}${suffix}`;
+}
 /**
  * Helper: Aspect-Ratio Preserving Center-Crop Canvas Drawer.
  * Prevents stretching / distorting webcam photos or video frames into 2:3 vertical aspect ratio.
@@ -752,6 +862,10 @@ export default function SoloStage({
     isWirelessLinked
     , videoDevices = [], audioDevices = [], selectedVideoDeviceId = '', selectedAudioDeviceId = '', selectVideoDevice = () => {}, selectAudioDevice = () => {}, activeCameraLabel = 'STUDIO WEBCAM', activeMicLabel = 'DEFAULT MICROPHONE', activeResolutionLabel = '720P'
   } = useCamera({ enabled: isCameraActive });
+  const sanitizedVideoDevices = useMemo(() => sanitizeStudioHardwareDevices(videoDevices, 'videoinput'), [videoDevices]);
+  const sanitizedAudioDevices = useMemo(() => sanitizeStudioHardwareDevices(audioDevices, 'audioinput'), [audioDevices]);
+  const cleanActiveCameraLabel = useMemo(() => cleanStudioHardwareLabel(activeCameraLabel, 'STUDIO WEBCAM'), [activeCameraLabel]);
+  const cleanActiveMicLabel = useMemo(() => cleanStudioHardwareLabel(activeMicLabel, 'DEFAULT MICROPHONE'), [activeMicLabel]);
   const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
   const [isRetakingMode, setIsRetakingMode] = useState(false);
   const [reviewTake, setReviewTake] = useState(() => Boolean(data?.videoUrl));
@@ -3608,7 +3722,7 @@ export default function SoloStage({
                             <Camera className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
                             <div className="flex flex-col">
                               <span className="text-xs font-bold text-white/90">Camera Angle & Lighting</span>
-                              <span className="text-[9px] text-white/40">Optics active ({activeCameraLabel} • {activeResolutionLabel}). Video stream is in full view.</span>
+                              <span className="text-[9px] text-white/40">Optics active ({cleanActiveCameraLabel} • {activeResolutionLabel}). Video stream is in full view.</span>
                               <div className="mt-2 flex flex-col gap-1">
                                 <label htmlFor="tech-scout-camera-select" className="text-[8px] font-black uppercase tracking-widest text-emerald-400/80">
                                   Camera Source (USB / Integrated)
@@ -3621,12 +3735,12 @@ export default function SoloStage({
                                   onChange={(e) => selectVideoDevice(e.target.value)}
                                   className="w-full bg-slate-950/90 border border-white/15 hover:border-emerald-500/40 focus:border-emerald-400 text-white text-xs rounded-xl px-2.5 py-1.5 font-sans outline-none transition-colors cursor-pointer"
                                 >
-                                  {videoDevices.length === 0 ? (
-                                    <option value="">{activeCameraLabel || 'System Default Camera'}</option>
+                                  {sanitizedVideoDevices.length === 0 ? (
+                                    <option value="">{cleanActiveCameraLabel || 'System Default Camera'}</option>
                                   ) : (
-                                    videoDevices.map((cam, idx) => (
+                                    sanitizedVideoDevices.map((cam, idx) => (
                                       <option key={cam.deviceId || `cam-${idx}`} value={cam.deviceId} className="bg-slate-950 text-white">
-                                        {cam.label || `Camera ${idx + 1}`}{cam.isExternalUsb ? (/\(usb/i.test(cam.label || '') ? '' : ' (USB)') : ' (Built-In)'}
+                                        {formatStudioHardwareOptionLabel(cam, idx, 'videoinput')}
                                       </option>
                                     ))
                                   )}
@@ -3765,12 +3879,12 @@ export default function SoloStage({
                                 onChange={(e) => selectAudioDevice(e.target.value)}
                                 className="w-full bg-slate-950/90 border border-white/15 hover:border-emerald-500/40 focus:border-emerald-400 text-white text-xs rounded-xl px-2.5 py-1.5 font-sans outline-none transition-colors cursor-pointer"
                               >
-                                {audioDevices.length === 0 ? (
-                                  <option value="">{activeMicLabel || 'System Default Microphone'}</option>
+                                {sanitizedAudioDevices.length === 0 ? (
+                                  <option value="">{cleanActiveMicLabel || 'System Default Microphone'}</option>
                                 ) : (
-                                  audioDevices.map((mic, idx) => (
+                                  sanitizedAudioDevices.map((mic, idx) => (
                                     <option key={mic.deviceId || `mic-${idx}`} value={mic.deviceId} className="bg-slate-950 text-white">
-                                      {mic.label || `Microphone ${idx + 1}`}{mic.isExternalUsb ? ' (USB / External)' : ' (Built-In)'}
+                                      {formatStudioHardwareOptionLabel(mic, idx, 'audioinput')}
                                     </option>
                                   ))
                                 )}
@@ -4571,7 +4685,7 @@ export default function SoloStage({
                       )}
 
                       {(() => {
-                        const inputLabel = `INPUT: ${activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : `${(activeCameraLabel || 'STUDIO WEBCAM').toUpperCase()} (${activeResolutionLabel || '720P'})`}`;
+                        const inputLabel = `INPUT: ${activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : `${(cleanActiveCameraLabel || 'STUDIO WEBCAM').toUpperCase()} (${activeResolutionLabel || '720P'})`}`;
                         return (
                           <div 
                             className="flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md h-[30px] max-w-[280px] sm:max-w-[420px]"

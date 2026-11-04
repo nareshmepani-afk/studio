@@ -42,9 +42,9 @@ export function formatHardwareDeviceLabel(rawLabel: string = '', fallback: strin
 }
 
 export function isExternalHardwareDevice(label: string = '', deviceId: string = ''): boolean {
+  if (BUILTIN_HARDWARE_REGEX.test(label)) return false;
   if (EXTERNAL_HARDWARE_REGEX.test(label)) return true;
   if (/usb|external|wireless/i.test(deviceId)) return true;
-  if (BUILTIN_HARDWARE_REGEX.test(label)) return false;
   return false;
 }
 
