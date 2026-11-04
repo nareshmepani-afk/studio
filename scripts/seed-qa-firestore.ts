@@ -115,6 +115,10 @@ export async function seedQaFirestore() {
             title: itemTitle,
             targetRoute: itemRoute,
             steps: [`Execute staging verification against ${itemRoute}`],
+            testerPersona: {
+              testerEmail: 'nareshmepani@hotmail.com',
+              testerUid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2',
+            },
           }, { merge: true });
           preserved++;
           continue;
@@ -132,6 +136,10 @@ export async function seedQaFirestore() {
           title: itemTitle,
           steps: [`Execute staging verification against ${itemRoute}`],
           targetRoute: itemRoute,
+          testerPersona: {
+            testerEmail: 'nareshmepani@hotmail.com',
+            testerUid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2',
+          },
           verdict,
           notes: '',
           telemetryTrace: '',

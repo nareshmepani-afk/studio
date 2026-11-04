@@ -13,7 +13,12 @@ const stagingConfig = {
 const app = getApps().length ? getApps()[0] : initializeApp(stagingConfig, 'qa-resolution-recorder');
 const db = getFirestore(app);
 
-export async function recordQaResolution(itemId: string, resolution: string, resolvedBy = 'Chat 2 (The Flash Executor)', commitSha = 'b1fd5c9c') {
+export async function recordQaResolution(
+  itemId: string,
+  resolution: string,
+  resolvedBy = 'Chat 2 (The Flash Executor)',
+  commitSha = 'b1fd5c9c'
+) {
   const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
   await setDoc(
     itemRef,
@@ -30,13 +35,12 @@ export async function recordQaResolution(itemId: string, resolution: string, res
   console.log(`✅ Recorded resolution for Item ${itemId} in Cloud Firestore.`);
 }
 
-const RESOLUTION_55_4 = `1. [Why "The Brass Spice Tin" was missing]: The canonical curriculum (src/lib/curriculum/masterStoryStructure.ts) designates Part I Scene 2 as "The House I Grew Up In". "The Brass Spice Tin" was a legacy draft placeholder from early prototype copy that was never in the production curriculum.
-2. [Why "1956" appeared]: Two factors: (a) aiWeaver.ts contained a legacy few-shot prompt with "In 1956..." and a mandatory year extrapolation rule, causing the LLM to hallucinate 1956 on minimal user input ("test modifications"); (b) the shared staging memory (ey96djU6qR1BrDGnvZwp) had a pre-existing take from an earlier test run containing 1956. Fixed via GOV-MW-162 Truth Shield and patched Firestore doc.
-3. [Why it wasn't flagged up]: Checklist authoring lacked an automated cross-validation linter between checklist text and canonical curriculum schemas. Fixed via 'npm run qa:validate'.
-4. [Sandbox Solution]: Implemented GOV-MW-163 (qaFixtureSeeder.ts). Tests now mount isolated fixtures (qa_fixture_\${uid}_55.4) via ?qa_seed=55.4, preventing contamination of shared staging memories, with dual-key cleanup protection.`;
+const RESOLUTION_55_5 = `1. [Why "EDIT SCENE" was displayed]: The tester account (nareshmepani@hotmail.com) already owns an authentic memoir for Part I Scene 2 in Firestore (doc 5F7e9DACtBao5lgKYAxf) containing authentic narrative prose ("Looking back, what stays with me most..."). Under SingleCardPromptCarousel.tsx, whenever activeProse is populated, the carousel renders the script viewer and the button explicitly displays "✏️ EDIT SCENE" (line 1825). The "[ ✏️ Draft Scene / Begin Story ]" label (line 2009) is designed solely for pristine zero-state scenes.
+2. [Why it passed the data test]: 'npm run qa:validate' is a static codebase linter that checks routes and canonical curriculum IDs against masterStoryStructure.ts; it cannot inspect private, per-user Firestore documents. Furthermore, Item 55.5 previously linked to a bare route without ?qa_seed=55.5, which allowed it to fall back to the tester's populated memoir.
+3. [The Permanent Sandbox Fix]: Bound Item 55.5 to the deterministic sandbox seeder via ?qa_seed=55.5 (mounting qa_fixture_\${uid}_55_5) and attached the '[ 🧪 Provision Sandbox Scene ]' button. In sandbox mode, the scene initializes with pristine empty prose, correctly displaying '[ ✏️ Draft Scene / Begin Story ]', while isolating mutations from authentic memoir 5F7e9DACtBao5lgKYAxf.`;
 
 if (require.main === module) {
-  recordQaResolution('55.4', RESOLUTION_55_4)
+  recordQaResolution('55.5', RESOLUTION_55_5)
     .then(() => process.exit(0))
     .catch((err) => {
       console.error('❌ Failed to record resolution:', err);

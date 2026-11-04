@@ -92,7 +92,7 @@ describe('QA Fixture Seeder & Isolation Engine (GOV-MW-163)', () => {
 
     it('REJECTS cleanup if docId does NOT start with qa_fixture_, even if isQATestFixture is true', () => {
       // Critical security check: authentic memory with erroneous or spoofed flag
-      const authenticDocId = 'ey96djU6qR1BrDGnvZwp';
+      const authenticDocId = 'authentic_staging_memory_sample_01';
       const dangerousData = { isQATestFixture: true, title: 'Authentic Memoir' };
 
       expect(isSafeQaFixtureForCleanup(authenticDocId, dangerousData)).toBe(false);
@@ -110,7 +110,7 @@ describe('QA Fixture Seeder & Isolation Engine (GOV-MW-163)', () => {
     it('filterQaFixturesForCleanup correctly purges only dual-key verified documents (both raw and wrapped)', () => {
       const candidates = [
         { id: 'qa_fixture_u1_1', data: { isQATestFixture: true } },
-        { id: 'ey96djU6qR1BrDGnvZwp', data: { isQATestFixture: true } }, // authentic ID -> REJECT
+        { id: 'authentic_staging_memory_sample_01', data: { isQATestFixture: true } }, // authentic ID -> REJECT
         { id: 'qa_fixture_u1_2', data: { isQATestFixture: false } }, // false flag -> REJECT
         { id: 'qa_fixture_u1_3', data: {} }, // missing flag -> REJECT
         { id: 'qa_fixture_u1_4', isQATestFixture: true, prose: 'Direct memory format' }, // direct MATCH

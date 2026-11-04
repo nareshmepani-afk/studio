@@ -23,7 +23,33 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}));
     const targetUserId = body.userId || null;
+    const targetDocId = body.targetDocId || null;
     const purgedDocIds: string[] = [];
+
+    // Surgical single fixture reset
+    if (targetDocId) {
+      if (targetUserId) {
+        const userDocRef = adminDb.collection('users').doc(targetUserId).collection('memories').doc(targetDocId);
+        const snap = await userDocRef.get();
+        if (snap.exists && isSafeQaFixtureForCleanup(snap.id, snap.data())) {
+          await userDocRef.delete();
+          purgedDocIds.push(`users/${targetUserId}/memories/${targetDocId}`);
+        }
+      }
+      const rootDocRef = adminDb.collection('memories').doc(targetDocId);
+      const rootSnap = await rootDocRef.get();
+      if (rootSnap.exists && isSafeQaFixtureForCleanup(rootSnap.id, rootSnap.data())) {
+        await rootDocRef.delete();
+        purgedDocIds.push(`memories/${targetDocId}`);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Surgically reset QA fixture ${targetDocId} under strict Guard 2 verification.`,
+        purgedCount: purgedDocIds.length,
+        purgedDocIds,
+      });
+    }
 
     // Query collections where fixtures may reside:
     // 1. Root memories collection
