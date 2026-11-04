@@ -268,7 +268,10 @@ function formatMarkdownDeck(
 
   const trigger = syncTrigger || `${header.targetSha} (Staging Verification)`;
 
-  let md = `# MEMORY WEAVER: ACTIVE QA DECK\n`;
+  let md = `# MEMORY WEAVER: ACTIVE QA DECK\n\n`;
+  md += `> 🤖 **AUTOMATED MIRROR — ZERO MANUAL MAINTENANCE REQUIRED**\n`;
+  md += `> This Google Doc is automatically compiled and synchronised by the engineering agent upon every verified staging rollout via \`npm run qa:sync\`. **Do not edit this document manually**; any direct edits here will be overwritten on the next deployment.\n`;
+  md += `> To evaluate test cards, record verdicts, or file bug observations, use the [Living QA Web Portal](https://dev.memoryweaver.studio/admin/qa).\n\n`;
   md += `- **Sync Operator:** ${operator} via \`npm run qa:sync\`\n`;
   md += `- **Sync Trigger:** Commit ${trigger}\n`;
   md += `- **Last Updated:** ${bstTime}\n`;

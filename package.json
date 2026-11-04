@@ -21,6 +21,8 @@
     "sync:vault-manifest": "node scripts/syncVaultManifest.mjs",
     "qa:sync": "tsx scripts/syncQADeck.ts",
     "qa:status": "tsx scripts/read-qa-status.ts",
+    "qa:inquiries": "tsx scripts/read-qa-inquiries.ts",
+    "qa:validate": "tsx scripts/validate-qa-deck.ts",
     "qa:seed": "tsx scripts/seed-qa-firestore.ts",
     "prepare": "husky"
   },
