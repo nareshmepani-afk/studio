@@ -122,4 +122,47 @@ describe('QA Fixture Seeder & Isolation Engine (GOV-MW-163)', () => {
       expect(safeToDelete.map((c) => c.id)).toEqual(['qa_fixture_u1_1', 'qa_fixture_u1_4']);
     });
   });
+
+  describe('Item 55.5 Save-First Sandbox Transition Contract (Option 2A)', () => {
+    const TESTER_UID = 'TQdB395kXxaAGPhFxk1LVWuT8cg2';
+    const AUTHENTIC_DOC_ID = '5F7e9DACtBao5lgKYAxf';
+
+    it('generates exact sandbox document ID for Item 55.5 and tester UID', () => {
+      const fixtureId = getQaFixtureDocId(TESTER_UID, '55.5');
+      expect(fixtureId).toBe(`qa_fixture_${TESTER_UID}_55_5`);
+    });
+
+    it('creates isolated sandbox memory for part-1-scene-2 without overwriting authentic memory', () => {
+      const fixture = createQaFixtureMemory({
+        itemId: '55.5',
+        userId: TESTER_UID,
+        sceneId: 'part-1-scene-2',
+        initialProse: 'Drafting new story prose in sandbox before scene transition',
+      });
+
+      expect(fixture.id).toBe(`qa_fixture_${TESTER_UID}_55_5`);
+      expect(fixture.id).not.toBe(AUTHENTIC_DOC_ID);
+      expect(fixture.userId).toBe(TESTER_UID);
+      expect(fixture.isQATestFixture).toBe(true);
+      expect(fixture.isTestFixture).toBe(true);
+      expect(fixture.qaItemId).toBe('55.5');
+      expect(fixture.sceneId).toBe('part-1-scene-2');
+      expect(fixture.promptId).toBe('p2');
+      expect(fixture.title).toBe('The House I Grew Up In');
+      expect(fixture.prose).toBe('Drafting new story prose in sandbox before scene transition');
+    });
+
+    it('verifies Save-First scratchpad key isolation and dual-key cleanup protection', () => {
+      const scratchpadKey = `mw_draft_${TESTER_UID}_part-1-scene-2`;
+      expect(scratchpadKey).toBe('mw_draft_TQdB395kXxaAGPhFxk1LVWuT8cg2_part-1-scene-2');
+
+      const fixtureDocId = getQaFixtureDocId(TESTER_UID, '55.5');
+      const fixtureData = { isQATestFixture: true, prose: 'New draft' };
+      expect(isSafeQaFixtureForCleanup(fixtureDocId, fixtureData)).toBe(true);
+
+      // Authentic memory doc must NEVER be marked safe for cleanup
+      expect(isSafeQaFixtureForCleanup(AUTHENTIC_DOC_ID, { isQATestFixture: true })).toBe(false);
+      expect(isSafeQaFixtureForCleanup(AUTHENTIC_DOC_ID, { isQATestFixture: false })).toBe(false);
+    });
+  });
 });

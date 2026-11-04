@@ -237,6 +237,10 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     expect(liveHtml).not.toContain('The Family Album');
     expect(liveHtml).toContain('The House I Grew Up In');
     expect(liveHtml).toContain('Traditions, Feasts &amp; Sacred Days');
+    // High-Craft Sub-Item Framing & Border Depth Shield
+    expect(liveHtml).toContain('.sub-item-card');
+    expect(liveHtml).toContain('.sub-item-card.has-active-drawer');
+    expect(liveHtml).toContain('id="item-container-55-4"');
   });
 });
 

@@ -1589,4 +1589,22 @@ To permanently eliminate run-on lines and markdown collisions when multiple rece
 - The QA deck sync engine (`scripts/syncQADeck.ts`) MUST capture the executing operator via CLI argument (`--operator`) or environment variable (`QA_OPERATOR`).
 - The generated telemetry HUD MUST declare `| **Sync Operator** | [SYNC - <Operator>] |` alongside timestamp and commit SHA, preventing anonymous headless syncs.
 
+# 60. Mandatory Staging QA & Card Sign-Off Gate (GOV-MW-165)
+
+## 60.1 Active Card Sign-Off Requirement
+- The agent is **STRICTLY FORBIDDEN** from starting or dispatching a new engineering milestone (such as `AUDIT-MW-147`) until all items on active QA Cards (`#card-55`, `#card-56`, `#card-59`) are verified and signed off as `PASSED` in `https://dev.memoryweaver.studio/admin/qa` and confirmed via `npm run qa:status`.
+- If a new engineering milestone is requested while active QA cards remain pending or failed, the agent MUST halt and surface the active blocker items on `https://dev.memoryweaver.studio/admin/qa` for sign-off first.
+
+# 61. Pre-Flight Socratic Interview & Micro-Compartment Interceptor (GOV-MW-166)
+
+## 61.1 Turn 1 Raw Prompt Interceptor (Option 3A)
+- Whenever the user types a short, raw prompt, bug note, telemetry trace, or feature idea directly into Antigravity **without** a pre-locked `Model: [...] | Operational Mode: [...]` trigger header (and without the explicit override `"SKIP INTERVIEW"`), Antigravity **MUST HALT** before reading more than 2 files, editing code, or running any builds.
+- Instead of launching a multi-file search or build, the agent MUST immediately output a concise **3-Bullet Decision Lock Card**:
+  1. 🎯 **Real Goal Identified**: 1-sentence root architectural objective vs. surface symptom.
+  2. 📦 **Proposed Micro-Compartment ($\le 2$ Files)**: Strictly capped at 1–2 files max with complete `C:\Users\home\studio\...` file paths and line ranges.
+  3. 🔒 **Explicit Verification Choices (`[A / B]`)**: 2–3 binary trade-off questions confirming state isolation mode, edge-case guards, and **Local Vitest (`npx.cmd vitest run <exact-test-path>`) vs. Staging Push**, plus explicit `Model` and `[Use Planning]` vs. `[Use Fast]` operational mode advice for quick confirmation (e.g. `"1A, 2B, Go"`).
+
+## 61.2 Micro-Compartment Bias (Option 2A)
+- All bug fixes and iterative adjustments default to verifying 1–2 files locally via a single targeted Vitest file (`npx.cmd vitest run <exact-test-path>`) in `[Use Fast]` mode before triggering any 5-minute Cloud Build or `git push`.
+
 
