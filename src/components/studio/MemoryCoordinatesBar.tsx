@@ -341,7 +341,7 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
             )}
             {isFireside && (
               <span className="sr-only" data-testid="fireside-meta-age">
-                I WAS: {narratorAgeAtTime}
+                I WAS: {narratorAgeAtTime ? narratorAgeAtTime : '-'}
               </span>
             )}
           </div>
@@ -447,8 +447,11 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
                           >
                             <Minus className="w-3 h-3" />
                           </button>
-                          <span className="text-[11px] font-black text-white min-w-[18px] text-center select-none">
-                            {narratorAgeAtTime}
+                          <span
+                            className="text-[11px] font-black text-white min-w-[18px] text-center select-none"
+                            data-testid="memory-mark-age-value"
+                          >
+                            {narratorAgeAtTime ? narratorAgeAtTime : '-'}
                           </span>
                           <button
                             type="button"

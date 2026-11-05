@@ -216,4 +216,35 @@ describe('Card 51: Cross-Surface Metadata/Default Parity & Immediate [Save Scrip
     expect(memory.narratorAgeAtTime).toBe(5);
     expect(memory.prose).toBe('The importance of reflection, revisiting older entries, and looking back.');
   });
+
+  it('defaults newly created production decks to empty/blank values for CITY / VENUE, COUNTRY, YEAR, and I WAS', () => {
+    render(
+      <MemoryCoordinatesBar
+        location=""
+        country=""
+        day="none"
+        month="none"
+        year="none"
+        narratorAgeAtTime={0}
+        onChangeLocation={vi.fn()}
+        onChangeCountry={vi.fn()}
+        onChangeDay={vi.fn()}
+        onChangeMonth={vi.fn()}
+        onChangeYear={vi.fn()}
+        onChangeAge={vi.fn()}
+        variant="soundstage"
+      />
+    );
+
+    const cityInput = screen.getByTestId('memory-coordinates-city') as HTMLInputElement;
+    expect(cityInput.value).toBe('');
+    expect(cityInput.placeholder).toBe('WHERE DID IT HAPPEN?');
+
+    const countryInput = screen.getByTestId('memory-coordinates-country') as HTMLInputElement;
+    expect(countryInput.value).toBe('');
+    expect(countryInput.placeholder).toBe('REGION');
+
+    const ageDisplay = screen.getByTestId('memory-mark-age-value');
+    expect(ageDisplay.textContent).toBe('-');
+  });
 });

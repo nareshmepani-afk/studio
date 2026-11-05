@@ -365,7 +365,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [durationQuantity, setDurationQuantityLocal] = useState<number>(data?.durationQuantity || 1);
   const [durationUnit, setDurationUnitLocal] = useState<'days' | 'months' | 'years'>(data?.durationUnit || 'years');
   const [narratorAgeAtTime, setNarratorAgeAtTimeLocal] = useState<number>(() => {
-    const val = data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : (data?.age !== undefined ? data.age : 26);
+    const val = data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : (data?.age !== undefined ? data.age : 0);
     console.log("[MemoryForm] Initializing narratorAgeAtTimeLocal:", val, "for data.id:", data?.id);
     return val;
   });
@@ -890,13 +890,28 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
         setProse(data.prose);
         lastSyncedProse.current = data.prose;
       }
-      if (data?.location !== undefined) setLocation(data.location);
-      if (data?.country !== undefined) setCountry(data.country);
+      if (data?.location !== undefined) setLocation(data.location || '');
+      if (data?.country !== undefined) setCountry(data.country && data.country !== 'none' ? data.country : '');
       if (data?.tags !== undefined) setTags(data.tags);
       if (data?.dateComponents) {
         setDay(data.dateComponents.day || 'none');
         setMonth(data.dateComponents.month || 'none');
         setYear(data.dateComponents.year || 'none');
+      } else if (data?.year !== undefined) {
+        setDay('none');
+        setMonth('none');
+        setYear(data.year ? String(data.year) : 'none');
+      } else {
+        setDay('none');
+        setMonth('none');
+        setYear('none');
+      }
+      if (data?.narratorAgeAtTime !== undefined) {
+        setNarratorAgeAtTimeLocal(data.narratorAgeAtTime);
+      } else if (data?.age !== undefined) {
+        setNarratorAgeAtTimeLocal(data.age);
+      } else {
+        setNarratorAgeAtTimeLocal(0);
       }
       if (data?.scriptBlocks) setScriptBlocks(data.scriptBlocks);
       if (data?.chapterTitle !== undefined) setChapterTitle(data.chapterTitle);
