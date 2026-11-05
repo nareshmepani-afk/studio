@@ -1,18 +1,30 @@
 /**
  * 🎙️ Resilient Chunked Audio & Photo Media Upload Pipeline
  *
- * Milestone: MW-87 (Ticket #248 / MW-247)
+ * Milestone: MW-87 (Ticket #248 / MW-247) & AUDIT-MW-147 / RFC-MW-156
  * Governing Rules: Rule 7 Non-Degradation, Rule 20 British English Orthography, Rule 26 Elder Ergonomics
- * Target Route: /studio/fireside
+ * Target Route: /studio/fireside & /studio/chronicles
  *
  * Provides resumable media streaming to Firebase Storage with an automatic
  * 3-attempt exponential backoff retry loop (1s -> 2s -> 4s) to defend against
  * mobile network fluctuations, transient Wi-Fi drops, and packet drops.
+ *
+ * Supports dual-chamber storage partitioning (RFC-MW-156 Section 6.1):
+ * - targetCollection: 'memories' (default) -> users/{uid}/fireside/{draftId}/...
+ * - targetCollection: 'chronicles' -> users/{uid}/chronicles/{draftId}/...
  */
 
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { HeirloomPhotoAttachment } from '@/types/fireside';
+
+export type VaultCollectionTarget = 'memories' | 'chronicles';
+
+export interface MediaUploadOptions {
+  /** Defaults to 'memories' for v1.0 Heirloom Folio; 'chronicles' reserved for v2.0 Diary Studio (RFC-MW-156) */
+  targetCollection?: VaultCollectionTarget;
+  onProgress?: (progressPercent: number) => void;
+}
 
 export interface UploadResult {
   storagePath: string;
@@ -29,24 +41,35 @@ function waitMs(ms: number): Promise<void> {
 
 /**
  * Resumable upload of a WebM voice recording to Firebase Storage with exponential backoff.
+ * Accepts optional targetCollection ('memories' | 'chronicles' = 'memories') or MediaUploadOptions object.
  */
 export async function uploadAudioWithResiliency(
   userId: string,
   draftId: string,
   audioBlob: Blob,
-  onProgress?: (progressPercent: number) => void
+  onProgressOrOptions?: ((progressPercent: number) => void) | MediaUploadOptions,
+  explicitTargetCollection?: VaultCollectionTarget
 ): Promise<UploadResult> {
   if (!storage) {
     throw new Error('Firebase Storage service is uninitialised');
   }
 
-  const storagePath = `users/${userId}/fireside/${draftId}/audio.webm`;
+  const onProgress =
+    typeof onProgressOrOptions === 'function' ? onProgressOrOptions : onProgressOrOptions?.onProgress;
+  const targetCollection: VaultCollectionTarget =
+    explicitTargetCollection ||
+    (typeof onProgressOrOptions === 'object' && onProgressOrOptions?.targetCollection) ||
+    'memories';
+
+  const collectionFolder = targetCollection === 'chronicles' ? 'chronicles' : 'fireside';
+  const storagePath = `users/${userId}/${collectionFolder}/${draftId}/audio.webm`;
   const storageRef = ref(storage, storagePath);
   const metadata = {
     contentType: audioBlob.type || 'audio/webm',
     customMetadata: {
       draftId,
       userId,
+      targetCollection,
       uploadedAt: new Date().toISOString(),
     },
   };
@@ -109,12 +132,14 @@ export async function uploadPhotosSequential(
   draftId: string,
   photos: HeirloomPhotoAttachment[],
   getPhotoBlob?: (photoId: string) => Promise<Blob | null>,
-  onProgress?: (completedCount: number, total: number) => void
+  onProgress?: (completedCount: number, total: number) => void,
+  targetCollection: VaultCollectionTarget = 'memories'
 ): Promise<HeirloomPhotoAttachment[]> {
   if (!storage || photos.length === 0) {
     return photos;
   }
 
+  const collectionFolder = targetCollection === 'chronicles' ? 'chronicles' : 'fireside';
   const updatedPhotos: HeirloomPhotoAttachment[] = [];
 
   for (let i = 0; i < photos.length; i++) {
@@ -155,13 +180,14 @@ export async function uploadPhotosSequential(
       continue;
     }
 
-    const storagePath = `users/${userId}/fireside/${draftId}/photos/${photo.id}.jpg`;
+    const storagePath = `users/${userId}/${collectionFolder}/${draftId}/photos/${photo.id}.jpg`;
     const storageRef = ref(storage, storagePath);
     const metadata = {
       contentType: 'image/jpeg',
       customMetadata: {
         draftId,
         photoId: photo.id,
+        targetCollection,
         caption: photo.caption || '',
       },
     };
@@ -215,25 +241,36 @@ export async function uploadPhotosSequential(
 
 /**
  * Resumable upload of a WebM or MP4 video memo recording to Firebase Storage with exponential backoff.
+ * Accepts optional targetCollection ('memories' | 'chronicles' = 'memories') or MediaUploadOptions object.
  */
 export async function uploadVideoWithResiliency(
   userId: string,
   draftId: string,
   videoBlob: Blob,
-  onProgress?: (progressPercent: number) => void
+  onProgressOrOptions?: ((progressPercent: number) => void) | MediaUploadOptions,
+  explicitTargetCollection?: VaultCollectionTarget
 ): Promise<UploadResult> {
   if (!storage) {
     throw new Error('Firebase Storage service is uninitialised');
   }
 
+  const onProgress =
+    typeof onProgressOrOptions === 'function' ? onProgressOrOptions : onProgressOrOptions?.onProgress;
+  const targetCollection: VaultCollectionTarget =
+    explicitTargetCollection ||
+    (typeof onProgressOrOptions === 'object' && onProgressOrOptions?.targetCollection) ||
+    'memories';
+
   const extension = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-  const storagePath = `users/${userId}/fireside/${draftId}/video.${extension}`;
+  const collectionFolder = targetCollection === 'chronicles' ? 'chronicles' : 'fireside';
+  const storagePath = `users/${userId}/${collectionFolder}/${draftId}/video.${extension}`;
   const storageRef = ref(storage, storagePath);
   const metadata = {
     contentType: videoBlob.type || 'video/webm',
     customMetadata: {
       draftId,
       userId,
+      targetCollection,
       uploadedAt: new Date().toISOString(),
     },
   };
@@ -286,4 +323,3 @@ export async function uploadVideoWithResiliency(
 
   throw lastError || new Error('Video upload failed after 3 retry attempts');
 }
-

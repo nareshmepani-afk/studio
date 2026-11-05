@@ -4,14 +4,35 @@
  * Enforces strict database integrity barriers against ephemeral browser state leaking
  * into persistent Firestore storage. Specifically prohibits temporary `blob:` URLs
  * from ever being written into `audioUrl`, `videoUrl`, or `takes[].mediaUrl`.
+ *
+ * Supports dual-chamber collection parameterisation:
+ * - 'memories' (default): v1.0 Heirloom Folio memoirs
+ * - 'chronicles': v2.0 Living Chronicles Diary Studio (RFC-MW-156)
  */
 
+export type VaultCollectionTarget = 'memories' | 'chronicles';
+
 export class IllegalBlobPersistenceError extends Error {
-  constructor(field: string, docId: string, url: string) {
+  public readonly field: string;
+  public readonly docId: string;
+  public readonly url: string;
+  public readonly targetCollection: VaultCollectionTarget;
+
+  constructor(
+    field: string,
+    docId: string,
+    url: string,
+    targetCollection: VaultCollectionTarget = 'memories'
+  ) {
+    const prefix = targetCollection === 'memories' ? '[ILLEGAL_BLOB_PERSISTENCE]' : `[ILLEGAL_BLOB_PERSISTENCE:${targetCollection}]`;
     super(
-      `[ILLEGAL_BLOB_PERSISTENCE] Attempted to persist ephemeral blob URL in field "${field}" for document "${docId}": ${url}. Permanent Cloud Storage URL required before database commit.`
+      `${prefix} Attempted to persist ephemeral blob URL in field "${field}" for document "${docId}": ${url}. Permanent Cloud Storage URL required before database commit.`
     );
     this.name = 'IllegalBlobPersistenceError';
+    this.field = field;
+    this.docId = docId;
+    this.url = url;
+    this.targetCollection = targetCollection;
   }
 }
 
@@ -21,23 +42,24 @@ export class IllegalBlobPersistenceError extends Error {
  */
 export function assertMemoryWriteIntegrity(
   docId: string,
-  payload: Record<string, any>
+  payload: Record<string, any>,
+  targetCollection: VaultCollectionTarget = 'memories'
 ): void {
   if (!payload || typeof payload !== 'object') return;
 
   // Check audioUrl
   if (typeof payload.audioUrl === 'string' && payload.audioUrl.trim().startsWith('blob:')) {
-    throw new IllegalBlobPersistenceError('audioUrl', docId, payload.audioUrl);
+    throw new IllegalBlobPersistenceError('audioUrl', docId, payload.audioUrl, targetCollection);
   }
 
   // Check videoUrl
   if (typeof payload.videoUrl === 'string' && payload.videoUrl.trim().startsWith('blob:')) {
-    throw new IllegalBlobPersistenceError('videoUrl', docId, payload.videoUrl);
+    throw new IllegalBlobPersistenceError('videoUrl', docId, payload.videoUrl, targetCollection);
   }
 
   // Check mediaUrl at root
   if (typeof payload.mediaUrl === 'string' && payload.mediaUrl.trim().startsWith('blob:')) {
-    throw new IllegalBlobPersistenceError('mediaUrl', docId, payload.mediaUrl);
+    throw new IllegalBlobPersistenceError('mediaUrl', docId, payload.mediaUrl, targetCollection);
   }
 
   // Check takes array
@@ -45,20 +67,35 @@ export function assertMemoryWriteIntegrity(
     payload.takes.forEach((take: any, idx: number) => {
       if (!take || typeof take !== 'object') return;
       if (typeof take.mediaUrl === 'string' && take.mediaUrl.trim().startsWith('blob:')) {
-        throw new IllegalBlobPersistenceError(`takes[${idx}].mediaUrl`, docId, take.mediaUrl);
+        throw new IllegalBlobPersistenceError(`takes[${idx}].mediaUrl`, docId, take.mediaUrl, targetCollection);
       }
       if (typeof take.url === 'string' && take.url.trim().startsWith('blob:')) {
-        throw new IllegalBlobPersistenceError(`takes[${idx}].url`, docId, take.url);
+        throw new IllegalBlobPersistenceError(`takes[${idx}].url`, docId, take.url, targetCollection);
       }
     });
   }
 }
 
 /**
+ * Shared Zero-Blob Persistence Guard (RFC-MW-156 Section 6.2).
+ * Validates payloads destined for either users/{uid}/memories/{id} or users/{uid}/chronicles/{logId}.
+ */
+export function assertZeroBlobUrls(
+  payload: Record<string, unknown>,
+  targetCollection: VaultCollectionTarget = 'memories'
+): void {
+  assertMemoryWriteIntegrity('payload', payload as Record<string, any>, targetCollection);
+}
+
+/**
  * Sanitises an outgoing memory payload by stripping or nullifying any ephemeral `blob:` URLs.
  * Ensures that if an upload has not completed yet, the database does not receive stale pointers.
  */
-export function sanitizeMemoryPayloadForStorage<T extends Record<string, any>>(payload: T): T {
+export function sanitizeMemoryPayloadForStorage<T extends Record<string, any>>(
+  payload: T,
+   
+  _targetCollection: VaultCollectionTarget = 'memories'
+): T {
   if (!payload || typeof payload !== 'object') return payload;
 
   const sanitized: Record<string, any> = { ...payload };
