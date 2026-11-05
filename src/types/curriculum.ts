@@ -8,7 +8,8 @@
  */
 
 import { HeirloomPhotoAttachment } from './fireside';
-import { SceneCaptureStatus } from '@/lib/curriculum/masterStoryStructure';
+import { SceneCaptureStatus, getSceneById, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
+import { storyScripts } from '@/lib/storyScripts';
 
 // ---------------------------------------------------------------------------
 // 1. Origin Surfaces & Take Sources (MW-88-T7 Responsive Ergonomic Specialisation)
@@ -167,6 +168,7 @@ export interface UnifiedCurriculumMemory {
   prose: string;
   /** Emotional resonance mood tag ('joyful' | 'reflective' | 'nostalgic') */
   moodTag?: StoryMoodTag;
+  /** Original user spoken prompt or hook (alias) */
   /** Original user spoken prompt or hook */
   originalHook?: string;
   /** Sensory catalysts extracted during speech synthesis */
@@ -185,6 +187,20 @@ export interface UnifiedCurriculumMemory {
   title?: string;
   /** Optional legacy/Firestore description alias (synchronised with prose per Rule 14) */
   description?: string;
+  /** Memory coordinates: City / Venue (parity with Desktop Soundstage) */
+  location?: string;
+  /** Memory coordinates: Full narrator location at event */
+  narratorLocationAtEvent?: string;
+  /** Memory coordinates: Country / Region (parity with Desktop Soundstage) */
+  country?: string;
+  /** Memory mark: Year of event (parity with Desktop Soundstage) */
+  year?: number | string;
+  /** Memory mark: Date components (day, month, year) */
+  dateComponents?: { day?: string; month?: string; year?: string };
+  /** Memory mark: Narrator age at time ("I WAS") */
+  narratorAgeAtTime?: number;
+  /** Legacy narrator age alias */
+  age?: number;
   /** Optional sensory anchors metadata */
   sensoryAnchors?: any;
   /** Optional production stage integer (1..4) */
@@ -222,6 +238,61 @@ export const DEFAULT_DIRECTORIAL_POLISH: DirectorialPolishMetadata = {
   kenBurnsIntensity: 'standard',
   audioNoiseReductionEnabled: true,
   vocalClarityLevel: 'studio_boost',
+};
+
+export const DEFAULT_MEMORY_LOCATION = 'Munich, Germany (Family Residence)';
+export const DEFAULT_MEMORY_COUNTRY = 'Germany';
+export const DEFAULT_MEMORY_YEAR = 1984;
+export const DEFAULT_MEMORY_AGE = 5;
+
+/**
+ * Strips empty HTML wrapper tags (e.g. "<p></p>", "<p><br></p>") and normalises paragraph tags to plain text
+ */
+export function stripHtmlWrapper(raw?: string | null): string {
+  if (!raw || typeof raw !== 'string') return '';
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed === '<p></p>' || trimmed === '<p><br></p>') return '';
+  return trimmed
+    .replace(/<\/p>\s*<p>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?p[^>]*>/gi, '')
+    .trim();
+}
+
+/**
+ * Resolves the canonical default script text for a scene/prompt so Fireside never opens blank when Soundstage has defaults.
+ */
+export function resolveSceneDefaultScriptText(sceneIdOrPromptId?: string | null): string {
+  if (!sceneIdOrPromptId) return '';
+  const normalized = sceneIdOrPromptId.trim();
+  const sceneDef = resolveSceneFromPromptId(normalized) || getSceneById(normalized);
+  const canonicalSceneId = sceneDef?.id || normalized;
+  const promptId = sceneDef?.promptId || normalized;
+
+  if (
+    canonicalSceneId === 'part-6-scene-4' ||
+    normalized === 'p23' ||
+    normalized === 'p24_1' ||
+    normalized === 'p24' ||
+    normalized === 'part-6-scene-5'
+  ) {
+    return 'The importance of reflection, revisiting older entries, and looking back.';
+  }
+
+  const fromScripts = storyScripts[promptId] || storyScripts[normalized];
+  if (fromScripts && fromScripts.trim()) {
+    return stripHtmlWrapper(fromScripts);
+  }
+
+  if (sceneDef?.subtitle && sceneDef.subtitle.trim()) {
+    return sceneDef.subtitle.trim();
+  }
+
+  return '';
+}
+
+const _unusedEndDefault = {
+  _keep: true,
 };
 
 /**
@@ -298,6 +369,16 @@ export function createEmptyCurriculumMemory(params: {
   sceneTitle: string;
   originSurface: OriginSurface;
   moodTag?: StoryMoodTag;
+  /** Original user spoken prompt or hook (alias) */
+  prose?: string;
+  description?: string;
+  originalHook?: string;
+  location?: string;
+  narratorLocationAtEvent?: string;
+  country?: string;
+  year?: number | string;
+  narratorAgeAtTime?: number;
+  age?: number;
 }): UnifiedCurriculumMemory {
   const now = new Date().toISOString();
   const isFireside = params.originSurface === 'fireside_mobile';
@@ -314,7 +395,16 @@ export function createEmptyCurriculumMemory(params: {
     currentStatus: 'ready_for_action',
     actsCompleted: [],
     smartLandingTarget: 'act1',
-    prose: '',
+    prose: params.prose ?? '',
+    description: params.description ?? params.prose ?? '',
+    originalHook: params.originalHook ?? params.description ?? params.prose ?? '',
+    location: params.narratorLocationAtEvent || params.location || DEFAULT_MEMORY_LOCATION,
+    narratorLocationAtEvent: params.narratorLocationAtEvent || params.location || DEFAULT_MEMORY_LOCATION,
+    country: params.country || DEFAULT_MEMORY_COUNTRY,
+    year: params.year ?? DEFAULT_MEMORY_YEAR,
+    dateComponents: { year: String(params.year ?? DEFAULT_MEMORY_YEAR) },
+    narratorAgeAtTime: params.narratorAgeAtTime ?? params.age ?? DEFAULT_MEMORY_AGE,
+    age: params.age ?? params.narratorAgeAtTime ?? DEFAULT_MEMORY_AGE,
     moodTag: params.moodTag,
     takes: [],
     activeTakeId: '',

@@ -5,7 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioData } from '@/hooks/studio/useStudioData';
 import { storyScripts } from '@/lib/storyScripts';
-import { doc, getDoc, updateDoc, setDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, addDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ProductionDeck from './ProductionDeck';
 import { Loader2, Plus, AlertCircle } from 'lucide-react';
@@ -18,7 +18,7 @@ import { MobilePortalOverlay } from './overlays/MobilePortalOverlay';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
 import { useAdaptiveSurface, resolveFiresideSceneId } from '@/hooks/useAdaptiveSurface';
-import { resolvePromptIdFromSceneId } from '@/lib/curriculum/masterStoryStructure';
+import { resolvePromptIdFromSceneId, resolveSceneFromPromptId, getSceneById } from '@/lib/curriculum/masterStoryStructure';
 import { getQaFixtureDocId, createQaFixtureMemory } from '@/lib/qa/qaFixtureSeeder';
 
 interface ProductionDeckContainerProps {
@@ -197,7 +197,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         // 3. Direct promptId/sceneId query in user's memories (e.g. promptId is "p1", "part-1-scene-1", etc.)
         // DEMO SANDBOX ISOLATION: Never match historical demo templates (e.g. p_einstein) to user memories
         if (active && user?.uid && promptId !== 'p_einstein') {
-          const targetPromptId = resolvePromptIdFromSceneId(promptId) || promptId;
+          const targetPromptId = resolveSceneFromPromptId(promptId)?.promptId || resolvePromptIdFromSceneId(promptId) || promptId;
           let userMemQuery = query(collection(db, 'users', user.uid, 'memories'), where('promptId', '==', targetPromptId));
           let userMemSnap = await getDocs(userMemQuery);
 
@@ -285,7 +285,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     if (authLoading || (user && studioLoading) || !chapters.length) return;
 
     const chapterPrompts = chapters.flatMap(c => c.prompts);
-    const targetPromptId = resolvePromptIdFromSceneId(promptId) || promptId;
+    const targetPromptId = resolveSceneFromPromptId(promptId)?.promptId || resolvePromptIdFromSceneId(promptId) || promptId;
     const isTemplateId = chapterPrompts.some(p => p.id === promptId || p.id === targetPromptId);
 
     // Resolve cp from template ID or dynamically matched memory ID
@@ -300,7 +300,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         // Trace backward: Follow the chain of memory promptIds recursively until we find a match in static templates
         let currentPromptId = matchedMemory.promptId;
         let template = chapterPrompts.find(
-          p => p.id === currentPromptId || (currentPromptId ? p.id === resolvePromptIdFromSceneId(currentPromptId) : false)
+          p => p.id === currentPromptId || (currentPromptId ? p.id === (resolveSceneFromPromptId(currentPromptId)?.promptId || resolvePromptIdFromSceneId(currentPromptId)) : false)
         );
         const visitedIds = new Set<string>([matchedMemory.id]);
         
@@ -312,7 +312,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           if (parentMemory) {
             currentPromptId = parentMemory.promptId;
             template = chapterPrompts.find(
-              p => p.id === currentPromptId || (currentPromptId ? p.id === resolvePromptIdFromSceneId(currentPromptId) : false)
+              p => p.id === currentPromptId || (currentPromptId ? p.id === (resolveSceneFromPromptId(currentPromptId)?.promptId || resolvePromptIdFromSceneId(currentPromptId)) : false)
             );
           } else {
             break;
@@ -471,6 +471,101 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         lastLoadedId.current = promptId;
     }
   }, [promptId, chapters, memories, studioLoading, authLoading, isReady, resolvedAsyncTemplate, user, router, selectedProductionData?.id]);
+
+  // Unified Cross-Surface BroadcastChannel & Direct Document onSnapshot Subscription (Card 51 Parity)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !selectedProductionData) return;
+    const activeDocId = selectedProductionData.id;
+    const rawId = (selectedProductionData as any).sceneId || selectedProductionData.promptId || promptId;
+    const activeCanonicalSceneId = resolveSceneFromPromptId(rawId)?.id || getSceneById(rawId)?.id || rawId;
+
+    const applyIncomingProse = (incomingProse?: string, incomingDesc?: string) => {
+      const nextText = (incomingProse ?? incomingDesc ?? '').trim();
+      if (!nextText) return;
+      setSelectedProductionData((prev: any) => {
+        if (!prev) return prev;
+        if (prev.description === nextText && prev.prose === nextText) return prev;
+        return {
+          ...prev,
+          prose: nextText,
+          description: nextText,
+        };
+      });
+    };
+
+    const handleSyncMsg = (msg: any) => {
+      if (!msg) return;
+      const msgCanonical = resolveSceneFromPromptId(msg.sceneId)?.id || getSceneById(msg.sceneId)?.id || msg.sceneId;
+      const isMatch =
+        msg.sceneId === promptId ||
+        msg.sceneId === activeDocId ||
+        (msg.docId && msg.docId === activeDocId) ||
+        Boolean(activeCanonicalSceneId && msgCanonical === activeCanonicalSceneId);
+      if (isMatch) {
+        if (typeof msg.prose === 'string') {
+          applyIncomingProse(msg.prose, msg.prose);
+        }
+        if (msg.coordinates) {
+          setSelectedProductionData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              location: msg.coordinates.location ?? prev.location,
+              narratorLocationAtEvent: msg.coordinates.location ?? prev.narratorLocationAtEvent,
+              country: msg.coordinates.country ?? prev.country,
+              dateComponents: {
+                ...prev.dateComponents,
+                ...(msg.coordinates.day !== undefined ? { day: msg.coordinates.day } : {}),
+                ...(msg.coordinates.month !== undefined ? { month: msg.coordinates.month } : {}),
+                ...(msg.coordinates.year !== undefined ? { year: String(msg.coordinates.year) } : {}),
+              },
+              year: msg.coordinates.year ? Number(msg.coordinates.year) : prev.year,
+              narratorAgeAtTime: msg.coordinates.narratorAgeAtTime ?? prev.narratorAgeAtTime,
+              age: msg.coordinates.narratorAgeAtTime ?? prev.age,
+            };
+          });
+        }
+      }
+    };
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      if ('BroadcastChannel' in window) {
+        channel = new BroadcastChannel('mw_script_sync');
+        channel.onmessage = (event: MessageEvent<any>) => handleSyncMsg(event.data);
+      }
+    } catch {}
+
+    const onCustomSync = (e: Event) => handleSyncMsg((e as CustomEvent).detail);
+    window.addEventListener('mw:script-sync', onCustomSync);
+
+    let unsubDoc: (() => void) | null = null;
+    if (
+      db &&
+      user?.uid &&
+      activeDocId &&
+      !activeDocId.startsWith('memoir_') &&
+      activeDocId !== 'p_einstein' &&
+      activeDocId !== 'first_flight_rehearsal'
+    ) {
+      try {
+        unsubDoc = onSnapshot(doc(db, 'users', user.uid, 'memories', activeDocId), (snap) => {
+          if (!snap.exists()) return;
+          if (Date.now() - lastLocalUpdateRef.current < 1500) return;
+          const snapData = snap.data() as any;
+          if (snapData?.prose !== undefined || snapData?.description !== undefined) {
+            applyIncomingProse(snapData.prose, snapData.description);
+          }
+        });
+      } catch {}
+    }
+
+    return () => {
+      try { channel?.close(); } catch {}
+      window.removeEventListener('mw:script-sync', onCustomSync);
+      try { unsubDoc?.(); } catch {}
+    };
+  }, [promptId, user?.uid, selectedProductionData?.id, selectedProductionData?.promptId]);
 
   const handleUpdateProduction = useCallback(async (updatedDataOrFn: any) => {
     if (!user) return;

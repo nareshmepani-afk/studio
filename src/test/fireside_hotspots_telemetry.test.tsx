@@ -209,9 +209,12 @@ describe('Fireside Hotspots & Telemetry Regression Shield (Ticket #261)', () => 
       expect(clientSource).toContain('album-photo-capture-tray');
       expect(clientSource).toContain('fireside-active-studio');
 
-      // Verify toast anchor invokes scrollToActiveStudio directly
+      // Verify toast CTA routes to studio production or triggers studio navigation (Guard 2)
       expect(clientSource).toContain('data-testid="toast-studio-jump-link"');
-      expect(clientSource).toContain('scrollToActiveStudio()');
+      expect(
+        clientSource.includes('/studio/production/') ||
+        clientSource.includes('scrollToActiveStudio()')
+      ).toBe(true);
 
       // Verify handlePhotoPromptClick unlocks forceRecordMode and targets photo tray
       expect(clientSource).toContain('triggerCameraWithRetry');

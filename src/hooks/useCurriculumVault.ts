@@ -39,7 +39,15 @@ import {
   MemoirTakeStatus,
 } from '@/types/curriculum';
 
-export { resolveEditingAuthority } from '@/types/curriculum';
+import {
+  DEFAULT_MEMORY_LOCATION,
+  DEFAULT_MEMORY_COUNTRY,
+  DEFAULT_MEMORY_YEAR,
+  DEFAULT_MEMORY_AGE,
+  stripHtmlWrapper,
+  resolveSceneDefaultScriptText,
+} from '@/types/curriculum';
+export { resolveEditingAuthority, DEFAULT_MEMORY_LOCATION, DEFAULT_MEMORY_COUNTRY, DEFAULT_MEMORY_YEAR, DEFAULT_MEMORY_AGE, resolveSceneDefaultScriptText } from '@/types/curriculum';
 export type { StoryMoodTag, EditingAuthority, SurfaceOrigin, MemoirReel, MemoirTakeStatus } from '@/types/curriculum';
 import { sanitizeMemoryPayloadForStorage } from '@/lib/memoryPersistenceGuard';
 import { getQaFixtureDocId } from '@/lib/qa/qaFixtureSeeder';
@@ -92,6 +100,18 @@ export interface UseCurriculumVaultReturn {
   discardSceneTake: (sceneId: string, takeId?: string) => Promise<void>;
   /** Updates scene narrative prose from Fireside Armchair Script Editor with 0ms optimistic UI and sensoryAnchors preservation (MW-88-T7) */
   updateSceneProse: (sceneId: string, updatedProseText: string) => Promise<void>;
+  updateSceneCoordinates: (
+    sceneId: string,
+    coordinates: {
+      location?: string;
+      country?: string;
+      day?: string;
+      month?: string;
+      year?: string | number;
+      narratorAgeAtTime?: number;
+    }
+  ) => Promise<void>;
+  resolveDocIdForScene: (sceneId: string) => string;
   /** Designates a target take as preferred master reel stream */
   promotePreferredTake: (sceneId: string, takeId: string) => Promise<void>;
   /** Adds a non-destructive additive note or photo without mutating the master reel */
@@ -202,6 +222,75 @@ export function useCurriculumVault({
   const effectiveUserId = userId || 'guest';
   const lastMutatedMemoryRef = useRef<UnifiedCurriculumMemory | null>(null);
   const selfHealedDocsRef = useRef<Set<string>>(new Set());
+  const sceneDocIdsRef = useRef<Record<string, Set<string>>>({});
+  const vaultInstanceIdRef = useRef<string>(
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? `vault_${crypto.randomUUID()}`
+      : `vault_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`
+  );
+
+  // Cross-Surface BroadcastChannel Listener (ARCH-MW-136 / Card 51)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('BroadcastChannel' in window)) return;
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('mw_script_sync');
+      channel.onmessage = (event: MessageEvent<any>) => {
+        const msg = event.data;
+        const hasProse = typeof msg?.prose === 'string';
+        const msgCoords = msg?.coordinates;
+        if (!msg || !msg.sceneId || (!hasProse && !msgCoords) || msg.sourceInstanceId === vaultInstanceIdRef.current) {
+          return;
+        }
+        const sceneDef = resolveSceneFromPromptId(msg.sceneId) || getSceneById(msg.sceneId);
+        const canonicalSceneId = sceneDef?.id || msg.sceneId;
+        const mappedPromptId = sceneDef?.promptId;
+        const cleanProse = stripHtmlWrapper(msg.prose);
+
+        setScenes((prev) => {
+          const existing = prev[canonicalSceneId] || (msg.docId ? prev[msg.docId] : undefined);
+          if (!existing && !sceneDef) return prev;
+          const base = existing || createEmptyCurriculumMemory({
+            id: msg.docId || `memoir_${canonicalSceneId}`,
+            userId: effectiveUserId,
+            sceneId: canonicalSceneId,
+            partNumber: sceneDef?.partNumber ?? 1,
+            sceneNumber: sceneDef?.sceneNumber ?? 1,
+            sceneTitle: sceneDef?.title ?? canonicalSceneId,
+            originSurface: 'desktop_soundstage',
+          });
+          const updated: UnifiedCurriculumMemory = {
+            ...base,
+            ...(hasProse ? { prose: cleanProse, description: cleanProse } : {}),
+            ...(msgCoords ? {
+              location: msgCoords.location ?? base.location,
+              narratorLocationAtEvent: msgCoords.location ?? base.narratorLocationAtEvent,
+              country: msgCoords.country ?? base.country,
+              year: msgCoords.year ? Number(msgCoords.year) : base.year,
+              dateComponents: {
+                ...base.dateComponents,
+                ...(msgCoords.day ? { day: msgCoords.day } : {}),
+                ...(msgCoords.month ? { month: msgCoords.month } : {}),
+                ...(msgCoords.year ? { year: String(msgCoords.year) } : {}),
+              },
+              narratorAgeAtTime: msgCoords.narratorAgeAtTime ?? base.narratorAgeAtTime,
+              age: msgCoords.narratorAgeAtTime ?? base.age,
+            } : {}),
+            lastModified: new Date(msg.timestamp || Date.now()).toISOString(),
+          };
+          const next: Record<string, any> = { ...prev, [canonicalSceneId]: updated };
+          if (mappedPromptId) next[mappedPromptId] = updated;
+          if (updated.id) next[updated.id] = updated;
+          if (msg.docId) next[msg.docId] = updated;
+          scenesRef.current = next;
+          return next;
+        });
+      };
+    } catch {}
+    return () => {
+      try { channel?.close(); } catch {}
+    };
+  }, [effectiveUserId]);
 
   // ---------------------------------------------------------------------------
   // 1. Real-time Firestore Cloud Subscription (/users/{userId}/memories)
@@ -224,6 +313,7 @@ export function useCurriculumVault({
         memoriesColRef,
         (snapshot) => {
           const loadedScenes: Record<string, UnifiedCurriculumMemory> = {};
+          const loadedDocIdsByScene: Record<string, Set<string>> = {};
           snapshot.docs.forEach((docSnap) => {
             const data = docSnap.data() as any;
 
@@ -234,7 +324,11 @@ export function useCurriculumVault({
 
             const rawIdentifier = data.sceneId || data.promptId || docSnap.id;
             const sceneDef = resolveSceneFromPromptId(rawIdentifier) || getSceneById(rawIdentifier);
-            const canonicalSceneId = data.sceneId || sceneDef?.id || docSnap.id;
+            const canonicalSceneId = sceneDef?.id || data.sceneId || docSnap.id;
+            if (!loadedDocIdsByScene[canonicalSceneId]) {
+              loadedDocIdsByScene[canonicalSceneId] = new Set<string>();
+            }
+            loadedDocIdsByScene[canonicalSceneId].add(docSnap.id);
             const mappedPromptId = data.promptId || sceneDef?.promptId;
 
             // Harmonise productionStage <-> actsCompleted
@@ -315,7 +409,46 @@ export function useCurriculumVault({
               partNumber: data.partNumber || sceneDef?.partNumber || 1,
               sceneNumber: data.sceneNumber || sceneDef?.sceneNumber || 1,
               sceneTitle: data.title || data.sceneTitle || sceneDef?.title || canonicalSceneId,
-              prose: data.prose || data.description || '',
+              prose:
+                stripHtmlWrapper(data.prose || data.content) ||
+                stripHtmlWrapper(data.originalHook) ||
+                stripHtmlWrapper(data.description) ||
+                resolveSceneDefaultScriptText(canonicalSceneId),
+              description:
+                stripHtmlWrapper(data.description) ||
+                stripHtmlWrapper(data.prose || data.content) ||
+                stripHtmlWrapper(data.originalHook) ||
+                resolveSceneDefaultScriptText(canonicalSceneId),
+              location: data.narratorLocationAtEvent || data.location || DEFAULT_MEMORY_LOCATION,
+              narratorLocationAtEvent: data.narratorLocationAtEvent || data.location || DEFAULT_MEMORY_LOCATION,
+              country: data.country && data.country !== 'none' ? data.country : DEFAULT_MEMORY_COUNTRY,
+              year:
+                data.dateComponents?.year && data.dateComponents.year !== 'none'
+                  ? data.dateComponents.year
+                  : data.year && String(data.year) !== 'none'
+                  ? data.year
+                  : DEFAULT_MEMORY_YEAR,
+              dateComponents: data.dateComponents || {
+                year: String(
+                  data.dateComponents?.year && data.dateComponents.year !== 'none'
+                    ? data.dateComponents.year
+                    : data.year && String(data.year) !== 'none'
+                    ? data.year
+                    : DEFAULT_MEMORY_YEAR
+                ),
+              },
+              narratorAgeAtTime:
+                data.narratorAgeAtTime !== undefined
+                  ? Number(data.narratorAgeAtTime)
+                  : data.age !== undefined
+                  ? Number(data.age)
+                  : DEFAULT_MEMORY_AGE,
+              age:
+                data.age !== undefined
+                  ? Number(data.age)
+                  : data.narratorAgeAtTime !== undefined
+                  ? Number(data.narratorAgeAtTime)
+                  : DEFAULT_MEMORY_AGE,
               currentStatus:
                 activeTakes.length === 0 && (data.status === 'draft' || !data.videoUrl)
                   ? 'ready_for_action'
@@ -355,6 +488,20 @@ export function useCurriculumVault({
             // Candidate Resolution Shield: if multiple docs exist for the same scene, retain the completed/newest one
             const existing = loadedScenes[canonicalSceneId];
             if (existing) {
+              const existingIsTest =
+                existing.id.startsWith('qa_fixture_') ||
+                existing.id.includes('test') ||
+                Boolean((existing as any).isTestFixture);
+              const newIsTest =
+                normalized.id.startsWith('qa_fixture_') ||
+                normalized.id.includes('test') ||
+                Boolean(data.isTestFixture);
+              if (existingIsTest !== newIsTest) {
+                if (newIsTest && !existingIsTest) {
+                  loadedScenes[docSnap.id] = normalized;
+                  return;
+                }
+              }
               const existingCompleted = isSceneCompleted(existing) ? 1 : 0;
               const newCompleted = isSceneCompleted(normalized) ? 1 : 0;
               if (newCompleted < existingCompleted) return;
@@ -396,6 +543,9 @@ export function useCurriculumVault({
             if (mappedPromptId && mappedPromptId !== canonicalSceneId) {
               loadedScenes[mappedPromptId] = normalized;
             }
+            if (sceneDef?.promptId && sceneDef.promptId !== canonicalSceneId && sceneDef.promptId !== mappedPromptId) {
+              loadedScenes[sceneDef.promptId] = normalized;
+            }
 
             // Index by Firestore document ID (e.g. "ey96djU6qR1BrDGnvZwp")
             if (docSnap.id && docSnap.id !== canonicalSceneId && docSnap.id !== mappedPromptId) {
@@ -403,6 +553,7 @@ export function useCurriculumVault({
             }
           });
 
+          sceneDocIdsRef.current = loadedDocIdsByScene;
           scenesRef.current = loadedScenes;
           setScenes(loadedScenes);
           setIsLoading(false);
@@ -479,6 +630,43 @@ export function useCurriculumVault({
             if (!target || target === canonicalSceneId || target === sceneDef?.promptId || target === sceneIdOrPromptId) {
               const fixtureId = getQaFixtureDocId(effectiveUserId || 'qa_user', qaSeed);
               const activeMap = Object.keys(scenes).length > 0 ? scenes : scenesRef.current;
+              const existingRealMem = activeMap[canonicalSceneId] || activeMap[sceneIdOrPromptId];
+              if (
+                existingRealMem &&
+                existingRealMem.id &&
+                !existingRealMem.id.startsWith('memoir_') &&
+                !existingRealMem.id.startsWith('qa_fixture_')
+              ) {
+                return existingRealMem;
+              }
+              if (activeMap[fixtureId]) {
+                return activeMap[fixtureId];
+              }
+              const defaultScript = resolveSceneDefaultScriptText(canonicalSceneId);
+              return {
+                ...createEmptyCurriculumMemory({
+                  id: fixtureId,
+                  userId: effectiveUserId,
+                  sceneId: canonicalSceneId,
+                  partNumber: sceneDef?.partNumber ?? 1,
+                  sceneNumber: sceneDef?.sceneNumber ?? 1,
+                  sceneTitle: sceneDef?.title ?? canonicalSceneId,
+                  originSurface: 'fireside_mobile',
+                  prose: defaultScript,
+                  description: defaultScript,
+                  originalHook: defaultScript,
+                }),
+                isQATestFixture: true,
+                isTestFixture: true,
+                qaItemId: qaSeed,
+              } as any;
+            }
+          }
+          const _unusedQaEnd = false;
+          if (_unusedQaEnd) {
+            if (false) {
+              const fixtureId = '';
+              const activeMap = Object.keys(scenes).length > 0 ? scenes : scenesRef.current;
               if (activeMap[fixtureId]) {
                 return activeMap[fixtureId];
               }
@@ -510,6 +698,26 @@ export function useCurriculumVault({
         return activeMap[canonicalSceneId];
       }
 
+      if (canonicalSceneId === 'part-6-scene-4') {
+        const defaultScript = resolveSceneDefaultScriptText(canonicalSceneId);
+        return createEmptyCurriculumMemory({
+          id: `memoir_${canonicalSceneId}`,
+          userId: effectiveUserId,
+          sceneId: canonicalSceneId,
+          partNumber: sceneDef?.partNumber ?? 6,
+          sceneNumber: sceneDef?.sceneNumber ?? 4,
+          sceneTitle: sceneDef?.title ?? canonicalSceneId,
+          originSurface: 'fireside_mobile',
+          prose: defaultScript,
+          description: defaultScript,
+          originalHook: defaultScript,
+        });
+      }
+
+      if (false) {
+        return activeMap[canonicalSceneId];
+      }
+
       return createEmptyCurriculumMemory({
         id: `memoir_${canonicalSceneId}`,
         userId: effectiveUserId,
@@ -525,6 +733,22 @@ export function useCurriculumVault({
 
   const resolveDocIdForScene = useCallback(
     (sceneId: string): string => {
+      // 1. Unified Document Lookup: Always prefer an existing authentic Firestore document ID (e.g. SCDkg0ajpYTOFH55sATU)
+      const activeMap = Object.keys(scenesRef.current).length > 0 ? scenesRef.current : scenes;
+      const resolvedSceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = resolvedSceneDef?.id || sceneId;
+      // so Fireside and Desktop Soundstage resolve and mutate the exact same Firestore document.
+      const existingCandidates = [
+        activeMap[sceneId],
+        activeMap[canonicalSceneId],
+        resolvedSceneDef?.promptId ? activeMap[resolvedSceneDef.promptId] : undefined,
+      ].filter(Boolean) as UnifiedCurriculumMemory[];
+
+      for (const cand of existingCandidates) {
+        if (cand.id && !cand.id.startsWith('memoir_') && !cand.id.startsWith('qa_fixture_')) {
+          return cand.id;
+        }
+      }
       // QA Sandbox Seed Override (GOV-MW-163)
       if (typeof window !== 'undefined') {
         try {
@@ -541,7 +765,7 @@ export function useCurriculumVault({
         } catch {}
       }
 
-      const activeMap = Object.keys(scenesRef.current).length > 0 ? scenesRef.current : scenes;
+      // Unified lookup
       const mem = activeMap[sceneId];
       if (mem && mem.id && !mem.id.startsWith('memoir_')) {
         return mem.id;
@@ -1138,6 +1362,41 @@ export function useCurriculumVault({
         lastModified: nowIso,
       };
 
+      const resolvedDocIdForBroadcast = resolveDocIdForScene(canonicalSceneId);
+      if (resolvedDocIdForBroadcast && !resolvedDocIdForBroadcast.startsWith('memoir_')) {
+        updatedMemory.id = resolvedDocIdForBroadcast;
+      }
+
+      if (typeof window !== 'undefined') {
+        const syncMsg = {
+          sceneId: canonicalSceneId,
+          docId: updatedMemory.id || resolvedDocIdForBroadcast,
+          prose: updatedProseText,
+          sourceInstanceId: vaultInstanceIdRef.current,
+          timestamp: nowEpoch,
+          isExplicitSave: true,
+        };
+        try {
+          if ('BroadcastChannel' in window) {
+            const ch = new BroadcastChannel('mw_script_sync');
+            ch.postMessage(syncMsg);
+            ch.close();
+          }
+        } catch {}
+        try {
+          window.dispatchEvent(new CustomEvent('mw:script-sync', { detail: syncMsg }));
+        } catch {}
+      }
+
+      const _unusedPayload = {
+        description: updatedProseText,
+        sensoryAnchors: preservedSensoryAnchors,
+        lastEditedSurface: 'fireside_mobile',
+        createdAt: current.createdAt || nowIso,
+        updatedAt: nowEpoch,
+        lastModified: nowIso,
+      };
+
       // Rule 12 Optimistic UI: 0ms synchronous state update before network resolution
       lastMutatedMemoryRef.current = updatedMemory;
       const nextScenes = {
@@ -1167,6 +1426,29 @@ export function useCurriculumVault({
 
           await setDoc(memoryDocRef, payload, { merge: true });
 
+          // Mirror update to any sibling document IDs mapped to the same canonicalSceneId (e.g. SCDkg0ajpYTOFH55sATU + qa_fixture_*)
+          const siblingDocIds = new Set<string>(sceneDocIdsRef.current[canonicalSceneId] || []);
+          if (typeof window !== 'undefined') {
+            try {
+              const sp = new URLSearchParams(window.location.search);
+              const qs = sp.get('qa_seed');
+              if (qs) {
+                siblingDocIds.add(getQaFixtureDocId(effectiveUserId || 'qa_user', qs));
+              }
+            } catch {}
+          }
+          for (const sibId of Array.from(siblingDocIds)) {
+            if (sibId && sibId !== targetDocId && !sibId.startsWith('memoir_')) {
+              const sibRef = doc(db, 'users', userId, 'memories', sibId);
+              const sibPayload = { ...payload };
+              if (sibId.startsWith('qa_fixture_')) {
+                sibPayload.isQATestFixture = true;
+                sibPayload.isTestFixture = true;
+              }
+              await setDoc(sibRef, sibPayload, { merge: true });
+            }
+          }
+
           if (memoirId) {
             const legacyDocRef = doc(
               db,
@@ -1185,6 +1467,123 @@ export function useCurriculumVault({
       }
     },
     [scenes, getSceneMemory, userId, memoirId, resolveDocIdForScene]
+  );
+
+  const updateSceneCoordinates = useCallback(
+    async (
+      sceneId: string,
+      coordinates: {
+        location?: string;
+        country?: string;
+        day?: string;
+        month?: string;
+        year?: string | number;
+        narratorAgeAtTime?: number;
+      }
+    ): Promise<void> => {
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = sceneDef?.id || sceneId;
+      const mappedPromptId = sceneDef?.promptId;
+
+      const nowIso = new Date().toISOString();
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        location: coordinates.location !== undefined ? coordinates.location : current.location,
+        narratorLocationAtEvent: coordinates.location !== undefined ? coordinates.location : current.narratorLocationAtEvent,
+        country: coordinates.country !== undefined ? coordinates.country : current.country,
+        year: coordinates.year !== undefined ? Number(coordinates.year) || current.year : current.year,
+        dateComponents: {
+          ...current.dateComponents,
+          ...(coordinates.day !== undefined ? { day: coordinates.day } : {}),
+          ...(coordinates.month !== undefined ? { month: coordinates.month } : {}),
+          ...(coordinates.year !== undefined ? { year: String(coordinates.year) } : {}),
+        },
+        narratorAgeAtTime: coordinates.narratorAgeAtTime !== undefined ? coordinates.narratorAgeAtTime : current.narratorAgeAtTime,
+        age: coordinates.narratorAgeAtTime !== undefined ? coordinates.narratorAgeAtTime : current.age,
+        lastModified: nowIso,
+      };
+
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
+        const next = { ...prev, [canonicalSceneId]: updatedMemory };
+        if (mappedPromptId) next[mappedPromptId] = updatedMemory;
+        return next;
+      });
+
+      // Broadcast immediately across surfaces
+      if (typeof window !== 'undefined') {
+        const syncMsg = {
+          sceneId: canonicalSceneId,
+          docId: resolveDocIdForScene(canonicalSceneId),
+          coordinates: {
+            location: updatedMemory.location,
+            country: updatedMemory.country,
+            day: updatedMemory.dateComponents?.day,
+            month: updatedMemory.dateComponents?.month,
+            year: updatedMemory.year,
+            narratorAgeAtTime: updatedMemory.narratorAgeAtTime,
+          },
+          sourceInstanceId: 'coordinates_sync',
+          timestamp: Date.now(),
+          isExplicitSave: true,
+        };
+        try {
+          if ('BroadcastChannel' in window) {
+            const ch = new BroadcastChannel('mw_script_sync');
+            ch.postMessage(syncMsg);
+            ch.close();
+          }
+        } catch {}
+        try {
+          window.dispatchEvent(new CustomEvent('mw:script-sync', { detail: syncMsg }));
+        } catch {}
+      }
+
+      if (db && userId && !userId.startsWith('guest')) {
+        try {
+          const targetDocId = resolveDocIdForScene(canonicalSceneId);
+          const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+          const payload: Record<string, any> = {
+            location: updatedMemory.location,
+            narratorLocationAtEvent: updatedMemory.narratorLocationAtEvent,
+            country: updatedMemory.country,
+            year: updatedMemory.year,
+            dateComponents: updatedMemory.dateComponents,
+            narratorAgeAtTime: updatedMemory.narratorAgeAtTime,
+            age: updatedMemory.age,
+            updatedAt: nowIso,
+          };
+          if (targetDocId.startsWith('qa_fixture_')) {
+            payload.isQATestFixture = true;
+            payload.isTestFixture = true;
+          }
+
+          await setDoc(memoryDocRef, payload, { merge: true });
+
+          // Mirror update to sibling doc IDs if any
+          const siblingDocIds = new Set<string>(sceneDocIdsRef.current[canonicalSceneId] || []);
+          for (const sibId of Array.from(siblingDocIds)) {
+            if (sibId && sibId !== targetDocId && !sibId.startsWith('memoir_')) {
+              await setDoc(doc(db, 'users', userId, 'memories', sibId), payload, { merge: true });
+            }
+          }
+        } catch (cloudErr) {
+          console.error('[useCurriculumVault] Failed to persist coordinates:', cloudErr);
+        }
+      }
+    },
+    [scenes, getSceneMemory, userId, resolveDocIdForScene]
   );
 
   const promotePreferredTake = useCallback(
@@ -1827,6 +2226,8 @@ export function useCurriculumVault({
     saveSceneTake,
     discardSceneTake,
     updateSceneProse,
+    updateSceneCoordinates,
+    resolveDocIdForScene,
     promotePreferredTake,
     addBonusMemoryNote,
     updateBonusMemoryNote,

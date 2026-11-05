@@ -33,6 +33,7 @@ import { teardownActiveMediaStreams } from '@/utils/mediaTeardown';
 import { FilofaxDesktopSpine } from '@/components/navigation/folio/FilofaxDesktopSpine';
 import type { FolioSceneToken } from '@/components/navigation/folio/folioTokens';
 import type { ScriptSyncMessage } from '@/components/studio/shared/NarrativeScriptInput';
+import { stripHtmlWrapper } from '@/types/curriculum';
 import { 
   SelectionDeck, 
   SynthesizingOverlay, 
@@ -114,6 +115,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import { MemoryCoordinatesBar } from './MemoryCoordinatesBar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -452,6 +454,37 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
         // Check if message targets the same canonical scene
         const msgCanonical = resolveSceneFromPromptId(msg.sceneId)?.id || msg.sceneId;
+        const isSceneMatch =
+          msgCanonical === canonicalSceneId ||
+          msg.sceneId === data?.id ||
+          Boolean(msg.docId && msg.docId === data?.id);
+        if (!isSceneMatch) return;
+
+        // Origin Tagging Caret Shield:
+        // Only protect typing caret if actively focused in this document's Story Hook and not an explicit cross-surface save
+        const isActivelyTypingHere =
+          lastFocusedField === 'description' &&
+          !msg.isExplicitSave &&
+          typeof document !== 'undefined' &&
+          Boolean(storyHookRef.current && document.activeElement === storyHookRef.current);
+        if (isActivelyTypingHere) return;
+
+        const cleanIncoming = stripHtmlWrapper(msg.prose) || msg.prose;
+        if (cleanIncoming !== description) {
+          setDescription(cleanIncoming);
+          setProse(cleanIncoming);
+          lastSyncedDescription.current = cleanIncoming;
+          lastSyncedProse.current = cleanIncoming;
+          setScriptBlocks((prev) => {
+            if (prev.length > 0) {
+              const updated = [...prev];
+              updated[0] = { ...updated[0], text: cleanIncoming };
+              return updated;
+            }
+            return [{ id: 'story-hook', text: cleanIncoming, type: 'hook', catalysts: [] }];
+          });
+        }
+        if (false) {
         if (msgCanonical !== canonicalSceneId) return;
 
         // Origin Tagging Caret Shield:
@@ -471,6 +504,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             return [{ id: 'story-hook', text: msg.prose, type: 'hook', catalysts: [] }];
           });
         }
+        }
+        if (false) {
+          setScriptBlocks(() => {
+            return [{ id: 'story-hook', text: msg.prose, type: 'hook', catalysts: [] }];
+          });
+        }
       };
     } catch {}
 
@@ -478,7 +517,44 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       try { channel?.close(); } catch {}
       desktopChannelRef.current = null;
     };
-  }, [canonicalSceneId, lastFocusedField, description]);
+  }, [canonicalSceneId, lastFocusedField, description, data?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !canonicalSceneId) return;
+    const onCustomSync = (e: Event) => {
+      const msg = (e as CustomEvent<ScriptSyncMessage>).detail;
+      if (!msg || msg.sourceInstanceId === desktopInstanceIdRef.current) return;
+      const msgCanonical = resolveSceneFromPromptId(msg.sceneId)?.id || msg.sceneId;
+      const isSceneMatch =
+        msgCanonical === canonicalSceneId ||
+        msg.sceneId === data?.id ||
+        Boolean(msg.docId && msg.docId === data?.id);
+      if (!isSceneMatch) return;
+      const isActivelyTypingHere =
+        lastFocusedField === 'description' &&
+        !msg.isExplicitSave &&
+        typeof document !== 'undefined' &&
+        Boolean(storyHookRef.current && document.activeElement === storyHookRef.current);
+      if (isActivelyTypingHere) return;
+      const cleanIncoming = stripHtmlWrapper(msg.prose) || msg.prose;
+      if (cleanIncoming !== description) {
+        setDescription(cleanIncoming);
+        setProse(cleanIncoming);
+        lastSyncedDescription.current = cleanIncoming;
+        lastSyncedProse.current = cleanIncoming;
+        setScriptBlocks((prev) => {
+          if (prev.length > 0) {
+            const updated = [...prev];
+            updated[0] = { ...updated[0], text: cleanIncoming };
+            return updated;
+          }
+          return [{ id: 'story-hook', text: cleanIncoming, type: 'hook', catalysts: [] }];
+        });
+      }
+    };
+    window.addEventListener('mw:script-sync', onCustomSync);
+    return () => window.removeEventListener('mw:script-sync', onCustomSync);
+  }, [canonicalSceneId, lastFocusedField, description, data?.id]);
 
   const broadcastDesktopScript = useCallback((text: string) => {
     if (!desktopChannelRef.current || !canonicalSceneId) return;
@@ -800,6 +876,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       if (data?.title !== undefined) setTitle(data.title);
       if (data?.description !== undefined) {
         setDescription(data.description);
+       setScriptBlocks((prev) => {
+         if (prev.length > 0) {
+           const updated = [...prev];
+           updated[0] = { ...updated[0], text: data.description! };
+           return updated;
+         }
+         return [{ id: 'story-hook', text: data.description!, type: 'hook', catalysts: [] }];
+       });
         lastSyncedDescription.current = data.description;
       }
       if (data?.prose !== undefined) {
@@ -843,6 +927,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
        const end = textarea?.selectionEnd;
        
        setDescription(data.description);
+       setScriptBlocks((prev) => {
+         if (prev.length > 0) {
+           const updated = [...prev];
+           updated[0] = { ...updated[0], text: data.description! };
+           return updated;
+         }
+         return [{ id: 'story-hook', text: data.description!, type: 'hook', catalysts: [] }];
+       });
        
        // Restore focus/selection after sync if possible
        setTimeout(() => {
@@ -895,6 +987,19 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       setSensoryValues(data.sensory);
     }
     if (data?.prose !== undefined && data.prose !== lastSyncedProse.current && lastFocusedField !== 'script' && !isVolatileState) {
+      const cleanProseSync = stripHtmlWrapper(data.prose);
+      if (cleanProseSync && cleanProseSync !== lastSyncedDescription.current && !isFocusedOnDescription) {
+        lastSyncedDescription.current = cleanProseSync;
+        setDescription(cleanProseSync);
+        setScriptBlocks((prev) => {
+          if (prev.length > 0) {
+            const updated = [...prev];
+            updated[0] = { ...updated[0], text: cleanProseSync };
+            return updated;
+          }
+          return [{ id: 'story-hook', text: cleanProseSync, type: 'hook', catalysts: [] }];
+        });
+      }
       lastSyncedProse.current = data.prose;
       setProse(data.prose);
     }
@@ -1889,187 +1994,44 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/30 to-transparent" />
                         </div>
 
+                                                <MemoryCoordinatesBar
+                          location={location}
+                          country={country}
+                          day={day}
+                          month={month}
+                          year={year}
+                          narratorAgeAtTime={narratorAgeAtTime}
+                          onChangeLocation={(loc) => {
+                            setLocation(loc);
+                            onActivity?.();
+                          }}
+                          onChangeCountry={(c) => {
+                            setCountry(c);
+                            onActivity?.();
+                          }}
+                          onChangeDay={(d) => {
+                            setDay(d);
+                            onActivity?.();
+                          }}
+                          onChangeMonth={(m) => {
+                            setMonth(m);
+                            onActivity?.();
+                          }}
+                          onChangeYear={(y) => {
+                            setYear(y);
+                            onActivity?.();
+                          }}
+                          onChangeAge={(newAge) => {
+                            setNarratorAgeAtTimeLocal(newAge);
+                            setGlobalNarratorAgeAtTime(newAge);
+                            onActivity?.();
+                          }}
+                          isProductionLocked={isProductionLocked}
+                          onActivity={onActivity}
+                          onFocusField={() => setLastFocusedField('metadata')}
+                          variant="soundstage"
+                        />
                         <div className="flex flex-wrap gap-x-16 gap-y-10 pl-2 relative z-[1010]">
-                      {/* Location & Country Pair */}
-                      <div className="space-y-4">
-                         <span className="text-[11px] font-black text-emerald-400/70 uppercase tracking-[0.4em] flex items-center">
-                           Memory Coordinates <RequiredIndicator />
-                         </span>
-                         <div className="flex items-center gap-4 group/meta relative z-[1020] pointer-events-auto">
-                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/meta:border-emerald-500/50 transition-all">
-                            <MapPin className="w-4 h-4 text-emerald-400/60 group-hover/meta:text-emerald-400 transition-colors" />
-                          </div>
-                          <div className={cn("flex items-center gap-3 transition-all", isProductionLocked && "opacity-30 blur-[0.5px]")}>
-                            <TooltipProvider>
-                              <Tooltip delayDuration={0}>
-                                <TooltipTrigger asChild>
-                                  <div className="flex flex-col">
-                                    <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">City / Venue</span>
-                                    <input 
-                                      id="catalyst-location"
-                                      value={location}
-                                      onChange={(e) => { setLocation(e.target.value); onActivity?.(); }}
-                                      onFocus={() => setLastFocusedField('metadata')}
-                                      placeholder="WHERE DID IT HAPPEN?"
-                                      readOnly={isProductionLocked}
-                                      className={cn(
-                                        "bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-64 placeholder:text-white/40 transition-all",
-                                        isProductionLocked && "cursor-not-allowed"
-                                      )}
-                                    />
-                                  </div>
-                                </TooltipTrigger>
-                                {isProductionLocked && (
-                                  <TooltipContent className="bg-amber-950 border-amber-500/30 text-amber-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2 mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <Lock className="w-3 h-3" />
-                                      FIELD LOCKED BY PRODUCTION
-                                    </div>
-                                    <p className="text-[8px] opacity-60 font-normal mt-1 lowercase">Release lock to edit coordinates</p>
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-
-                              <div className="w-px h-8 bg-white/5 mx-2" />
-
-                              <Tooltip delayDuration={0}>
-                                <TooltipTrigger asChild>
-                                  <div className="flex flex-col">
-                                    <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Country</span>
-                                    <input 
-                                      id="catalyst-country"
-                                      value={country}
-                                      onChange={(e) => { setCountry(e.target.value); onActivity?.(); }}
-                                      onFocus={() => setLastFocusedField('metadata')}
-                                      placeholder="REGION"
-                                      readOnly={isProductionLocked}
-                                      className={cn(
-                                        "bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-32 placeholder:text-white/40 transition-all",
-                                        isProductionLocked && "cursor-not-allowed"
-                                      )}
-                                    />
-                                  </div>
-                                </TooltipTrigger>
-                                {isProductionLocked && (
-                                  <TooltipContent className="bg-amber-950 border-amber-500/30 text-amber-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2 mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <Lock className="w-3 h-3" />
-                                      FIELD LOCKED BY PRODUCTION
-                                    </div>
-                                    <p className="text-[8px] opacity-60 font-normal mt-1 lowercase">Release lock to edit coordinates</p>
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Date Cluster */}
-                      <div className="space-y-4">
-                         <span className="text-[11px] font-black text-emerald-400/70 uppercase tracking-[0.4em] flex items-center">
-                           Memory Mark <RequiredIndicator />
-                         </span>
-                        <div className="flex items-center gap-4 group/meta relative z-[1005] pointer-events-auto">
-                          <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/meta:border-emerald-500/50 transition-all">
-                            <Calendar className="w-4 h-4 text-emerald-400/60 group-hover/meta:text-emerald-400 transition-colors" />
-                          </div>
-                          <div className={cn("flex items-center gap-2 transition-all", isProductionLocked && "opacity-30 blur-[0.5px]")}>
-                            <TooltipProvider>
-                              <div className="flex items-center gap-2">
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Day</span>
-                                  <StudioSelect 
-                                    value={day} 
-                                    onChange={(v) => { setDay(v); onActivity?.(); }} 
-                                    items={DAYS.map(d => ({ value: d, label: d }))} 
-                                    disabled={isProductionLocked}
-                                  />
-                                </div>
-                                <div className="w-px h-8 bg-white/5 mx-1" />
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Month</span>
-                                  <StudioSelect 
-                                    value={month} 
-                                    onChange={(v) => { setMonth(v); onActivity?.(); }} 
-                                    items={MONTHS.map((m, i) => ({ 
-                                      value: (i + 1).toString(), 
-                                      label: m.substring(0, 3).toUpperCase() 
-                                    }))} 
-                                    disabled={isProductionLocked}
-                                  />
-                                </div>
-                                <div className="w-px h-8 bg-white/5 mx-1" />
-                                <div id="catalyst-year" className="flex flex-col">
-                                  <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Year</span>
-                                  <StudioSelect 
-                                    value={year} 
-                                    onChange={(v) => { setYear(v); onActivity?.(); }} 
-                                    items={YEARS.map(y => ({ value: y, label: y }))} 
-                                    disabled={isProductionLocked}
-                                  />
-                                </div>
-                                <div className="w-px h-8 bg-white/5 mx-1" />
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">I Was</span>
-                                  <Tooltip delayDuration={0}>
-                                    <TooltipTrigger asChild>
-                                      <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-2 py-1.5 hover:border-emerald-500/50 transition-all h-[34px] relative z-[1020] pointer-events-auto">
-                                        <button 
-                                          type="button"
-                                          onClick={() => {
-                                            console.log("[MemoryForm] Minus clicked. Locked:", isProductionLocked);
-                                            if (isProductionLocked) return;
-                                            const newAge = Math.max(0, narratorAgeAtTime - 1);
-                                            setNarratorAgeAtTimeLocal(newAge);
-                                            setGlobalNarratorAgeAtTime(newAge);
-                                            onActivity?.();
-                                          }}
-                                          className={cn(
-                                            "text-white/40 hover:text-white transition-all active:scale-75 disabled:opacity-20 cursor-pointer p-1 relative z-[1030] pointer-events-auto",
-                                            isProductionLocked && "cursor-not-allowed"
-                                          )}
-                                          disabled={isProductionLocked}
-                                        >
-                                          <Minus className="w-3 h-3" />
-                                        </button>
-                                        <span className="text-[11px] font-black text-white min-w-[20px] text-center select-none">{narratorAgeAtTime}</span>
-                                        <button 
-                                          type="button"
-                                          onClick={() => {
-                                            console.log("[MemoryForm] Plus clicked. Locked:", isProductionLocked);
-                                            if (isProductionLocked) return;
-                                            const newAge = Math.min(120, narratorAgeAtTime + 1);
-                                            setNarratorAgeAtTimeLocal(newAge);
-                                            setGlobalNarratorAgeAtTime(newAge);
-                                            onActivity?.();
-                                          }}
-                                          className={cn(
-                                            "text-white/40 hover:text-white transition-all active:scale-75 disabled:opacity-20 cursor-pointer p-1 relative z-[1030] pointer-events-auto",
-                                            isProductionLocked && "cursor-not-allowed"
-                                          )}
-                                          disabled={isProductionLocked}
-                                        >
-                                          <Plus className="w-3 h-3" />
-                                        </button>
-                                      </div>
-                                    </TooltipTrigger>
-                                    {isProductionLocked && (
-                                      <TooltipContent className="bg-amber-950 border-amber-500/30 text-amber-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2 mb-2">
-                                        <div className="flex items-center gap-2">
-                                          <Lock className="w-3 h-3" />
-                                          AGE STEPPER LOCKED
-                                        </div>
-                                        <p className="text-[8px] opacity-60 font-normal mt-1 lowercase">Release lock to edit age</p>
-                                      </TooltipContent>
-                                    )}
-                                  </Tooltip>
-                                </div>
-                              </div>
-                            </TooltipProvider>
-                          </div>
-                        </div>
-
                         {/* Narrative Scope */}
                         <div className="space-y-4 pointer-events-auto">
                           <span className="text-[11px] font-black text-emerald-400/70 uppercase tracking-[0.4em] flex items-center">
@@ -2099,7 +2061,6 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         </div>
                       </div>
                     </div>
-                  </div>
 
                   <div className="relative group">
                     {/* Instrument Watermark */}

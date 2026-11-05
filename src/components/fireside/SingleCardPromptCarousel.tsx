@@ -54,7 +54,15 @@ import {
 } from '@/lib/firesidePrompts';
 import { getSceneById, getPartForScene } from '@/lib/curriculum/masterStoryStructure';
 import type { EditingAuthority, UnifiedCurriculumMemory } from '@/types/curriculum';
-import { isSceneCompleted } from '@/types/curriculum';
+import {
+  isSceneCompleted,
+  DEFAULT_MEMORY_LOCATION,
+  DEFAULT_MEMORY_COUNTRY,
+  DEFAULT_MEMORY_YEAR,
+  DEFAULT_MEMORY_AGE,
+  stripHtmlWrapper,
+  resolveSceneDefaultScriptText,
+} from '@/types/curriculum';
 import { detectSensoryAnchors, filterDominantSensoryAnchors } from '@/utils/sensoryAnchors';
 import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import { FiresideWalkthroughCard } from '@/components/fireside/FiresideWalkthroughCard';
@@ -71,6 +79,7 @@ import { SensoryModalityKey } from '@/components/studio/shared/SensoryModalityKe
 import { useScriptCadence } from '@/hooks/studio/useScriptCadence';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { MemoryCoordinatesBar } from '@/components/studio/MemoryCoordinatesBar';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
@@ -88,6 +97,17 @@ export interface SingleCardPromptCarouselProps {
   activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null;
   getSceneMemory?: (sceneId?: string) => Partial<UnifiedCurriculumMemory> | undefined;
   onSaveProse?: (sceneId: string, updatedProseText: string) => void | Promise<void>;
+  onSaveCoordinates?: (
+    sceneId: string,
+    coordinates: {
+      location?: string;
+      country?: string;
+      day?: string;
+      month?: string;
+      year?: string | number;
+      narratorAgeAtTime?: number;
+    }
+  ) => void | Promise<void>;
   pinnedPrompterQuestion?: string | null;
   onPinQuestionToPrompter?: (question: string) => void;
   onAnswerFollowUpNote?: (question: string) => void;
@@ -174,6 +194,7 @@ export function SingleCardPromptCarousel({
   activeSceneMemory,
   getSceneMemory,
   onSaveProse,
+  onSaveCoordinates,
   pinnedPrompterQuestion,
   onPinQuestionToPrompter,
   onAnswerFollowUpNote,
@@ -283,7 +304,34 @@ export function SingleCardPromptCarousel({
     }
   }, [currentSceneMemory?.prose, localProseOverride]);
 
-  const rawSceneProse = currentSceneMemory?.prose?.trim() || '';
+  const rawSceneProse =
+    stripHtmlWrapper(currentSceneMemory?.prose) ||
+    stripHtmlWrapper(currentSceneMemory?.originalHook) ||
+    stripHtmlWrapper(currentSceneMemory?.description) ||
+    (currentSceneMemory && currentSceneMemory.prose === undefined
+      ? resolveSceneDefaultScriptText(currentSpark.linkedSceneId || currentSceneMemory?.sceneId || 'part-1-scene-1')
+      : '');
+  const resolvedLocation = (
+    currentSceneMemory?.narratorLocationAtEvent ||
+    currentSceneMemory?.location ||
+    DEFAULT_MEMORY_LOCATION
+  ).toUpperCase();
+  const resolvedCountry = (
+    currentSceneMemory?.country && currentSceneMemory.country !== 'none'
+      ? currentSceneMemory.country
+      : DEFAULT_MEMORY_COUNTRY
+  ).toUpperCase();
+  const resolvedYear = String(
+    currentSceneMemory?.dateComponents?.year && currentSceneMemory.dateComponents.year !== 'none'
+      ? currentSceneMemory.dateComponents.year
+      : currentSceneMemory?.year && String(currentSceneMemory.year) !== 'none'
+      ? currentSceneMemory.year
+      : DEFAULT_MEMORY_YEAR
+  );
+  const resolvedAge =
+    currentSceneMemory?.narratorAgeAtTime ??
+    currentSceneMemory?.age ??
+    DEFAULT_MEMORY_AGE;
   const activeProse =
     localProseOverride !== null ? localProseOverride.trim() : rawSceneProse;
   const hasSceneCompletedReel = isSceneCompleted(currentSceneMemory);
@@ -298,6 +346,107 @@ export function SingleCardPromptCarousel({
     if (stage === 2) return 2;
     return 1;
   }, [currentSceneMemory?.productionStage, isMasteredScene, hasSceneCompletedReel]);
+
+  const targetSceneId =
+    currentSpark.linkedSceneId || currentSceneMemory?.sceneId || 'part-1-scene-1';
+
+  const [localCoordinatesOverride, setLocalCoordinatesOverride] = useState<{
+    location?: string;
+    country?: string;
+    day?: string;
+    month?: string;
+    year?: string;
+    narratorAgeAtTime?: number;
+  }>({});
+
+  useEffect(() => {
+    setLocalCoordinatesOverride({});
+  }, [currentSpark.id]);
+
+  const activeCoordinateLocation =
+    localCoordinatesOverride.location ??
+    currentSceneMemory?.narratorLocationAtEvent ??
+    currentSceneMemory?.location ??
+    DEFAULT_MEMORY_LOCATION;
+
+  const activeCoordinateCountry =
+    localCoordinatesOverride.country ??
+    (currentSceneMemory?.country && currentSceneMemory.country !== 'none'
+      ? currentSceneMemory.country
+      : DEFAULT_MEMORY_COUNTRY);
+
+  const activeCoordinateDay =
+    localCoordinatesOverride.day ??
+    currentSceneMemory?.dateComponents?.day ??
+    'none';
+
+  const activeCoordinateMonth =
+    localCoordinatesOverride.month ??
+    currentSceneMemory?.dateComponents?.month ??
+    'none';
+
+  const activeCoordinateYear =
+    localCoordinatesOverride.year ??
+    (currentSceneMemory?.dateComponents?.year && currentSceneMemory.dateComponents.year !== 'none'
+      ? currentSceneMemory.dateComponents.year
+      : currentSceneMemory?.year && String(currentSceneMemory.year) !== 'none'
+      ? String(currentSceneMemory.year)
+      : String(DEFAULT_MEMORY_YEAR));
+
+  const activeCoordinateAge =
+    localCoordinatesOverride.narratorAgeAtTime ??
+    currentSceneMemory?.narratorAgeAtTime ??
+    currentSceneMemory?.age ??
+    DEFAULT_MEMORY_AGE;
+
+  const handleUpdateCoordinate = useCallback(
+    (field: string, value: any) => {
+      const updated = {
+        location: activeCoordinateLocation,
+        country: activeCoordinateCountry,
+        day: activeCoordinateDay,
+        month: activeCoordinateMonth,
+        year: activeCoordinateYear,
+        narratorAgeAtTime: activeCoordinateAge,
+        [field]: value,
+      };
+      setLocalCoordinatesOverride((prev) => ({ ...prev, [field]: value }));
+
+      if (typeof window !== 'undefined') {
+        const syncMsg = {
+          sceneId: targetSceneId,
+          docId: currentSceneMemory?.id,
+          coordinates: updated,
+          sourceInstanceId: 'fireside_coordinates_change',
+          timestamp: Date.now(),
+          isExplicitSave: true,
+        };
+        try {
+          if ('BroadcastChannel' in window) {
+            const ch = new BroadcastChannel('mw_script_sync');
+            ch.postMessage(syncMsg);
+            ch.close();
+          }
+        } catch {}
+        try {
+          window.dispatchEvent(new CustomEvent('mw:script-sync', { detail: syncMsg }));
+        } catch {}
+      }
+
+      onSaveCoordinates?.(targetSceneId, updated);
+    },
+    [
+      activeCoordinateLocation,
+      activeCoordinateCountry,
+      activeCoordinateDay,
+      activeCoordinateMonth,
+      activeCoordinateYear,
+      activeCoordinateAge,
+      targetSceneId,
+      currentSceneMemory?.id,
+      onSaveCoordinates,
+    ]
+  );
 
   // Synchronise selectedActTab when selectedActStage prop changes or when active spark/scene changes
   useEffect(() => {
@@ -393,9 +542,6 @@ export function SingleCardPromptCarousel({
 
   const debouncedAutosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'buffering' | 'saving' | 'saved'>('idle');
-
-  const targetSceneId =
-    currentSpark.linkedSceneId || currentSceneMemory?.sceneId || 'part-1-scene-1';
 
   // ARCH-MW-136: 2,000ms trailing debounce autosave to Cloud Firestore
   useEffect(() => {
@@ -501,9 +647,42 @@ export function SingleCardPromptCarousel({
       try {
         localStorage.setItem(`mw_draft_${targetSceneId}`, trimmed);
         localStorage.setItem(`draft_hook_${targetSceneId}`, trimmed);
+        if (currentSceneMemory?.id) {
+          localStorage.setItem(`mw_draft_${currentSceneMemory.id}`, trimmed);
+          localStorage.setItem(`draft_hook_${currentSceneMemory.id}`, trimmed);
+        }
       } catch (storageErr) {
         console.warn('[SingleCardPromptCarousel:handleSaveScript] Failed to write scratchpad backup:', storageErr);
       }
+    }
+
+    if (typeof window !== 'undefined') {
+      const syncMsg = {
+        sceneId: targetSceneId,
+        docId: currentSceneMemory?.id,
+        prose: trimmed,
+        coordinates: {
+          location: activeCoordinateLocation,
+          country: activeCoordinateCountry,
+          day: activeCoordinateDay,
+          month: activeCoordinateMonth,
+          year: activeCoordinateYear,
+          narratorAgeAtTime: activeCoordinateAge,
+        },
+        sourceInstanceId: 'fireside_save',
+        timestamp: Date.now(),
+        isExplicitSave: true,
+      };
+      try {
+        if ('BroadcastChannel' in window) {
+          const ch = new BroadcastChannel('mw_script_sync');
+          ch.postMessage(syncMsg);
+          ch.close();
+        }
+      } catch {}
+      try {
+        window.dispatchEvent(new CustomEvent('mw:script-sync', { detail: syncMsg }));
+      } catch {}
     }
 
     onSaveProse?.(targetSceneId, trimmed);
@@ -864,7 +1043,36 @@ export function SingleCardPromptCarousel({
       if (isEditingScript) {
         handleSaveScript();
       } else if (trimmed && trimmed !== (activeProse || '')) {
-        onSaveProse?.(targetSceneId, trimmed);
+        if (typeof window !== 'undefined') {
+      const syncMsg = {
+        sceneId: targetSceneId,
+        docId: currentSceneMemory?.id,
+        prose: trimmed,
+        coordinates: {
+          location: activeCoordinateLocation,
+          country: activeCoordinateCountry,
+          day: activeCoordinateDay,
+          month: activeCoordinateMonth,
+          year: activeCoordinateYear,
+          narratorAgeAtTime: activeCoordinateAge,
+        },
+        sourceInstanceId: 'fireside_save',
+        timestamp: Date.now(),
+        isExplicitSave: true,
+      };
+      try {
+        if ('BroadcastChannel' in window) {
+          const ch = new BroadcastChannel('mw_script_sync');
+          ch.postMessage(syncMsg);
+          ch.close();
+        }
+      } catch {}
+      try {
+        window.dispatchEvent(new CustomEvent('mw:script-sync', { detail: syncMsg }));
+      } catch {}
+    }
+
+    onSaveProse?.(targetSceneId, trimmed);
       }
 
       // 3. Fail-safe scratchpad backup to localStorage
@@ -872,6 +1080,10 @@ export function SingleCardPromptCarousel({
         try {
           localStorage.setItem(`mw_draft_${targetSceneId}`, trimmed);
           localStorage.setItem(`draft_hook_${targetSceneId}`, trimmed);
+        if (currentSceneMemory?.id) {
+          localStorage.setItem(`mw_draft_${currentSceneMemory.id}`, trimmed);
+          localStorage.setItem(`draft_hook_${currentSceneMemory.id}`, trimmed);
+        }
         } catch (_) {}
       }
 
@@ -1334,6 +1546,26 @@ export function SingleCardPromptCarousel({
                   className="text-base sm:text-lg font-semibold text-amber-400/95 tracking-wide leading-snug break-words whitespace-normal"
                 >
                   <span className="break-words whitespace-normal">{primaryCardTitle}</span>
+                </h3>
+                {/* Synchronised Memory Coordinates Strip (CITY - COUNTRY - YEAR - I WAS parity with Desktop Soundstage) */}
+                <div className="mt-2.5">
+                  <MemoryCoordinatesBar
+                    location={activeCoordinateLocation}
+                    country={activeCoordinateCountry}
+                    day={activeCoordinateDay}
+                    month={activeCoordinateMonth}
+                    year={activeCoordinateYear}
+                    narratorAgeAtTime={activeCoordinateAge}
+                    onChangeLocation={(val) => handleUpdateCoordinate('location', val)}
+                    onChangeCountry={(val) => handleUpdateCoordinate('country', val)}
+                    onChangeDay={(val) => handleUpdateCoordinate('day', val)}
+                    onChangeMonth={(val) => handleUpdateCoordinate('month', val)}
+                    onChangeYear={(val) => handleUpdateCoordinate('year', val)}
+                    onChangeAge={(val) => handleUpdateCoordinate('narratorAgeAtTime', val)}
+                    variant="fireside"
+                  />
+                </div>
+                <h3 className="hidden" aria-hidden="true">
                 </h3>
                 {showSecondarySubtitle && secondaryCardTitle && secondaryCardTitle !== primaryCardTitle && (
                   <p

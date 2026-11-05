@@ -18,6 +18,8 @@ import {
 } from '@/utils/sensoryAnchors';
 
 import { useSensoryHighlight } from '@/hooks/studio/useSensoryHighlight';
+import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
+import type { ScriptSyncMessage } from './NarrativeScriptInput';
 export { NarrativeScriptInput, type NarrativeScriptInputProps, type NarrativeScriptInputRef } from './NarrativeScriptInput';
 export { ScribesMargin, type ScribesMarginProps } from './ScribesMargin';
 export { useSensoryHighlight } from '@/hooks/studio/useSensoryHighlight';
@@ -48,6 +50,7 @@ export interface SensoryScriptEditorProps {
   ariaLabel?: string;
   dataTestId?: string;
   hideAnchors?: boolean;
+  syncSceneId?: string;
   onDetectedAnchorsChange?: (anchors: DetectedAnchor[]) => void;
 }
 
@@ -110,6 +113,7 @@ export const SensoryScriptEditor = forwardRef<SensoryScriptEditorRef, SensoryScr
       ariaLabel = 'Edit story script',
       dataTestId = 'sensory-script-editor-textarea',
       hideAnchors = false,
+      syncSceneId,
       onDetectedAnchorsChange,
     },
     ref
@@ -132,6 +136,43 @@ export const SensoryScriptEditor = forwardRef<SensoryScriptEditorRef, SensoryScr
       language: lang,
       onDetectedAnchorsChange,
     });
+
+    // Cross-Surface BroadcastChannel & CustomEvent Bridge (Card 51 Parity)
+    useEffect(() => {
+      if (!syncSceneId || typeof window === 'undefined') return;
+      const syncCanonical = resolveSceneFromPromptId(syncSceneId)?.id || syncSceneId;
+      const handleIncoming = (msg?: ScriptSyncMessage | null) => {
+        if (!msg || typeof msg.prose !== 'string') return;
+        const msgCanonical = resolveSceneFromPromptId(msg.sceneId)?.id || msg.sceneId;
+        const isMatch =
+          msg.sceneId === syncSceneId ||
+          msgCanonical === syncCanonical ||
+          Boolean(msg.docId && msg.docId === syncSceneId);
+        if (!isMatch) return;
+        if (msg.prose !== value) {
+          onChange(msg.prose);
+        }
+      };
+
+      let channel: BroadcastChannel | null = null;
+      try {
+        if ('BroadcastChannel' in window) {
+          channel = new BroadcastChannel('mw_script_sync');
+          channel.onmessage = (event: MessageEvent<ScriptSyncMessage>) => handleIncoming(event.data);
+        }
+      } catch {}
+
+      const onCustomSync = (e: Event) => {
+        const customEvt = e as CustomEvent<ScriptSyncMessage>;
+        handleIncoming(customEvt.detail);
+      };
+      window.addEventListener('mw:script-sync', onCustomSync);
+
+      return () => {
+        try { channel?.close(); } catch {}
+        window.removeEventListener('mw:script-sync', onCustomSync);
+      };
+    }, [syncSceneId, value, onChange]);
 
     // 3. Imperative Ref Contract (Rule 48.2)
     useImperativeHandle(

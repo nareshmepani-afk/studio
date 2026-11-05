@@ -1,6 +1,22 @@
 import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import FiresideStudioClient from './FiresideStudioClient';
+import {
+  DEFAULT_MEMORY_LOCATION,
+  DEFAULT_MEMORY_COUNTRY,
+  DEFAULT_MEMORY_YEAR,
+  DEFAULT_MEMORY_AGE,
+  resolveSceneDefaultScriptText,
+} from '@/types/curriculum';
+
+// Parity reference with Desktop Soundstage (CITY: MUNICH, GERMANY (FAMILY RESIDENCE) - COUNTRY: GERMANY - YEAR: 1984 - I WAS: 5 + default scriptText)
+const _FIRESIDE_PARITY_DEFAULTS = {
+  location: DEFAULT_MEMORY_LOCATION,
+  country: DEFAULT_MEMORY_COUNTRY,
+  year: DEFAULT_MEMORY_YEAR,
+  narratorAgeAtTime: DEFAULT_MEMORY_AGE,
+  resolveSceneDefaultScriptText,
+};
 
 export const metadata: Metadata = {
   title: 'Fireside Voice Studio | Memory Weaver',

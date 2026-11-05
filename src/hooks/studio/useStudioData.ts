@@ -48,7 +48,20 @@ export function useStudioData(userId: string | undefined) {
         const msg = event.data;
         if (!msg || !msg.sceneId || typeof msg.prose !== 'string') return;
         setMemories((prev) => {
-          const index = prev.findIndex((m) => m.id === msg.sceneId || (m as any).sceneId === msg.sceneId || m.promptId === msg.sceneId);
+          const msgCanonical = resolveSceneFromPromptId(msg.sceneId)?.id || msg.sceneId;
+          const index = prev.findIndex((m) => {
+            const mCanonical =
+              (m as any).sceneId ||
+              (m.promptId ? resolveSceneFromPromptId(m.promptId)?.id : undefined) ||
+              resolveSceneFromPromptId(m.id)?.id;
+            return (
+              m.id === msg.sceneId ||
+              (msg.docId && m.id === msg.docId) ||
+              (m as any).sceneId === msg.sceneId ||
+              m.promptId === msg.sceneId ||
+              Boolean(msgCanonical && mCanonical === msgCanonical)
+            );
+          });
           if (index !== -1) {
             const next = [...prev];
             next[index] = {

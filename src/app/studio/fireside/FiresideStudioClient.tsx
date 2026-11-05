@@ -35,7 +35,8 @@ import { AlbumPhotoCaptureTray, AlbumPhotoCaptureTrayRef } from '@/components/fi
 import { FiresideCompletedReelCard } from '@/components/fireside/FiresideCompletedReelCard';
 import { FiresideCinemaLightbox } from '@/components/fireside/FiresideCinemaLightbox';
 import { BonusMemoryDrawer } from '@/components/fireside/BonusMemoryDrawer';
-import { BonusMemoryNote } from '@/types/curriculum';
+import { BonusMemoryNote, DEFAULT_MEMORY_LOCATION, DEFAULT_MEMORY_COUNTRY, DEFAULT_MEMORY_YEAR, DEFAULT_MEMORY_AGE, stripHtmlWrapper, resolveSceneDefaultScriptText } from '@/types/curriculum';
+export { DEFAULT_MEMORY_LOCATION, DEFAULT_MEMORY_COUNTRY, DEFAULT_MEMORY_YEAR, DEFAULT_MEMORY_AGE, resolveSceneDefaultScriptText };
 import {
   FiresideLanguage,
   FiresidePromptSpark,
@@ -212,6 +213,8 @@ export default function FiresideStudioClient() {
     saveSceneTake,
     discardSceneTake,
     updateSceneProse,
+    updateSceneCoordinates,
+    resolveDocIdForScene,
     setStoryMoodTag,
     addBonusMemoryNote,
     updateBonusMemoryNote,
@@ -229,7 +232,44 @@ export default function FiresideStudioClient() {
     initialSceneId: effectiveSceneId,
   });
 
-  const activeSceneMemory = getSceneMemory(effectiveSceneId);
+  const isCleanSlateParam = searchParams.get('clean_slate') === 'true';
+
+  const getSceneMemoryWithDefaults = useCallback(
+    (sceneId: string) => {
+      const mem = getSceneMemory(sceneId);
+      if (isCleanSlateParam || !mem) return mem;
+      const cleanProse =
+        stripHtmlWrapper(mem.prose) ||
+        stripHtmlWrapper(mem.originalHook) ||
+        stripHtmlWrapper(mem.description) ||
+        resolveSceneDefaultScriptText(sceneId);
+      const loc = mem.narratorLocationAtEvent || mem.location || DEFAULT_MEMORY_LOCATION;
+      const country = mem.country && mem.country !== 'none' ? mem.country : DEFAULT_MEMORY_COUNTRY;
+      const yr =
+        mem.dateComponents?.year && mem.dateComponents.year !== 'none'
+          ? mem.dateComponents.year
+          : mem.year && String(mem.year) !== 'none'
+          ? mem.year
+          : DEFAULT_MEMORY_YEAR;
+      const age = mem.narratorAgeAtTime ?? mem.age ?? DEFAULT_MEMORY_AGE;
+      return {
+        ...mem,
+        prose: cleanProse,
+        description: stripHtmlWrapper(mem.description) || cleanProse,
+        originalHook: stripHtmlWrapper(mem.originalHook) || cleanProse,
+        location: loc,
+        narratorLocationAtEvent: loc,
+        country,
+        year: yr,
+        dateComponents: mem.dateComponents || { year: String(yr) },
+        narratorAgeAtTime: age,
+        age,
+      };
+    },
+    [getSceneMemory, isCleanSlateParam]
+  );
+
+  const activeSceneMemory = getSceneMemoryWithDefaults(effectiveSceneId);
   const activeMood = activeSceneMemory?.moodTag;
   const activeEditingAuthority: EditingAuthority = resolveEditingAuthority(activeSceneMemory);
   const hasCompletedReel = isSceneCompleted(activeSceneMemory);
@@ -319,6 +359,12 @@ export default function FiresideStudioClient() {
       }
 
       // 4. If targetParam matches activeSceneMemory id or sceneId
+      // 4. If targetParam matches a Firestore memory document ID or sceneId
+      const targetMem = getSceneMemory(targetParam);
+      if (targetMem && targetMem.sceneId && targetMem.sceneId !== targetParam) {
+        const byTargetMemScene = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === targetMem.sceneId);
+        if (byTargetMemScene) return byTargetMemScene.id;
+      }
       if (activeSceneMemory && (activeSceneMemory.id === targetParam || (activeSceneMemory as any).sceneId === targetParam)) {
         const sceneId = activeSceneMemory.sceneId;
         if (sceneId) {
@@ -464,6 +510,34 @@ export default function FiresideStudioClient() {
       }, 4000);
     },
     [updateSceneProse, logEvent]
+  );
+
+  const handleSaveCoordinates = useCallback(
+    async (
+      targetSceneId: string,
+      coords: {
+        location?: string;
+        country?: string;
+        day?: string;
+        month?: string;
+        year?: string | number;
+        narratorAgeAtTime?: number;
+      }
+    ) => {
+      await updateSceneCoordinates(targetSceneId, coords);
+      logEvent('FIRESIDE_COORDINATES_EDITED' as any, {
+        sceneId: targetSceneId,
+        location: coords.location,
+        country: coords.country,
+        year: coords.year,
+        narratorAgeAtTime: coords.narratorAgeAtTime,
+      });
+      setNotification('Coordinates updated and synchronised with Desktop Studio.');
+      setTimeout(() => {
+        setNotification(null);
+      }, 4000);
+    },
+    [updateSceneCoordinates, logEvent]
   );
 
   const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
@@ -1083,8 +1157,9 @@ export default function FiresideStudioClient() {
             editingAuthority={activeEditingAuthority}
             resolveSceneAuthority={resolveSceneAuthority}
             activeSceneMemory={activeSceneMemory}
-            getSceneMemory={(sceneId?: string) => sceneId ? getSceneMemory(sceneId) : undefined}
+            getSceneMemory={(sceneId?: string) => sceneId ? getSceneMemoryWithDefaults(sceneId) : undefined}
             onSaveProse={handleSaveProse}
+            onSaveCoordinates={handleSaveCoordinates}
             pinnedPrompterQuestion={pinnedPrompterQuestion}
             onPinQuestionToPrompter={handlePinQuestionToPrompter}
             onAnswerFollowUpNote={handleAnswerFollowUpNote}
@@ -1322,17 +1397,15 @@ export default function FiresideStudioClient() {
                 {notification}
               </p>
             </div>
-            <a
-              href={mediaMode === 'audio' ? '#album-photo-capture-tray' : '#fireside-active-studio'}
+
+
+              <Link
+              href={`/studio/production/${resolveDocIdForScene(effectiveSceneId) || activeSceneMemory?.id || effectiveSceneId}?act=1`}
               data-testid="toast-studio-jump-link"
-              onClick={(e) => {
-                e.preventDefault();
-                scrollToActiveStudio();
-              }}
               className="shrink-0 text-xs font-bold text-amber-300 hover:text-amber-100 underline underline-offset-2 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 transition-all cursor-pointer"
             >
               Open Studio ↓
-            </a>
+            </Link>
           </div>
         )}
 

@@ -20,15 +20,18 @@ import {
   type ScribeSuggestion,
 } from '@/hooks/studio/useScriptCadence';
 import { ScribesMargin } from './ScribesMargin';
+import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
 export type InputTypography = 'typewriter' | 'serif';
 export type ScriptLanguage = 'en-GB' | 'gu' | 'pa' | 'hi';
 
 export interface ScriptSyncMessage {
   sceneId: string;
+  docId?: string;
   prose: string;
   sourceInstanceId: string;
   timestamp: number;
+  isExplicitSave?: boolean;
 }
 
 export function clearDraftScratchpad(sceneId: string, userId?: string): void {
@@ -206,12 +209,21 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
 
         channel.onmessage = (event: MessageEvent<ScriptSyncMessage>) => {
           const msg = event.data;
-          if (!msg || msg.sourceInstanceId === instanceIdRef.current || msg.sceneId !== syncSceneId) {
+          if (!msg || msg.sourceInstanceId === instanceIdRef.current) {
+            return;
+          }
+          const syncCanonical = resolveSceneFromPromptId(syncSceneId)?.id || syncSceneId;
+          const msgCanonical = resolveSceneFromPromptId(msg.sceneId)?.id || msg.sceneId;
+          const isMatch =
+            msg.sceneId === syncSceneId ||
+            msgCanonical === syncCanonical ||
+            Boolean(msg.docId && msg.docId === syncSceneId);
+          if (!isMatch) {
             return;
           }
 
           // Origin Tagging Shield: If currently focused on this editor, protect active typing caret!
-          if (isFocusedRef.current) {
+          if (isFocusedRef.current && !msg.isExplicitSave) {
             return;
           }
 
