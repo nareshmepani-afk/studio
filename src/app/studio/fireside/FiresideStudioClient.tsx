@@ -237,7 +237,23 @@ export default function FiresideStudioClient() {
   const getSceneMemoryWithDefaults = useCallback(
     (sceneId: string) => {
       const mem = getSceneMemory(sceneId);
-      if (isCleanSlateParam || !mem) return mem;
+      if (isCleanSlateParam) {
+        return {
+          ...(mem || {}),
+          id: mem?.id || `memoir_${sceneId}`,
+          prose: '',
+          description: '',
+          originalHook: '',
+          location: '',
+          narratorLocationAtEvent: '',
+          country: '',
+          year: undefined,
+          dateComponents: { day: 'none', month: 'none', year: 'none' },
+          narratorAgeAtTime: 0,
+          age: 0,
+        };
+      }
+      if (!mem) return mem;
       const cleanProse =
         stripHtmlWrapper(mem.prose) ||
         stripHtmlWrapper(mem.originalHook) ||
@@ -261,7 +277,7 @@ export default function FiresideStudioClient() {
         narratorLocationAtEvent: loc,
         country,
         year: yr,
-        dateComponents: mem.dateComponents || { year: String(yr) },
+        dateComponents: mem.dateComponents || (yr ? { year: String(yr) } : { day: 'none', month: 'none', year: 'none' }),
         narratorAgeAtTime: age,
         age,
       };

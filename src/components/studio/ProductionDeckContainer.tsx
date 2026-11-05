@@ -159,9 +159,36 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           }
         }
 
-        // Clean Slate Override: Skip restoring previous user drafts to show pristine unwritten stage
-        if (isCleanSlate) {
-          console.log(`[ProductionDeckContainer] Clean slate active for "${promptId}". Skipping user memory hydration.`);
+        const isNewDeck = promptId.startsWith('new-') || promptId === 'new';
+
+        // Clean Slate or New Deck: Skip restoring previous user drafts to show pristine unwritten stage
+        if (isCleanSlate || isNewDeck) {
+          console.log(`[ProductionDeckContainer] Clean slate or new deck active for "${promptId}". Initializing clean blank draft.`);
+          const blankMemory = {
+            id: isNewDeck ? promptId : (promptId || 'new-production-deck'),
+            title: '',
+            description: '',
+            originalHook: '',
+            promptId: promptId,
+            status: 'draft',
+            prose: '',
+            sensoryConfig: [],
+            narratorAgeAtTime: 0,
+            age: 0,
+            dateComponents: { day: 'none', month: 'none', year: 'none' },
+            year: undefined,
+            timeframeScope: 'Year',
+            durationQuantity: 1,
+            durationUnit: 'years',
+            location: '',
+            country: '',
+            narratorLocationAtEvent: '',
+            modality: searchParams.get('modality') === 'vocal' ? 'voice' : (searchParams.get('modality') === 'scribe' ? 'pen' : null)
+          };
+          setSelectedProductionData(blankMemory);
+          setIsReady(true);
+          setIsNotFound(false);
+          lastLoadedId.current = promptId;
           return;
         }
 
@@ -280,9 +307,45 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   }, [promptId]);
 
   useEffect(() => {
+    const isCleanSlate = searchParams.get('clean_slate') === 'true';
+    const isNewDeck = promptId.startsWith('new-') || promptId === 'new';
+
+    if ((isCleanSlate || isNewDeck) && isReady && lastLoadedId.current === promptId) {
+      return;
+    }
+
     // CRITICAL: If auth is loading, or studio data is loading for an authenticated user, wait!
     // Never prematurely initialize a blank template draft while user memories are loading in flight!
-    if (authLoading || (user && studioLoading) || !chapters.length) return;
+    if (authLoading || (user && studioLoading) || !chapters.length) {
+      if ((isCleanSlate || isNewDeck) && !isReady) {
+        const blankMemory = {
+          id: isNewDeck ? promptId : (promptId || 'new-production-deck'),
+          title: '',
+          description: '',
+          originalHook: '',
+          promptId: promptId,
+          status: 'draft',
+          prose: '',
+          sensoryConfig: [],
+          narratorAgeAtTime: 0,
+          age: 0,
+          dateComponents: { day: 'none', month: 'none', year: 'none' },
+          year: undefined,
+          timeframeScope: 'Year',
+          durationQuantity: 1,
+          durationUnit: 'years',
+          location: '',
+          country: '',
+          narratorLocationAtEvent: '',
+          modality: searchParams.get('modality') === 'vocal' ? 'voice' : (searchParams.get('modality') === 'scribe' ? 'pen' : null)
+        };
+        setSelectedProductionData(blankMemory);
+        setIsReady(true);
+        setIsNotFound(false);
+        lastLoadedId.current = promptId;
+      }
+      return;
+    }
 
     const chapterPrompts = chapters.flatMap(c => c.prompts);
     const targetPromptId = resolveSceneFromPromptId(promptId)?.promptId || resolvePromptIdFromSceneId(promptId) || promptId;
@@ -342,6 +405,16 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         description: FIRST_FLIGHT_FIXTURE.description!,
         category: 'personal',
         memory: FIRST_FLIGHT_FIXTURE as any
+      } as any;
+    }
+
+    // Robust Fallback: Synthesize prompt template wrapper for Clean Slate or New Deck
+    if (!cp && (isCleanSlate || isNewDeck)) {
+      cp = {
+        id: promptId,
+        title: '',
+        description: '',
+        category: 'personal',
       } as any;
     }
 
@@ -427,11 +500,11 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         const templateId = cp?.id || promptId;
         console.log(`[ProductionDeckContainer] Initializing new production draft for template "${templateId}"`);
         
-        const draftScript = templateId ? storyScripts[templateId] : '';
+        const draftScript = (isCleanSlate || isNewDeck) ? '' : (templateId ? storyScripts[templateId] : '');
         const draftFormattedProse = draftScript ? `<p>${draftScript.split('\\n').join('</p><p>')}</p>` : '';
 
         // Hydrate dynamically using synchronous fixture registry (0ms) or resolved asynchronous template state
-        const resolvedTemplate = resolveTemplateFixture(templateId) || resolvedAsyncTemplate;
+        const resolvedTemplate = (isCleanSlate || isNewDeck) ? null : (resolveTemplateFixture(templateId) || resolvedAsyncTemplate);
         
         let initialSensoryConfig: any[] = [];
         let initialProse = draftFormattedProse;

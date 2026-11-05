@@ -389,9 +389,9 @@ export function SingleCardPromptCarousel({
     localCoordinatesOverride.year ??
     (currentSceneMemory?.dateComponents?.year && currentSceneMemory.dateComponents.year !== 'none'
       ? currentSceneMemory.dateComponents.year
-      : currentSceneMemory?.year && String(currentSceneMemory.year) !== 'none'
+      : currentSceneMemory?.year && String(currentSceneMemory.year) !== 'none' && String(currentSceneMemory.year) !== 'undefined'
       ? String(currentSceneMemory.year)
-      : String(DEFAULT_MEMORY_YEAR));
+      : (DEFAULT_MEMORY_YEAR ? String(DEFAULT_MEMORY_YEAR) : 'none'));
 
   const activeCoordinateAge =
     localCoordinatesOverride.narratorAgeAtTime ??

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (503e3557)</title>
+  <title>Master QA Verification Suite — Grouped by Route (54f6e9e9)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -70,11 +70,11 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">503e3557</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">54f6e9e9</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">503e355</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">54f6e9e</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">05 Nov 2026, 19:37 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">05 Nov 2026, 22:03 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -5606,6 +5606,7 @@
               <span>Milestone: <strong class="text-emerald-400">UX-MW-131 (Inspiration Deck &amp; Sensory Seeds)</strong></span>
             </div>
             <div class="text-[11px] text-gray-500 break-all space-y-0.5">
+              <div>Clean Slate Production Deck: https://dev.memoryweaver.studio/studio/production/new-production-deck?clean_slate=true</div>
               <div>Part VI Scene 4 Route: https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4</div>
               <div>Part I Scene 1 Route: https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1</div>
               <div>Board Route: https://dev.memoryweaver.studio/studio</div>
@@ -5728,6 +5729,14 @@
             </div>
             <div class="flex items-center gap-2 flex-wrap shrink-0">
               <a
+                href="https://dev.memoryweaver.studio/studio/production/new-production-deck?clean_slate=true"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 hover:text-purple-200 transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span>🔗 Open Clean Slate Production Deck ↗</span>
+              </a>
+              <a
                 href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=51"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -5810,7 +5819,7 @@
                   <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
                 </div>
                 <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
-                  <span class="text-sky-200">✅ <strong>51.1 — HOTFIX-MW-167 (Shared MemoryCoordinatesBar Narrative Primitive &amp; Cross-Surface Sync)</strong>: Extracted interactive Memory Coordinates (City / Venue, Country) and Memory Mark (Day, Month, Year, I Was stepper) into shared <code class="text-sky-300">MemoryCoordinatesBar.tsx</code> mounted across both Soundstage Act I and Fireside. Added two surgical guards: (1) <code class="text-sky-300">?id=part-6-scene-4&amp;qa_seed=51</code> hydrates shared default coordinates (<code class="text-sky-300">MUNICH, GERMANY (FAMILY RESIDENCE) - GERMANY - 1984 - I WAS: 5</code>) + default script text without opening blank, and (2) Fireside <code class="text-emerald-300">[ Open Studio &darr; ]</code> toast CTA routes directly to <code class="text-sky-300">/studio/production/${resolvedDocId}?act=1</code> instead of looping back to Fireside.</span>
+                  <span class="text-sky-200">✅ <strong>51.1 — HOTFIX-MW-167 (Shared MemoryCoordinatesBar Primitive &amp; Clean-Slate Parity)</strong>: Extracted interactive Memory Coordinates (City / Venue, Country) and Memory Mark (Day, Month, Year, I Was stepper) into shared <code class="text-sky-300">MemoryCoordinatesBar.tsx</code> mounted across both Soundstage Act I and Fireside. Added two surgical guards: (1) newly created decks (<code class="text-sky-300">/studio/production/new-production-deck?clean_slate=true</code>) default to empty/blank values (City: &quot;&quot;, Country: &quot;&quot;, Year: &quot;-&quot;, I Was: &quot;-&quot;) with 0ms hang, and (2) Fireside <code class="text-emerald-300">[ Open Studio &darr; ]</code> toast CTA routes directly to <code class="text-sky-300">/studio/production/${resolvedDocId}?act=1</code> instead of looping back to Fireside.</span>
                   <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
                 </div>
               </div>
@@ -7433,7 +7442,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_503e3557_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_54f6e9e9_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -10167,7 +10176,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 503e3557 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 54f6e9e9 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -10271,7 +10280,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: '503e3557',
+          commit: '54f6e9e9',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -10299,7 +10308,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_503e3557_${Date.now()}.json`;
+      a.download = `qa_master_checklist_54f6e9e9_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }

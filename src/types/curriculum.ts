@@ -240,10 +240,10 @@ export const DEFAULT_DIRECTORIAL_POLISH: DirectorialPolishMetadata = {
   vocalClarityLevel: 'studio_boost',
 };
 
-export const DEFAULT_MEMORY_LOCATION = 'Munich, Germany (Family Residence)';
-export const DEFAULT_MEMORY_COUNTRY = 'Germany';
-export const DEFAULT_MEMORY_YEAR = 1984;
-export const DEFAULT_MEMORY_AGE = 5;
+export const DEFAULT_MEMORY_LOCATION = '';
+export const DEFAULT_MEMORY_COUNTRY = '';
+export const DEFAULT_MEMORY_YEAR: number | undefined = undefined;
+export const DEFAULT_MEMORY_AGE = 0;
 
 /**
  * Strips empty HTML wrapper tags (e.g. "<p></p>", "<p><br></p>") and normalises paragraph tags to plain text
@@ -377,6 +377,7 @@ export function createEmptyCurriculumMemory(params: {
   narratorLocationAtEvent?: string;
   country?: string;
   year?: number | string;
+  dateComponents?: { day?: string; month?: string; year?: string };
   narratorAgeAtTime?: number;
   age?: number;
 }): UnifiedCurriculumMemory {
@@ -400,9 +401,9 @@ export function createEmptyCurriculumMemory(params: {
     originalHook: params.originalHook ?? params.description ?? params.prose ?? '',
     location: params.narratorLocationAtEvent || params.location || DEFAULT_MEMORY_LOCATION,
     narratorLocationAtEvent: params.narratorLocationAtEvent || params.location || DEFAULT_MEMORY_LOCATION,
-    country: params.country || DEFAULT_MEMORY_COUNTRY,
+    country: params.country && params.country !== 'none' ? params.country : DEFAULT_MEMORY_COUNTRY,
     year: params.year ?? DEFAULT_MEMORY_YEAR,
-    dateComponents: { year: String(params.year ?? DEFAULT_MEMORY_YEAR) },
+    dateComponents: params.dateComponents || (params.year ? { day: 'none', month: 'none', year: String(params.year) } : { day: 'none', month: 'none', year: 'none' }),
     narratorAgeAtTime: params.narratorAgeAtTime ?? params.age ?? DEFAULT_MEMORY_AGE,
     age: params.age ?? params.narratorAgeAtTime ?? DEFAULT_MEMORY_AGE,
     moodTag: params.moodTag,

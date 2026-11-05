@@ -20,11 +20,11 @@ describe('Card 51: Cross-Surface Metadata/Default Parity & Immediate [Save Scrip
     localStorage.clear();
   });
 
-  it('initializes identical default metadata (MUNICH, GERMANY (FAMILY RESIDENCE) - GERMANY - 1984 - I WAS: 5) and default scriptText for part-6-scene-4 so Fireside never opens blank when Soundstage has defaults', () => {
-    expect(DEFAULT_MEMORY_LOCATION).toBe('Munich, Germany (Family Residence)');
-    expect(DEFAULT_MEMORY_COUNTRY).toBe('Germany');
-    expect(DEFAULT_MEMORY_YEAR).toBe(1984);
-    expect(DEFAULT_MEMORY_AGE).toBe(5);
+  it('initializes identical blank default metadata (City: "", Country: "", Year: undefined, Age: 0) and default scriptText for part-6-scene-4 so Fireside never opens blank when Soundstage has defaults', () => {
+    expect(DEFAULT_MEMORY_LOCATION).toBe('');
+    expect(DEFAULT_MEMORY_COUNTRY).toBe('');
+    expect(DEFAULT_MEMORY_YEAR).toBeUndefined();
+    expect(DEFAULT_MEMORY_AGE).toBe(0);
 
     const defaultScript = resolveSceneDefaultScriptText('part-6-scene-4');
     expect(defaultScript).toBe(
@@ -63,12 +63,10 @@ describe('Card 51: Cross-Surface Metadata/Default Parity & Immediate [Save Scrip
       />
     );
 
-    expect(screen.getByTestId('fireside-meta-city').textContent).toBe(
-      'MUNICH, GERMANY (FAMILY RESIDENCE)'
-    );
-    expect(screen.getByTestId('fireside-meta-country').textContent).toBe('GERMANY');
-    expect(screen.getByTestId('fireside-meta-year').textContent).toBe('1984');
-    expect(screen.getByTestId('fireside-meta-age').textContent).toBe('I WAS: 5');
+    expect(screen.getByTestId('fireside-meta-city').textContent).toBe('');
+    expect(screen.getByTestId('fireside-meta-country').textContent).toBe('');
+    expect(screen.getByTestId('fireside-meta-year').textContent).toBe('');
+    expect(screen.getByTestId('fireside-meta-age').textContent).toBe('I WAS: -');
 
     const activeScriptBody = screen.getByTestId('fireside-active-script-body');
     expect(activeScriptBody.textContent).toContain(
@@ -197,7 +195,7 @@ describe('Card 51: Cross-Surface Metadata/Default Parity & Immediate [Save Scrip
     expect(onChangeAge).toHaveBeenCalledWith(4);
   });
 
-  it('Guard 1: hydrates default coordinates and scriptText for part-6-scene-4 without opening blank', () => {
+  it('Guard 1: initializes clean-slate empty coordinates and default scriptText for part-6-scene-4 without crashing or opening blank', () => {
     const memory = createEmptyCurriculumMemory({
       id: 'SCDkg0ajpYTOFH55sATU',
       userId: 'test_user',
@@ -210,10 +208,10 @@ describe('Card 51: Cross-Surface Metadata/Default Parity & Immediate [Save Scrip
       description: resolveSceneDefaultScriptText('part-6-scene-4'),
     });
 
-    expect(memory.location).toBe('Munich, Germany (Family Residence)');
-    expect(memory.country).toBe('Germany');
-    expect(memory.year).toBe(1984);
-    expect(memory.narratorAgeAtTime).toBe(5);
+    expect(memory.location).toBe('');
+    expect(memory.country).toBe('');
+    expect(memory.year).toBeUndefined();
+    expect(memory.narratorAgeAtTime).toBe(0);
     expect(memory.prose).toBe('The importance of reflection, revisiting older entries, and looking back.');
   });
 

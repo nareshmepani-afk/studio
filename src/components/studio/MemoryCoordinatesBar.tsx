@@ -336,7 +336,7 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
             </span>
             {isFireside && (
               <span className="sr-only" data-testid="fireside-meta-year">
-                {year}
+                {year && year !== 'none' && year !== 'undefined' ? year : ''}
               </span>
             )}
             {isFireside && (
