@@ -630,15 +630,6 @@ export function useCurriculumVault({
             if (!target || target === canonicalSceneId || target === sceneDef?.promptId || target === sceneIdOrPromptId) {
               const fixtureId = getQaFixtureDocId(effectiveUserId || 'qa_user', qaSeed);
               const activeMap = Object.keys(scenes).length > 0 ? scenes : scenesRef.current;
-              const existingRealMem = activeMap[canonicalSceneId] || activeMap[sceneIdOrPromptId];
-              if (
-                existingRealMem &&
-                existingRealMem.id &&
-                !existingRealMem.id.startsWith('memoir_') &&
-                !existingRealMem.id.startsWith('qa_fixture_')
-              ) {
-                return existingRealMem;
-              }
               if (activeMap[fixtureId]) {
                 return activeMap[fixtureId];
               }
@@ -1437,8 +1428,10 @@ export function useCurriculumVault({
               }
             } catch {}
           }
+          const isTargetFixture = targetDocId.startsWith('qa_fixture_');
           for (const sibId of Array.from(siblingDocIds)) {
-            if (sibId && sibId !== targetDocId && !sibId.startsWith('memoir_')) {
+            const isSibFixture = sibId.startsWith('qa_fixture_');
+            if (sibId && sibId !== targetDocId && !sibId.startsWith('memoir_') && isTargetFixture === isSibFixture) {
               const sibRef = doc(db, 'users', userId, 'memories', sibId);
               const sibPayload = { ...payload };
               if (sibId.startsWith('qa_fixture_')) {
@@ -1571,10 +1564,12 @@ export function useCurriculumVault({
 
           await setDoc(memoryDocRef, payload, { merge: true });
 
-          // Mirror update to sibling doc IDs if any
+          // Mirror update to sibling doc IDs if any (with cryptographic sandbox isolation)
           const siblingDocIds = new Set<string>(sceneDocIdsRef.current[canonicalSceneId] || []);
+          const isTargetCoordFixture = targetDocId.startsWith('qa_fixture_');
           for (const sibId of Array.from(siblingDocIds)) {
-            if (sibId && sibId !== targetDocId && !sibId.startsWith('memoir_')) {
+            const isSibFixture = sibId.startsWith('qa_fixture_');
+            if (sibId && sibId !== targetDocId && !sibId.startsWith('memoir_') && isTargetCoordFixture === isSibFixture) {
               await setDoc(doc(db, 'users', userId, 'memories', sibId), payload, { merge: true });
             }
           }
