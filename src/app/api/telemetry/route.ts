@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Direct the event directly into serverLog
+    // Direct the event directly into serverLog (GCP Cloud Logging)
     serverLog({
       message,
       severity,
@@ -32,13 +32,17 @@ export async function POST(request: NextRequest) {
       structPayload,
     });
 
-    // Also write client telemetry events to Firestore system_logs
+    // Forward elevated alerts (WARNING, ERROR, CRITICAL) to Firestore system_logs for live ops console.
+    // Routine client INFO events (e.g. typing, autosave, clicks) stream exclusively to serverLog
+    // to prevent high-frequency write churn and eliminate log chatter in Live Gateway Logs.
     const mappedSeverity = 
       severity === 'WARNING' ? 'WARNING' :
       severity === 'ERROR' ? 'ERROR' :
       severity === 'CRITICAL' ? 'CRITICAL' : 'INFO';
       
-    await logToDb(`[ClientTelemetry] ${message}`, mappedSeverity);
+    if (mappedSeverity !== 'INFO') {
+      await logToDb(`[ClientTelemetry] ${message}`, mappedSeverity);
+    }
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {

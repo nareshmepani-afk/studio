@@ -2,11 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import React from 'react';
 import { serverLog } from '../utils/telemetry/serverLogger';
+import { logToDb } from '../utils/telemetry/dbLogger';
 import { useJourneyLogger } from '../hooks/telemetry/useJourneyLogger';
 import { TelemetryProvider } from '../components/providers/TelemetryProvider';
 import { POST } from '../app/api/telemetry/route';
 import { middleware } from '../middleware';
 import { NextRequest, NextResponse } from 'next/server';
+
+vi.mock('../utils/telemetry/dbLogger', () => ({
+  logToDb: vi.fn().mockResolvedValue(undefined),
+}));
 
 // Mock console methods to verify output without polluting stdout
 const originalLog = console.log;
@@ -111,6 +116,40 @@ describe('Unified Telemetry & Distributed Tracing (MW-64)', () => {
 
       const res = await POST(mockReq);
       expect(res.status).toBe(400);
+    });
+
+    it('silences routine client INFO events from Firestore logToDb while streaming to serverLog (Option B)', async () => {
+      vi.mocked(logToDb).mockClear();
+      const mockReq = new NextRequest('http://localhost:3000/api/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'FIRESIDE_PROSE_EDITED',
+          severity: 'INFO',
+          userContext: { userId: 'user-789' },
+        }),
+      });
+
+      const res = await POST(mockReq);
+      expect(res.status).toBe(200);
+      expect(logToDb).not.toHaveBeenCalled();
+    });
+
+    it('routes elevated client WARNING/ERROR/CRITICAL alerts to Firestore logToDb', async () => {
+      vi.mocked(logToDb).mockClear();
+      const mockReq = new NextRequest('http://localhost:3000/api/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'WEBRTC_CONNECTION_FAILED',
+          severity: 'ERROR',
+          userContext: { userId: 'user-789' },
+        }),
+      });
+
+      const res = await POST(mockReq);
+      expect(res.status).toBe(200);
+      expect(logToDb).toHaveBeenCalledWith('[ClientTelemetry] WEBRTC_CONNECTION_FAILED', 'ERROR');
     });
   });
 
