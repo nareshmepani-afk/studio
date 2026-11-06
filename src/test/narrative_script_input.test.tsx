@@ -174,7 +174,7 @@ describe('SPEC-MW-134: NarrativeScriptInput Dual-Layer & Scribe Suite', () => {
       expect(screen.getByText(/UK English standard: use "colour"/)).toBeInTheDocument();
     });
 
-    it('renders mobile drawer toggle pill when marginVariant is drawer', () => {
+    it('renders mobile drawer toggle pill with open/close affordance when marginVariant is drawer', () => {
       render(
         <NarrativeScriptInput
           value="The color was vibrant."
@@ -187,6 +187,34 @@ describe('SPEC-MW-134: NarrativeScriptInput Dual-Layer & Scribe Suite', () => {
       const toggleBtn = screen.getByTestId('toggle-scribes-margin-btn');
       expect(toggleBtn).toBeInTheDocument();
       expect(toggleBtn.textContent).toContain('✨ 1 Scribe Note');
+      expect(toggleBtn.textContent).toContain('▼ Open Margin');
+
+      // Click to open drawer
+      fireEvent.click(toggleBtn);
+      expect(toggleBtn.textContent).toContain('▲ Close');
+      expect(screen.getByTestId('scribes-margin')).toBeInTheDocument();
+    });
+
+    it('renders Scribe Clean with open affordance for diaspora heritage terms and reveals Voice Protected', () => {
+      render(
+        <NarrativeScriptInput
+          value="We lit the diya at the mandir and shared masala chai with warm roti and samosas."
+          onChange={() => {}}
+          marginVariant="drawer"
+          showScribesMargin={false}
+        />
+      );
+
+      const toggleBtn = screen.getByTestId('toggle-scribes-margin-btn');
+      expect(toggleBtn).toBeInTheDocument();
+      expect(toggleBtn.textContent).toContain('✨ Scribe Clean');
+      expect(toggleBtn.textContent).toContain('▼ Open Margin');
+
+      // Open drawer to inspect Scribe Notes (0) and Voice Protected
+      fireEvent.click(toggleBtn);
+      expect(screen.getByTestId('scribes-margin')).toBeInTheDocument();
+      expect(screen.getByText(/Voice Protected/)).toBeInTheDocument();
+      expect(screen.getByText(/Your narrative is clean, breathable, and aligned with UK English standards/)).toBeInTheDocument();
     });
   });
 });

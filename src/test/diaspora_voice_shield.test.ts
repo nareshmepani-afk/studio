@@ -36,9 +36,13 @@ describe('SPEC-MW-134 & Rule 20 / Rule 45: Diaspora Voice Shield & UK Orthograph
       expect(isProtectedDiasporaTerm('docklands')).toBe(true);
     });
 
-    it('handles punctuation and whitespace gracefully', () => {
+    it('handles punctuation, whitespace, and plural inflections (-s, -es)', () => {
       expect(isProtectedDiasporaTerm('"mandir"')).toBe(true);
       expect(isProtectedDiasporaTerm('chai,')).toBe(true);
+      expect(isProtectedDiasporaTerm('samosas')).toBe(true);
+      expect(isProtectedDiasporaTerm('rotis')).toBe(true);
+      expect(isProtectedDiasporaTerm('diyas')).toBe(true);
+      expect(isProtectedDiasporaTerm('mandirs')).toBe(true);
       expect(isProtectedDiasporaTerm('nonexistentterm12345')).toBe(false);
     });
   });

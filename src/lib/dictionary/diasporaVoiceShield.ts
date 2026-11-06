@@ -98,7 +98,11 @@ export const DIASPORA_LEXICON: Set<string> = new Set(
 export function isProtectedDiasporaTerm(term: string): boolean {
   if (!term) return false;
   const clean = term.toLowerCase().replace(new RegExp('^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{N}]+$', 'gu'), '');
-  return DIASPORA_LEXICON.has(clean);
+  if (DIASPORA_LEXICON.has(clean)) return true;
+  // Handle regular plural inflections (-s, -es) for diaspora heritage terms (e.g. samosas, rotis, diyas, mandirs)
+  if (clean.endsWith('s') && DIASPORA_LEXICON.has(clean.slice(0, -1))) return true;
+  if (clean.endsWith('es') && DIASPORA_LEXICON.has(clean.slice(0, -2))) return true;
+  return false;
 }
 
 // ---------------------------------------------------------------------------

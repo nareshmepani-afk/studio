@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (7bbb4ea8)</title>
+  <title>Master QA Verification Suite — Grouped by Route (0466f364)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -70,11 +70,11 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">7bbb4ea8</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">0466f364</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">7bbb4ea</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">0466f36</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">06 Nov 2026, 17:31 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">06 Nov 2026, 18:07 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -7077,9 +7077,10 @@
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, click <strong class="text-purple-300">[ ✨ 1 Scribe Note ]</strong> directly below the textarea to open <strong>The Scribe&apos;s Margin</strong> drawer.</div>
-                      <div>2. Append this sentence at the end of the courtyard passage: <code class="text-stone-200">&ldquo;We lit the diya at the mandir and shared masala chai with warm roti and samosas.&rdquo;</code></div>
-                      <div>3. Inspect <strong>Scribe Notes</strong> inside The Scribe&apos;s Margin drawer: confirm none of the heritage words (<code class="text-emerald-300">diya, mandir, masala, chai, roti, samosas</code>) are flagged as errors.</div>
+                      <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, tap the purple Scribe toggle button (<strong class="text-purple-300">[ ✨ Scribe Clean ▼ Open Margin ]</strong> or <strong class="text-purple-300">[ ✨ 1 Scribe Note ▼ Open Margin ]</strong>) directly beneath the textarea to open <strong>The Scribe&apos;s Margin</strong> drawer.</div>
+                      <div>2. Enter the South Asian heritage sentence (either append to courtyard passage or replace script): <code class="text-stone-200">&ldquo;We lit the diya at the mandir and shared masala chai with warm roti and samosas.&rdquo;</code></div>
+                      <div>3. Inside the opened <strong>Scribe&apos;s Margin</strong> drawer, confirm <strong>Scribe Notes (0)</strong> reports <span class="text-emerald-400 font-bold">🛡️ Voice Protected: Your narrative is clean, breathable, and aligned with UK English standards</span>. None of the heritage terms (<code class="text-emerald-300">diya, mandir, masala, chai, roti, samosas</code>) are flagged as spelling or cliché mistakes.</div>
+                      <div class="text-stone-400 text-[10px] italic">💡 Clarification: The amber gold underline on <code class="text-amber-300">chai</code> is an intended <strong>Aroma Sensory Anchor</strong> (visible in Live Sensory Anchors above editor), NOT a spelling error or Scribe warning.</div>
                     </div>
                   </div>
                 </div>
@@ -7257,7 +7258,7 @@
             <div id="punchlist-container-52" class="mt-3 pt-3 border-t border-amber-500/25 bg-amber-950/20 rounded-xl p-3 space-y-2">
               <div class="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
                 <span class="flex items-center gap-1.5">🥊 In-Flight Punch-List Resolutions (Test 52)</span>
-                <span id="punchlist-badge-52" class="text-[10px] text-amber-300/70 font-mono">3/3 verified</span>
+                <span id="punchlist-badge-52" class="text-[10px] text-amber-300/70 font-mono">4/4 verified</span>
               </div>
               <div id="punchlist-items-52" class="space-y-1.5">
                 <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
@@ -7270,6 +7271,10 @@
                 </div>
                 <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
                   <span class="text-amber-200">✅ <strong>Punch-List 52.2 (Live Gateway Logs Telemetry Flood Suppression)</strong>: Filtered routine client INFO events in <code>/api/telemetry/route.ts</code> to prevent Fireside autosave chatter from flooding the Firestore <code>system_logs</code> collection and the Admin DevOps Live Gateway Logs console, while preserving 100% of telemetry traces in Google Cloud Logging.</span>
+                  <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
+                </div>
+                <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
+                  <span class="text-amber-200">✅ <strong>Punch-List 52.3 (Scribe Drawer Toggle Affordance &amp; Plural Diaspora Shielding)</strong>: Enhanced Scribe toggle button with open/close chevron affordance (<code>✨ Scribe Clean ▼ Open Margin</code> / <code>▲ Close</code>), added plural inflection support (<code>-s</code>, <code>-es</code>) in <code>diasporaVoiceShield.ts</code> (<code>samosas</code>, <code>rotis</code>, <code>diyas</code>, <code>mandirs</code>), and clarified Item 52.3 instructions distinguishing the amber Aroma sensory underline on <code>chai</code> from Scribe warnings.</span>
                   <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
                 </div>
               </div>
@@ -8929,7 +8934,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_7bbb4ea8_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_0466f364_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -11679,7 +11684,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 7bbb4ea8 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 0466f364 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -11783,7 +11788,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: '7bbb4ea8',
+          commit: '0466f364',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -11811,7 +11816,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_7bbb4ea8_${Date.now()}.json`;
+      a.download = `qa_master_checklist_0466f364_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }

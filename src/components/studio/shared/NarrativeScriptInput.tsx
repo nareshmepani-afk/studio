@@ -550,13 +550,22 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
                 type="button"
                 data-testid="toggle-scribes-margin-btn"
                 onClick={() => setIsMarginOpen(!isMarginOpen)}
-                className="px-2.5 py-1 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5 transition cursor-pointer"
+                title={isMarginOpen ? "Close Scribe's Margin drawer" : "Open Scribe's Margin & Cadence HUD drawer"}
+                className={cn(
+                  "px-2.5 py-1 rounded-xl border flex items-center gap-1.5 transition cursor-pointer font-bold",
+                  isMarginOpen
+                    ? "bg-purple-500/25 text-purple-200 border-purple-400/80 shadow-sm shadow-purple-500/20"
+                    : "bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border-purple-500/30"
+                )}
               >
                 <Sparkles className="w-3.5 h-3.5 text-purple-400" />
                 <span>
                   {suggestions.length > 0
                     ? `✨ ${suggestions.length} Scribe Note${suggestions.length > 1 ? 's' : ''}`
                     : '✨ Scribe Clean'}
+                </span>
+                <span className="text-[10px] text-purple-400/80 font-normal ml-0.5">
+                  {isMarginOpen ? '▲ Close' : '▼ Open Margin'}
                 </span>
               </button>
 
