@@ -426,7 +426,13 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
     }, [value, minHeight]);
 
     return (
-      <div className={cn('w-full flex flex-col lg:flex-row items-start gap-4', className)}>
+      <div
+        className={cn(
+          'w-full flex flex-col',
+          marginVariant === 'dock' ? 'lg:flex-row items-start gap-4' : 'items-stretch gap-3',
+          className
+        )}
+      >
         {/* MAIN DUAL-LAYER ZERO-DRIFT CANVAS */}
         <div className="flex-1 w-full space-y-2">
           <div
@@ -577,17 +583,25 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
           )}
         </div>
 
-        {/* SIDE-BY-SIDE SCRIBE'S MARGIN (Desktop Dock or Active Drawer) */}
+        {/* SCRIBE'S MARGIN (Desktop Dock or Collapsible Full-Width Drawer) */}
         {(showScribesMargin || (marginVariant === 'drawer' && isMarginOpen)) && (
-          <ScribesMargin
-            metrics={metrics}
-            suggestions={suggestions}
-            onApplySuggestion={applySuggestion}
-            onInsertCadenceMarker={insertCadenceMarker}
-            variant={marginVariant}
-            isOpen={isMarginOpen}
-            onClose={marginVariant === 'drawer' ? () => setIsMarginOpen(false) : undefined}
-          />
+          <div
+            className={cn(
+              marginVariant === 'drawer'
+                ? 'w-full pt-1'
+                : 'w-full lg:w-[280px] shrink-0'
+            )}
+          >
+            <ScribesMargin
+              metrics={metrics}
+              suggestions={suggestions}
+              onApplySuggestion={applySuggestion}
+              onInsertCadenceMarker={insertCadenceMarker}
+              variant={marginVariant}
+              isOpen={isMarginOpen}
+              onClose={marginVariant === 'drawer' ? () => setIsMarginOpen(false) : undefined}
+            />
+          </div>
         )}
       </div>
     );

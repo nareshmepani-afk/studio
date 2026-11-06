@@ -193,6 +193,8 @@ describe('SPEC-MW-134: NarrativeScriptInput Dual-Layer & Scribe Suite', () => {
       fireEvent.click(toggleBtn);
       expect(toggleBtn.textContent).toContain('▲ Close');
       expect(screen.getByTestId('scribes-margin')).toBeInTheDocument();
+      // Ensure drawer maintains clean vertical column layout and does not split side-by-side
+      expect(toggleBtn.closest('div.w-full.flex')?.className).not.toContain('lg:flex-row');
     });
 
     it('renders Scribe Clean with open affordance for diaspora heritage terms and reveals Voice Protected', () => {

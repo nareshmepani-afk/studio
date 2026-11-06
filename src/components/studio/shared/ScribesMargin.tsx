@@ -71,7 +71,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
       className={cn(
         'flex flex-col bg-[#0e0d0c] border border-stone-800 rounded-2xl p-4 text-xs font-mono text-stone-300 shadow-xl',
         variant === 'dock' && 'w-full lg:w-[280px] shrink-0 space-y-4',
-        variant === 'drawer' && 'w-full max-w-md mx-auto space-y-4 border-amber-500/30',
+        variant === 'drawer' && 'w-full space-y-4 border-amber-500/30 shadow-2xl',
         variant === 'card' && 'w-full space-y-3',
         className
       )}
