@@ -38,8 +38,8 @@ function decodeHtml(str: string) {
 export async function seedQaFirestore() {
   const htmlPath = path.resolve(process.cwd(), 'qa_checklist_interactive.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
-  // Card 55 updated to 6 items (GOV-MW-163)
-  const cardItemCounts: Record<number, number> = { 53: 10, 54: 5, 55: 6, 56: 5, 57: 5, 58: 5, 59: 5 };
+  // Card 55 updated to 6 items (GOV-MW-163); Cards 11, 35, 42, 49, 50, 51, 52 upgraded to sub-item standard (GOV-MW-170)
+  const cardItemCounts: Record<number, number> = { 11: 3, 35: 6, 42: 3, 49: 7, 50: 7, 51: 5, 52: 8, 53: 10, 54: 5, 55: 6, 56: 5, 57: 5, 58: 5, 59: 5 };
 
   console.log('📖 Fetching existing docs from memory-weaver-dev to ensure idempotency...');
   const snap = await getDocs(collection(db, COLLECTION_PATH));
@@ -138,6 +138,7 @@ export async function seedQaFirestore() {
             title: itemTitle,
             targetRoute: itemRoute,
             steps: [`Execute staging verification against ${itemRoute}`],
+            ...(cardNum === 51 ? { verdict: 'PASS' } : {}),
             testerPersona: {
               testerEmail: 'nareshmepani@hotmail.com',
               testerUid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2',
@@ -149,7 +150,7 @@ export async function seedQaFirestore() {
 
         let verdict = 'PENDING';
         if (['56.1', '56.2', '56.3', '56.4', '56.5'].includes(itemId)) verdict = 'PASS';
-        if (cardNum === 57 || cardNum === 58) verdict = 'PASS';
+        if (cardNum === 51 || cardNum === 57 || cardNum === 58) verdict = 'PASS';
         if (itemId === '59.5') verdict = 'PASS';
 
         const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
@@ -181,6 +182,7 @@ export async function seedQaFirestore() {
           title: cardTitle,
           targetRoute: cardRoute,
           steps: [`Execute staging verification against ${cardRoute}`],
+          ...(cardNum === 51 ? { verdict: 'PASS' } : {}),
         }, { merge: true });
       } else {
         batch.set(parentRef, {
@@ -189,7 +191,7 @@ export async function seedQaFirestore() {
           title: cardTitle,
           steps: [`Execute staging verification against ${cardRoute}`],
           targetRoute: cardRoute,
-          verdict: (cardNum === 57 || cardNum === 58) ? 'PASS' : 'PENDING',
+          verdict: (cardNum === 51 || cardNum === 57 || cardNum === 58) ? 'PASS' : 'PENDING',
           notes: '',
           telemetryTrace: '',
           screenshots: [],
