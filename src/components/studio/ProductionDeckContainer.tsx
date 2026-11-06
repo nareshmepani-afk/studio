@@ -309,8 +309,9 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   useEffect(() => {
     const isCleanSlate = searchParams.get('clean_slate') === 'true';
     const isNewDeck = promptId.startsWith('new-') || promptId === 'new';
+    const qaSeed = searchParams.get('qa_seed');
 
-    if ((isCleanSlate || isNewDeck) && isReady && lastLoadedId.current === promptId) {
+    if ((isCleanSlate || isNewDeck || Boolean(qaSeed)) && isReady && lastLoadedId.current === promptId) {
       return;
     }
 
@@ -356,9 +357,15 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     if (cp) {
       cp = { ...cp };
     } else if (memories) {
-      const matchedMemory = memories.find(
-        m => m.id === promptId || m.promptId === promptId || m.promptId === targetPromptId || (m as any).sceneId === promptId
-      );
+      let matchedMemory = null;
+      if (qaSeed && user?.uid) {
+        const fixtureId = getQaFixtureDocId(user.uid, qaSeed);
+        matchedMemory = memories.find((m) => m.id === fixtureId);
+      } else {
+        matchedMemory = memories.find(
+          (m) => m.id === promptId || m.promptId === promptId || m.promptId === targetPromptId || (m as any).sceneId === promptId
+        );
+      }
       if (matchedMemory) {
         // Trace backward: Follow the chain of memory promptIds recursively until we find a match in static templates
         let currentPromptId = matchedMemory.promptId;
