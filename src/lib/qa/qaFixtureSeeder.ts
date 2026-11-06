@@ -1,5 +1,39 @@
 import { Memory } from '@/types';
 import { getSceneById, resolveSceneFromPromptId, MasterStoryScene } from '@/lib/curriculum/masterStoryStructure';
+import { resolveSceneDefaultScriptText } from '@/types/curriculum';
+
+/**
+ * Canonical 81-word multi-line dataset for Card 52 (?qa_seed=52, SPEC-MW-134):
+ * - 3 Live Sensory Anchors: Soundscape ("quiet"), Visual ("generations"), Aroma ("aroma")
+ * - 81 words / ~41s spoken at 120 WPM elder cadence
+ * - 1 Pre-active Breath Run Scribe Note (29-word 4th sentence > 24 words)
+ */
+export const QA_SEED_52_PROSE =
+  'As evening fell over the courtyard, the quiet sound of temple bells drifted through the open windows. I held the worn brass compass in my hands, feeling its cool, weathered surface against my palms. From the kitchen came the rich aroma of cardamom and roasting spices, filling the room with familiar warmth. Under the soft golden lamplight, three generations gathered together around the table to turn the delicate pages of the family journal, passing forward our favourite traditions and hard-won memories.';
+
+/**
+ * Canonical 3-sentence dataset for Card 53 (?qa_seed=53, ARCH-MW-136):
+ * - Sentence 1 (15 words -> <=20w subtle stone badge)
+ * - Sentence 2 (23 words -> 21-28w emerald "Optimal" badge)
+ * - Sentence 3 (31 words -> >28w amber "Add Breath //" badge)
+ */
+export const QA_SEED_53_PROSE =
+  'The history I carry is an epic journey across oceans and generations of our family. From the quiet courtyard of our earliest childhood home, the sound of morning prayers drifted softly through the open shutters into the garden. Every evening my grandparents gathered us around the wooden table where cardamom tea simmered on the stove and shared the stories of how they crossed the ocean to build a new life.';
+
+/**
+ * Resolves the deterministic default script prose for a QA seed and scene so that
+ * the test instructions and actual live dataset match 100% across Fireside and Desktop Soundstage.
+ */
+export function resolveQaSeedDefaultProse(qaSeed?: string | null, sceneIdOrPromptId?: string | null): string {
+  const cleanSeed = String(qaSeed || '').trim();
+  if (cleanSeed === '52' || cleanSeed.startsWith('52.') || cleanSeed.startsWith('52_')) {
+    return QA_SEED_52_PROSE;
+  }
+  if (cleanSeed === '53' || cleanSeed.startsWith('53.') || cleanSeed.startsWith('53_')) {
+    return QA_SEED_53_PROSE;
+  }
+  return resolveSceneDefaultScriptText(sceneIdOrPromptId);
+}
 
 /**
  * 🧪 QA Sandbox Fixture Seeder & Isolation Engine (GOV-MW-163)
@@ -69,6 +103,7 @@ export function createQaFixtureMemory(config: QaFixtureConfig): Memory {
   const { itemId, userId, sceneId, promptId, initialProse, initialStatus, productionStage } = config;
   const fixtureId = getQaFixtureDocId(userId, itemId);
   const resolvedScene = resolveCanonicalSceneFallback(sceneId || promptId);
+  const resolvedProse = initialProse ?? resolveQaSeedDefaultProse(itemId, resolvedScene.id);
 
   return {
     id: fixtureId,
@@ -76,9 +111,9 @@ export function createQaFixtureMemory(config: QaFixtureConfig): Memory {
     promptId: resolvedScene.promptId,
     sceneId: resolvedScene.id,
     title: resolvedScene.title,
-    prose: initialProse || '',
-    description: initialProse || resolvedScene.subtitle,
-    originalHook: initialProse || '',
+    prose: resolvedProse || '',
+    description: resolvedProse || resolvedScene.subtitle,
+    originalHook: resolvedProse || '',
     status: (initialStatus as any) || 'draft',
     productionStage: productionStage ?? 0,
     actsCompleted: [],

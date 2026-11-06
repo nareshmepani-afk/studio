@@ -5,6 +5,9 @@ import {
   createQaFixtureMemory,
   isSafeQaFixtureForCleanup,
   filterQaFixturesForCleanup,
+  resolveQaSeedDefaultProse,
+  QA_SEED_52_PROSE,
+  QA_SEED_53_PROSE,
 } from '@/lib/qa/qaFixtureSeeder';
 
 describe('QA Fixture Seeder & Isolation Engine (GOV-MW-163)', () => {
@@ -163,6 +166,27 @@ describe('QA Fixture Seeder & Isolation Engine (GOV-MW-163)', () => {
       // Authentic memory doc must NEVER be marked safe for cleanup
       expect(isSafeQaFixtureForCleanup(AUTHENTIC_DOC_ID, { isQATestFixture: true })).toBe(false);
       expect(isSafeQaFixtureForCleanup(AUTHENTIC_DOC_ID, { isQATestFixture: false })).toBe(false);
+    });
+
+    it('resolves deterministic 81-word courtyard dataset for Card 52 (?qa_seed=52) while keeping Card 51 (?qa_seed=51) on default reflection subtitle', () => {
+      const seed52Prose = resolveQaSeedDefaultProse('52', 'part-6-scene-4');
+      expect(seed52Prose).toBe(QA_SEED_52_PROSE);
+      expect(seed52Prose).toContain('As evening fell over the courtyard, the quiet sound of temple bells');
+      expect(seed52Prose).toContain('aroma');
+      expect(seed52Prose).toContain('generations');
+
+      const fixture52 = createQaFixtureMemory({
+        itemId: '52',
+        userId: TESTER_UID,
+        sceneId: 'part-6-scene-4',
+      });
+      expect(fixture52.prose).toBe(QA_SEED_52_PROSE);
+
+      const seed53Prose = resolveQaSeedDefaultProse('53', 'part-1-scene-1');
+      expect(seed53Prose).toBe(QA_SEED_53_PROSE);
+
+      const seed51Prose = resolveQaSeedDefaultProse('51', 'part-6-scene-4');
+      expect(seed51Prose).toBe('The importance of reflection, revisiting older entries, and looking back.');
     });
   });
 });

@@ -128,7 +128,8 @@ export async function runLivePersonaDiagnostic(): Promise<void> {
     const populatedScenes = new Map<string, { docId: string; proseLen: number }>();
     userMemsSnap.forEach((d) => {
       const data = d.data();
-      if (data.sceneId && data.prose) {
+      const isQaFixture = d.id.startsWith('qa_fixture_') || Boolean(data.isQATestFixture) || Boolean(data.isTestFixture);
+      if (data.sceneId && data.prose && !isQaFixture) {
         populatedScenes.set(data.sceneId, { docId: d.id, proseLen: data.prose.length });
       }
     });

@@ -603,9 +603,12 @@ export function SingleCardPromptCarousel({
     let initialDraft = activeProse;
     if (!initialDraft && typeof window !== 'undefined') {
       try {
-        const backup = localStorage.getItem(`mw_draft_${targetSceneId}`) || localStorage.getItem(`draft_hook_${targetSceneId}`);
-        if (backup && backup.trim()) {
-          initialDraft = backup.trim();
+        const sp = new URLSearchParams(window.location.search);
+        if (sp.get('clean_slate') !== 'true' && !sp.get('qa_seed')) {
+          const backup = localStorage.getItem(`mw_draft_${targetSceneId}`) || localStorage.getItem(`draft_hook_${targetSceneId}`);
+          if (backup && backup.trim()) {
+            initialDraft = backup.trim();
+          }
         }
       } catch (_) {}
     }

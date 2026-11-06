@@ -162,9 +162,20 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
     const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Ephemeral Local Scratchpad Key (ARCH-MW-136: 0ms Keystroke Buffer)
-    const scratchpadKey = enableLocalScratchpad && syncSceneId
-      ? (userId ? `mw_draft_${userId}_${syncSceneId}` : `mw_draft_${syncSceneId}`)
-      : null;
+    const scratchpadKey = useMemo(() => {
+      if (!enableLocalScratchpad || !syncSceneId) return null;
+      if (typeof window !== 'undefined') {
+        try {
+          const sp = new URLSearchParams(window.location.search);
+          if (sp.get('clean_slate') === 'true') return null;
+          const qaSeed = sp.get('qa_seed');
+          if (qaSeed) {
+            return `mw_draft_qa_${qaSeed}_${syncSceneId}`;
+          }
+        } catch {}
+      }
+      return userId ? `mw_draft_${userId}_${syncSceneId}` : `mw_draft_${syncSceneId}`;
+    }, [enableLocalScratchpad, syncSceneId, userId]);
 
     // Unique per window/tab instance ID for BroadcastChannel origin tagging
     const instanceIdRef = useRef<string>(
@@ -177,10 +188,14 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
     const channelRef = useRef<BroadcastChannel | null>(null);
     const hasRehydratedRef = useRef(false);
 
-    // Rehydrate scratchpad on mount if local draft exists and is newer/fuller
+    // Rehydrate scratchpad on mount if local draft exists and is newer/fuller (never overwrite deterministic QA seeds or clean_slate)
     useEffect(() => {
       if (!scratchpadKey || hasRehydratedRef.current || typeof window === 'undefined') return;
       try {
+        const sp = new URLSearchParams(window.location.search);
+        if (sp.get('clean_slate') === 'true' || sp.get('qa_seed')) {
+          return;
+        }
         const saved = localStorage.getItem(scratchpadKey);
         if (saved && saved.trim().length > 0 && saved !== value) {
           const isDefault = !value || value.trim().length === 0 ||

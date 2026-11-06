@@ -50,7 +50,7 @@ import {
 export { resolveEditingAuthority, DEFAULT_MEMORY_LOCATION, DEFAULT_MEMORY_COUNTRY, DEFAULT_MEMORY_YEAR, DEFAULT_MEMORY_AGE, resolveSceneDefaultScriptText } from '@/types/curriculum';
 export type { StoryMoodTag, EditingAuthority, SurfaceOrigin, MemoirReel, MemoirTakeStatus } from '@/types/curriculum';
 import { sanitizeMemoryPayloadForStorage } from '@/lib/memoryPersistenceGuard';
-import { getQaFixtureDocId } from '@/lib/qa/qaFixtureSeeder';
+import { getQaFixtureDocId, resolveQaSeedDefaultProse } from '@/lib/qa/qaFixtureSeeder';
 
 export interface UseCurriculumVaultOptions {
   userId?: string | null;
@@ -322,13 +322,19 @@ export function useCurriculumVault({
               return;
             }
 
+            const isQaFixtureDoc =
+              docSnap.id.startsWith('qa_fixture_') ||
+              Boolean(data.isQATestFixture) ||
+              Boolean(data.isTestFixture);
             const rawIdentifier = data.sceneId || data.promptId || docSnap.id;
             const sceneDef = resolveSceneFromPromptId(rawIdentifier) || getSceneById(rawIdentifier);
             const canonicalSceneId = sceneDef?.id || data.sceneId || docSnap.id;
-            if (!loadedDocIdsByScene[canonicalSceneId]) {
-              loadedDocIdsByScene[canonicalSceneId] = new Set<string>();
+            if (!isQaFixtureDoc) {
+              if (!loadedDocIdsByScene[canonicalSceneId]) {
+                loadedDocIdsByScene[canonicalSceneId] = new Set<string>();
+              }
+              loadedDocIdsByScene[canonicalSceneId].add(docSnap.id);
             }
-            loadedDocIdsByScene[canonicalSceneId].add(docSnap.id);
             const mappedPromptId = data.promptId || sceneDef?.promptId;
 
             // Harmonise productionStage <-> actsCompleted
@@ -485,6 +491,12 @@ export function useCurriculumVault({
               createdAt: data.createdAt || new Date().toISOString(),
             };
 
+            // QA Sandbox Fixture Shield: never index qa_fixture_* documents under canonicalSceneId or mappedPromptId
+            if (isQaFixtureDoc) {
+              loadedScenes[docSnap.id] = normalized;
+              return;
+            }
+
             // Candidate Resolution Shield: if multiple docs exist for the same scene, retain the completed/newest one
             const existing = loadedScenes[canonicalSceneId];
             if (existing) {
@@ -630,10 +642,21 @@ export function useCurriculumVault({
             if (!target || target === canonicalSceneId || target === sceneDef?.promptId || target === sceneIdOrPromptId) {
               const fixtureId = getQaFixtureDocId(effectiveUserId || 'qa_user', qaSeed);
               const activeMap = Object.keys(scenes).length > 0 ? scenes : scenesRef.current;
+              const defaultScript = resolveQaSeedDefaultProse(qaSeed, canonicalSceneId);
               if (activeMap[fixtureId]) {
-                return activeMap[fixtureId];
+                const existingFixture = activeMap[fixtureId];
+                const isSpecializedSeed = qaSeed === '52' || qaSeed.startsWith('52.') || qaSeed === '53' || qaSeed.startsWith('53.');
+                const genericDefault = resolveSceneDefaultScriptText(canonicalSceneId);
+                if (isSpecializedSeed && (!existingFixture.prose || existingFixture.prose === genericDefault)) {
+                  return {
+                    ...existingFixture,
+                    prose: defaultScript,
+                    description: defaultScript,
+                    originalHook: defaultScript,
+                  };
+                }
+                return existingFixture;
               }
-              const defaultScript = resolveSceneDefaultScriptText(canonicalSceneId);
               return {
                 ...createEmptyCurriculumMemory({
                   id: fixtureId,
@@ -724,6 +747,22 @@ export function useCurriculumVault({
 
   const resolveDocIdForScene = useCallback(
     (sceneId: string): string => {
+      // 0. QA Sandbox Seed Override (GOV-MW-163) — Must run FIRST so ?qa_seed=N never overwrites authentic memories!
+      if (typeof window !== 'undefined') {
+        try {
+          const searchParams = new URLSearchParams(window.location.search);
+          const qaSeed = searchParams.get('qa_seed');
+          if (qaSeed) {
+            const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+            const canonicalSceneId = sceneDef?.id || sceneId;
+            const target = searchParams.get('id') || searchParams.get('prompt') || null;
+            if (!target || target === canonicalSceneId || target === sceneDef?.promptId || target === sceneId) {
+              return getQaFixtureDocId(effectiveUserId || 'qa_user', qaSeed);
+            }
+          }
+        } catch {}
+      }
+
       // 1. Unified Document Lookup: Always prefer an existing authentic Firestore document ID (e.g. SCDkg0ajpYTOFH55sATU)
       const activeMap = Object.keys(scenesRef.current).length > 0 ? scenesRef.current : scenes;
       const resolvedSceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
@@ -739,21 +778,6 @@ export function useCurriculumVault({
         if (cand.id && !cand.id.startsWith('memoir_') && !cand.id.startsWith('qa_fixture_')) {
           return cand.id;
         }
-      }
-      // QA Sandbox Seed Override (GOV-MW-163)
-      if (typeof window !== 'undefined') {
-        try {
-          const searchParams = new URLSearchParams(window.location.search);
-          const qaSeed = searchParams.get('qa_seed');
-          if (qaSeed) {
-            const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
-            const canonicalSceneId = sceneDef?.id || sceneId;
-            const target = searchParams.get('id') || searchParams.get('prompt') || null;
-            if (!target || target === canonicalSceneId || target === sceneDef?.promptId || target === sceneId) {
-              return getQaFixtureDocId(effectiveUserId || 'qa_user', qaSeed);
-            }
-          }
-        } catch {}
       }
 
       // Unified lookup

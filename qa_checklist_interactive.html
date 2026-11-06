@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (c315751b)</title>
+  <title>Master QA Verification Suite — Grouped by Route (0e88ddf2)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -70,11 +70,11 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">c315751b</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">0e88ddf2</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">c315751</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">0e88ddf</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">06 Nov 2026, 08:24 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">06 Nov 2026, 14:15 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -6829,15 +6829,15 @@
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1 text-gray-400">
                 <div class="space-y-0.5">
-                  <div class="text-emerald-400 font-semibold">Bucket 2: Isolated Sandbox Fixture (?qa_seed=52):</div>
-                  <div>Fixture Doc: <code class="text-gray-200">qa_fixture_TQdB395kXxaAGPhFxk1LVWuT8cg2_52</code></div>
-                  <div>Target Scene: <code class="text-gray-200">part-6-scene-4</code> (&quot;The Story Continues&quot;)</div>
-                  <div>Scope: <span class="text-purple-300">Items 52.1, 52.3, 52.4, 52.5, 52.6, 52.7 (Typing, Orthography, Cadence)</span></div>
+                  <div class="text-emerald-400 font-semibold">Bucket 2: Seeded 81-Word Courtyard Fixture (?qa_seed=52):</div>
+                  <div>Fixture Doc: <code class="text-gray-200">qa_fixture_TQdB395kXxaAGPhFxk1LVWuT8cg2_52</code> (&quot;The Story Continues&quot;)</div>
+                  <div>Seeded Prose: <code class="text-amber-200">&ldquo;As evening fell over the courtyard, the quiet sound of temple bells drifted through the open windows...&rdquo;</code> (81 words, ~41s spoken)</div>
+                  <div>Live Sensory Anchors: <span class="text-sky-300">🎧 Soundscape (1) &ldquo;quiet&rdquo;</span> &bull; <span class="text-emerald-300">👁️ Visual (1) &ldquo;generations&rdquo;</span> &bull; <span class="text-amber-300">☕ Aroma (1) &ldquo;aroma&rdquo;</span></div>
                 </div>
                 <div class="space-y-0.5">
                   <div class="text-sky-400 font-semibold">Bucket 1: Clean-Slate Zero-State (?clean_slate=true):</div>
                   <div>Route: <code class="text-gray-200">https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&amp;clean_slate=true</code></div>
-                  <div>Desktop Act I: <code class="text-gray-200">https://dev.memoryweaver.studio/studio/production/part-6-scene-4?act=1&amp;qa_seed=52</code></div>
+                  <div>Scratchpad Shield: <span class="text-sky-300">Bypassed on ?clean_slate=true so empty placeholder renders with 0 ghosting</span></div>
                   <div>Scope: <span class="text-sky-300">Item 52.2 (Empty Placeholder) &amp; Item 52.8 (DOM Extension Guard)</span></div>
                 </div>
               </div>
@@ -6864,15 +6864,15 @@
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🧪 SANDBOX FIXTURE (?qa_seed=52)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify the underlying sensory highlight layer and interactive <code>&lt;textarea&gt;</code> share 100% identical typographic metrics (<code>font-family</code>, <code>font-size</code>, <code>line-height</code>, <code>letter-spacing</code>, <code>padding</code>) with zero horizontal or vertical caret drift.
+                    Verify the pre-seeded 81-word courtyard passage (<code>&ldquo;As evening fell over the courtyard, the quiet sound of temple bells drifted through the open windows...&rdquo;</code>) renders in both reading and active <code>&lt;textarea&gt;</code> modes with 100% identical typographic geometry and zero horizontal/vertical caret drift across the underlined anchors (<code class="text-sky-300">quiet</code>, <code class="text-amber-300">aroma</code>, <code class="text-emerald-300">generations</code>).
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
                       <div>1. Open Fireside Sandbox: <code class="text-purple-300">https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&amp;qa_seed=52</code>.</div>
-                  <div>2. Click <strong class="text-amber-300">[ ✏️ EDIT SCENE ]</strong> (or click directly inside the script text box) to open the active editor.</div>
-                  <div>3. Type multi-line prose including sensory words (e.g. <code class="text-emerald-300">&ldquo;The temple bells rang at dawn while cardamom tea simmered.&rdquo;</code>).</div>
-                  <div>4. Confirm the typing cursor aligns 1:1 with the characters and coloured underlines without any vertical or horizontal offset.</div>
+                      <div>2. Confirm the reading card displays the 81-word courtyard passage (<code class="text-stone-200">&ldquo;As evening fell over the courtyard, the quiet sound of temple bells...&rdquo;</code>) with <code class="text-amber-300">~41s spoken &bull; 81 words</code>.</div>
+                      <div>3. Click <strong class="text-amber-300">[ ✏️ EDIT SCENE ]</strong> to open the active dual-layer editor.</div>
+                      <div>4. Click and type anywhere around the underlined words (<code class="text-sky-300">quiet</code>, <code class="text-amber-300">aroma</code>, <code class="text-emerald-300">generations</code>): confirm the typing caret aligns 1:1 with the characters and coloured underlines with zero vertical or horizontal offset.</div>
                     </div>
                   </div>
                 </div>
@@ -6882,8 +6882,8 @@
                 </div>
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside & Desktop Scriptorium (?qa_seed=52)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Sandbox Route (?qa_seed=52) ↗</a>
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?id=part-6-scene-4&qa_seed=52)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-1" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6892,19 +6892,19 @@
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1.5 w-full">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-xs font-mono font-bold text-sky-400">Item 52.2</span>
-                    <span class="text-xs font-bold text-white" id="item-title-52-2">Zero Placeholder Ghosting (Single-Layer Display)</span>
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 52.2</span>
+                    <span class="text-xs font-bold text-white" id="item-title-52-2">Zero Placeholder Ghosting (Single-Layer Display on ?clean_slate=true)</span>
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">❄️ CLEAN SLATE (READ-ONLY)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify that an empty editor displays a single crisp placeholder (<code>&ldquo;✍️ Note down your memories, feelings, or key moments here...&rdquo;</code>) without duplicate ghost spans or blurred text underneath.
+                    Verify that opening the Clean Slate route (<code>?clean_slate=true</code>) bypasses localStorage draft rehydration and displays a single crisp placeholder (<code>&ldquo;✍️ Note down your memories, feelings, or key moments here...&rdquo;</code>) without duplicate ghost spans or blurred text underneath.
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
                       <div>1. Open Fireside Clean Slate: <code class="text-sky-300">https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&amp;clean_slate=true</code>.</div>
-                  <div>2. Click the golden ingot button <strong class="text-amber-300">[ ✏️ Draft Scene / Begin Story ]</strong> (or clear all text in the editor).</div>
-                  <div>3. Inspect the empty textarea placeholder: confirm it renders cleanly once with zero doubled or shadowed text underneath.</div>
+                      <div>2. Click the golden button <strong class="text-amber-300">[ ✏️ Draft Scene / Begin Story ]</strong> to open the empty editor.</div>
+                      <div>3. Confirm the textarea opens completely blank (zero stale courtyard text) and renders the single-layer italic placeholder cleanly with zero doubled or shadowed text underneath.</div>
                     </div>
                   </div>
                 </div>
@@ -6914,8 +6914,8 @@
                 </div>
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Clean Slate (?clean_slate=true)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&clean_slate=true" id="item-route-link-52-2" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">❄️ Open Clean Slate Route (?clean_slate=true) ↗</a>
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Clean Slate (?id=part-6-scene-4&clean_slate=true)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&clean_slate=true" id="item-route-link-52-2" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">❄️ Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6929,14 +6929,14 @@
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🧪 SANDBOX FIXTURE (?qa_seed=52)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify that authentic South Asian and diaspora heritage terms (<code class="text-emerald-300">diya, mandir, masala, chai, roti, samosas</code>) are protected by <code>diasporaVoiceShield.ts</code> and are never flagged as spelling mistakes or clichés.
+                    Verify that authentic South Asian and diaspora heritage terms (<code class="text-emerald-300">diya, mandir, masala, chai, roti, samosas</code>) are protected by <code>diasporaVoiceShield.ts</code> and never generate false spelling or cliché warnings in The Scribe&apos;s Margin.
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>1. In Fireside Sandbox (<code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>), click <strong class="text-amber-300">[ ✏️ EDIT SCENE ]</strong>.</div>
-                  <div>2. Paste or type: <code class="text-stone-200">&ldquo;We lit the diya at the mandir and shared masala chai with warm roti and samosas.&rdquo;</code></div>
-                  <div>3. Confirm Scribe's Margin beneath the textarea does NOT flag any of those heritage words as errors.</div>
+                      <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, click <strong class="text-purple-300">[ ✨ 1 Scribe Note ]</strong> directly below the textarea to open <strong>The Scribe&apos;s Margin</strong> drawer.</div>
+                      <div>2. Append this sentence at the end of the courtyard passage: <code class="text-stone-200">&ldquo;We lit the diya at the mandir and shared masala chai with warm roti and samosas.&rdquo;</code></div>
+                      <div>3. Inspect <strong>Scribe Notes</strong> inside The Scribe&apos;s Margin drawer: confirm none of the heritage words (<code class="text-emerald-300">diya, mandir, masala, chai, roti, samosas</code>) are flagged as errors.</div>
                     </div>
                   </div>
                 </div>
@@ -6946,8 +6946,8 @@
                 </div>
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?qa_seed=52)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-3" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Sandbox Route (?qa_seed=52) ↗</a>
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?id=part-6-scene-4&qa_seed=52)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-3" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6961,14 +6961,14 @@
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🧪 SANDBOX FIXTURE (?qa_seed=52)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify Scribe's Margin detects US spellings (<code class="text-rose-300">realize, favorite, color, theater</code>) and offers 1-click <strong class="text-amber-300">[ Accept ]</strong> / <strong class="text-stone-400">[ Dismiss ]</strong> chips to replace with UK English (<code class="text-sky-300">realise, favourite, colour, theatre</code>).
+                    Verify The Scribe&apos;s Margin detects US spellings (<code class="text-rose-300">realize, favorite, color, theater</code>) and surfaces <strong>UK ORTHOGRAPHY</strong> cards with 1-click <strong class="text-emerald-300">[ ✓ Accept ]</strong> and <strong class="text-stone-400">[ ✕ ]</strong> controls to replace with UK English (<code class="text-emerald-300">realise, favourite, colour, theatre</code>).
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, type: <code class="text-stone-200">&ldquo;I realize my favorite color was green in the theater.&rdquo;</code></div>
-                  <div>2. Look at the Scribe's Margin bar directly below the textarea: confirm UK spelling suggestion chips appear for <code class='text-sky-300'>realise</code>, <code class='text-sky-300'>favourite</code>, <code class='text-sky-300'>colour</code>, and <code class='text-sky-300'>theatre</code>.</div>
-                  <div>3. Click <strong class="text-amber-300">[ Accept ]</strong> on a chip: confirm the word updates in-place to British English and focus remains in the editor.</div>
+                      <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, append: <code class="text-stone-200">&ldquo;I realize my favorite color was green in the theater.&rdquo;</code></div>
+                      <div>2. Observe the purple badge beneath the textarea increment (e.g. <strong class="text-purple-300">[ ✨ 5 Scribe Notes ]</strong>) and click it to open <strong>The Scribe&apos;s Margin</strong> drawer.</div>
+                      <div>3. Confirm purple <strong>UK ORTHOGRAPHY</strong> suggestion cards appear (<code class="text-stone-400 line-through">&ldquo;realize&rdquo;</code> &rarr; <code class="text-emerald-300">&ldquo;realise&rdquo;</code>, <code class="text-emerald-300">&ldquo;favourite&rdquo;</code>, <code class="text-emerald-300">&ldquo;colour&rdquo;</code>, <code class="text-emerald-300">&ldquo;theatre&rdquo;</code>). Click <strong class="text-emerald-300">[ ✓ Accept ]</strong> on each and confirm the prose updates in-place.</div>
                     </div>
                   </div>
                 </div>
@@ -6978,8 +6978,8 @@
                 </div>
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?qa_seed=52)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-4" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Sandbox Route (?qa_seed=52) ↗</a>
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?id=part-6-scene-4&qa_seed=52)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-4" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -6989,18 +6989,18 @@
                 <div class="space-y-1.5 w-full">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 52.5</span>
-                    <span class="text-xs font-bold text-white" id="item-title-52-5">120 WPM Script Cadence & Elder Breathability Warning</span>
+                    <span class="text-xs font-bold text-white" id="item-title-52-5">120 WPM Script Cadence & Pre-Seeded 29-Word Breath Run Advisory</span>
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🧪 SANDBOX FIXTURE (?qa_seed=52)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify real-time speech telemetry in the Scribe's Margin HUD (word count, estimated speaking duration at <strong class='text-emerald-400'>120 words per minute</strong>, and breath pause count), plus an automatic breath-run warning when typing over 24 unbroken words without punctuation.
+                    Verify real-time speech telemetry on the pre-seeded 81-word courtyard passage (<strong class="text-amber-300">🕒 ~41s spoken</strong>, <strong class="text-stone-200">Words: 81</strong>, <strong class="text-stone-200">Elder Pace: 120 WPM</strong>, <strong class="text-amber-400">Long Runs: 1</strong>) and the automatic <strong>BREATH RUN</strong> Scribe Note triggered by the 29-word final sentence.
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>1. In the active editor on <code class='text-purple-300'>?id=part-6-scene-4&amp;qa_seed=52</code>, observe the Scribe's Margin bar showing word count and <code class='text-emerald-300'>~Xs spoken (120 WPM)</code>.</div>
-                  <div>2. Type an unbroken sentence of more than 25 words without any comma, period, or pause slash.</div>
-                  <div>3. Confirm Scribe's Margin displays a gentle breath-run advisory recommending a pause or punctuation for natural elder delivery.</div>
+                      <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, confirm the status row directly below the textarea shows <strong class="text-purple-300">[ ✨ 1 Scribe Note ]</strong> on the left and <strong class="text-amber-300">🕒 ~41s spoken</strong> on the right.</div>
+                      <div>2. Click <strong class="text-purple-300">[ ✨ 1 Scribe Note ]</strong> to expand <strong>The Scribe&apos;s Margin</strong> drawer.</div>
+                      <div>3. Confirm the cadence grid displays <strong>Spoken Duration: ⏱️ ~41s</strong>, <strong>Words: 81</strong>, <strong>Elder Pace: 120 WPM</strong>, and <strong>Long Runs: 1</strong>, alongside the amber <strong>BREATH RUN</strong> advisory card for the 29-word final sentence.</div>
                     </div>
                   </div>
                 </div>
@@ -7010,8 +7010,8 @@
                 </div>
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?qa_seed=52)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-5" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Sandbox Route (?qa_seed=52) ↗</a>
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?id=part-6-scene-4&qa_seed=52)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-5" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -7021,18 +7021,18 @@
                 <div class="space-y-1.5 w-full">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 52.6</span>
-                    <span class="text-xs font-bold text-white" id="item-title-52-6">Quick Breath Pause Insertion Keys ([ + / ] & [ + // ])</span>
+                    <span class="text-xs font-bold text-white" id="item-title-52-6">Quick Breath Pause Insertion Keys ([ / Short (~0.2s) ] & [ // Deep (~0.5s) ])</span>
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🧪 SANDBOX FIXTURE (?qa_seed=52)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify clicking <strong class='text-sky-300'>[ + / ]</strong> (short breath pause) or <strong class='text-sky-300'>[ + // ]</strong> (dramatic beat pause) in the Scribe's Margin bar inserts the pause token at the exact cursor position.
+                    Verify clicking <strong class="text-sky-300">[ / Short (~0.2s) ]</strong>, <strong class="text-emerald-300">[ // Deep (~0.5s) ]</strong>, or <strong class="text-amber-300">[ + Add Breath (//) ]</strong> inside The Scribe&apos;s Margin drawer inserts the pause marker at the cursor position and increments <strong>Breath Pauses</strong>.
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>1. Place the typing cursor in the middle of a sentence inside the editor.</div>
-                  <div>2. Click <strong class='text-sky-300'>[ + / ]</strong> or <strong class='text-sky-300'>[ + // ]</strong> in the Scribe's Margin toolbar.</div>
-                  <div>3. Confirm <code class="text-sky-300">/</code> or <code class="text-sky-300">//</code> is inserted cleanly at the cursor and increments the pause counter.</div>
+                      <div>1. With <strong>The Scribe&apos;s Margin</strong> drawer open (<strong class="text-purple-300">[ ✨ 1 Scribe Note ]</strong>), place the typing cursor inside a sentence in the textarea.</div>
+                      <div>2. In the <strong>Insert Breath:</strong> row inside The Scribe&apos;s Margin, click <strong class="text-sky-300">[ / Short (~0.2s) ]</strong> or <strong class="text-emerald-300">[ // Deep (~0.5s) ]</strong> (or click <strong class="text-amber-300">[ + Add Breath (//) ]</strong> on the Breath Run card).</div>
+                      <div>3. Confirm <code class="text-sky-300">/</code> or <code class="text-emerald-300">//</code> is inserted cleanly into the script and <strong>Breath Pauses:</strong> increments from <code>0</code> to <code>1</code>.</div>
                     </div>
                   </div>
                 </div>
@@ -7042,8 +7042,8 @@
                 </div>
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?qa_seed=52)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-6" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Sandbox Route (?qa_seed=52) ↗</a>
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?id=part-6-scene-4&qa_seed=52)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-6" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -7053,18 +7053,18 @@
                 <div class="space-y-1.5 w-full">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-mono font-bold text-amber-400">Item 52.7</span>
-                    <span class="text-xs font-bold text-white" id="item-title-52-7">Dynamic Modality Anchor Highlighting & 1-Click Caret Beacon</span>
+                    <span class="text-xs font-bold text-white" id="item-title-52-7">Dynamic Modality Anchor Highlighting & 1-Click Caret Beacon ("quiet", "generations", "aroma")</span>
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🧪 SANDBOX FIXTURE (?qa_seed=52)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify sensory anchors highlight in canonical modality colours — Soundscape (Sky Blue), Visual (Emerald Green), Aroma (Amber Gold) — and clicking any modality pill in <code>&lt;SensoryModalityKey /&gt;</code> pulses the word and selects it in the textarea.
+                    Verify the 3 pre-seeded sensory anchors highlight in canonical modality colours — <strong class="text-sky-300">🎧 Soundscape (1) &ldquo;quiet&rdquo;</strong>, <strong class="text-emerald-300">👁️ Visual (1) &ldquo;generations&rdquo;</strong>, <strong class="text-amber-300">☕ Aroma (1) &ldquo;aroma&rdquo;</strong> — and clicking each pill pulses and selects that exact word inside the textarea.
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>1. Ensure the editor contains sensory keywords (e.g. <code class="text-stone-200">&ldquo;ringing bells, emerald courtyard, cardamom aroma&rdquo;</code>).</div>
-                  <div>2. Click the <strong class="text-sky-300">[ 🎧 Soundscape ]</strong>, <strong class="text-emerald-300">[ 👁️ Visual ]</strong>, or <strong class="text-amber-300">[ ☕ Aroma ]</strong> pill above the editor.</div>
-                  <div>3. Confirm the matching word pulses with a luminous halo ring and is selected natively inside the textarea.</div>
+                      <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, inspect the <strong>📌 LIVE SENSORY ANCHORS:</strong> bar directly above the textarea.</div>
+                      <div>2. Click <strong class="text-sky-300">[ 🎧 Soundscape (1) &ldquo;quiet&rdquo; ]</strong>, <strong class="text-emerald-300">[ 👁️ Visual (1) &ldquo;generations&rdquo; ]</strong>, and <strong class="text-amber-300">[ ☕ Aroma (1) &ldquo;aroma&rdquo; ]</strong> one by one.</div>
+                      <div>3. Confirm the matching word (<code class="text-sky-300">quiet</code>, <code class="text-emerald-300">generations</code>, or <code class="text-amber-300">aroma</code>) pulses with a luminous halo ring in the editor and is selected natively inside the textarea.</div>
                     </div>
                   </div>
                 </div>
@@ -7074,8 +7074,8 @@
                 </div>
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
-                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?qa_seed=52)</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-7" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Sandbox Route (?qa_seed=52) ↗</a>
+                <span class="text-[11px] font-mono text-gray-500">Target: Fireside Sandbox (?id=part-6-scene-4&qa_seed=52)</span>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-7" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🧪 Open Test Route ↗</a>
               </div>
             </div>
 
@@ -7084,18 +7084,18 @@
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1.5 w-full">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-xs font-mono font-bold text-emerald-400">Item 52.8</span>
+                    <span class="text-xs font-mono font-bold text-amber-400">Item 52.8</span>
                     <span class="text-xs font-bold text-white" id="item-title-52-8">Zero-DOM-Pollution Extension Guard (Grammarly & lang="en-GB")</span>
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">⚡ DIRECT PLATFORM</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify the textarea declares <code>data-enable-grammarly="false"</code>, <code>data-gramm="false"</code>, and <code>lang="en-GB"</code> to shield the dual-layer grid from third-party extension DOM injection and false US spellcheck squiggles.
+                    Verify the textarea (<code class="text-amber-300">data-testid="HS_FIRESIDE_SCRIPT_TEXTAREA"</code>) declares <code>data-enable-grammarly="false"</code>, <code>data-gramm="false"</code>, and <code>lang="en-GB"</code> to shield the dual-layer grid from third-party extension DOM injection and false US spellcheck squiggles.
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>1. Right-click the narrative textarea and select <strong>Inspect</strong> in Chrome DevTools.</div>
-                  <div>2. Confirm the <code>&lt;textarea&gt;</code> element includes <code class="text-emerald-300">lang="en-GB"</code>, <code class="text-emerald-300">data-gramm="false"</code>, and <code class="text-emerald-300">data-enable-grammarly="false"</code>.</div>
+                      <div>1. Right-click inside the active narrative textarea on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code> and select <strong>Inspect</strong> in Chrome DevTools.</div>
+                      <div>2. Confirm the <code>&lt;textarea&gt;</code> element includes <code class="text-emerald-300">lang="en-GB"</code>, <code class="text-emerald-300">data-gramm="false"</code>, and <code class="text-emerald-300">data-enable-grammarly="false"</code>.</div>
                     </div>
                   </div>
                 </div>
@@ -7106,7 +7106,7 @@
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
                 <span class="text-[11px] font-mono text-gray-500">Target: Fireside & Desktop Scriptorium DOM</span>
-                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-8" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">⚡ Inspect Live Editor DOM ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/fireside?id=part-6-scene-4&qa_seed=52" id="item-route-link-52-8" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">⚡ Open Test Route ↗</a>
               </div>
             </div>
 
@@ -7114,11 +7114,15 @@
             <div id="punchlist-container-52" class="mt-3 pt-3 border-t border-amber-500/25 bg-amber-950/20 rounded-xl p-3 space-y-2">
               <div class="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
                 <span class="flex items-center gap-1.5">🥊 In-Flight Punch-List Resolutions (Test 52)</span>
-                <span id="punchlist-badge-52" class="text-[10px] text-amber-300/70 font-mono">1/1 verified</span>
+                <span id="punchlist-badge-52" class="text-[10px] text-amber-300/70 font-mono">2/2 verified</span>
               </div>
               <div id="punchlist-items-52" class="space-y-1.5">
                 <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
                   <span class="text-amber-200">✅ <strong>SPEC-MW-134</strong>: Master &lt;NarrativeScriptInput /&gt; with zero-drift dual-layer CSS Grid and ScribesMargin drawer deployed.</span>
+                  <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
+                </div>
+                <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
+                  <span class="text-amber-200">✅ <strong>Punch-List 52.1 (Dataset &amp; Test Text Alignment)</strong>: Seeded deterministic 81-word courtyard passage into <code>qa_fixture_..._52</code>, isolated <code>?clean_slate=true</code> and <code>?qa_seed=52</code> from stale localStorage drafts, and aligned Items 52.1–52.8 with exact live anchors (<code>quiet</code>, <code>generations</code>, <code>aroma</code>) and Scribe's Margin controls.</span>
                   <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
                 </div>
               </div>
@@ -8775,7 +8779,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_c315751b_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_0e88ddf2_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -11516,7 +11520,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: c315751b | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 0e88ddf2 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -11620,7 +11624,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: 'c315751b',
+          commit: '0e88ddf2',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -11648,7 +11652,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_c315751b_${Date.now()}.json`;
+      a.download = `qa_master_checklist_0e88ddf2_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }
