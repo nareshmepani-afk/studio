@@ -19,8 +19,10 @@ export interface ScribeSuggestion {
 export interface CadenceMetrics {
   wordCount: number;
   characterCount: number;
-  estimatedSpokenSeconds: number; // 120 WPM elder standard
+  estimatedSpokenSeconds: number; // 120 WPM elder standard + pause durations
   breathPauseCount: number;       // Total / and // markers
+  deepPauseCount: number;         // Total // markers (~0.5s)
+  shortPauseCount: number;        // Total / markers (~0.2s)
   longRunSentenceCount: number;   // Sentences > 24 words without pauses
 }
 
@@ -60,22 +62,40 @@ export function useScriptCadence(text: string): UseScriptCadenceReturn {
         characterCount: 0,
         estimatedSpokenSeconds: 0,
         breathPauseCount: 0,
+        deepPauseCount: 0,
+        shortPauseCount: 0,
         longRunSentenceCount: 0,
       };
     }
 
-    // Clean out cadence markers when counting words so "//" is not counted as a word
-    const textWithoutMarkers = text.replace(/(^|\s)\/\/?(?=\s|$)/g, ' ');
-    const rawWords = textWithoutMarkers.trim().split(/\s+/).filter(Boolean);
+    // Guardrail 2 (Word Count Purity): Clean out all pure slash tokens regardless of surrounding punctuation
+    const rawWords = text
+      .split(/\s+/)
+      .map((w) => w.trim())
+      .filter((w) => {
+        if (!w) return false;
+        const stripped = w.replace(/^[,.!?;:()[\]{}"'“”‘’]+|[,.!?;:()[\]{}"'“”‘’]+$/g, '');
+        if (!stripped) return false;
+        if (/^[/]+$/.test(stripped)) return false;
+        return true;
+      });
     const wordCount = rawWords.length;
     const characterCount = text.length;
 
-    // 120 Words Per Minute = 2 words per second
-    const estimatedSpokenSeconds = Math.round((wordCount / 120) * 60);
+    // Guardrail 1 (Disjoint Regex & No Double-Counting):
+    // Match // disjointly from standalone single /
+    const deepPauseMatches = text.match(/(?:^|\s|[.?!;:,])\/\/(?=\s|[.?!;:,]|$)/g);
+    const deepPauseCount = deepPauseMatches ? deepPauseMatches.length : 0;
 
-    // Count standalone breath markers: "/" (short pause) or "//" (deep breath)
-    const breathPauseMatches = text.match(/(^|\s)\/\/?(?=\s|$)/g);
-    const breathPauseCount = breathPauseMatches ? breathPauseMatches.length : 0;
+    const shortPauseMatches = text.match(/(?:^|\s|[.?!;:,])(?<!\/)\/(?!\/)(?=\s|[.?!;:,]|$)/g);
+    const shortPauseCount = shortPauseMatches ? shortPauseMatches.length : 0;
+
+    const breathPauseCount = deepPauseCount + shortPauseCount;
+
+    // Duration calculation: 120 WPM (0.5s per word) + 0.5s per // + 0.2s per /
+    const speechSeconds = (wordCount / 120) * 60;
+    const pauseSeconds = (deepPauseCount * 0.5) + (shortPauseCount * 0.2);
+    const estimatedSpokenSeconds = Math.round(speechSeconds + pauseSeconds);
 
     // Segment text by sentence boundaries, hard breaks, or breath markers
     const sentenceRuns = text.split(/[.?!;:\n]+|(?:\s+\/\/?\s+)/).map((s) => s.trim()).filter(Boolean);
@@ -94,6 +114,8 @@ export function useScriptCadence(text: string): UseScriptCadenceReturn {
       characterCount,
       estimatedSpokenSeconds,
       breathPauseCount,
+      deepPauseCount,
+      shortPauseCount,
       longRunSentenceCount,
     };
   }, [text]);

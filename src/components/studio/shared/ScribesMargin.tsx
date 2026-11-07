@@ -152,7 +152,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                   data-testid={`${testIdPrefix}-insert-short-pause`}
                   onClick={() => onInsertCadenceMarker('/')}
                   title="Insert short breath pause (~0.2s pause on teleprompter)"
-                  className="px-2 py-0.5 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                  className="px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
                 >
                   <span>/ Short (~0.2s)</span>
                 </button>
@@ -161,7 +161,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                   data-testid={`${testIdPrefix}-insert-deep-pause`}
                   onClick={() => onInsertCadenceMarker('//')}
                   title="Insert deep breath pause (~0.5s pause on teleprompter)"
-                  className="px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                  className="px-2 py-0.5 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
                 >
                   <span>// Deep (~0.5s)</span>
                 </button>

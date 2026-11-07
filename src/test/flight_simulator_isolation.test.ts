@@ -423,17 +423,22 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     const teleprompterContent = fs.readFileSync(teleprompterPath, 'utf8');
     const popoutPath = path.resolve(__dirname, '../components/studio/PopoutTeleprompter.tsx');
     const popoutContent = fs.readFileSync(popoutPath, 'utf8');
+    const formatterPath = path.resolve(__dirname, '../utils/scriptFormatter.ts');
+    const formatterContent = fs.readFileSync(formatterPath, 'utf8');
     const soloStagePath = path.resolve(__dirname, '../components/studio/SoloStage.tsx');
     const soloStageContent = fs.readFileSync(soloStagePath, 'utf8');
 
-    // Verify single (/) and double (//) slash cadence cue attributes and floating portal tooltip in both components
+    // Verify single (/) and double (//) slash cadence cue attributes in the shared isomorphic SSOT formatter
+    expect(formatterContent).toContain('data-slash-cue="double"');
+    expect(formatterContent).toContain('data-slash-cue="single"');
+    expect(formatterContent).toContain('data-prompter-tooltip-title="CADENCE CUE • DEEP BREATH ( // )"');
+    expect(formatterContent).toContain('data-prompter-tooltip-title="CADENCE CUE • SHORT BREATH ( / )"');
+    expect(formatterContent).toContain('Full sentence brake (~0.5s). Pause, breathe deeply, and reconnect eye contact with the camera lens.');
+    expect(formatterContent).toContain('Clause micro-pause (~0.2s). Take a gentle half-breath and let the phrase settle before continuing.');
+
+    // Verify both Teleprompter surfaces delegate to renderPrompterCadenceHtml and retain the floating portal tooltip
     for (const content of [teleprompterContent, popoutContent]) {
-      expect(content).toContain('data-slash-cue="double"');
-      expect(content).toContain('data-slash-cue="single"');
-      expect(content).toContain('data-prompter-tooltip-title="CADENCE CUE • DEEP BREATH ( // )"');
-      expect(content).toContain('data-prompter-tooltip-title="CADENCE CUE • SHORT BREATH ( / )"');
-      expect(content).toContain('Full sentence brake (~0.5s). Pause, breathe deeply, and reconnect eye contact with the camera lens.');
-      expect(content).toContain('Clause micro-pause (~0.2s). Take a gentle half-breath and let the phrase settle before continuing.');
+      expect(content).toContain('renderPrompterCadenceHtml');
       expect(content).toContain('data-testid="teleprompter-cue-tooltip"');
       expect(content).toContain('onMouseOver={handleScriptCueInspect}');
       expect(content).toContain('onMouseLeave={handleScriptPointerLeave}');

@@ -5,6 +5,8 @@ import {
   applyTheatricalSlashes,
   splitSentenceAtHinge,
   clearCadenceMarkers,
+  renderPrompterCadenceHtml,
+  getBrakeDuration,
 } from '@/utils/scriptFormatter';
 
 describe('SPEC-MW-134 & Option C: Script Cadence & Teleprompter Speakability Hook', () => {
@@ -146,6 +148,96 @@ describe('SPEC-MW-134 & Option C: Script Cadence & Teleprompter Speakability Hoo
       expect(applyTheatricalSlashes('Walking home, / talking softly.')).toBe('Walking home / talking softly //');
       expect(applyTheatricalSlashes('Evening fell. / The bells rang.')).toBe('Evening fell // The bells rang //');
       expect(applyTheatricalSlashes('A quiet day // // another year.')).toBe('A quiet day // another year //');
+    });
+  });
+
+  describe('8. SPEC-MW-177: Universal Prompter Cadence Engine & Disjoint Duration Maths', () => {
+    it('guardrail 1: computes pause durations disjointly without double-counting // as two single slashes', () => {
+      // 10 words + one // (0.5s)
+      const tenWordsDeep = 'One two three four five six seven eight nine ten //';
+      const { result: resDeep } = renderHook(() => useScriptCadence(tenWordsDeep));
+      expect(resDeep.current.metrics.wordCount).toBe(10);
+      expect(resDeep.current.metrics.deepPauseCount).toBe(1);
+      expect(resDeep.current.metrics.shortPauseCount).toBe(0);
+      expect(resDeep.current.metrics.breathPauseCount).toBe(1);
+      // Speech: (10 / 120) * 60 = 5.0s. Deep pause: +0.5s. Total: 5.5s -> round to 6s
+      expect(resDeep.current.metrics.estimatedSpokenSeconds).toBe(6);
+
+      // 10 words + one / (0.2s)
+      const tenWordsShort = 'One two three four five six seven eight nine ten /';
+      const { result: resShort } = renderHook(() => useScriptCadence(tenWordsShort));
+      expect(resShort.current.metrics.wordCount).toBe(10);
+      expect(resShort.current.metrics.deepPauseCount).toBe(0);
+      expect(resShort.current.metrics.shortPauseCount).toBe(1);
+      expect(resShort.current.metrics.breathPauseCount).toBe(1);
+      // Speech: 5.0s. Short pause: +0.2s. Total: 5.2s -> round to 5s
+      expect(resShort.current.metrics.estimatedSpokenSeconds).toBe(5);
+
+      // 60 words (30s) + four // (2.0s) + five / (1.0s) = 33s
+      const sixtyWords = new Array(60).fill('word').join(' ');
+      const mixedText = `${sixtyWords} // // // // / / / / /`;
+      const { result: resMixed } = renderHook(() => useScriptCadence(mixedText));
+      expect(resMixed.current.metrics.wordCount).toBe(60);
+      expect(resMixed.current.metrics.deepPauseCount).toBe(4);
+      expect(resMixed.current.metrics.shortPauseCount).toBe(5);
+      expect(resMixed.current.metrics.breathPauseCount).toBe(9);
+      // 30s speech + 2.0s deep + 1.0s short = 33s
+      expect(resMixed.current.metrics.estimatedSpokenSeconds).toBe(33);
+    });
+
+    it('guardrail 2: word count purity excludes standalone / and // and punctuation-attached markers', () => {
+      const text = 'First word, // second word, / third word.';
+      const { result } = renderHook(() => useScriptCadence(text));
+      expect(result.current.metrics.wordCount).toBe(6);
+    });
+
+    it('getBrakeDuration: accurately calculates auto-scroll brake times without cross-matching', () => {
+      expect(getBrakeDuration('This is the end //')).toBe(500);
+      expect(getBrakeDuration('Sentence completed.')).toBe(500);
+      expect(getBrakeDuration('What happened?')).toBe(500);
+      expect(getBrakeDuration('Look there!')).toBe(500);
+      expect(getBrakeDuration('A gentle clause /')).toBe(200);
+      expect(getBrakeDuration('Walking through the meadow,')).toBe(200);
+      expect(getBrakeDuration('Chapter title:')).toBe(300);
+      expect(getBrakeDuration('Mid sentence without pause')).toBe(0);
+    });
+
+    it('renderPrompterCadenceHtml: generates unified sensory anchors and cadence beacons', () => {
+      const prose = 'As evening fell, the quiet bells drifted. Kitchen aroma of cardamom and chai filled the room // generations gathered.';
+      const html = renderPrompterCadenceHtml(prose, { autoBreath: false, highlightSensory: true });
+
+      // Cadence beacon assertions
+      expect(html).toContain('data-slash-cue="double"');
+      expect(html).toContain('text-sky-300'); // Sky Blue for //
+
+      // Sensory anchor assertions
+      expect(html).toContain('data-sensory-cue="sound"');
+      expect(html).toContain('quiet');
+      expect(html).toContain('data-sensory-cue="aroma"');
+      expect(html).toContain('cardamom');
+      expect(html).toContain('chai');
+      expect(html).toContain('data-sensory-cue="visual"');
+      expect(html).toContain('generations');
+    });
+
+    it('renderPrompterCadenceHtml: autoBreath mode replaces punctuation with pulsing slashes', () => {
+      const prose = 'Evening fell. The bells rang.';
+      const html = renderPrompterCadenceHtml(prose, { autoBreath: true, highlightSensory: true });
+
+      expect(html).toContain('data-slash-cue="double"');
+    });
+
+    it('renderPrompterCadenceHtml: preserves intact // in textContent without splitting second slash and escapes HTML entities', () => {
+      const html = renderPrompterCadenceHtml('Hello / world <1968> & memories //', {
+        autoBreath: false,
+        highlightSensory: true,
+      });
+      const textOnly = html.replace(/<[^>]*>/g, '');
+
+      expect(textOnly).toContain('//');
+      expect(textOnly).not.toContain('/ /');
+      expect(html).toContain('&lt;1968&gt;');
+      expect(html).toContain('&amp;');
     });
   });
 });

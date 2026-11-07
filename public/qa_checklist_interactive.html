@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (962b0181)</title>
+  <title>Master QA Verification Suite — Grouped by Route (32c0dc06)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -70,11 +70,11 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">962b0181</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">32c0dc06</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">962b018</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">32c0dc0</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">06 Nov 2026, 20:03 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">07 Nov 2026, 10:35 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -7295,6 +7295,10 @@
               </div>
               <div id="punchlist-items-52" class="space-y-1.5">
                 <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
+                  <span class="text-amber-200">✓ <strong>Punch-List 52.6 (SPEC-MW-177: Universal Isomorphic Teleprompter Cadence &amp; Sensory Engine)</strong>: Consolidated prompter HTML generation across Soundstage, Popout Teleprompter, and Fireside into <code>renderPrompterCadenceHtml</code> in <code>scriptFormatter.ts</code>, eliminating triplicated formatting drift at 0ms latency; enforced disjoint pause counting and pause-weighted spoken duration (+0.5s per //, +0.2s per /) with 100% word count purity in <code>useScriptCadence.ts</code>; and aligned Scribe's Margin toolbar button colours to chromatic standard (/ Short = Emerald, // Deep = Sky Blue).</span>
+                  <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
+                </div>
+                <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
                   <span class="text-amber-200">✅ <strong>Punch-List 52.5 (FEAT-MW-176: Fireside Teleprompter Cadence, 0ms Midpoint Clause Splitter &amp; Theatrical Auto-Breath)</strong>: Implemented 1-click in-place midpoint clause splitter (<code>+ Add Breath (//)</code>) on BREATH RUN cards with non-destructive comma preservation and bounded hinge window (leaving both halves &le; 23 words), added <code>[ ↺ Clear ]</code> undo pill, deduplicated theatrical slashes and punctuation in <code>scriptFormatter.ts</code>, and upgraded Fireside recording booth prompter with <code>max-h-56</code> scrollable container and <code>[ 🌬️ Auto-Breath ]</code> toggle.</span>
                   <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
                 </div>
@@ -8977,7 +8981,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_962b0181_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_32c0dc06_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -11727,7 +11731,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 962b0181 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 32c0dc06 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -11831,7 +11835,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: '962b0181',
+          commit: '32c0dc06',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -11859,7 +11863,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_962b0181_${Date.now()}.json`;
+      a.download = `qa_master_checklist_32c0dc06_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }

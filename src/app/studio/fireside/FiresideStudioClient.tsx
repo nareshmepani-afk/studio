@@ -57,7 +57,7 @@ import {
   Wind,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { applyTheatricalSlashes } from '@/utils/scriptFormatter';
+import { applyTheatricalSlashes, renderPrompterCadenceHtml } from '@/utils/scriptFormatter';
 import { uploadAudioWithResiliency, uploadVideoWithResiliency } from '@/lib/media/chunkedAudioUpload';
 import { getSceneById, getPartForScene, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
@@ -79,25 +79,6 @@ function resolveInitialSpark(targetParam?: string): FiresidePromptSpark {
     }
   }
   return FIRESIDE_PROMPT_SPARKS[0];
-}
-
-function formatFiresidePrompterHtml(text: string, autoBreath: boolean): string {
-  if (!text) return '';
-  const processedText = autoBreath ? applyTheatricalSlashes(text) : text;
-
-  // Render double slash (//) with pulsing sky-blue dots
-  let html = processedText.replace(/(<[^>]*>)|(\s*\/\/\s*|\/\/)/g, (match, tag) => {
-    if (tag) return tag;
-    return ' <span class="relative inline-flex flex-col items-center justify-center mx-1 px-1 py-0.5 rounded bg-sky-500/15 text-sky-300 font-mono font-bold text-xs select-none shadow-[0_0_8px_rgba(56,189,248,0.3)] border border-sky-400/30">//<span class="absolute -bottom-1 flex gap-0.5 items-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span></span></span> ';
-  });
-
-  // Render single slash (/) with pulsing emerald dot
-  html = html.replace(/(<[^>]*>)|(\s*\/(?!\/)\s*|(?<!\/)\/(?!\/))/g, (match, tag) => {
-    if (tag) return tag;
-    return ' <span class="relative inline-flex flex-col items-center justify-center mx-1 px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono font-bold text-xs select-none shadow-[0_0_8px_rgba(52,211,153,0.3)] border border-emerald-400/30">/<span class="absolute -bottom-1 flex items-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span></span></span> ';
-  });
-
-  return html;
 }
 
 interface FiresidePrompterBannerProps {
@@ -155,7 +136,7 @@ const FiresidePrompterBanner: React.FC<FiresidePrompterBannerProps> = ({
         >
           <span
             dangerouslySetInnerHTML={{
-              __html: `&ldquo;${formatFiresidePrompterHtml(prose, autoBreath)}&rdquo;`,
+              __html: `&ldquo;${renderPrompterCadenceHtml(prose, { autoBreath, highlightSensory: true })}&rdquo;`,
             }}
           />
         </div>

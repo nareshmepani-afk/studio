@@ -168,3 +168,125 @@ export function clearCadenceMarkers(text: string): string {
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
+
+/**
+ * Calculates auto-scroll pause duration for teleprompters:
+ * - 500ms for full sentence terminals (., !, ?) or deep breath markers (//)
+ * - 200ms for clause hinges (,) or short pause markers (/)
+ * - 0ms otherwise
+ */
+export function getBrakeDuration(text: string): number {
+  if (!text) return 0;
+  const clean = text.trim();
+  if (clean.endsWith('//') || /(?:^|\s|[.?!;:,])\/\/(?:\s|[.?!;:,])*$/.test(clean) || /[.!?]$/.test(clean)) {
+    return 500;
+  }
+  if (clean.endsWith('/') || /(?:^|\s|[.?!;:,])(?<!\/)\/(?!\/)(?:\s|[.?!;:,])*$/.test(clean) || /[,]$/.test(clean)) {
+    return 200;
+  }
+  if (clean.endsWith(':') || clean.endsWith('-') || clean.endsWith(';')) {
+    return 300;
+  }
+  return 0;
+}
+
+export interface PrompterRenderOptions {
+  autoBreath?: boolean;
+  highlightSensory?: boolean;
+}
+
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const SOUND_WORDS = [
+  'train', 'whistle', 'whistling', 'whistles', 'drumming', 'drummed', 'kettle', 'laughter',
+  'crackle', 'ticking', 'bell', 'bells', 'chime', 'chimes', 'voice', 'sound', 'hum', 'whisper',
+  'whispers', 'rustle', 'thud', 'language', 'Gujarati', 'lessons', 'parents', 'culture',
+  'education', 'mother tongue', 'skills', 'tongue', 'thunder', 'echo', 'melody', 'rhythm',
+  'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'silence', 'clatter', 'clink',
+  'crescendo', 'monotone', 'thrum', 'chorus', 'singing', 'song'
+];
+
+const AROMA_WORDS = [
+  'soil', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'farming', 'staple', 'food',
+  'village', 'machinery', 'produce', 'labourers', 'oregano', 'lavender', 'musk', 'scent',
+  'aroma', 'spice', 'spices', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty',
+  'perfume', 'cardamom', 'chai', 'sandalwood', 'petrichor', 'frankincense', 'jasmine',
+  'turmeric', 'warm', 'fragrant', 'piping', 'coffee', 'books', 'rose', 'roasting'
+];
+
+const VISUAL_WORDS = [
+  'sun', 'glow', 'light', 'lamplight', 'amber', 'dust', 'gold', 'golden', 'shadow',
+  'warmth', 'windowpane', 'ceramic', 'rough', 'damp', 'heat', 'bright', 'dark', 'Nairobi',
+  'Kenya', 'India', 'England', 'heritage', 'traveling', 'journey', 'values', 'ancestors',
+  'generations', 'Granddad', 'Granddads', 'roots', 'neon', 'emerald', 'crimson', 'blue',
+  'red', 'clear', 'blurry', 'huge', 'tiny', 'sepia', 'monochrome', 'silhouette', 'radiant',
+  'dappled', 'obsidian', 'cracked', 'glass', 'steaming', 'stove'
+];
+
+// Disjoint word classification (Priority: Aroma > Sound > Visual)
+const aromaSet = new Set(AROMA_WORDS.map(w => w.toLowerCase()));
+const soundList = SOUND_WORDS.filter(w => !aromaSet.has(w.toLowerCase()));
+const soundSet = new Set(soundList.map(w => w.toLowerCase()));
+const visualList = VISUAL_WORDS.filter(w => !aromaSet.has(w.toLowerCase()) && !soundSet.has(w.toLowerCase()));
+
+const aromaPattern = AROMA_WORDS.map(escapeRegExp).join('|');
+const soundPattern = soundList.map(escapeRegExp).join('|');
+const visualPattern = visualList.map(escapeRegExp).join('|');
+
+/**
+ * Universal Isomorphic Teleprompter Cadence & Sensory Highlighter
+ * Produces byte-for-byte identical HTML across Soundstage, Popout Teleprompter, and Fireside Studio.
+ */
+export function renderPrompterCadenceHtml(text: string, options: PrompterRenderOptions = {}): string {
+  if (!text) return '';
+  const { autoBreath = false, highlightSensory = true } = options;
+
+  // Safeguard A: Escape raw HTML entities on plain text before slash conversion or tag injection
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  let processed = autoBreath ? applyTheatricalSlashes(escaped) : escaped;
+
+  if (highlightSensory) {
+    // 1. Aroma Anchors (Amber Gold)
+    const aromaRegex = new RegExp(`(<[^>]*>)|\\b(${aromaPattern})\\b`, 'gi');
+    processed = processed.replace(aromaRegex, (match, tag, word) => {
+      if (tag) return tag;
+      return `<span data-sensory-cue="aroma" data-prompter-tooltip-title="SENSORY ANCHOR • AROMA" data-prompter-tooltip-desc="Slow your cadence and breathe in gently as you evoke this scent." data-prompter-tooltip-tone="amber" class="px-0.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold transition-all hover:bg-amber-500/20 cursor-help" title="Scent Anchor: Slow your cadence and breathe in gently as you evoke this scent.">${word}</span>`;
+    });
+
+    // 2. Soundscape Anchors (Sky Blue)
+    const soundRegex = new RegExp(`(<[^>]*>)|\\b(${soundPattern})\\b`, 'gi');
+    processed = processed.replace(soundRegex, (match, tag, word) => {
+      if (tag) return tag;
+      return `<span data-sensory-cue="sound" data-prompter-tooltip-title="SENSORY ANCHOR • SOUNDSCAPE" data-prompter-tooltip-desc="Drop your vocal register slightly and let the acoustic memory resonate." data-prompter-tooltip-tone="sky" class="px-0.5 py-0.5 rounded bg-sky-500/10 text-sky-300 border border-sky-500/20 shadow-[0_0_12px_rgba(56,189,248,0.25)] font-bold transition-all hover:bg-sky-500/20 cursor-help" title="Sound Anchor: Drop your vocal register slightly and let the acoustic memory resonate.">${word}</span>`;
+    });
+
+    // 3. Visual & Texture Anchors (Emerald Green)
+    const visualRegex = new RegExp(`(<[^>]*>)|\\b(${visualPattern})\\b`, 'gi');
+    processed = processed.replace(visualRegex, (match, tag, word) => {
+      if (tag) return tag;
+      return `<span data-sensory-cue="visual" data-prompter-tooltip-title="SENSORY ANCHOR • VISUAL &amp; TEXTURE" data-prompter-tooltip-desc="Hold steady eye contact with the lens as you paint this visual detail." data-prompter-tooltip-tone="emerald" class="px-0.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold transition-all hover:bg-emerald-500/20 cursor-help" title="Visual/Texture Anchor: Hold steady eye contact with the lens as you paint this visual detail.">${word}</span>`;
+    });
+  }
+
+  // 4. Double Slashes (//) Deep Breath - Sky Blue with 2 pulsing dots
+  const doubleSlashRegex = /(<[^>]*>)|(\s+\/\/|\/\/)/g;
+  processed = processed.replace(doubleSlashRegex, (match, tag) => {
+    if (tag) return tag;
+    return ` <span data-slash-cue="double" data-prompter-tooltip-title="CADENCE CUE • DEEP BREATH ( // )" data-prompter-tooltip-desc="Full sentence brake (~0.5s). Pause, breathe deeply, and reconnect eye contact with the camera lens." data-prompter-tooltip-tone="sky" title="Cadence Cue ( // ): Deep Breath &amp; Full Sentence Pause (~0.5s) — Pause, breathe deeply, and reconnect eye contact with the lens." class="relative inline-flex flex-col items-center justify-center mx-1.5 px-1 py-0.5 rounded bg-sky-500/15 text-sky-300 font-mono font-bold text-xs select-none shadow-[0_0_8px_rgba(56,189,248,0.3)] border border-sky-400/30 hover:bg-sky-500/20 group select-none cursor-help after:content-[''] after:absolute after:-inset-x-1 after:-top-1 after:-bottom-3"><span class="leading-none">//</span><span class="absolute -bottom-2 flex gap-1 items-center justify-center cursor-help"><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s; animation-delay: 0.3s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span></span></span>`;
+  });
+
+  // 5. Single Slashes (/) Short Breath - Emerald with 1 pulsing dot (disjoint negative lookbehind & lookahead so // is never split)
+  const singleSlashRegex = /(<[^>]*>)|(\s+(?<!\/)\/(?!\/)|(?<!\/)\/(?!\/))/g;
+  processed = processed.replace(singleSlashRegex, (match, tag) => {
+    if (tag) return tag;
+    return ` <span data-slash-cue="single" data-prompter-tooltip-title="CADENCE CUE • SHORT BREATH ( / )" data-prompter-tooltip-desc="Clause micro-pause (~0.2s). Take a gentle half-breath and let the phrase settle before continuing." data-prompter-tooltip-tone="emerald" title="Cadence Cue ( / ): Short Breath &amp; Clause Micro-Pause (~0.2s) — Take a gentle half-breath and let the phrase settle." class="relative inline-flex flex-col items-center justify-center mx-1 px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono font-bold text-xs select-none shadow-[0_0_8px_rgba(52,211,153,0.3)] border border-emerald-400/30 hover:bg-emerald-500/20 group select-none cursor-help after:content-[''] after:absolute after:-inset-x-1 after:-top-1 after:-bottom-3"><span class="leading-none">/</span><span class="absolute -bottom-2 flex items-center justify-center cursor-help"><span class="absolute w-2 h-2 rounded-full bg-emerald-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span></span></span>`;
+  });
+
+  return processed;
+}
