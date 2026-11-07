@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useScriptCadence, formatSpokenDuration } from '@/hooks/studio/useScriptCadence';
+import {
+  applyTheatricalSlashes,
+  splitSentenceAtHinge,
+  clearCadenceMarkers,
+} from '@/utils/scriptFormatter';
 
 describe('SPEC-MW-134 & Option C: Script Cadence & Teleprompter Speakability Hook', () => {
   describe('1. 120 WPM Elder Speech Pace Calculations', () => {
@@ -76,6 +81,71 @@ describe('SPEC-MW-134 & Option C: Script Cadence & Teleprompter Speakability Hoo
       expect(orthSuggestions).toHaveLength(2);
       expect(orthSuggestions[0].replacement).toBe('colour');
       expect(orthSuggestions[1].replacement).toBe('theatre');
+    });
+  });
+
+  describe('5. FEAT-MW-176: Deterministic Midpoint Clause Splitter (splitSentenceAtHinge)', () => {
+    it('safeguard 1: preserves original commas non-destructively by inserting marker after comma', () => {
+      const text = 'Under the soft golden lamplight, three generations gathered together around the table to turn the delicate pages of the family journal, passing forward our favourite traditions and hard-won memories.';
+      // 29 words
+      const split = splitSentenceAtHinge(text, 0, '//');
+
+      // Assert that comma is preserved before the // marker
+      expect(split).toContain(', //');
+      // Assert that both parts are <= 24 words
+      const parts = split.split('//').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
+      expect(parts[0]).toBeLessThanOrEqual(24);
+      expect(parts[1]).toBeLessThanOrEqual(24);
+      expect(parts[0] + parts[1]).toBe(29);
+    });
+
+    it('safeguard 2: bounded hinge radius prevents early introductory commas from leaving >24 word runs', () => {
+      // 28-word sentence with an introductory comma at word 3
+      const textWithEarlyComma = 'In July 1968, my grandparents packed everything they owned into two battered tin trunks and boarded the steam train to embark on their long migration across continents.';
+      const split = splitSentenceAtHinge(textWithEarlyComma, 0, '//');
+
+      // The early comma at word 3 must NOT be chosen because it would leave 25 words in part 2
+      expect(split).not.toContain('In July 1968, //');
+
+      const parts = split.split('//').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
+      expect(parts[0]).toBeLessThanOrEqual(24);
+      expect(parts[1]).toBeLessThanOrEqual(24);
+    });
+
+    it('splits unpunctuated sentences cleanly at natural spoken hinge words', () => {
+      const unpunctuated = 'Looking back forty years ago to the very first morning we arrived at the cold railway station in London with four heavy wooden suitcases and our bewildered family.';
+      // 26 words
+      const split = splitSentenceAtHinge(unpunctuated, 0, '//');
+
+      expect(split).toContain(' // with');
+      const parts = split.split('//').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
+      expect(parts[0]).toBeLessThanOrEqual(24);
+      expect(parts[1]).toBeLessThanOrEqual(24);
+    });
+  });
+
+  describe('6. FEAT-MW-176: Cadence Marker Clearing (clearCadenceMarkers)', () => {
+    it('strips / and // markers while preserving commas and authentic punctuation', () => {
+      const splitText = 'Under the soft golden lamplight, three generations gathered together around the table, // passing forward our favourite traditions and hard-won memories.';
+      const cleared = clearCadenceMarkers(splitText);
+
+      expect(cleared).not.toContain('//');
+      expect(cleared).not.toContain('/');
+      expect(cleared).toContain('table, passing');
+    });
+  });
+
+  describe('7. FEAT-MW-176: Theatrical Slashes Deduplication & Ordering (applyTheatricalSlashes)', () => {
+    it('safeguard 3: matches double slashes before single slashes without partial matching', () => {
+      // , // should stay as a deep breath, not get broken into / /
+      expect(applyTheatricalSlashes('Hello, // world.')).toBe('Hello // world //');
+      expect(applyTheatricalSlashes('Hello. // World.')).toBe('Hello // World //');
+    });
+
+    it('deduplicates adjacent punctuation and slash combinations into single clean cues', () => {
+      expect(applyTheatricalSlashes('Walking home, / talking softly.')).toBe('Walking home / talking softly //');
+      expect(applyTheatricalSlashes('Evening fell. / The bells rang.')).toBe('Evening fell // The bells rang //');
+      expect(applyTheatricalSlashes('A quiet day // // another year.')).toBe('A quiet day // another year //');
     });
   });
 });

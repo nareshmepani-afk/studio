@@ -54,7 +54,10 @@ import {
   Sparkles,
   RotateCcw,
   Cloud,
+  Wind,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { applyTheatricalSlashes } from '@/utils/scriptFormatter';
 import { uploadAudioWithResiliency, uploadVideoWithResiliency } from '@/lib/media/chunkedAudioUpload';
 import { getSceneById, getPartForScene, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
@@ -77,6 +80,103 @@ function resolveInitialSpark(targetParam?: string): FiresidePromptSpark {
   }
   return FIRESIDE_PROMPT_SPARKS[0];
 }
+
+function formatFiresidePrompterHtml(text: string, autoBreath: boolean): string {
+  if (!text) return '';
+  const processedText = autoBreath ? applyTheatricalSlashes(text) : text;
+
+  // Render double slash (//) with pulsing sky-blue dots
+  let html = processedText.replace(/(<[^>]*>)|(\s*\/\/\s*|\/\/)/g, (match, tag) => {
+    if (tag) return tag;
+    return ' <span class="relative inline-flex flex-col items-center justify-center mx-1 px-1 py-0.5 rounded bg-sky-500/15 text-sky-300 font-mono font-bold text-xs select-none shadow-[0_0_8px_rgba(56,189,248,0.3)] border border-sky-400/30">//<span class="absolute -bottom-1 flex gap-0.5 items-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span></span></span> ';
+  });
+
+  // Render single slash (/) with pulsing emerald dot
+  html = html.replace(/(<[^>]*>)|(\s*\/(?!\/)\s*|(?<!\/)\/(?!\/))/g, (match, tag) => {
+    if (tag) return tag;
+    return ' <span class="relative inline-flex flex-col items-center justify-center mx-1 px-1 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-mono font-bold text-xs select-none shadow-[0_0_8px_rgba(52,211,153,0.3)] border border-emerald-400/30">/<span class="absolute -bottom-1 flex items-center justify-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span></span></span> ';
+  });
+
+  return html;
+}
+
+interface FiresidePrompterBannerProps {
+  prose?: string;
+  pinnedQuestion?: string | null;
+  testId?: string;
+}
+
+const FiresidePrompterBanner: React.FC<FiresidePrompterBannerProps> = ({
+  prose,
+  pinnedQuestion,
+  testId = 'fireside-recording-script-banner',
+}) => {
+  const [autoBreath, setAutoBreath] = useState(true);
+
+  if (!prose && !pinnedQuestion) return null;
+
+  return (
+    <div
+      data-testid={testId}
+      className="max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left shadow-lg"
+    >
+      <div className="flex items-center justify-between gap-1.5 text-amber-400 font-mono text-[11px] uppercase tracking-wider font-semibold mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Active Teleprompter Script (Act I)</span>
+        </div>
+        {prose && (
+          <button
+            type="button"
+            data-testid="fireside-auto-breath-toggle"
+            onClick={() => setAutoBreath((prev) => !prev)}
+            title={
+              autoBreath
+                ? 'Theatrical Auto-Breath active: converting punctuation into spoken pause beacons. Click to disable.'
+                : 'Theatrical Auto-Breath disabled: displaying raw text. Click to enable.'
+            }
+            className={cn(
+              'px-2 py-0.5 rounded text-[10px] font-mono font-bold transition flex items-center gap-1 cursor-pointer',
+              autoBreath
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
+                : 'bg-stone-900 text-stone-400 border border-stone-800 hover:text-stone-300'
+            )}
+          >
+            <Wind className="w-2.5 h-2.5" />
+            <span>🌬️ Auto-Breath: {autoBreath ? 'ON' : 'OFF'}</span>
+          </button>
+        )}
+      </div>
+
+      {prose && (
+        <div
+          data-testid="fireside-prompter-prose-container"
+          className="max-h-56 overflow-y-auto pr-1 text-xs sm:text-sm font-serif text-stone-200 leading-relaxed scrollbar-thin scrollbar-thumb-stone-700"
+        >
+          <span
+            dangerouslySetInnerHTML={{
+              __html: `&ldquo;${formatFiresidePrompterHtml(prose, autoBreath)}&rdquo;`,
+            }}
+          />
+        </div>
+      )}
+
+      {pinnedQuestion && (
+        <div
+          data-testid="fireside-pinned-prompter-footnote"
+          className="mt-2 pt-2 border-t border-amber-500/20 flex items-start gap-2"
+        >
+          <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300 shrink-0 mt-0.5">
+            📌 Follow-Up:
+          </span>
+          <p className="text-xs font-serif italic text-amber-100 leading-snug">
+            {pinnedQuestion}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function FiresideStudioClient() {
   const searchParams = useSearchParams();
@@ -1222,35 +1322,10 @@ export default function FiresideStudioClient() {
                 <h2 className="text-lg sm:text-xl font-serif text-stone-200">
                   {selectedSpark ? `Record: ${selectedSpark.title}` : 'Record Your Video Memo'}
                 </h2>
-                {(activeSceneMemory?.prose || pinnedPrompterQuestion) && (
-                  <div
-                    data-testid="fireside-recording-script-banner"
-                    className="max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left"
-                  >
-                    <div className="flex items-center gap-1.5 text-amber-400 font-mono text-[11px] uppercase tracking-wider font-semibold mb-1">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Active Teleprompter Script (Act I)</span>
-                    </div>
-                    {activeSceneMemory?.prose && (
-                      <p className="text-xs sm:text-sm font-serif text-stone-200 leading-relaxed line-clamp-3">
-                        &ldquo;{activeSceneMemory.prose}&rdquo;
-                      </p>
-                    )}
-                    {pinnedPrompterQuestion && (
-                      <div
-                        data-testid="fireside-pinned-prompter-footnote"
-                        className="mt-2 pt-2 border-t border-amber-500/20 flex items-start gap-2"
-                      >
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300 shrink-0 mt-0.5">
-                          📌 Follow-Up:
-                        </span>
-                        <p className="text-xs font-serif italic text-amber-100 leading-snug">
-                          {pinnedPrompterQuestion}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <FiresidePrompterBanner
+                  prose={activeSceneMemory?.prose}
+                  pinnedQuestion={pinnedPrompterQuestion}
+                />
               </div>
 
               <FiresideVideoRecorder
@@ -1304,35 +1379,10 @@ export default function FiresideStudioClient() {
                   <h2 className="text-lg sm:text-xl font-serif text-stone-200">
                     {selectedSpark ? `Speak: ${selectedSpark.title}` : 'Speak Your Spoken Memoir'}
                   </h2>
-                  {(activeSceneMemory?.prose || pinnedPrompterQuestion) && (
-                    <div
-                      data-testid="fireside-recording-script-banner"
-                      className="max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left"
-                    >
-                      <div className="flex items-center gap-1.5 text-amber-400 font-mono text-[11px] uppercase tracking-wider font-semibold mb-1">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Active Teleprompter Script (Act I)</span>
-                      </div>
-                      {activeSceneMemory?.prose && (
-                        <p className="text-xs sm:text-sm font-serif text-stone-200 leading-relaxed line-clamp-3">
-                          &ldquo;{activeSceneMemory.prose}&rdquo;
-                        </p>
-                      )}
-                      {pinnedPrompterQuestion && (
-                        <div
-                          data-testid="fireside-pinned-prompter-footnote"
-                          className="mt-2 pt-2 border-t border-amber-500/20 flex items-start gap-2"
-                        >
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300 shrink-0 mt-0.5">
-                            📌 Follow-Up:
-                          </span>
-                          <p className="text-xs font-serif italic text-amber-100 leading-snug">
-                            {pinnedPrompterQuestion}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <FiresidePrompterBanner
+                    prose={activeSceneMemory?.prose}
+                    pinnedQuestion={pinnedPrompterQuestion}
+                  />
                 </div>
 
                 <TactileVoiceRecorder

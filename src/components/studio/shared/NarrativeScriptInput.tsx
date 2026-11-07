@@ -21,6 +21,7 @@ import {
 } from '@/hooks/studio/useScriptCadence';
 import { ScribesMargin } from './ScribesMargin';
 import { resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
+import { splitSentenceAtHinge, clearCadenceMarkers } from '@/utils/scriptFormatter';
 
 export type InputTypography = 'typewriter' | 'serif';
 export type ScriptLanguage = 'en-GB' | 'gu' | 'pa' | 'hi';
@@ -77,6 +78,8 @@ export interface NarrativeScriptInputRef {
   pulseAndSelectWord: (word: string, modality?: 'soundscape' | 'visual' | 'aroma') => void;
   applySuggestion: (suggestion: ScribeSuggestion) => void;
   insertCadenceMarker: (marker: '/' | '//') => void;
+  splitBreathRun?: (runIndex?: number) => void;
+  clearCadenceMarkers?: () => void;
   focus: (options?: FocusOptions) => void;
   getTextarea: () => HTMLTextAreaElement | null;
 }
@@ -349,6 +352,25 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
       [value, onChange]
     );
 
+    // 3b. Midpoint Clause Splitter Helper (FEAT-MW-176)
+    const splitBreathRun = useCallback(
+      (runIndex?: number) => {
+        const updated = splitSentenceAtHinge(value, runIndex, '//');
+        if (updated !== value) {
+          onChange(updated);
+        }
+      },
+      [value, onChange]
+    );
+
+    // 3c. Clear Cadence Markers Helper (FEAT-MW-176)
+    const clearMarkers = useCallback(() => {
+      const updated = clearCadenceMarkers(value);
+      if (updated !== value) {
+        onChange(updated);
+      }
+    }, [value, onChange]);
+
     // 4. Suggestion Replacement Helper
     const applySuggestion = useCallback(
       (suggestion: ScribeSuggestion) => {
@@ -400,12 +422,14 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
         },
         applySuggestion,
         insertCadenceMarker,
+        splitBreathRun,
+        clearCadenceMarkers: clearMarkers,
         focus: (options?: FocusOptions) => {
           textareaRef.current?.focus(options);
         },
         getTextarea: () => textareaRef.current,
       }),
-      [dominantAnchors, applySuggestion, insertCadenceMarker]
+      [dominantAnchors, applySuggestion, insertCadenceMarker, splitBreathRun, clearMarkers]
     );
 
     useEffect(() => {
@@ -597,6 +621,8 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
               suggestions={suggestions}
               onApplySuggestion={applySuggestion}
               onInsertCadenceMarker={insertCadenceMarker}
+              onSplitBreathRun={splitBreathRun}
+              onClearCadenceMarkers={clearMarkers}
               variant={marginVariant}
               isOpen={isMarginOpen}
               onClose={marginVariant === 'drawer' ? () => setIsMarginOpen(false) : undefined}

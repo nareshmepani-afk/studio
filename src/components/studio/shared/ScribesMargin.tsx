@@ -11,6 +11,7 @@ import {
   BookOpen,
   ChevronRight,
   ShieldCheck,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CadenceMetrics, ScribeSuggestion } from '@/hooks/studio/useScriptCadence';
@@ -22,6 +23,8 @@ export interface ScribesMarginProps {
   onApplySuggestion?: (suggestion: ScribeSuggestion) => void;
   onDismissSuggestion?: (suggestionId: string) => void;
   onInsertCadenceMarker?: (marker: '/' | '//') => void;
+  onSplitBreathRun?: (runIndex?: number) => void;
+  onClearCadenceMarkers?: () => void;
   variant?: 'dock' | 'drawer' | 'card';
   isOpen?: boolean;
   onClose?: () => void;
@@ -43,6 +46,8 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
   onApplySuggestion,
   onDismissSuggestion,
   onInsertCadenceMarker,
+  onSplitBreathRun,
+  onClearCadenceMarkers,
   variant = 'dock',
   isOpen = true,
   onClose,
@@ -136,28 +141,44 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
           </div>
         </div>
 
-        {/* Cadence Marker Quick-Insert Keys */}
-        {onInsertCadenceMarker && (
+        {/* Cadence Marker Quick-Insert Keys & 1-Click Clear Undo */}
+        {(onInsertCadenceMarker || onClearCadenceMarkers) && (
           <div className="pt-2 border-t border-stone-800/60 flex items-center gap-1.5 flex-wrap">
             <span className="text-[10px] text-stone-400">Insert Breath:</span>
-            <button
-              type="button"
-              data-testid={`${testIdPrefix}-insert-short-pause`}
-              onClick={() => onInsertCadenceMarker('/')}
-              title="Insert short breath pause (~0.2s pause on teleprompter)"
-              className="px-2 py-0.5 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
-            >
-              <span>/ Short (~0.2s)</span>
-            </button>
-            <button
-              type="button"
-              data-testid={`${testIdPrefix}-insert-deep-pause`}
-              onClick={() => onInsertCadenceMarker('//')}
-              title="Insert deep breath pause (~0.5s pause on teleprompter)"
-              className="px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
-            >
-              <span>// Deep (~0.5s)</span>
-            </button>
+            {onInsertCadenceMarker && (
+              <>
+                <button
+                  type="button"
+                  data-testid={`${testIdPrefix}-insert-short-pause`}
+                  onClick={() => onInsertCadenceMarker('/')}
+                  title="Insert short breath pause (~0.2s pause on teleprompter)"
+                  className="px-2 py-0.5 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                >
+                  <span>/ Short (~0.2s)</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid={`${testIdPrefix}-insert-deep-pause`}
+                  onClick={() => onInsertCadenceMarker('//')}
+                  title="Insert deep breath pause (~0.5s pause on teleprompter)"
+                  className="px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                >
+                  <span>// Deep (~0.5s)</span>
+                </button>
+              </>
+            )}
+            {onClearCadenceMarkers && metrics.breathPauseCount > 0 && (
+              <button
+                type="button"
+                data-testid={`${testIdPrefix}-clear-pauses`}
+                onClick={onClearCadenceMarkers}
+                title="Clear all manual breath pauses (/ and //) and restore clean prose"
+                className="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+                <span>↺ Clear</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -253,16 +274,24 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                       <span>Accept</span>
                     </button>
                   </div>
-                ) : isBreath && onInsertCadenceMarker ? (
+                ) : isBreath && (onSplitBreathRun || onInsertCadenceMarker) ? (
                   <div className="pt-1 flex items-center justify-end gap-1.5">
                     <button
                       type="button"
+                      data-testid={`${testIdPrefix}-split-breath-${suggestion.id}`}
                       onClick={() => {
-                        onInsertCadenceMarker('//');
+                        if (onSplitBreathRun) {
+                          const runIdx = parseInt(suggestion.id.replace(/\D/g, ''), 10);
+                          onSplitBreathRun(isNaN(runIdx) ? undefined : runIdx);
+                        } else {
+                          onInsertCadenceMarker?.('//');
+                        }
                         handleDismiss(suggestion.id);
                       }}
+                      title="Split long sentence at natural midpoint clause hinge without cursor placement"
                       className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
                     >
+                      <Wind className="w-3 h-3" />
                       <span>+ Add Breath (//)</span>
                     </button>
                   </div>

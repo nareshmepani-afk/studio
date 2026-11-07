@@ -218,5 +218,52 @@ describe('SPEC-MW-134: NarrativeScriptInput Dual-Layer & Scribe Suite', () => {
       expect(screen.getByText(/Voice Protected/)).toBeInTheDocument();
       expect(screen.getByText(/Your narrative is clean, breathable, and aligned with UK English standards/)).toBeInTheDocument();
     });
+
+    it('FEAT-MW-176: splits flagged long sentence in-place via BREATH RUN card and provides ↺ Clear undo', () => {
+      let scriptValue =
+        'Under the soft golden lamplight, three generations gathered together around the table to turn the delicate pages of the family journal, passing forward our favourite traditions and hard-won memories.';
+
+      const TestHarness = () => {
+        const [val, setVal] = React.useState(scriptValue);
+        return (
+          <NarrativeScriptInput
+            value={val}
+            onChange={(newVal) => {
+              setVal(newVal);
+              scriptValue = newVal;
+            }}
+            marginVariant="dock"
+            showScribesMargin={true}
+          />
+        );
+      };
+
+      const { rerender } = render(<TestHarness />);
+
+      // Find the BREATH RUN suggestion card
+      expect(screen.getByText(/Long breath run/)).toBeInTheDocument();
+      const addBreathBtn = screen.getByText('+ Add Breath (//)');
+      expect(addBreathBtn).toBeInTheDocument();
+
+      // Click + Add Breath (//)
+      fireEvent.click(addBreathBtn);
+      rerender(<TestHarness />);
+
+      // Assert that scriptValue was split in-place at midpoint hinge
+      expect(scriptValue).toContain('//');
+      expect(scriptValue).toContain('family journal, // passing forward');
+
+      // Assert the ↺ Clear button appears now that breathPauseCount > 0
+      const clearBtn = screen.getByTestId('scribes-margin-clear-pauses');
+      expect(clearBtn).toBeInTheDocument();
+
+      // Click ↺ Clear to undo
+      fireEvent.click(clearBtn);
+      rerender(<TestHarness />);
+
+      // Assert markers are cleared and original comma is intact
+      expect(scriptValue).not.toContain('//');
+      expect(scriptValue).toContain('family journal, passing forward');
+    });
   });
 });
