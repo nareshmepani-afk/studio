@@ -128,6 +128,8 @@ export async function expandWithAI(
       - Use high-contrast metaphors (e.g., "not a map, but the soil").
       - Focus on the "Linguistically silent but culturally loud" quality of migration.
       - Avoid AI-speak: BANNED words include "odyssey," "lineage," "tapestry," "vibrant," "testament," "unfolding," "interwoven," "symphony," or "shores" (unless refers to a physical beach).
+      - BRITISH ENGLISH (en-GB) ONLY (Rule 20.3): Enforce British/Commonwealth English spelling throughout (e.g. colour, favourite, theatre, realise, centre, honour, travelling).
+      - DIASPORA VOICE SHIELD: Preserve all South Asian, Gujarati, Punjabi, Hindi, and East African heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji) verbatim without anglicising or replacing them.
       - Write for future generations.
       
       Craft four (4) distinct "Takes" in this literary style, but HEAVILY influenced by the [DIRECTOR'S INTENT]. 
@@ -734,6 +736,8 @@ export async function polishDescription(description: string, options: { sensoryF
     - Keep it concise (under 80 words).
     - Maintain the user's core intent as an authentic spoken monologue.
     - ABSOLUTELY NO SCREENPLAY OR CAMERA CUES: Do NOT use camera directions, cut notes, or lens cues (e.g. NEVER write "Cut to...", "Wide shot", "The lens zooms").
+    - BRITISH ENGLISH (en-GB) ONLY (Rule 20.3): Enforce British/Commonwealth English spelling (e.g. colour, favourite, theatre, realise, centre).
+    - DIASPORA VOICE SHIELD: Preserve all South Asian and diaspora heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji) verbatim.
     - BANNED: AI clichés like "tapestry," "odyssey," "whispers," "vibrant," "testament," "unfolding."
     
     Return ONLY the polished text. No quotes, no preamble.
@@ -773,6 +777,7 @@ export async function checkAndPolishGrammar(text: string): Promise<string> {
       [STRICT RULES]
       - Fix spelling mistakes, typos, and grammatical errors (e.g., "helpless three child" -> "helpless three children").
       - Enforce British English (UK) spelling conventions (e.g. colour, favourite, theatre, realise, centre) per Rule 20.
+      - DIASPORA VOICE SHIELD: Preserve all South Asian, Gujarati, Punjabi, Hindi, and East African diaspora heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji) verbatim without marking them as errors or anglicising them.
       - Preserve 100% of the author's custom wording, tone, and intended meaning.
       - Do NOT rephrase sentences unnecessarily.
       - ABSOLUTELY NO SCREENPLAY OR CAMERA CUES: Do NOT add camera cues, editing commands, or stage directions per Rule 11.
@@ -836,6 +841,7 @@ export async function weaveBonusNote(
       - Honour the Core Seed: Preserve the author's primary question, observation, wonder, or memory seed in essence. Do NOT contradict or erase their authentic sentiment.
       - Sensory & Atmospheric Depth: Deepen the tactile, olfactory, acoustic, and atmospheric textures (e.g. warmth of the sun, soil, dust, scent of rain, voices, light).
       - British English (UK) Only: Enforce British English spelling (e.g., colour, favourite, nourish, realise, honour, centre) per Rule 20.
+      - DIASPORA VOICE SHIELD: Preserve all South Asian and diaspora heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji) verbatim.
       - Concise & Dignified: Keep the output to a single, lyrical paragraph of approximately 45 to 80 words. Never output an overwhelming essay.
       - ABSOLUTE BAN ON SCREENPLAY / CAMERA CUES (Rule 11): You are writing spoken memoirs, NOT a film script. NEVER write "Cut to...", "Zoom in", "Fade in", "Wide shot", or any stage directions. Every word must be spoken by the narrator.
       - ABSOLUTE BAN ON AI CLICHÉS (Rule 11): NEVER use the following banned words: "odyssey", "lineage", "tapestry", "vibrant", "testament", "unfolding", "interwoven", "symphony", "echoes".
@@ -898,6 +904,7 @@ export async function proofreadScript(blocks: ScriptBlock[]): Promise<Array<{
       [THE INSTRUCTION]
       Identify errors and provide a "corrected" version for each affected block. 
       Keep the corrected version concise and maintain the user's intent.
+      Enforce British English (en-GB) spelling conventions (e.g. colour, favourite, theatre, realise, centre) per Rule 20, and NEVER flag or alter South Asian / Diaspora Voice Shield heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji).
       
       Return strictly a JSON array of objects:
       {

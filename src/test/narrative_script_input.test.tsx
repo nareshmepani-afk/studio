@@ -219,9 +219,9 @@ describe('SPEC-MW-134: NarrativeScriptInput Dual-Layer & Scribe Suite', () => {
       expect(screen.getByText(/Your narrative is clean, breathable, and aligned with UK English standards/)).toBeInTheDocument();
     });
 
-    it('FEAT-MW-176: splits flagged long sentence in-place via BREATH RUN card and provides ↺ Clear undo', () => {
+    it('SPEC-MW-178: splits flagged long sentence in-place via [+ Add Breath (/)] at unpunctuated hinge, renders Live Teleprompter Preview (spellCheck=false) & Voice Shield badges, and provides ↺ Clear undo', () => {
       let scriptValue =
-        'Under the soft golden lamplight, three generations gathered together around the table to turn the delicate pages of the family journal, passing forward our favourite traditions and hard-won memories.';
+        'Under the soft golden lamplight, three generations gathered together around the table to turn the delicate pages of the family journal, passing forward our favourite traditions and hard-won memories. We lit the diya at the mandir and shared masala chai with warm roti and samosas.';
 
       const TestHarness = () => {
         const [val, setVal] = React.useState(scriptValue);
@@ -240,18 +240,36 @@ describe('SPEC-MW-134: NarrativeScriptInput Dual-Layer & Scribe Suite', () => {
 
       const { rerender } = render(<TestHarness />);
 
-      // Find the BREATH RUN suggestion card
+      // Verify Live Teleprompter Preview renders with spellCheck={false} and cadence beacons
+      const previewEl = screen.getByTestId('scribes-margin-teleprompter-preview');
+      expect(previewEl).toBeInTheDocument();
+      expect(previewEl).toHaveAttribute('spellcheck', 'false');
+      expect(previewEl.innerHTML).toContain('data-slash-cue="single"');
+      expect(previewEl.innerHTML).toContain('data-slash-cue="double"');
+
+      // Verify Diaspora & UK Voice Shield badges surface heritage + UK terms
+      const shieldEl = screen.getByTestId('scribes-margin-voice-shield-badges');
+      expect(shieldEl).toBeInTheDocument();
+      expect(shieldEl.textContent).toContain('diya');
+      expect(shieldEl.textContent).toContain('mandir');
+      expect(shieldEl.textContent).toContain('masala chai');
+      expect(shieldEl.textContent).toContain('roti');
+      expect(shieldEl.textContent).toContain('samosas');
+      expect(shieldEl.textContent).toContain('favourite');
+
+      // Find the BREATH RUN suggestion card & Emerald [+ Add Breath (/)] button
       expect(screen.getByText(/Long breath run/)).toBeInTheDocument();
-      const addBreathBtn = screen.getByText('+ Add Breath (//)');
+      const addBreathBtn = screen.getByText('+ Add Breath (/)');
       expect(addBreathBtn).toBeInTheDocument();
 
-      // Click + Add Breath (//)
+      // Click + Add Breath (/)
       fireEvent.click(addBreathBtn);
       rerender(<TestHarness />);
 
-      // Assert that scriptValue was split in-place at midpoint hinge
-      expect(scriptValue).toContain('//');
-      expect(scriptValue).toContain('family journal, // passing forward');
+      // Assert that scriptValue was split in-place at the unpunctuated midpoint hinge while keeping commas untouched
+      expect(scriptValue).toContain('around the table / to turn');
+      expect(scriptValue).toContain('lamplight, three');
+      expect(scriptValue).toContain('family journal, passing forward');
 
       // Assert the ↺ Clear button appears now that breathPauseCount > 0
       const clearBtn = screen.getByTestId('scribes-margin-clear-pauses');
@@ -261,8 +279,9 @@ describe('SPEC-MW-134: NarrativeScriptInput Dual-Layer & Scribe Suite', () => {
       fireEvent.click(clearBtn);
       rerender(<TestHarness />);
 
-      // Assert markers are cleared and original comma is intact
-      expect(scriptValue).not.toContain('//');
+      // Assert markers are cleared and original commas + words are intact
+      expect(scriptValue).not.toContain(' / ');
+      expect(scriptValue).toContain('around the table to turn');
       expect(scriptValue).toContain('family journal, passing forward');
     });
   });

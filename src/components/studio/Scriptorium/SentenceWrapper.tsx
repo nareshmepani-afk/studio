@@ -1077,7 +1077,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           onMouseMove={handleEditorMouseMove}
           onMouseLeave={handleEditorMouseLeave}
           readOnly={readOnly}
-          spellCheck={false}
+          lang="en-GB" spellCheck={!readOnly}
           data-gramm="false"
           data-gramm_editor="false"
           data-enable-grammarly="false"

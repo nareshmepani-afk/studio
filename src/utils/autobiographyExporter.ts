@@ -1,6 +1,7 @@
 import type { Memory } from '@/types';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
+import { clearCadenceMarkers } from '@/utils/scriptFormatter';
 
 /**
  * Generates the styled HTML document for the 2-page heirloom autobiography booklet.
@@ -13,7 +14,7 @@ export function generateAutobiographyHtml(memory: Memory, userEmail?: string): s
   const producer = memory.credits?.producer || 'House of Memories';
   const starring = memory.credits?.starring || 'The Soul of the Story';
   const title = memory.title || 'Biographical Memory Odyssey';
-  const narrativeText = memory.prose || memory.originalHook || memory.description || '';
+  const narrativeText = clearCadenceMarkers(memory.prose || memory.originalHook || memory.description || '');
 
   const posterUrl = memory.posterImageUrl || memory.imageUrl || (memory as any).posterUrl || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1000';
 
@@ -476,7 +477,7 @@ export function generateAutobiographyHtml(memory: Memory, userEmail?: string): s
         </div>
       </div>
 
-      <div class="monologue-body">${fusionManifest.cohesiveScript || narrativeText}</div>
+      <div class="monologue-body">${clearCadenceMarkers(fusionManifest.cohesiveScript || narrativeText)}</div>
     </div>
 
     <div class="footer-flex">

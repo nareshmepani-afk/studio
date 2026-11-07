@@ -8,7 +8,7 @@ import {
   Save, Rocket, AlertCircle, Loader2, Edit3, ChevronRight, ChevronDown, Maximize2, 
   Trash2, Plus, Minus, Info, Layout, Layers, Wand2, Music, Wind, Coffee, Zap,
   FileText, ImageIcon, Video, Share2, MoreHorizontal, Square, History, UserCircle,
-  RotateCcw, Lock, Eye, Film, Headphones, Play, Pause, Volume2, CheckCircle2
+  RotateCcw, Lock, Eye, Film, Headphones, Play, Pause, Volume2, CheckCircle2, Clock
 } from 'lucide-react';
 import { Memory, SensoryPromptTemplate, ActionResponse, CatalystType, StructuredScript } from '@/types';
 import { useDictionary } from '@/hooks/use-dictionary';
@@ -33,6 +33,9 @@ import { teardownActiveMediaStreams } from '@/utils/mediaTeardown';
 import { FilofaxDesktopSpine } from '@/components/navigation/folio/FilofaxDesktopSpine';
 import type { FolioSceneToken } from '@/components/navigation/folio/folioTokens';
 import type { ScriptSyncMessage } from '@/components/studio/shared/NarrativeScriptInput';
+import { ScribesMargin } from '@/components/studio/shared/ScribesMargin';
+import { useScriptCadence, type ScribeSuggestion } from '@/hooks/studio/useScriptCadence';
+import { splitSentenceAtHinge, clearCadenceMarkers } from '@/utils/scriptFormatter';
 import { stripHtmlWrapper } from '@/types/curriculum';
 import { 
   SelectionDeck, 
@@ -680,6 +683,61 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   }, [isCloudSaving, onSavingChange]);
 
   const scriptoriumRef = useRef<any>(null);
+
+  // SPEC-MW-178 (2A): Inline Desktop Scribe's Margin & Cadence HUD parity
+  const [isDesktopMarginOpen, setIsDesktopMarginOpen] = useState(false);
+  const activeDesktopScript = productionStage === 0 ? (description || '') : (prose || description || '');
+  const { metrics: desktopCadenceMetrics, suggestions: desktopScribeSuggestions } = useScriptCadence(activeDesktopScript);
+
+  const applyDesktopScriptMutation = useCallback((nextText: string) => {
+    if (isProductionLocked || nextText === activeDesktopScript) return;
+    setDescription(nextText);
+    setProse(nextText);
+    broadcastDesktopScript(nextText);
+    const nextBlocks: ScriptBlock[] = [
+      {
+        id: scriptBlocks[0]?.id || 'story-hook',
+        text: nextText,
+        type: (scriptBlocks[0]?.type || 'beat') as any,
+        catalysts: scriptBlocks[0]?.catalysts || [],
+      },
+    ];
+    setScriptBlocks(nextBlocks);
+    scriptoriumRef.current?.resetBlocks?.(nextBlocks);
+    onActivity?.();
+  }, [isProductionLocked, activeDesktopScript, broadcastDesktopScript, scriptBlocks, onActivity]);
+
+  const handleDesktopApplySuggestion = useCallback((suggestion: ScribeSuggestion) => {
+    if (!suggestion.replacement) return;
+    if (suggestion.range) {
+      const [start, end] = suggestion.range;
+      const nextText = `${activeDesktopScript.substring(0, start)}${suggestion.replacement}${activeDesktopScript.substring(end)}`;
+      applyDesktopScriptMutation(nextText);
+    } else {
+      const rx = new RegExp(`\\b${suggestion.original}\\b`, 'i');
+      applyDesktopScriptMutation(activeDesktopScript.replace(rx, suggestion.replacement));
+    }
+  }, [activeDesktopScript, applyDesktopScriptMutation]);
+
+  const handleDesktopInsertMarker = useCallback((marker: '/' | '//') => {
+    const trimmed = activeDesktopScript.trimEnd();
+    const nextText = trimmed ? `${trimmed} ${marker} ` : `${marker} `;
+    applyDesktopScriptMutation(nextText);
+  }, [activeDesktopScript, applyDesktopScriptMutation]);
+
+  const handleDesktopSplitBreathRun = useCallback((runIndex?: number) => {
+    const updated = splitSentenceAtHinge(activeDesktopScript, runIndex, '/');
+    if (updated !== activeDesktopScript) {
+      applyDesktopScriptMutation(updated);
+    }
+  }, [activeDesktopScript, applyDesktopScriptMutation]);
+
+  const handleDesktopClearMarkers = useCallback(() => {
+    const updated = clearCadenceMarkers(activeDesktopScript);
+    if (updated !== activeDesktopScript) {
+      applyDesktopScriptMutation(updated);
+    }
+  }, [activeDesktopScript, applyDesktopScriptMutation]);
 
   useImperativeHandle(ref, () => ({
     validate: () => {
@@ -1695,6 +1753,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                     <div key={config.id || `sensory-${idx}`} className="space-y-4">
                       <h3 className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em]">{config.label}</h3>
                       <textarea 
+                        lang="en-GB"
+                        spellCheck={true}
                         value={sensoryValues[config.id] || ''}
                         onChange={(e) => handleSensoryChange(config.id, e.target.value)}
                         placeholder={config.placeholder}
@@ -1732,7 +1792,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                   {/* Poster Config UI */}
                   <div className="space-y-4">
                     <h3 className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em]">Theatrical Title</h3>
-                    <input type="text" value={chapterTitle} onChange={(e) => setChapterTitle(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white italic outline-none focus:border-rose-500/50" />
+                    <input type="text" lang="en-GB" spellCheck={true} value={chapterTitle} onChange={(e) => setChapterTitle(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white italic outline-none focus:border-rose-500/50" />
                   </div>
                   {/* Additional poster fields could go here */}
                 </div>
@@ -1957,6 +2017,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       <input 
                         type="text"
                         id="catalyst-title"
+                        lang="en-GB"
+                        spellCheck={true}
                         value={title}
                         onChange={(e) => { setTitle(e.target.value); onActivity?.(); }}
                         onFocus={() => { setLastFocusedField('title'); onActivity?.(); }}
@@ -2770,6 +2832,54 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 <span>Aroma ({act1SensoryCounts.aroma.count})</span>
                               </button>
                             </div>
+
+                            {/* SPEC-MW-178 (2A): Desktop Act I Scribe's Margin Toggle */}
+                            <div className="flex items-center gap-3 font-mono text-xs">
+                              <button
+                                type="button"
+                                data-testid="desktop-act1-toggle-scribes-margin-btn"
+                                onClick={() => setIsDesktopMarginOpen((prev) => !prev)}
+                                title={isDesktopMarginOpen ? "Close Scribe's Margin drawer" : "Open Scribe's Margin & Cadence HUD drawer"}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition cursor-pointer font-bold",
+                                  isDesktopMarginOpen
+                                    ? "bg-purple-500/25 text-purple-200 border-purple-400/80 shadow-sm shadow-purple-500/20"
+                                    : "bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border-purple-500/30"
+                                )}
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                                <span>
+                                  {desktopScribeSuggestions.length > 0
+                                    ? `✨ ${desktopScribeSuggestions.length} Scribe Note${desktopScribeSuggestions.length > 1 ? 's' : ''}`
+                                    : '✨ Scribe Clean'}
+                                </span>
+                                <span className="text-[10px] text-purple-400/80 font-normal ml-0.5">
+                                  {isDesktopMarginOpen ? '▲ Close' : '▼ Open Margin'}
+                                </span>
+                              </button>
+                              <span className="text-[11px] text-stone-400 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                <span>~{Math.max(desktopCadenceMetrics.estimatedSpokenSeconds, 0)}s spoken</span>
+                              </span>
+                            </div>
+
+                            {isDesktopMarginOpen && (
+                              <div className="w-full pt-2">
+                                <ScribesMargin
+                                  metrics={desktopCadenceMetrics}
+                                  suggestions={desktopScribeSuggestions}
+                                  scriptText={activeDesktopScript}
+                                  onApplySuggestion={isProductionLocked ? undefined : handleDesktopApplySuggestion}
+                                  onInsertCadenceMarker={isProductionLocked ? undefined : handleDesktopInsertMarker}
+                                  onSplitBreathRun={isProductionLocked ? undefined : handleDesktopSplitBreathRun}
+                                  onClearCadenceMarkers={isProductionLocked ? undefined : handleDesktopClearMarkers}
+                                  variant="drawer"
+                                  isOpen={isDesktopMarginOpen}
+                                  onClose={() => setIsDesktopMarginOpen(false)}
+                                  testIdPrefix="desktop-scribes-margin"
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -3144,6 +3254,53 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         }}
 
                       />
+
+                      {/* SPEC-MW-178 (2A): Inline Scribe's Margin beneath Desktop Scriptorium */}
+                      <div className="mt-4 pt-3 border-t border-white/5 space-y-2">
+                        <div className="flex items-center justify-between font-mono text-xs flex-wrap gap-2">
+                          <button
+                            type="button"
+                            data-testid="desktop-scriptorium-toggle-scribes-margin-btn"
+                            onClick={() => setIsDesktopMarginOpen((prev) => !prev)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition cursor-pointer font-bold",
+                              isDesktopMarginOpen
+                                ? "bg-purple-500/25 text-purple-200 border-purple-400/80 shadow-sm shadow-purple-500/20"
+                                : "bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border-purple-500/30"
+                            )}
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                            <span>
+                              {desktopScribeSuggestions.length > 0
+                                ? `✨ ${desktopScribeSuggestions.length} Scribe Note${desktopScribeSuggestions.length > 1 ? 's' : ''}`
+                                : '✨ Scribe Clean'}
+                            </span>
+                            <span className="text-[10px] text-purple-400/80 font-normal ml-0.5">
+                              {isDesktopMarginOpen ? '▲ Close' : '▼ Open Margin'}
+                            </span>
+                          </button>
+                          <span className="text-[11px] text-stone-400 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>~{Math.max(desktopCadenceMetrics.estimatedSpokenSeconds, 0)}s spoken</span>
+                          </span>
+                        </div>
+
+                        {isDesktopMarginOpen && (
+                          <ScribesMargin
+                            metrics={desktopCadenceMetrics}
+                            suggestions={desktopScribeSuggestions}
+                            scriptText={activeDesktopScript}
+                            onApplySuggestion={isProductionLocked ? undefined : handleDesktopApplySuggestion}
+                            onInsertCadenceMarker={isProductionLocked ? undefined : handleDesktopInsertMarker}
+                            onSplitBreathRun={isProductionLocked ? undefined : handleDesktopSplitBreathRun}
+                            onClearCadenceMarkers={isProductionLocked ? undefined : handleDesktopClearMarkers}
+                            variant="drawer"
+                            isOpen={isDesktopMarginOpen}
+                            onClose={() => setIsDesktopMarginOpen(false)}
+                            testIdPrefix="desktop-scriptorium-scribes-margin"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -3183,6 +3340,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       </div>
                         <textarea 
                           ref={el => { sensoryRefs.current[config.id] = el; }}
+                          lang="en-GB"
+                          spellCheck={true}
                           value={sensoryValues[config.id] || ''}
                           onChange={(e) => handleSensoryChange(config.id, e.target.value)}
                           onFocus={() => globalActions.setDrafting(false)}
@@ -3206,6 +3365,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         <div className="flex-1">
                           <input 
                             type="text"
+                            lang="en-GB"
+                            spellCheck={true}
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
                             placeholder="CITY / VENUE"
@@ -3216,6 +3377,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         <div className="flex-1">
                           <input 
                             type="text"
+                            lang="en-GB"
+                            spellCheck={true}
                             value={country}
                             onChange={(e) => setCountry(e.target.value)}
                             placeholder="COUNTRY"

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import {
   checkUKOrthography,
   detectAIClichés,
+  detectShieldedTerms,
   isProtectedDiasporaTerm,
 } from '@/lib/dictionary/diasporaVoiceShield';
 
@@ -19,11 +20,16 @@ export interface ScribeSuggestion {
 export interface CadenceMetrics {
   wordCount: number;
   characterCount: number;
-  estimatedSpokenSeconds: number; // 120 WPM elder standard + pause durations
-  breathPauseCount: number;       // Total / and // markers
-  deepPauseCount: number;         // Total // markers (~0.5s)
-  shortPauseCount: number;        // Total / markers (~0.2s)
+  estimatedSpokenSeconds: number; // 120 WPM elder standard + active pause durations
+  breathPauseCount: number;       // Custom manual / and // markers
+  deepPauseCount: number;         // Custom manual // markers (~0.5s)
+  shortPauseCount: number;        // Custom manual / markers (~0.2s)
+  activeShortCueCount: number;    // Total active teleprompter / cues (commas + custom /, deduplicated)
+  activeDeepCueCount: number;     // Total active teleprompter // cues (full stops + custom //, deduplicated)
+  activeTotalCueCount: number;    // Total active teleprompter breath cues (/ + //)
   longRunSentenceCount: number;   // Sentences > 24 words without pauses
+  shieldedDiasporaTerms: string[];
+  shieldedUkTerms: string[];
 }
 
 export interface UseScriptCadenceReturn {
@@ -64,7 +70,12 @@ export function useScriptCadence(text: string): UseScriptCadenceReturn {
         breathPauseCount: 0,
         deepPauseCount: 0,
         shortPauseCount: 0,
+        activeShortCueCount: 0,
+        activeDeepCueCount: 0,
+        activeTotalCueCount: 0,
         longRunSentenceCount: 0,
+        shieldedDiasporaTerms: [],
+        shieldedUkTerms: [],
       };
     }
 
@@ -83,7 +94,7 @@ export function useScriptCadence(text: string): UseScriptCadenceReturn {
     const characterCount = text.length;
 
     // Guardrail 1 (Disjoint Regex & No Double-Counting):
-    // Match // disjointly from standalone single /
+    // Match custom manual // disjointly from standalone single /
     const deepPauseMatches = text.match(/(?:^|\s|[.?!;:,])\/\/(?=\s|[.?!;:,]|$)/g);
     const deepPauseCount = deepPauseMatches ? deepPauseMatches.length : 0;
 
@@ -92,9 +103,24 @@ export function useScriptCadence(text: string): UseScriptCadenceReturn {
 
     const breathPauseCount = deepPauseCount + shortPauseCount;
 
-    // Duration calculation: 120 WPM (0.5s per word) + 0.5s per // + 0.2s per /
+    // SPEC-MW-178 (1A): Active Teleprompter Cues = custom slashes + unmarked punctuation pauses
+    // Period + single slash upgrades to deep pause in applyTheatricalSlashes
+    const upgradedSingleMatches = text.match(/(?:[.!?]\s*\/(?!\/)|(?<!\/)\/(?!\/)\s*[.!?])/g);
+    const upgradedSingleCount = upgradedSingleMatches ? upgradedSingleMatches.length : 0;
+
+    const autoDeepMatches = text.match(/(?<!\/\s*)(?:(?<!\.)\.(?!\.)|[?!])(?!\s*\/)/g);
+    const autoDeepCount = autoDeepMatches ? autoDeepMatches.length : 0;
+
+    const autoShortMatches = text.match(/(?<!\/\s*),(?!\s*\/)/g);
+    const autoShortCount = autoShortMatches ? autoShortMatches.length : 0;
+
+    const activeDeepCueCount = deepPauseCount + autoDeepCount + upgradedSingleCount;
+    const activeShortCueCount = Math.max(0, shortPauseCount - upgradedSingleCount) + autoShortCount;
+    const activeTotalCueCount = activeDeepCueCount + activeShortCueCount;
+
+    // Duration calculation: 120 WPM (0.5s per word) + 0.5s per active // + 0.2s per active /
     const speechSeconds = (wordCount / 120) * 60;
-    const pauseSeconds = (deepPauseCount * 0.5) + (shortPauseCount * 0.2);
+    const pauseSeconds = (activeDeepCueCount * 0.5) + (activeShortCueCount * 0.2);
     const estimatedSpokenSeconds = Math.round(speechSeconds + pauseSeconds);
 
     // Segment text by sentence boundaries, hard breaks, or breath markers
@@ -102,12 +128,14 @@ export function useScriptCadence(text: string): UseScriptCadenceReturn {
     let longRunSentenceCount = 0;
 
     for (const run of sentenceRuns) {
-      const runWords = run.split(/\s+/).filter(Boolean);
-      // If a sentence exceeds 24 words without a comma or breath break, flag it
+      const runWords = run.split(/\s+/).filter((w) => Boolean(w) && !/^[/]+$/.test(w));
+      // If a sentence segment exceeds 24 words without a breath break, flag it
       if (runWords.length > 24) {
         longRunSentenceCount++;
       }
     }
+
+    const { diasporaTerms: shieldedDiasporaTerms, ukTerms: shieldedUkTerms } = detectShieldedTerms(text);
 
     return {
       wordCount,
@@ -116,7 +144,12 @@ export function useScriptCadence(text: string): UseScriptCadenceReturn {
       breathPauseCount,
       deepPauseCount,
       shortPauseCount,
+      activeShortCueCount,
+      activeDeepCueCount,
+      activeTotalCueCount,
       longRunSentenceCount,
+      shieldedDiasporaTerms,
+      shieldedUkTerms,
     };
   }, [text]);
 

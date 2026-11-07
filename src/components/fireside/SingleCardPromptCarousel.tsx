@@ -1843,7 +1843,7 @@ export function SingleCardPromptCarousel({
                     typography="serif"
                     marginVariant="drawer"
                     textareaClassName="p-3.5 pr-10 pb-4"
-                    language={currentLanguage && currentLanguage !== 'en' ? currentLanguage : 'en-GB'}
+                    language={currentLanguage && !currentLanguage.toLowerCase().startsWith('en') ? currentLanguage : 'en-GB'}
                     dataTestId="HS_FIRESIDE_SCRIPT_TEXTAREA"
                     ariaLabel="Edit story script"
                   />

@@ -10,16 +10,21 @@ import {
   AlertTriangle,
   BookOpen,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Eye,
   ShieldCheck,
   RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CadenceMetrics, ScribeSuggestion } from '@/hooks/studio/useScriptCadence';
 import { formatSpokenDuration } from '@/hooks/studio/useScriptCadence';
+import { renderPrompterCadenceHtml } from '@/utils/scriptFormatter';
 
 export interface ScribesMarginProps {
   metrics: CadenceMetrics;
   suggestions: ScribeSuggestion[];
+  scriptText?: string;
   onApplySuggestion?: (suggestion: ScribeSuggestion) => void;
   onDismissSuggestion?: (suggestionId: string) => void;
   onInsertCadenceMarker?: (marker: '/' | '//') => void;
@@ -34,15 +39,17 @@ export interface ScribesMarginProps {
 
 /**
  * The Scribe's Margin
- * SPEC-MW-134 / Option A (Zero-DOM-Injection Assistant) & Option C (Teleprompter Cadence HUD)
+ * SPEC-MW-134 / SPEC-MW-178 (Live Teleprompter Preview, Active Cadence HUD & Diaspora Voice Shield)
  *
  * Renders an isolated, non-invasive side card (Desktop) or drawer (Mobile)
- * displaying 120 WPM spoken pace, breath pauses, British English orthography notes,
- * and AI cliché warnings with 1-click acceptance.
+ * displaying 120 WPM spoken pace, active punctuation + custom breath pauses,
+ * Live Teleprompter Cadence Preview, Diaspora & UK Voice Shield badges,
+ * British English orthography notes, and AI cliché warnings with 1-click acceptance.
  */
 export const ScribesMargin: React.FC<ScribesMarginProps> = ({
   metrics,
   suggestions,
+  scriptText,
   onApplySuggestion,
   onDismissSuggestion,
   onInsertCadenceMarker,
@@ -55,8 +62,16 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
   testIdPrefix = 'scribes-margin',
 }) => {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(true);
 
   const activeSuggestions = suggestions.filter((s) => !dismissedIds.has(s.id));
+  const activeShortCues = metrics.activeShortCueCount ?? metrics.shortPauseCount;
+  const activeDeepCues = metrics.activeDeepCueCount ?? metrics.deepPauseCount;
+  const activeTotalCues = metrics.activeTotalCueCount ?? metrics.breathPauseCount;
+  const diasporaTerms = metrics.shieldedDiasporaTerms ?? [];
+  const ukTerms = metrics.shieldedUkTerms ?? [];
+  const hasShieldBadges = diasporaTerms.length > 0 || ukTerms.length > 0;
+  const hasScriptPreview = Boolean(scriptText && scriptText.trim().length > 0);
 
   const handleDismiss = (id: string) => {
     setDismissedIds((prev) => new Set(prev).add(id));
@@ -129,13 +144,28 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
             <span>Elder Pace: </span>
             <strong className="text-stone-200">120 WPM</strong>
           </div>
-          <div>
-            <span>Breath Pauses: </span>
-            <strong className="text-sky-300">{metrics.breathPauseCount}</strong>
+          <div className="col-span-2 flex items-center justify-between flex-wrap gap-1 pt-0.5 border-t border-stone-800/40">
+            <span>Breath Cues: </span>
+            <span data-testid={`${testIdPrefix}-active-cues`} className="flex items-center gap-1.5 flex-wrap">
+              <strong className="text-stone-200">{activeTotalCues}</strong>
+              <span className="text-stone-500">(</span>
+              <span className="text-emerald-300 font-bold" title="Short clause pauses (commas + custom /)">{activeShortCues} /</span>
+              <span className="text-stone-500">&middot;</span>
+              <span className="text-sky-300 font-bold" title="Deep sentence breaths (full stops + custom //)">{activeDeepCues} //</span>
+              <span className="text-stone-500">)</span>
+              {metrics.breathPauseCount > 0 && (
+                <span
+                  data-testid={`${testIdPrefix}-custom-pause-badge`}
+                  className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold"
+                >
+                  +{metrics.breathPauseCount} custom
+                </span>
+              )}
+            </span>
           </div>
-          <div>
-            <span>Long Runs: </span>
-            <strong className={metrics.longRunSentenceCount > 0 ? 'text-amber-400 font-bold' : 'text-stone-400'}>
+          <div className="col-span-2 flex items-center justify-between pt-0.5 border-t border-stone-800/40">
+            <span>Long Runs (&gt;24w): </span>
+            <strong className={metrics.longRunSentenceCount > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
               {metrics.longRunSentenceCount}
             </strong>
           </div>
@@ -182,6 +212,85 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
           </div>
         )}
       </div>
+
+      {/* 2B. LIVE TELEPROMPTER CADENCE PREVIEW (SPEC-MW-178) */}
+      {hasScriptPreview && scriptText && (
+        <div className="rounded-xl bg-stone-950/70 border border-stone-800/70 overflow-hidden">
+          <button
+            type="button"
+            data-testid={`${testIdPrefix}-preview-toggle`}
+            onClick={() => setIsPreviewOpen((prev) => !prev)}
+            className="w-full px-3 py-2 flex items-center justify-between gap-2 text-[10px] font-bold text-stone-200 hover:bg-white/5 transition cursor-pointer"
+          >
+            <span className="flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Live Teleprompter Preview</span>
+              <span className="text-[9px] font-normal text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+                Auto-Breath ON
+              </span>
+            </span>
+            <span className="flex items-center gap-1 text-[9px] text-stone-400">
+              <span>{isPreviewOpen ? 'Hide' : 'Show'}</span>
+              {isPreviewOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </span>
+          </button>
+
+          {isPreviewOpen && (
+            <div
+              data-testid={`${testIdPrefix}-teleprompter-preview`}
+              spellCheck={false}
+              lang="en-GB"
+              aria-readonly="true"
+              className="px-3 py-2.5 border-t border-stone-800/70 bg-black/50 text-xs font-serif leading-relaxed text-stone-100 max-h-40 overflow-y-auto custom-scrollbar select-none"
+              dangerouslySetInnerHTML={{
+                __html: renderPrompterCadenceHtml(scriptText, {
+                  autoBreath: true,
+                  highlightSensory: true,
+                }),
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* 2C. DIASPORA & UK VOICE SHIELD BADGES (SPEC-MW-178) */}
+      {hasShieldBadges && (
+        <div
+          data-testid={`${testIdPrefix}-voice-shield-badges`}
+          className="p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/25 space-y-2"
+        >
+          <div className="flex items-center justify-between text-[10px] font-bold text-emerald-300">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Diaspora &amp; UK Voice Shield</span>
+            </span>
+            <span className="text-[9px] font-normal text-emerald-400/80">
+              {diasporaTerms.length + ukTerms.length} protected
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-1">
+            {diasporaTerms.map((term) => (
+              <span
+                key={`diaspora-${term.toLowerCase()}`}
+                title="Protected South Asian / Diaspora heritage vocabulary"
+                className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-500/30 text-[9px] font-medium"
+              >
+                🛡️ {term}
+              </span>
+            ))}
+            {ukTerms.map((term) => (
+              <span
+                key={`uk-${term.toLowerCase()}`}
+                title="Verified British / Commonwealth English spelling (Rule 20)"
+                className="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-200 border border-purple-500/30 text-[9px] font-medium"
+              >
+                🇬🇧 {term}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 3. SCRIBE SUGGESTIONS & NOTES */}
       <div className="space-y-2 flex-1 overflow-y-auto max-h-[320px] custom-scrollbar pr-1">
@@ -284,15 +393,15 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                           const runIdx = parseInt(suggestion.id.replace(/\D/g, ''), 10);
                           onSplitBreathRun(isNaN(runIdx) ? undefined : runIdx);
                         } else {
-                          onInsertCadenceMarker?.('//');
+                          onInsertCadenceMarker?.('/');
                         }
                         handleDismiss(suggestion.id);
                       }}
                       title="Split long sentence at natural midpoint clause hinge without cursor placement"
-                      className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                      className="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
                     >
                       <Wind className="w-3 h-3" />
-                      <span>+ Add Breath (//)</span>
+                      <span>+ Add Breath (/)</span>
                     </button>
                   </div>
                 ) : null}

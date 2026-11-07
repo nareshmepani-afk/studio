@@ -352,10 +352,10 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
       [value, onChange]
     );
 
-    // 3b. Midpoint Clause Splitter Helper (FEAT-MW-176)
+    // 3b. Midpoint Clause Splitter Helper (SPEC-MW-178)
     const splitBreathRun = useCallback(
       (runIndex?: number) => {
-        const updated = splitSentenceAtHinge(value, runIndex, '//');
+        const updated = splitSentenceAtHinge(value, runIndex, '/');
         if (updated !== value) {
           onChange(updated);
         }
@@ -619,6 +619,7 @@ export const NarrativeScriptInput = forwardRef<NarrativeScriptInputRef, Narrativ
             <ScribesMargin
               metrics={metrics}
               suggestions={suggestions}
+              scriptText={value}
               onApplySuggestion={applySuggestion}
               onInsertCadenceMarker={insertCadenceMarker}
               onSplitBreathRun={splitBreathRun}

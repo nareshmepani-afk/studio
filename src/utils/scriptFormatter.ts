@@ -49,20 +49,22 @@ export function tokenizeSentences(text: string): string[] {
 }
 
 /**
- * Deterministic Midpoint Clause Splitter (FEAT-MW-176)
+ * Deterministic Midpoint Clause Splitter (SPEC-MW-178)
  *
- * Scans a sentence exceeding 24 words and inserts a breath marker ('//' or '/')
- * at the nearest natural spoken clause hinge near the word midpoint ($M = \lfloor W / 2 \rfloor$).
+ * Scans a sentence exceeding 24 words, locates the longest unpunctuated clause stretch
+ * (bounded so both resulting segments of the sentence have at most 24 words), and inserts
+ * a breath marker ('/' default or '//') at the nearest natural spoken clause hinge near
+ * the midpoint of that unpunctuated stretch.
  *
  * Safeguards:
- * 1. Non-Destructive Comma Split: If splitting at a comma, inserts marker AFTER the comma (e.g. ', // ')
- *    so clearCadenceMarkers preserves the narrator's original punctuation.
- * 2. Bounded Hinge Radius: Constrains search window strictly to ensure both resulting segments have <= 24 words.
+ * 1. Never Splits Immediately After Existing Commas: Auto-Breath already converts commas into
+ *    '/' pauses, so comma/semicolon/colon boundaries are strictly excluded from split gaps.
+ * 2. Bounded Segment Window: Ensures both resulting halves of any 25..48-word sentence are <= 24 words.
  */
 export function splitSentenceAtHinge(
   text: string,
   targetRunIndex: number = 0,
-  marker: '/' | '//' = '//'
+  marker: '/' | '//' = '/'
 ): string {
   if (!text || text.trim().length === 0) return text;
 
@@ -72,7 +74,10 @@ export function splitSentenceAtHinge(
   const runsWithPos = rawRuns.map((r) => {
     const start = text.indexOf(r, accumulatedIndex);
     accumulatedIndex = start + r.length;
-    const words = r.trim().split(/\s+/).filter(Boolean);
+    const words = r
+      .trim()
+      .split(/\s+/)
+      .filter((w) => Boolean(w) && !/^[/]+$/.test(w));
     return { text: r, start, end: accumulatedIndex, words, wordCount: words.length };
   });
 
@@ -88,10 +93,12 @@ export function splitSentenceAtHinge(
   const W = words.length;
   const M = Math.floor(W / 2);
 
-  // Bounded window: both resulting halves must be <= 23 words (safely under 24-word threshold)
-  // This prevents early introductory commas (words 1-3) or trailing commas from leaving a >24-word run.
-  const minIdx = Math.max(4, W - 23);
-  const maxIdx = Math.min(23, W - 4);
+  // Global safe 1-based gap window [winMin, winMax] so both resulting halves are <= 24 words
+  // (with graceful midpoint fallback when W > 48 so extreme run-ons split cleanly across taps)
+  const rawMin = Math.max(4, W - 24);
+  const rawMax = Math.min(24, W - 4);
+  const winMin = rawMin <= rawMax ? rawMin : Math.max(4, M - 6);
+  const winMax = rawMin <= rawMax ? rawMax : Math.min(W - 4, M + 6);
 
   // Word tokens with character offsets inside targetRun.text
   const wordTokens: Array<{ word: string; index: number }> = [];
@@ -102,52 +109,109 @@ export function splitSentenceAtHinge(
     wSearchStart = pos + w.length;
   }
 
-  // Priority 1: Comma within [minIdx, maxIdx] closest to M
-  let bestHinge: { type: 'comma' | 'word' | 'fallback'; wordIdx: number; charOffset: number } | null = null;
-  let minDistance = Infinity;
+  // Partition tokens into contiguous unpunctuated clause stretches (0-based word indices inclusive).
+  // Any token ending with ',', ';', ':', '—', or '–' closes its stretch so gap (end + 1) is NEVER chosen.
+  interface ClauseStretch {
+    start: number;
+    end: number;
+    len: number;
+    validMin: number;
+    validMax: number;
+  }
+  const stretches: ClauseStretch[] = [];
+  let stretchStart = 0;
+  for (let idx = 0; idx < W; idx++) {
+    const tok = wordTokens[idx].word;
+    const isBoundaryToken = tok === '—' || tok === '–' || tok === '--';
+    const endsWithClausePunct = /[,;:\u2014\u2013]$/.test(tok);
 
-  for (let i = minIdx; i <= maxIdx; i++) {
-    const token = wordTokens[i - 1];
-    if (token && token.word.endsWith(',')) {
-      const dist = Math.abs(i - M);
-      if (dist < minDistance) {
-        minDistance = dist;
-        // Non-destructive: insert AFTER the comma
-        bestHinge = { type: 'comma', wordIdx: i, charOffset: token.index + token.word.length };
+    if (isBoundaryToken) {
+      if (idx - 1 >= stretchStart) {
+        const end = idx - 1;
+        stretches.push({
+          start: stretchStart,
+          end,
+          len: end - stretchStart + 1,
+          validMin: Math.max(stretchStart + 1, winMin),
+          validMax: Math.min(end, winMax),
+        });
       }
+      stretchStart = idx + 1;
+    } else if (endsWithClausePunct || idx === W - 1) {
+      const end = idx;
+      stretches.push({
+        start: stretchStart,
+        end,
+        len: end - stretchStart + 1,
+        validMin: Math.max(stretchStart + 1, winMin),
+        validMax: Math.min(end, winMax),
+      });
+      stretchStart = idx + 1;
     }
   }
 
-  // Priority 2: Natural spoken hinge words within [minIdx, maxIdx] closest to M
-  const hingeWordRegex = /^(and|but|while|because|when|where|to|with|feeling|passing|turning|filling|drifting|gathering|listening|watching|holding|standing|walking)$/i;
-  if (!bestHinge) {
-    for (let i = minIdx; i <= maxIdx; i++) {
-      const token = wordTokens[i - 1];
-      if (token) {
-        const cleanW = token.word.replace(/[^a-zA-Z]/g, '').toLowerCase();
+  // Candidate stretches that contain at least one valid internal gap within [winMin, winMax]
+  const validStretches = stretches
+    .filter((s) => s.validMin <= s.validMax)
+    .sort((a, b) => {
+      if (b.len !== a.len) return b.len - a.len;
+      const midA = a.start + a.len / 2;
+      const midB = b.start + b.len / 2;
+      return Math.abs(midA - M) - Math.abs(midB - M);
+    });
+
+  const hingeWordRegex = /^(to|and|but|while|because|when|where|with|passing|feeling|filling|turning)$/i;
+  let chosenCharOffset: number | null = null;
+
+  if (validStretches.length > 0) {
+    // Search longest unpunctuated stretch first (and subsequent stretches >= 6 words if needed)
+    for (let sIdx = 0; sIdx < validStretches.length; sIdx++) {
+      const stretch = validStretches[sIdx];
+      if (sIdx > 0 && stretch.len < 6) break;
+
+      const stretchMid = stretch.start + Math.floor(stretch.len / 2);
+      let bestGap: number | null = null;
+      let bestDist = Infinity;
+
+      for (let g = stretch.validMin; g <= stretch.validMax; g++) {
+        const token = wordTokens[g];
+        if (!token) continue;
+        const cleanW = token.word.replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, '').toLowerCase();
         if (hingeWordRegex.test(cleanW)) {
-          const dist = Math.abs(i - M);
-          if (dist < minDistance) {
-            minDistance = dist;
-            bestHinge = { type: 'word', wordIdx: i, charOffset: token.index };
+          const dist = Math.abs(g - stretchMid);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestGap = g;
           }
         }
       }
+
+      if (bestGap !== null) {
+        chosenCharOffset = wordTokens[bestGap].index;
+        break;
+      }
+    }
+
+    // Fallback inside the longest unpunctuated stretch: split at its internal midpoint (never after a comma)
+    if (chosenCharOffset === null) {
+      const primary = validStretches[0];
+      const stretchMid = primary.start + Math.floor(primary.len / 2);
+      const clampedGap = Math.min(Math.max(stretchMid, primary.validMin), primary.validMax);
+      if (wordTokens[clampedGap]) {
+        chosenCharOffset = wordTokens[clampedGap].index;
+      }
+    }
+  } else {
+    // Pathological fallback if every single word inside [winMin, winMax] ends with a comma
+    const fallbackGap = Math.min(Math.max(M, winMin), winMax);
+    if (wordTokens[fallbackGap]) {
+      chosenCharOffset = wordTokens[fallbackGap].index;
     }
   }
 
-  // Priority 3: Fallback word gap at M
-  if (!bestHinge) {
-    const fallbackIdx = Math.min(Math.max(M, minIdx), maxIdx);
-    const token = wordTokens[fallbackIdx - 1];
-    if (token) {
-      bestHinge = { type: 'fallback', wordIdx: fallbackIdx, charOffset: token.index + token.word.length };
-    }
-  }
+  if (chosenCharOffset === null) return text;
 
-  if (!bestHinge) return text;
-
-  const absSplitPos = targetRun.start + bestHinge.charOffset;
+  const absSplitPos = targetRun.start + chosenCharOffset;
   const before = text.slice(0, absSplitPos);
   const after = text.slice(absSplitPos);
 

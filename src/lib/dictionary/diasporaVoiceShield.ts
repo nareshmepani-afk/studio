@@ -380,3 +380,114 @@ export function detectAIClichés(text: string): ClicheMatch[] {
 
   return matches;
 }
+
+// ---------------------------------------------------------------------------
+// 4. ACTIVE DIASPORA & UK VOICE SHIELD BADGE DETECTOR (SPEC-MW-178)
+// ---------------------------------------------------------------------------
+
+/**
+ * Common general-English words/phrases included in DIASPORA_TERMS for linter protection
+ * that should NOT be badged as South Asian/East African loanwords in UI chips
+ * (e.g. "are" in English vs romanized Hindi "arre/are").
+ */
+const GENERAL_ENGLISH_SHIELD_EXCLUSIONS = new Set<string>([
+  'are', 'na', 'cardamom', 'saffron', 'asafetida', 'cumin', 'turmeric', 'coriander',
+  'incense', 'turban', 'bangles', 'anklet', 'nehru jacket', 'nose ring',
+  'verandah', 'trunk', 'postman', 'ferry', 'steamship', 'passenger liner',
+  'docklands', 'tilbury', 'southall', 'wembley', 'leicester', 'nairobi', 'mombasa',
+  'kampala', 'dar es salaam', 'zanzibar', 'aden', 'karachi', 'bombay', 'mumbai',
+  'ahmedabad', 'surat', 'porbandar', 'rajkot', 'jamnagar', 'kutch', 'navsari', 'baroda',
+  'vadodara', 'punjab', 'jalandhar', 'amritsar', 'ludhiana', 'lahore', 'uganda exodus',
+  'east africa', 'partition', 'passport', 'alien registration', 'voucher', 'air india',
+  'boac', 'heathrow', 'cotton mills', 'textile factories', 'corner shop', 'newsagent',
+  'grocery', 'high street', 'parish hall', 'subcontinental', 'diaspora',
+]);
+
+const MULTI_WORD_HERITAGE_PHRASES: string[] = DIASPORA_TERMS
+  .map((t) => t.toLowerCase())
+  .filter((t) => t.includes(' ') && !GENERAL_ENGLISH_SHIELD_EXCLUSIONS.has(t))
+  .sort((a, b) => b.length - a.length);
+
+const DISTINCTIVE_UK_SPELLINGS: Set<string> = new Set(
+  Object.entries(UK_ORTHOGRAPHY_MAPPINGS)
+    .filter(([us, uk]) => us.toLowerCase() !== uk.toLowerCase())
+    .map(([, uk]) => uk.toLowerCase())
+);
+
+/**
+ * Scans script prose and returns deduplicated heritage loanwords (e.g. diya, mandir,
+ * masala chai, roti, samosas) and verified British/Commonwealth spellings (e.g. realise,
+ * favourite, colour, theatre) in order of appearance for Scribe's Margin shield badges.
+ */
+export function detectShieldedTerms(text: string): {
+  diasporaTerms: string[];
+  ukTerms: string[];
+} {
+  if (!text || text.trim().length === 0) {
+    return { diasporaTerms: [], ukTerms: [] };
+  }
+
+  const foundDiaspora: Array<{ index: number; end: number; label: string }> = [];
+  const seenDiaspora = new Set<string>();
+
+  // 1. Match multi-word heritage phrases first (e.g. "masala chai") so constituent tokens aren't duplicated
+  for (const phrase of MULTI_WORD_HERITAGE_PHRASES) {
+    const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+    const rx = new RegExp(`\\b${escaped}s?\\b`, 'gi');
+    let m: RegExpExecArray | null;
+    while ((m = rx.exec(text)) !== null) {
+      const start = m.index;
+      const end = start + m[0].length;
+      const overlaps = foundDiaspora.some((f) => start < f.end && end > f.index);
+      const norm = m[0].replace(/\s+/g, ' ').toLowerCase();
+      if (!overlaps && !seenDiaspora.has(norm)) {
+        seenDiaspora.add(norm);
+        foundDiaspora.push({ index: start, end, label: m[0].replace(/\s+/g, ' ') });
+      }
+    }
+  }
+
+  // 2. Match single-word heritage terms (including -s/-es plurals like "samosas") & verified UK spellings
+  const ukTerms: string[] = [];
+  const seenUk = new Set<string>();
+  const wordRx = new RegExp("[\\p{L}][\\p{L}'’-]*[\\p{L}]|[\\p{L}]", 'gu');
+  let wm: RegExpExecArray | null;
+
+  while ((wm = wordRx.exec(text)) !== null) {
+    const start = wm.index;
+    const end = start + wm[0].length;
+    const rawWord = wm[0];
+    const lower = rawWord.toLowerCase();
+
+    const insidePhrase = foundDiaspora.some((f) => start >= f.index && end <= f.end);
+    if (!insidePhrase) {
+      // Check non-excluded diaspora heritage term (singular or -s / -es plural)
+      const baseSingular =
+        DIASPORA_LEXICON.has(lower)
+          ? lower
+          : lower.endsWith('es') && DIASPORA_LEXICON.has(lower.slice(0, -2))
+          ? lower.slice(0, -2)
+          : lower.endsWith('s') && DIASPORA_LEXICON.has(lower.slice(0, -1))
+          ? lower.slice(0, -1)
+          : null;
+
+      if (baseSingular && !GENERAL_ENGLISH_SHIELD_EXCLUSIONS.has(baseSingular) && !seenDiaspora.has(lower) && !seenDiaspora.has(baseSingular)) {
+        seenDiaspora.add(lower);
+        seenDiaspora.add(baseSingular);
+        foundDiaspora.push({ index: start, end, label: rawWord });
+      }
+    }
+
+    if (DISTINCTIVE_UK_SPELLINGS.has(lower) && !seenUk.has(lower)) {
+      seenUk.add(lower);
+      ukTerms.push(rawWord);
+    }
+  }
+
+  foundDiaspora.sort((a, b) => a.index - b.index);
+  return {
+    diasporaTerms: foundDiaspora.map((f) => f.label),
+    ukTerms,
+  };
+}
+

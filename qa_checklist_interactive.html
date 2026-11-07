@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (32c0dc06)</title>
+  <title>Master QA Verification Suite — Grouped by Route (ee2beb95)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -70,11 +70,11 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">32c0dc06</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">ee2beb95</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">32c0dc0</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">ee2beb9</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">07 Nov 2026, 10:35 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">07 Nov 2026, 14:48 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -7079,7 +7079,7 @@
                     <div class="text-gray-300 space-y-1">
                       <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, tap the purple Scribe toggle button (<strong class="text-purple-300">[ ✨ Scribe Clean ▼ Open Margin ]</strong> or <strong class="text-purple-300">[ ✨ 1 Scribe Note ▼ Open Margin ]</strong>) directly beneath the textarea. Confirm <strong>The Scribe&apos;s Margin</strong> drawer opens <strong>vertically full-width directly beneath the textarea</strong> without narrowing or crushing the script editor.</div>
                       <div>2. Enter the South Asian heritage sentence (either append to the courtyard passage or test in a blank editor): <code class="text-stone-200">&ldquo;We lit the diya at the mandir and shared masala chai with warm roti and samosas.&rdquo;</code></div>
-                      <div>3. Inside the opened <strong>Scribe&apos;s Margin</strong> drawer under <strong>Scribe Notes</strong>, confirm that none of the heritage terms (<code class="text-emerald-300">diya, mandir, masala, chai, roti, samosas</code>) are flagged as spelling or cliché mistakes (if appended to courtyard text, only the 29-word breath run appears in Scribe Notes; if tested alone, Scribe Notes reports <span class="text-emerald-400 font-bold">🛡️ Voice Protected</span>).</div>
+                      <div>3. Inside the opened <strong>Scribe&apos;s Margin</strong> drawer, inspect the <strong class="text-emerald-300">🛡️ Diaspora &amp; UK Voice Shield</strong> badge card (<code class="text-amber-200">🛡️ diya, mandir, masala chai, roti, samosas</code> + <code class="text-purple-200">🇬🇧 favourite, realise, colour, theatre</code> when UK terms are present) and confirm under <strong>Scribe Notes</strong> that zero heritage terms are flagged as spelling or cliché mistakes.</div>
                       <div class="text-stone-400 text-[10px] italic">💡 Golden Trio Clarification: Under the single-anchor-per-modality rule, <code class="text-amber-300">&ldquo;aroma&rdquo;</code> earlier in the courtyard passage already supplies the dominant Aroma anchor, so <code class="text-stone-300">&ldquo;chai&rdquo;</code> does not receive a sensory underline. Verification for Item 52.3 is strictly inside <strong>Scribe Notes</strong> (confirming zero red spelling or cliché errors).</div>
                     </div>
                   </div>
@@ -7137,14 +7137,14 @@
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🧪 SANDBOX FIXTURE (?qa_seed=52)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify real-time speech telemetry on the pre-seeded courtyard passage (<strong class="text-amber-300">🕒 ~41s spoken</strong>, <strong class="text-stone-200">Words: 81</strong>, <strong class="text-amber-400">Long Runs: 1</strong>) and verify that clicking <strong class="text-amber-300">[ + Add Breath (//) ]</strong> splits the 29-word final sentence in-place at its natural midpoint hinge (<code class="text-emerald-300">family journal, // passing forward</code>) with non-destructive comma preservation, immediately clearing <strong class="text-emerald-400">Long Runs: 0</strong>.
+                    Verify real-time speech telemetry, active punctuation + custom <strong>Breath Cues</strong> (<code class="text-emerald-300">/ Short</code> &amp; <code class="text-sky-300">// Deep</code>), inline <strong>Live Teleprompter Preview (Auto-Breath ON)</strong> with <code>spellCheck=false</code>, and verify that clicking the Emerald <strong class="text-emerald-300">[ + Add Breath (/) ]</strong> button splits the 29-word sentence inside its longest unpunctuated clause stretch (<code class="text-emerald-300">around the table / to turn</code>) while leaving <code class="text-stone-200">lamplight,</code> and <code class="text-stone-200">journal,</code> untouched, immediately clearing <strong class="text-emerald-400">Long Runs (&gt;24w): 0</strong>.
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
                       <div>1. In the active editor on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code>, tap <strong class="text-purple-300">[ ✨ 1 Scribe Note ▼ Open Margin ]</strong> directly beneath the textarea.</div>
-                      <div>2. Confirm the cadence HUD shows <strong class="text-amber-400">Long Runs: 1</strong> and observe the amber <strong>BREATH RUN</strong> Scribe Note advisory.</div>
-                      <div>3. Click <strong class="text-amber-300">[ + Add Breath (//) ]</strong> directly on the advisory card. Confirm: (a) the sentence is split in-place at the natural midpoint hinge (<code class="text-emerald-300">family journal, // passing forward</code>), (b) the original comma is preserved, and (c) <strong class="text-emerald-400">Long Runs</strong> immediately drops from <code>1</code> to <code>0</code>, turning Scribe Notes to <span class="text-emerald-400 font-bold">✨ Voice Protected</span>!</div>
+                      <div>2. Confirm the cadence HUD displays <strong>Breath Cues</strong> reflecting all commas (<code class="text-emerald-300">/</code>) + full stops (<code class="text-sky-300">//</code>), inspect the inline <strong>Live Teleprompter Preview (Auto-Breath ON)</strong> showing Emerald <code class="text-emerald-300">/</code> and Sky Blue <code class="text-sky-300">//</code> beacons + sensory highlights with zero red spellcheck squiggles, and observe <strong class="text-amber-400">Long Runs (&gt;24w): 1</strong>.</div>
+                      <div>3. Click the Emerald <strong class="text-emerald-300">[ + Add Breath (/) ]</strong> button on the <strong>BREATH RUN</strong> card. Confirm: (a) the sentence splits inside the unpunctuated stretch at <code class="text-emerald-300">around the table / to turn</code> while <code class="text-stone-200">lamplight,</code> and <code class="text-stone-200">journal,</code> remain untouched, (b) <strong>Breath Cues</strong> increments by <code>+1 custom</code> (<code class="text-emerald-300">/</code>), and (c) <strong class="text-emerald-400">Long Runs (&gt;24w)</strong> drops from <code>1</code> to <code>0</code> (<span class="text-emerald-400 font-bold">✨ Voice Protected</span>)!</div>
                     </div>
                   </div>
                 </div>
@@ -7169,14 +7169,14 @@
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">🧪 SANDBOX FIXTURE (?qa_seed=52)</span>
                   </div>
                   <p class="text-xs text-gray-300 leading-relaxed">
-                    Verify clicking <strong class="text-sky-300">[ / Short (~0.2s) ]</strong> or <strong class="text-emerald-300">[ // Deep (~0.5s) ]</strong> inserts cadence markers at the caret position, and whenever pauses exist in the script, the red <strong class="text-rose-300">[ ↺ Clear ]</strong> undo button appears and strips all slashes non-destructively in 1 click.
+                    Verify clicking <strong class="text-emerald-300">[ / Short (~0.2s) ]</strong> or <strong class="text-sky-300">[ // Deep (~0.5s) ]</strong> inserts cadence markers at the caret position, and whenever custom pauses exist in the script, the red <strong class="text-rose-300">[ ↺ Clear ]</strong> undo button appears and strips all manual slashes non-destructively in 1 click (also automatically sanitised via <code>clearCadenceMarkers()</code> during Act V Heirloom Book PDF export).
                   </p>
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>1. With <strong>The Scribe&apos;s Margin</strong> drawer open, place the cursor inside the text and click <strong class="text-sky-300">[ / Short (~0.2s) ]</strong> or <strong class="text-emerald-300">[ // Deep (~0.5s) ]</strong>. Confirm marker is inserted and <strong>Breath Pauses</strong> increments.</div>
+                      <div>1. With <strong>The Scribe&apos;s Margin</strong> drawer open, place the cursor inside the text and click <strong class="text-emerald-300">[ / Short (~0.2s) ]</strong> or <strong class="text-sky-300">[ // Deep (~0.5s) ]</strong>. Confirm marker is inserted and <strong>Breath Cues (+custom)</strong> increments.</div>
                       <div>2. Observe the red <strong class="text-rose-300">[ ↺ Clear ]</strong> undo button appear dynamically inside the <strong>Insert Breath:</strong> row.</div>
-                      <div>3. Click <strong class="text-rose-300">[ ↺ Clear ]</strong>: confirm all <code class="text-sky-300">/</code> and <code class="text-emerald-300">//</code> markers are stripped cleanly while preserving all commas, periods, and original words intact.</div>
+                      <div>3. Click <strong class="text-rose-300">[ ↺ Clear ]</strong>: confirm all <code class="text-emerald-300">/</code> and <code class="text-sky-300">//</code> markers are stripped cleanly while preserving all commas, periods, and original words intact.</div>
                     </div>
                   </div>
                 </div>
@@ -7239,7 +7239,7 @@
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
                       <div>1. Right-click inside the active narrative textarea on <code class="text-purple-300">?id=part-6-scene-4&amp;qa_seed=52</code> and select <strong>Inspect</strong> in Chrome DevTools.</div>
-                      <div>2. Confirm the <code>&lt;textarea&gt;</code> element includes <code class="text-emerald-300">lang="en-GB"</code>, <code class="text-emerald-300">data-gramm="false"</code>, and <code class="text-emerald-300">data-enable-grammarly="false"</code>.</div>
+                      <div>2. Confirm both Fireside (<code>NarrativeScriptInput.tsx</code>) and Desktop Soundstage Act I (<a href="https://dev.memoryweaver.studio/studio/production/part-6-scene-4?act=1&qa_seed=52" target="_blank" rel="noopener noreferrer" class="text-sky-300 hover:underline">?act=1&amp;qa_seed=52</a> — <code>SentenceWrapper.tsx</code> &amp; <code>MemoryForm.tsx</code>) declare <code class="text-emerald-300">lang="en-GB"</code>, <code class="text-emerald-300">spellcheck="true"</code>, <code class="text-emerald-300">data-gramm="false"</code>, and <code class="text-emerald-300">data-enable-grammarly="false"</code>, and expose the collapsible <strong>Scribe&apos;s Margin</strong> drawer inline.</div>
                     </div>
                   </div>
                 </div>
@@ -7291,9 +7291,13 @@
             <div id="punchlist-container-52" class="mt-3 pt-3 border-t border-amber-500/25 bg-amber-950/20 rounded-xl p-3 space-y-2">
               <div class="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
                 <span class="flex items-center gap-1.5">🥊 In-Flight Punch-List Resolutions (Test 52)</span>
-                <span id="punchlist-badge-52" class="text-[10px] text-amber-300/70 font-mono">6/6 verified</span>
+                <span id="punchlist-badge-52" class="text-[10px] text-amber-300/70 font-mono">8/8 verified</span>
               </div>
               <div id="punchlist-items-52" class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
+                  <span class="text-amber-200">✅ <strong>Punch-List 52.7 (SPEC-MW-178: Unpunctuated Clause Stretch Splitter, Live Act I Teleprompter Preview, Active Breath Cues HUD, Heirloom PDF Sanitisation &amp; Desktop/Fireside en-GB Parity)</strong>: Updated <code>splitSentenceAtHinge</code> to target the longest unpunctuated clause stretch with Emerald <code>[ + Add Breath (/) ]</code> (<code>around the table / to turn</code>, never after commas); added collapsible Live Teleprompter Preview (<code>spellCheck=false</code>), Active Breath Cues breakdown (<code>/</code> + <code>//</code>), and Diaspora &amp; UK Voice Shield badges in <code>ScribesMargin.tsx</code>; sanitised manual cadence slashes in <code>autobiographyExporter.ts</code>; and enforced <code>lang="en-GB"</code> + <code>spellCheck</code> + Diaspora Voice Shield parity across <code>SentenceWrapper.tsx</code>, <code>MemoryForm.tsx</code>, and <code>aiWeaver.ts</code>.</span>
+                  <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
+                </div>
                 <div class="flex items-center justify-between text-xs bg-gray-900/80 px-2.5 py-1.5 rounded-lg border border-gray-800">
                   <span class="text-amber-200">✓ <strong>Punch-List 52.6 (SPEC-MW-177: Universal Isomorphic Teleprompter Cadence &amp; Sensory Engine)</strong>: Consolidated prompter HTML generation across Soundstage, Popout Teleprompter, and Fireside into <code>renderPrompterCadenceHtml</code> in <code>scriptFormatter.ts</code>, eliminating triplicated formatting drift at 0ms latency; enforced disjoint pause counting and pause-weighted spoken duration (+0.5s per //, +0.2s per /) with 100% word count purity in <code>useScriptCadence.ts</code>; and aligned Scribe's Margin toolbar button colours to chromatic standard (/ Short = Emerald, // Deep = Sky Blue).</span>
                   <span class="text-[10px] font-mono text-emerald-400 font-bold ml-2">RESOLVED</span>
@@ -8981,7 +8985,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_32c0dc06_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_ee2beb95_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -11731,7 +11735,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 32c0dc06 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: ee2beb95 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -11835,7 +11839,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: '32c0dc06',
+          commit: 'ee2beb95',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -11863,7 +11867,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_32c0dc06_${Date.now()}.json`;
+      a.download = `qa_master_checklist_ee2beb95_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }

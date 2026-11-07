@@ -8,6 +8,10 @@ import {
   renderPrompterCadenceHtml,
   getBrakeDuration,
 } from '@/utils/scriptFormatter';
+import { generateAutobiographyHtml } from '@/utils/autobiographyExporter';
+import { detectShieldedTerms } from '@/lib/dictionary/diasporaVoiceShield';
+import fs from 'fs';
+import path from 'path';
 
 describe('SPEC-MW-134 & Option C: Script Cadence & Teleprompter Speakability Hook', () => {
   describe('1. 120 WPM Elder Speech Pace Calculations', () => {
@@ -86,41 +90,47 @@ describe('SPEC-MW-134 & Option C: Script Cadence & Teleprompter Speakability Hoo
     });
   });
 
-  describe('5. FEAT-MW-176: Deterministic Midpoint Clause Splitter (splitSentenceAtHinge)', () => {
-    it('safeguard 1: preserves original commas non-destructively by inserting marker after comma', () => {
+  describe('5. SPEC-MW-178: Unpunctuated Clause Stretch Midpoint Splitter (splitSentenceAtHinge)', () => {
+    it('safeguard 1: never splits immediately after existing commas and splits longest unpunctuated stretch at natural hinge', () => {
       const text = 'Under the soft golden lamplight, three generations gathered together around the table to turn the delicate pages of the family journal, passing forward our favourite traditions and hard-won memories.';
-      // 29 words
-      const split = splitSentenceAtHinge(text, 0, '//');
+      // 29 words: stretches are [5 words], [16 words], [8 words]; default marker is '/'
+      const split = splitSentenceAtHinge(text);
 
-      // Assert that comma is preserved before the // marker
-      expect(split).toContain(', //');
-      // Assert that both parts are <= 24 words
-      const parts = split.split('//').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
+      // Existing commas must remain untouched (no ', /' or ', //')
+      expect(split).toContain('lamplight, three');
+      expect(split).toContain('journal, passing');
+      expect(split).not.toContain(', /');
+      expect(split).toContain('around the table / to turn');
+
+      // Assert that both resulting segments are <= 24 words
+      const parts = split.split(' / ').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
+      expect(parts[0]).toBe(12);
+      expect(parts[1]).toBe(17);
       expect(parts[0]).toBeLessThanOrEqual(24);
       expect(parts[1]).toBeLessThanOrEqual(24);
       expect(parts[0] + parts[1]).toBe(29);
     });
 
     it('safeguard 2: bounded hinge radius prevents early introductory commas from leaving >24 word runs', () => {
-      // 28-word sentence with an introductory comma at word 3
+      // 27-word sentence with an introductory comma at word 3
       const textWithEarlyComma = 'In July 1968, my grandparents packed everything they owned into two battered tin trunks and boarded the steam train to embark on their long migration across continents.';
-      const split = splitSentenceAtHinge(textWithEarlyComma, 0, '//');
+      const split = splitSentenceAtHinge(textWithEarlyComma);
 
-      // The early comma at word 3 must NOT be chosen because it would leave 25 words in part 2
-      expect(split).not.toContain('In July 1968, //');
+      // The early comma at word 3 must NOT be touched and both halves must be <= 24 words
+      expect(split).toContain('In July 1968, my');
+      expect(split).toContain('trunks / and boarded');
 
-      const parts = split.split('//').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
+      const parts = split.split(' / ').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
       expect(parts[0]).toBeLessThanOrEqual(24);
       expect(parts[1]).toBeLessThanOrEqual(24);
     });
 
     it('splits unpunctuated sentences cleanly at natural spoken hinge words', () => {
       const unpunctuated = 'Looking back forty years ago to the very first morning we arrived at the cold railway station in London with four heavy wooden suitcases and our bewildered family.';
-      // 26 words
-      const split = splitSentenceAtHinge(unpunctuated, 0, '//');
+      const split = splitSentenceAtHinge(unpunctuated);
 
-      expect(split).toContain(' // with');
-      const parts = split.split('//').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
+      expect(split).toContain(' / with');
+      const parts = split.split(' / ').map((p) => p.trim().split(/\s+/).filter(Boolean).length);
       expect(parts[0]).toBeLessThanOrEqual(24);
       expect(parts[1]).toBeLessThanOrEqual(24);
     });
@@ -238,6 +248,109 @@ describe('SPEC-MW-134 & Option C: Script Cadence & Teleprompter Speakability Hoo
       expect(textOnly).not.toContain('/ /');
       expect(html).toContain('&lt;1968&gt;');
       expect(html).toContain('&amp;');
+    });
+  });
+
+  describe('9. SPEC-MW-178: Golden 107-Word Passage, Heirloom PDF Sanitisation & UK/Diaspora Parity', () => {
+    const GOLDEN_CARD_52_PASSAGE =
+      'As evening fell over the courtyard, the quiet sound of temple bells drifted through the open windows. ' +
+      'I held the worn brass compass in my hands, feeling its cool, weathered surface against my palms. ' +
+      'From the kitchen came the rich aroma of cardamom and roasting spices, filling the room with familiar warmth. ' +
+      'Under the soft golden lamplight, three generations gathered together around the table to turn the delicate pages of the family journal, passing forward our favourite traditions and hard-won memories. ' +
+      'We lit the diya at the mandir and shared masala chai with warm roti and samosas. ' +
+      'I realise my favourite colour was green in the theatre.';
+
+    it('golden test case: splits 107-word Card 52 passage at "around the table / to turn", clears longSentenceRuns 1 -> 0, and tracks all 6 commas + 6 full stops', () => {
+      const { result: before } = renderHook(() => useScriptCadence(GOLDEN_CARD_52_PASSAGE));
+      expect(before.current.metrics.wordCount).toBe(107);
+      expect(before.current.metrics.longRunSentenceCount).toBe(1);
+      expect(before.current.metrics.breathPauseCount).toBe(0);
+      expect(before.current.metrics.activeShortCueCount).toBe(6); // 6 commas
+      expect(before.current.metrics.activeDeepCueCount).toBe(6);  // 6 full stops
+      expect(before.current.metrics.activeTotalCueCount).toBe(12);
+      // 107 words * 0.5s (53.5s) + 6 * 0.2s (1.2s) + 6 * 0.5s (3.0s) = 57.7s -> 58s
+      expect(before.current.metrics.estimatedSpokenSeconds).toBe(58);
+
+      // Diaspora & UK Voice Shield badges
+      expect(before.current.metrics.shieldedDiasporaTerms).toEqual([
+        'diya',
+        'mandir',
+        'masala chai',
+        'roti',
+        'samosas',
+      ]);
+      expect(before.current.metrics.shieldedUkTerms).toEqual([
+        'favourite',
+        'realise',
+        'colour',
+        'theatre',
+      ]);
+      expect(before.current.suggestions.filter((s) => s.type === 'orthography')).toHaveLength(0);
+
+      // Execute 1-click midpoint clause split
+      const splitPassage = splitSentenceAtHinge(GOLDEN_CARD_52_PASSAGE);
+      expect(splitPassage).toContain('Under the soft golden lamplight, three generations');
+      expect(splitPassage).toContain('around the table / to turn the delicate pages of the family journal, passing forward');
+
+      const { result: after } = renderHook(() => useScriptCadence(splitPassage));
+      expect(after.current.metrics.wordCount).toBe(107);
+      expect(after.current.metrics.longRunSentenceCount).toBe(0);
+      expect(after.current.metrics.breathPauseCount).toBe(1);
+      expect(after.current.metrics.shortPauseCount).toBe(1);
+      expect(after.current.metrics.activeShortCueCount).toBe(7); // 6 commas + 1 custom /
+      expect(after.current.metrics.activeDeepCueCount).toBe(6);  // 6 full stops
+      expect(after.current.metrics.activeTotalCueCount).toBe(13);
+      expect(after.current.suggestions).toHaveLength(0);
+    });
+
+    it('detectShieldedTerms: never falsely badges common English homographs like "are"', () => {
+      const res = detectShieldedTerms('We are happy in the morning.');
+      expect(res.diasporaTerms).toEqual([]);
+      expect(res.ukTerms).toEqual([]);
+    });
+
+    it('autobiographyExporter: strips manual / and // cadence markers from Heirloom Book PDF HTML while preserving filename and audioMood', () => {
+      const html = generateAutobiographyHtml(
+        {
+          id: 'part-6-scene-4',
+          title: 'Lamplight & Masala Chai',
+          prose: 'Around the table / to turn the delicate pages // passing forward our favourite memories.',
+          fusionManifest: {
+            audioMood: 'Nostalgic Acoustic Guitar // 72 BPM',
+            sensoryPalette: 'Cardamom, warm roti',
+            emotionalTone: 'Reverent',
+            cohesiveScript: 'Around the table / to turn the delicate pages // passing forward our favourite memories.',
+          },
+        } as any,
+        'narrator@memoryweaver.studio'
+      );
+
+      expect(html).toContain('<title>narrator@memoryweaver.studio_Lamplight_Masala_Chai_booklet</title>');
+      expect(html).toContain('Nostalgic Acoustic Guitar // 72 BPM');
+      expect(html).toContain(
+        '<div class="monologue-body">Around the table to turn the delicate pages passing forward our favourite memories.</div>'
+      );
+    });
+
+    it('enforces lang="en-GB" and spellCheck parity across NarrativeScriptInput, SentenceWrapper, MemoryForm, SensoryScriptEditor, and AI Weaver', () => {
+      const root = process.cwd();
+      const sentenceWrapperSrc = fs.readFileSync(
+        path.join(root, 'src/components/studio/Scriptorium/SentenceWrapper.tsx'),
+        'utf8'
+      );
+      expect(sentenceWrapperSrc).toContain('lang="en-GB"');
+      expect(sentenceWrapperSrc).toContain('spellCheck={!readOnly}');
+
+      const sensoryEditorSrc = fs.readFileSync(
+        path.join(root, 'src/components/studio/shared/SensoryScriptEditor.tsx'),
+        'utf8'
+      );
+      expect(sensoryEditorSrc).toContain("lang = 'en-GB'");
+      expect(sensoryEditorSrc).toContain('spellCheck={true}');
+
+      const aiWeaverSrc = fs.readFileSync(path.join(root, 'src/actions/aiWeaver.ts'), 'utf8');
+      expect(aiWeaverSrc).toContain('DIASPORA VOICE SHIELD');
+      expect(aiWeaverSrc).toContain('masala chai');
     });
   });
 });
