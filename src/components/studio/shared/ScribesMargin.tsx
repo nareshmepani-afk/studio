@@ -122,9 +122,9 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
 
       {/* 2. TELEPROMPTER CADENCE METRICS (120 WPM Standard) */}
       <div className="p-3 rounded-xl bg-stone-950/70 border border-stone-800/70 space-y-2.5">
-        <div className="flex items-center justify-between text-[11px]">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <span className="text-stone-400 flex items-center gap-1.5 font-medium">
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <Clock className="w-4 h-4 text-amber-400" />
             <span>Spoken Duration:</span>
           </span>
           <span
@@ -135,7 +135,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-[10px] text-stone-400 pt-1 border-t border-stone-800/60">
+        <div className="grid grid-cols-2 gap-2 text-xs text-stone-400 pt-1 border-t border-stone-800/60">
           <div>
             <span>Words: </span>
             <strong className="text-stone-200">{metrics.wordCount}</strong>
@@ -156,7 +156,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
               {metrics.breathPauseCount > 0 && (
                 <span
                   data-testid={`${testIdPrefix}-custom-pause-badge`}
-                  className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold"
+                  className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold"
                 >
                   +{metrics.breathPauseCount} custom
                 </span>
@@ -173,8 +173,8 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
 
         {/* Cadence Marker Quick-Insert Keys & 1-Click Clear Undo */}
         {(onInsertCadenceMarker || onClearCadenceMarkers) && (
-          <div className="pt-2 border-t border-stone-800/60 flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] text-stone-400">Insert Breath:</span>
+          <div className="pt-2 border-t border-stone-800/60 flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-stone-300">Insert Breath:</span>
             {onInsertCadenceMarker && (
               <>
                 <button
@@ -182,7 +182,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                   data-testid={`${testIdPrefix}-insert-short-pause`}
                   onClick={() => onInsertCadenceMarker('/')}
                   title="Insert short breath pause (~0.2s pause on teleprompter)"
-                  className="px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-bold transition cursor-pointer flex items-center gap-1"
                 >
                   <span>/ Short (~0.2s)</span>
                 </button>
@@ -191,7 +191,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                   data-testid={`${testIdPrefix}-insert-deep-pause`}
                   onClick={() => onInsertCadenceMarker('//')}
                   title="Insert deep breath pause (~0.5s pause on teleprompter)"
-                  className="px-2 py-0.5 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-400/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1 rounded bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-400/30 text-xs font-bold transition cursor-pointer flex items-center gap-1"
                 >
                   <span>// Deep (~0.5s)</span>
                 </button>
@@ -203,9 +203,9 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                 data-testid={`${testIdPrefix}-clear-pauses`}
                 onClick={onClearCadenceMarkers}
                 title="Clear all manual breath pauses (/ and //) and restore clean prose"
-                className="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                className="px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition cursor-pointer flex items-center gap-1"
               >
-                <RotateCcw className="w-2.5 h-2.5" />
+                <RotateCcw className="w-3 h-3" />
                 <span>↺ Clear</span>
               </button>
             )}
@@ -220,18 +220,18 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
             type="button"
             data-testid={`${testIdPrefix}-preview-toggle`}
             onClick={() => setIsPreviewOpen((prev) => !prev)}
-            className="w-full px-3 py-2 flex items-center justify-between gap-2 text-[10px] font-bold text-stone-200 hover:bg-white/5 transition cursor-pointer"
+            className="w-full px-3 py-2 flex items-center justify-between gap-2 text-xs font-bold text-stone-200 hover:bg-white/5 transition cursor-pointer"
           >
             <span className="flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <Eye className="w-4 h-4 text-emerald-400" />
               <span>Live Teleprompter Preview</span>
-              <span className="text-[9px] font-normal text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-normal text-emerald-300/90 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
                 Auto-Breath ON
               </span>
             </span>
-            <span className="flex items-center gap-1 text-[9px] text-stone-400">
+            <span className="flex items-center gap-1 text-[10px] text-stone-400">
               <span>{isPreviewOpen ? 'Hide' : 'Show'}</span>
-              {isPreviewOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {isPreviewOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </span>
           </button>
 
@@ -241,7 +241,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
               spellCheck={false}
               lang="en-GB"
               aria-readonly="true"
-              className="px-3 py-2.5 border-t border-stone-800/70 bg-black/50 text-xs font-serif leading-relaxed text-stone-100 max-h-40 overflow-y-auto custom-scrollbar select-none"
+              className="px-3.5 py-3 border-t border-stone-800/70 bg-black/50 text-lg font-serif leading-relaxed text-stone-100 max-h-64 overflow-y-auto custom-scrollbar select-none [&_[data-slash-cue]]:!text-sm md:[&_[data-slash-cue]]:!text-base [&_[data-slash-cue]]:!leading-none [&_[data-slash-cue]]:!align-middle [&_[data-sensory-cue]]:!text-lg"
               dangerouslySetInnerHTML={{
                 __html: renderPrompterCadenceHtml(scriptText, {
                   autoBreath: true,
@@ -259,22 +259,22 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
           data-testid={`${testIdPrefix}-voice-shield-badges`}
           className="p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/25 space-y-2"
         >
-          <div className="flex items-center justify-between text-[10px] font-bold text-emerald-300">
+          <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
             <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span>Diaspora &amp; UK Voice Shield</span>
             </span>
-            <span className="text-[9px] font-normal text-emerald-400/80">
+            <span className="text-[10px] font-normal text-emerald-400/80">
               {diasporaTerms.length + ukTerms.length} protected
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {diasporaTerms.map((term) => (
               <span
                 key={`diaspora-${term.toLowerCase()}`}
                 title="Protected South Asian / Diaspora heritage vocabulary"
-                className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-500/30 text-[9px] font-medium"
+                className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-500/30 text-xs font-medium"
               >
                 🛡️ {term}
               </span>
@@ -283,7 +283,7 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
               <span
                 key={`uk-${term.toLowerCase()}`}
                 title="Verified British / Commonwealth English spelling (Rule 20)"
-                className="px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-200 border border-purple-500/30 text-[9px] font-medium"
+                className="px-2 py-0.5 rounded bg-purple-500/15 text-purple-200 border border-purple-500/30 text-xs font-medium"
               >
                 🇬🇧 {term}
               </span>
@@ -293,11 +293,11 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
       )}
 
       {/* 3. SCRIBE SUGGESTIONS & NOTES */}
-      <div className="space-y-2 flex-1 overflow-y-auto max-h-[320px] custom-scrollbar pr-1">
-        <div className="flex items-center justify-between text-[11px] font-bold text-stone-300 px-0.5">
+      <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[320px] custom-scrollbar pr-1">
+        <div className="flex items-center justify-between text-xs font-bold text-stone-300 px-0.5">
           <span>Scribe Notes ({activeSuggestions.length})</span>
           {activeSuggestions.length === 0 && (
-            <span className="text-emerald-400 flex items-center gap-1 text-[10px] font-normal">
+            <span className="text-emerald-400 flex items-center gap-1 text-xs font-normal">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Voice Protected</span>
             </span>
@@ -307,10 +307,10 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
         {activeSuggestions.length === 0 ? (
           <div
             data-testid={`${testIdPrefix}-clean-status`}
-            className="p-3 rounded-xl bg-stone-950/40 border border-dashed border-stone-800 text-center space-y-1"
+            className="p-3.5 rounded-xl bg-stone-950/40 border border-dashed border-stone-800 text-center space-y-1"
           >
             <span className="text-base">✨</span>
-            <p className="text-[11px] text-stone-400 leading-relaxed">
+            <p className="text-xs sm:text-sm text-stone-400 leading-relaxed">
               Your narrative is clean, breathable, and aligned with UK English standards.
             </p>
           </div>
@@ -325,30 +325,30 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                 key={suggestion.id}
                 data-testid={`${testIdPrefix}-suggestion-${suggestion.id}`}
                 className={cn(
-                  'p-2.5 rounded-xl border text-[11px] space-y-2 transition-all',
+                  'p-3 rounded-xl border space-y-2 transition-all',
                   isOrthography && 'bg-purple-950/20 border-purple-500/30 text-purple-200',
                   isBreath && 'bg-amber-950/20 border-amber-500/30 text-amber-200',
                   isCliche && 'bg-rose-950/20 border-rose-500/30 text-rose-200'
                 )}
               >
-                <div className="flex items-start justify-between gap-1.5">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="flex items-center gap-1.5 font-bold">
                     {isOrthography && (
                       <>
-                        <BookOpen className="w-3.5 h-3.5 text-purple-400" />
-                        <span className="text-purple-300 uppercase text-[9px] tracking-wider">UK Orthography</span>
+                        <BookOpen className="w-4 h-4 text-purple-400" />
+                        <span className="text-purple-300 uppercase text-[10px] sm:text-xs tracking-wider">UK Orthography</span>
                       </>
                     )}
                     {isBreath && (
                       <>
-                        <Wind className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-amber-300 uppercase text-[9px] tracking-wider">Breath Run</span>
+                        <Wind className="w-4 h-4 text-amber-400" />
+                        <span className="text-amber-300 uppercase text-[10px] sm:text-xs tracking-wider">Breath Run</span>
                       </>
                     )}
                     {isCliche && (
                       <>
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                        <span className="text-rose-300 uppercase text-[9px] tracking-wider">AI Cliché</span>
+                        <AlertTriangle className="w-4 h-4 text-rose-400" />
+                        <span className="text-rose-300 uppercase text-[10px] sm:text-xs tracking-wider">AI Cliché</span>
                       </>
                     )}
                   </div>
@@ -358,18 +358,18 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                     className="text-stone-400 hover:text-white p-0.5 transition cursor-pointer"
                     title="Dismiss suggestion"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <p className="text-[10px] text-stone-300 leading-relaxed">{suggestion.message}</p>
+                <p className="text-xs sm:text-sm text-stone-200 leading-relaxed">{suggestion.message}</p>
 
                 {/* Diff replacement or suggestion action */}
                 {suggestion.replacement ? (
-                  <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                    <div className="flex items-center gap-1.5 text-[10px]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-white/5">
+                    <div className="flex items-center gap-1.5 text-xs">
                       <span className="line-through text-stone-400">&ldquo;{suggestion.original}&rdquo;</span>
-                      <ChevronRight className="w-3 h-3 text-stone-400" />
+                      <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
                       <strong className="text-emerald-300 font-bold">&ldquo;{suggestion.replacement}&rdquo;</strong>
                     </div>
 
@@ -377,14 +377,14 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                       type="button"
                       data-testid={`${testIdPrefix}-accept-${suggestion.id}`}
                       onClick={() => handleApply(suggestion)}
-                      className="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                      className="px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
                     >
-                      <Check className="w-3 h-3" />
+                      <Check className="w-3.5 h-3.5" />
                       <span>Accept</span>
                     </button>
                   </div>
                 ) : isBreath && (onSplitBreathRun || onInsertCadenceMarker) ? (
-                  <div className="pt-1 flex items-center justify-end gap-1.5">
+                  <div className="pt-1.5 flex flex-wrap items-center justify-end gap-2">
                     <button
                       type="button"
                       data-testid={`${testIdPrefix}-split-breath-${suggestion.id}`}
@@ -398,9 +398,9 @@ export const ScribesMargin: React.FC<ScribesMarginProps> = ({
                         handleDismiss(suggestion.id);
                       }}
                       title="Split long sentence at natural midpoint clause hinge without cursor placement"
-                      className="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                      className="px-2.5 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
                     >
-                      <Wind className="w-3 h-3" />
+                      <Wind className="w-3.5 h-3.5" />
                       <span>+ Add Breath (/)</span>
                     </button>
                   </div>

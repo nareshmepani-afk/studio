@@ -240,10 +240,14 @@ describe('SPEC-MW-134: NarrativeScriptInput Dual-Layer & Scribe Suite', () => {
 
       const { rerender } = render(<TestHarness />);
 
-      // Verify Live Teleprompter Preview renders with spellCheck={false} and cadence beacons
+      // Verify Live Teleprompter Preview renders with spellCheck={false}, elder font size parity (text-lg), and cadence beacons
       const previewEl = screen.getByTestId('scribes-margin-teleprompter-preview');
       expect(previewEl).toBeInTheDocument();
       expect(previewEl).toHaveAttribute('spellcheck', 'false');
+      expect(previewEl.className).toContain('text-lg');
+      expect(previewEl.className).toContain('font-serif');
+      expect(previewEl.className).toContain('leading-relaxed');
+      expect(previewEl.className).toContain('max-h-64');
       expect(previewEl.innerHTML).toContain('data-slash-cue="single"');
       expect(previewEl.innerHTML).toContain('data-slash-cue="double"');
 

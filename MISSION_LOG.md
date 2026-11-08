@@ -2141,3 +2141,32 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
 
 
 
+### [2026-11-07 18:04 UTC / 18:04 GMT] — Checkpoint #087 - Unpunctuated Clause Stretch Splitter, Live Act I Teleprompter Cadence Preview, Active Breath Cues HUD, Heirloom PDF Sanitisation & Desktop/Fireside en-GB Parity (SPEC-MW-178 / MW-390)
+- **Commit & Edge Status:** Pushed `18234f62` (`18234f62ad22ff79af4ec845ea895e86c3787590`) to `origin/dev`; verified live at `https://dev.memoryweaver.studio/api/version` (`commitSha: "18234f6"`). Plane ticket `MW-390` created and marked `Done`.
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Lead Architecture**: Audited Item 52.5 live behaviour (`journal, //` redundancy and hidden comma/full-stop pauses in Act I) and locked `SPEC-MW-178` (`1A, 2A, 3A`), including Creative Director Override (Rule 22.7.5) for 3-line `clearCadenceMarkers()` sanitisation in `autobiographyExporter.ts`.
+  - ⚡ **Chat 2 (The Flash Executor)**:
+    - Refactored `splitSentenceAtHinge` (`src/utils/scriptFormatter.ts`) to default to `'/'` (`~0.2s` Short pause) and partition sentences by existing commas/semicolons/slashes to split inside the longest *unpunctuated* clause stretch (`around the table / to turn` on the 107-word Card 52 passage, dropping `longRunSentenceCount` `1 -> 0` while leaving `lamplight,` and `journal,` untouched).
+    - Added collapsible **Live Teleprompter Preview (`Auto-Breath ON`)** (`spellCheck={false}`, `lang="en-GB"`) and **🛡️ Diaspora & UK Voice Shield** badge chips (`detectShieldedTerms` in `src/lib/dictionary/diasporaVoiceShield.ts`) inside `src/components/studio/shared/ScribesMargin.tsx`, plus active teleprompter cue totals (`Breath Cues: 12 (6 / · 6 //)`, `~58s` at 120 WPM) in `src/hooks/studio/useScriptCadence.ts`.
+    - Applied `clearCadenceMarkers()` in `src/utils/autobiographyExporter.ts` so Heirloom Book PDF exports never print `/` or `//` markers.
+    - Restored `lang="en-GB"` + `spellCheck={!readOnly}` in `src/components/studio/Scriptorium/SentenceWrapper.tsx`, added `lang="en-GB"` + `spellCheck={true}` + collapsible `<ScribesMargin />` drawers in `src/components/studio/MemoryForm.tsx`, normalised `SingleCardPromptCarousel.tsx` `en*` locale to `en-GB`, and enforced British English + Diaspora Voice Shield preservation across 5 functions in `src/actions/aiWeaver.ts`.
+    - Verified `102/102` Vitest suites (`1,101/1,101` assertions), `tsc --noEmit` (0 errors), `next lint` (0 warnings), `qa:validate` (PASS), `npm.cmd run build` (46/46 routes), `npm.cmd run qa:sync`, and `npm.cmd run qa:seed`.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\utils\scriptFormatter.ts`
+  - `C:\Users\home\studio\src\lib\dictionary\diasporaVoiceShield.ts`
+  - `C:\Users\home\studio\src\hooks\studio\useScriptCadence.ts`
+  - `C:\Users\home\studio\src\components\studio\shared\ScribesMargin.tsx`
+  - `C:\Users\home\studio\src\components\studio\shared\NarrativeScriptInput.tsx`
+  - `C:\Users\home\studio\src\components\studio\Scriptorium\SentenceWrapper.tsx`
+  - `C:\Users\home\studio\src\components\studio\MemoryForm.tsx`
+  - `C:\Users\home\studio\src\components\fireside\SingleCardPromptCarousel.tsx`
+  - `C:\Users\home\studio\src\actions\aiWeaver.ts`
+  - `C:\Users\home\studio\src\utils\autobiographyExporter.ts`
+  - `C:\Users\home\studio\src\test\script_cadence.test.ts`
+  - `C:\Users\home\studio\src\test\narrative_script_input.test.tsx`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
+  - `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+
