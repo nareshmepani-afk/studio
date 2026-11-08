@@ -91,7 +91,7 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
     <section
       data-testid="HS_ORIENTATION_SOUNDCHECK_DOCK"
       aria-label="Studio Orientation and 30-Second Soundcheck Dock"
-      className={`w-full max-w-2xl mx-auto transition-all duration-200 ${className}`}
+      className={`w-full max-w-xl mx-auto transition-all duration-200 ${className}`}
     >
       {isCollapsed ? (
         /* Minimised Single-Line 44px+ Utility Strip */

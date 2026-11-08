@@ -103,4 +103,27 @@ describe('ARCH-MW-126 / ARCH-MW-127: Option A — Unified Production Board & Fir
     expect(targetSpark?.id).toBe('spark_humour_mishap');
     expect(targetSpark?.title).toBe('Echoes of a Brother, Sister or Friends');
   });
+
+  it('7. Guarantees Fireside storytelling panels standardise to w-full max-w-xl mx-auto (576px) and 18px prompter prose (SPEC-MW-180)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require('path');
+
+    const clientSource = fs.readFileSync(path.join(__dirname, '../app/studio/fireside/FiresideStudioClient.tsx'), 'utf8');
+    const dockSource = fs.readFileSync(path.join(__dirname, '../components/fireside/OrientationSoundcheckDock.tsx'), 'utf8');
+
+    // Prompter banner container standardises to max-w-xl
+    expect(clientSource).toContain('w-full max-w-xl mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25');
+    // Prompter banner prose standardises to 18px (text-lg font-serif)
+    expect(clientSource).toContain('max-h-56 overflow-y-auto pr-1 text-lg font-serif text-stone-200 leading-relaxed');
+
+    // Video memo & Voice recording mode switches standardise to max-w-xl
+    expect(clientSource).toContain('w-full max-w-xl flex justify-end mb-2 px-1');
+    expect(clientSource).not.toContain('w-full max-w-md flex justify-end mb-2 px-1');
+
+    // Orientation soundcheck dock standardises to max-w-xl
+    expect(dockSource).toContain('w-full max-w-xl mx-auto transition-all duration-200');
+    expect(dockSource).not.toContain('w-full max-w-2xl mx-auto transition-all duration-200');
+  });
 });

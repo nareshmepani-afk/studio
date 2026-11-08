@@ -2170,3 +2170,24 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 
+### [2026-11-08 13:00 UTC / 13:00 GMT] — Checkpoint #088 - Live Teleprompter Preview & Scribe's Margin Font Size Parity (SPEC-MW-179 / MW-391)
+- **Commit & Edge Status:** Pushed `ab8c360c` (`ab8c360cad681ebdafb8b350f55cf64b8bb26c3c`) to `origin/dev`; verified live at `https://dev.memoryweaver.studio/api/version` (`commitSha: "ab8c360"`). Plane ticket `MW-391` created and transitioned to `Done`.
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper**: Reported feedback for Card 52 (`media_1794141057177_54549957.jpg` and `media_1794141227839_7fc4063d.jpg`): The Scribe's Margin Live Teleprompter Preview was rendering micro-text (`text-xs`) compared to the Armchair Script Editor's 18px (`1.125rem` / `text-lg`) serif font. Approved Decision Lock `1A, 2A, Go` under Rule 61.
+  - ⚡ **Chat 2 (The Flash Executor)**:
+    - Aligned the Live Teleprompter Preview prose container in `src/components/studio/shared/ScribesMargin.tsx` to 18px (`text-lg font-serif leading-relaxed max-h-64`) for exact 1:1 font size and line-height parity with the Armchair Script Editor (`SERIF_STYLES`).
+    - Added `[&_[data-sensory-cue]]:!text-lg` and `[&_[data-slash-cue]]:!text-sm md:[&_[data-slash-cue]]:!text-base` to guarantee inline sensory highlights and `/` & `//` breath pause badges scale proportionally without micro-text shrinkage.
+    - Upscaled Scribe Note guidance copy (`text-xs sm:text-sm text-stone-200`) and Cadence HUD metrics to elder readability standards (Rule 48.5).
+    - Preserved `flex-wrap gap-2` on card headers and actions for clean, unclipped wrapping on 375px mobile viewports.
+    - Updated regression assertions in `src/test/narrative_script_input.test.tsx` (9/9 passing; 102/102 Vitest suites passing; 1,101 assertions).
+    - Passed local production build gate `npm.cmd run build` (46/46 routes compiled cleanly, exit code 0).
+    - Synced `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c`) in Google Drive and seeded Firestore QA items on dev staging.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\components\studio\shared\ScribesMargin.tsx`
+  - `C:\Users\home\studio\src\test\narrative_script_input.test.tsx`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
+  - `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+

@@ -99,7 +99,7 @@ const FiresidePrompterBanner: React.FC<FiresidePrompterBannerProps> = ({
   return (
     <div
       data-testid={testId}
-      className="max-w-md mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left shadow-lg"
+      className="w-full max-w-xl mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left shadow-lg"
     >
       <div className="flex items-center justify-between gap-1.5 text-amber-400 font-mono text-[11px] uppercase tracking-wider font-semibold mb-1.5">
         <div className="flex items-center gap-1.5">
@@ -132,7 +132,7 @@ const FiresidePrompterBanner: React.FC<FiresidePrompterBannerProps> = ({
       {prose && (
         <div
           data-testid="fireside-prompter-prose-container"
-          className="max-h-56 overflow-y-auto pr-1 text-xs sm:text-sm font-serif text-stone-200 leading-relaxed scrollbar-thin scrollbar-thumb-stone-700"
+          className="max-h-56 overflow-y-auto pr-1 text-lg font-serif text-stone-200 leading-relaxed scrollbar-thin scrollbar-thumb-stone-700 [&_[data-sensory-cue]]:!text-lg [&_[data-slash-cue]]:!text-sm md:[&_[data-slash-cue]]:!text-base [&_[data-slash-cue]]:!leading-none [&_[data-slash-cue]]:!align-middle"
         >
           <span
             dangerouslySetInnerHTML={{
@@ -1284,7 +1284,7 @@ export default function FiresideStudioClient() {
           mediaMode === 'video' ? (
             /* Video Memo Recording Surface */
             <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
-              <div className="w-full max-w-md flex justify-end mb-2 px-1">
+              <div className="w-full max-w-xl flex justify-end mb-2 px-1">
                 <button
                   type="button"
                   data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"
@@ -1296,7 +1296,7 @@ export default function FiresideStudioClient() {
                   <span>Switch to Voice & Photos</span>
                 </button>
               </div>
-              <div className="text-center mb-4">
+              <div className="text-center mb-4 w-full max-w-xl">
                 <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
                   WhatsApp / FaceTime Video Memo
                 </p>
@@ -1328,7 +1328,7 @@ export default function FiresideStudioClient() {
             /* Voice Recording & Heirloom Photo Tray Surface */
             <>
               {/* Physical Album Photo Capture Tray (MW-247) */}
-              <div className="w-full">
+              <div className="w-full max-w-xl mx-auto">
                 <AlbumPhotoCaptureTray
                   ref={photoTrayRef}
                   photos={photos}
@@ -1341,7 +1341,7 @@ export default function FiresideStudioClient() {
 
               {/* Tactile Web Audio Voice Recorder (MW-246) */}
               <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
-                <div className="w-full max-w-md flex justify-end mb-2 px-1">
+                <div className="w-full max-w-xl flex justify-end mb-2 px-1">
                   <button
                     type="button"
                     data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"
@@ -1353,7 +1353,7 @@ export default function FiresideStudioClient() {
                     <span>Switch to Video Memo</span>
                   </button>
                 </div>
-                <div className="text-center mb-4">
+                <div className="text-center mb-4 w-full max-w-xl">
                   <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
                     Fireside Voice Recording
                   </p>
@@ -1390,7 +1390,7 @@ export default function FiresideStudioClient() {
         {hasCompletedReel && (
           <div
             id={isCompleted ? 'fireside-active-studio' : 'fireside-completed-reel-section'}
-            className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center"
+            className="w-full max-w-xl mx-auto pt-4 border-t border-stone-900/80 flex flex-col items-center"
           >
             <FiresideCompletedReelCard
               sceneId={effectiveSceneId}
