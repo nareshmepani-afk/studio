@@ -974,6 +974,8 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       onClick={(e) => {
         if (e.target !== editorRef.current && editorRef.current) {
           editorRef.current.focus();
+          const len = editorRef.current.value.length;
+          editorRef.current.setSelectionRange(len, len);
         }
         e.stopPropagation();
       }}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (1aa35b36)</title>
+  <title>Master QA Verification Suite — Grouped by Route (4a4f093e)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -70,11 +70,11 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">1aa35b36</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">4a4f093e</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">1aa35b3</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">4a4f093</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">10 Nov 2026, 17:15 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">10 Nov 2026, 17:56 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -4134,7 +4134,12 @@
                     <div class="text-gray-300 space-y-1.5">
                       <div><strong>1. Test Narrative Text Inputs:</strong> Open Desktop Soundstage (<code class="text-sky-300">https://dev.memoryweaver.studio/studio/production/part-1-scene-2?act=1&amp;qa_seed=35</code>). In the lower metadata bar, locate the <strong class="text-amber-300">CITY</strong> and <strong class="text-amber-300">COUNTRY</strong> inputs (or the Theatrical Title input). Type British words (<code class="text-stone-200">colour, centre, theatre</code>). Confirm zero red squiggles. In DevTools (<kbd class="px-1 py-0.5 rounded bg-gray-800 text-gray-300 text-[10px]">F12</kbd>), inspect the element and confirm attributes: <code>lang="en-GB"</code> and <code>spellcheck="true"</code>.</div>
                       <div><strong>2. Test Scriptorium Narrative Textarea:</strong> Inspect the active narrative prose editor (<code class="text-emerald-300">SentenceWrapper</code>). Confirm attributes: <code>lang="en-GB"</code>, <code>spellcheck="true"</code>, <code>data-gramm="false"</code>, and <code>data-enable-grammarly="false"</code>.</div>
-                      <div><strong>3. Test Non-Narrative System Inputs (Discrimination Verification):</strong> Inspect non-narrative inputs (e.g. login/password fields at <a href="https://dev.memoryweaver.studio/login" target="_blank" class="text-amber-300 hover:underline">/login</a> or number inputs). Confirm <code>type="email"</code> / <code>type="password"</code> / <code>type="number"</code> set <code>spellcheck="false"</code> and <code>autocorrect="off"</code>, preserving credentials from browser spellcheck pollution.</div>
+                      <div><strong>3. Test Non-Narrative System Inputs (Discrimination Verification):</strong>
+                        <div class="mt-1 pl-2 text-gray-300 space-y-0.5">
+                          <div>&bull; <strong>Option A (10s Live Test):</strong> Open an incognito window to <a href="https://dev.memoryweaver.studio/login" target="_blank" class="text-amber-300 hover:underline">/login</a>. Type any non-word into Email or Password. Confirm the browser never displays red squiggles (spellcheck is disabled).</div>
+                          <div>&bull; <strong>Option B (Automated Shield):</strong> Verified green by unit tests in <code>src/test/orthography_grammar.test.ts</code> (Tier 1 Guardrail 1: enforces <code>spellcheck="false"</code> on password, email, url, number, tel).</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -4145,18 +4150,7 @@
               </div>
               <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
                 <span class="text-[11px] font-mono text-gray-500">Target: Desktop Soundstage Act I (?qa_seed=35)</span>
-                <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-2?act=1&qa_seed=35" id="item-route-link-35-6" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🎬 Open Desktop Soundstage (?qa_seed=35) ↗</a>
-              </div>
-            </div>
-                </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <button onclick="setItemVerdict(35, 6, 'pass', this)" id="btn-item-pass-35-6" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-emerald-500/50 hover:text-emerald-400">Pass</button>
-                  <button onclick="setItemVerdict(35, 6, 'fail', this)" id="btn-item-fail-35-6" class="item-verdict-btn px-2.5 py-1 rounded-lg text-xs font-bold border transition cursor-pointer text-gray-400 border-gray-800 hover:border-rose-500/50 hover:text-rose-400">Fail</button>
-                </div>
-              </div>
-              <div class="mt-2.5 pt-2 border-t border-gray-800/60 flex items-center justify-between flex-wrap gap-2">
-                <span class="text-[11px] font-mono text-gray-500">Target: Desktop Soundstage Act I (?qa_seed=35)</span>
-                <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-2?act=1&qa_seed=35" id="item-route-link-35-6" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🎬 Open Desktop Soundstage (?qa_seed=35) ↗</a>
+                <a href="https://dev.memoryweaver.studio/studio/production/part-1-scene-2?act=1&amp;qa_seed=35" id="item-route-link-35-6" target="_blank" rel="noopener noreferrer" class="text-[11px] font-mono text-amber-300 hover:underline font-bold">🎬 Open Desktop Soundstage (?qa_seed=35) ↗</a>
               </div>
             </div>
 
@@ -9006,7 +9000,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_1aa35b36_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_4a4f093e_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -11794,7 +11788,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: 1aa35b36 | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 4a4f093e | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -11898,7 +11892,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: '1aa35b36',
+          commit: '4a4f093e',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -11926,7 +11920,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_1aa35b36_${Date.now()}.json`;
+      a.download = `qa_master_checklist_4a4f093e_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }

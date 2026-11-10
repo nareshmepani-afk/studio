@@ -110,7 +110,7 @@ describe('SentenceWrapper Cursor Stability', () => {
     expect(parentOnClick).not.toHaveBeenCalled();
   });
 
-  it('Focuses the textarea when clicking SentenceWrapper wrapper element', () => {
+  it('Focuses the textarea and moves cursor to end when clicking SentenceWrapper wrapper element', () => {
     const { container } = render(
       <SentenceWrapper
         block={mockBlock}
@@ -130,8 +130,10 @@ describe('SentenceWrapper Cursor Stability', () => {
     // Click the wrapper
     fireEvent.click(wrapper!);
 
-    // Assert: focus should have been called on the textarea
+    // Assert: focus should have been called on the textarea and cursor moved to the end
     expect(focusSpy).toHaveBeenCalled();
+    expect(textarea.selectionStart).toBe(mockBlock.text.length);
+    expect(textarea.selectionEnd).toBe(mockBlock.text.length);
   });
 
   it('Double Defense: parent container click handler does not jump cursor if click is inside SentenceWrapper', () => {
