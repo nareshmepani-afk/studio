@@ -177,4 +177,78 @@ describe('SentenceWrapper Cursor Stability', () => {
     // Since clicked inside SentenceWrapper, parentOnClick returns early and selection is NOT forced
     expect(textareaMock.setSelectionRange).not.toHaveBeenCalled();
   });
+
+  it('Guardrail 1: Snaps caret to end (len) when clicking trailing whitespace inside textarea (selectionStart >= value.trimEnd().length)', () => {
+    const trailingBlock = {
+      id: 'trailing-block',
+      text: 'Hello world   ',
+      type: 'hook' as const,
+      catalysts: [],
+    };
+
+    render(
+      <SentenceWrapper
+        block={trailingBlock}
+        onUpdate={vi.fn()}
+        onFocus={vi.fn()}
+        onBlur={vi.fn()}
+        actions={{} as any}
+      />
+    );
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    const focusSpy = vi.spyOn(textarea, 'focus');
+    const selectionSpy = vi.spyOn(textarea, 'setSelectionRange');
+
+    // Place collapsed caret at trimEnd boundary (index 11 of 14)
+    textarea.setSelectionRange(11, 11);
+    selectionSpy.mockClear();
+
+    fireEvent.click(textarea);
+
+    expect(focusSpy).toHaveBeenCalled();
+    expect(selectionSpy).toHaveBeenCalledWith(trailingBlock.text.length, trailingBlock.text.length);
+    expect(textarea.selectionStart).toBe(trailingBlock.text.length);
+    expect(textarea.selectionEnd).toBe(trailingBlock.text.length);
+  });
+
+  it('Guardrail 2: Preserves mid-sentence caret and highlighted text ranges without yanking to len', () => {
+    const proseBlock = {
+      id: 'prose-block',
+      text: 'The history I carry is an epic journey across oceans.',
+      type: 'hook' as const,
+      catalysts: [],
+    };
+
+    render(
+      <SentenceWrapper
+        block={proseBlock}
+        onUpdate={vi.fn()}
+        onFocus={vi.fn()}
+        onBlur={vi.fn()}
+        actions={{} as any}
+      />
+    );
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    const selectionSpy = vi.spyOn(textarea, 'setSelectionRange');
+
+    // Case A: Mid-sentence click (selectionStart < value.trimEnd().length)
+    textarea.setSelectionRange(4, 4);
+    selectionSpy.mockClear();
+    fireEvent.click(textarea);
+
+    expect(selectionSpy).not.toHaveBeenCalled();
+    expect(textarea.selectionStart).toBe(4);
+    expect(textarea.selectionEnd).toBe(4);
+
+    // Case B: Dragged text selection (selectionStart !== selectionEnd)
+    textarea.setSelectionRange(4, 11);
+    selectionSpy.mockClear();
+    fireEvent.click(textarea);
+
+    expect(selectionSpy).not.toHaveBeenCalled();
+    expect(textarea.selectionStart).toBe(4);
+    expect(textarea.selectionEnd).toBe(11);
+  });
 });

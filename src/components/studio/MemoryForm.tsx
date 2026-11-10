@@ -2678,16 +2678,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 <div 
                         data-block-id="story-hook"
                         onClick={(e) => {
-                          // Double Defense: if click originates from inside the editor wrapper, do not force cursor to the end
-                          const target = e.target as HTMLElement;
-                          if (target.closest('[data-blueprint="SentenceWrapper"]')) {
-                            return;
-                          }
-                          if (storyHookRef.current) {
-                            storyHookRef.current.focus();
-                            // Move cursor to end if clicking empty space
-                            const len = storyHookRef.current.value.length;
-                            storyHookRef.current.setSelectionRange(len, len);
+                          if (!storyHookRef.current) return;
+                          const el = storyHookRef.current;
+                          const len = el.value.length;
+                          const trimLen = el.value.trimEnd().length;
+                          if (e.target !== el) {
+                            el.focus();
+                            el.setSelectionRange(len, len);
+                          } else if (el.selectionStart === el.selectionEnd && el.selectionStart >= trimLen) {
+                            el.focus();
+                            el.setSelectionRange(len, len);
                           }
                         }}
                         className={cn(

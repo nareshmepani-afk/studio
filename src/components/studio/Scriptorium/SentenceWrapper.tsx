@@ -972,10 +972,17 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       data-block-id={block.id}
       data-sentence-block={block.id}
       onClick={(e) => {
-        if (e.target !== editorRef.current && editorRef.current) {
-          editorRef.current.focus();
-          const len = editorRef.current.value.length;
-          editorRef.current.setSelectionRange(len, len);
+        if (editorRef.current) {
+          const el = editorRef.current;
+          const len = el.value.length;
+          const trimLen = el.value.trimEnd().length;
+          if (e.target !== el) {
+            el.focus();
+            el.setSelectionRange(len, len);
+          } else if (el.selectionStart === el.selectionEnd && el.selectionStart >= trimLen) {
+            el.focus();
+            el.setSelectionRange(len, len);
+          }
         }
         e.stopPropagation();
       }}
@@ -1083,14 +1090,37 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           data-gramm="false"
           data-gramm_editor="false"
           data-enable-grammarly="false"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            const el = e.currentTarget;
+            const len = el.value.length;
+            const trimLen = el.value.trimEnd().length;
+            const isCollapsed = el.selectionStart === el.selectionEnd;
+            let isPastVisualEnd = false;
+            if (isCollapsed && (e.clientX !== 0 || e.clientY !== 0) && containerRef.current) {
+              const tokenSpans = containerRef.current.querySelectorAll<HTMLElement>('[data-token-id]');
+              const lastSpan = tokenSpans.length > 0 ? tokenSpans[tokenSpans.length - 1] : null;
+              if (lastSpan) {
+                const rect = lastSpan.getBoundingClientRect();
+                if (rect.width > 0 || rect.height > 0) {
+                  if (e.clientY > rect.bottom || (e.clientY >= rect.top && e.clientX >= rect.right - 4)) {
+                    isPastVisualEnd = true;
+                  }
+                }
+              }
+            }
+            if (isCollapsed && (el.selectionStart >= trimLen || isPastVisualEnd)) {
+              el.focus();
+              el.setSelectionRange(len, len);
+            }
+            e.stopPropagation();
+          }}
           style={{ 
             ...RESOLVED_STYLES, 
             color: 'transparent', 
             caretColor: readOnly ? 'transparent' : '#10b981',
             gridArea: '1 / 1 / 2 / 2'
           }}
-          className="relative z-[50] w-full resize-none overflow-hidden bg-transparent selection:bg-emerald-500/30"
+          className="relative z-[50] w-full h-full resize-none overflow-hidden bg-transparent selection:bg-emerald-500/30"
           rows={1}
           onInput={(e) => {
             const target = e.target as HTMLTextAreaElement;
