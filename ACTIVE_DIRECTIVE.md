@@ -9,8 +9,8 @@
 
 # 1. ACTIVE DIRECTIVE DISPATCH (Director & Lead Architecture ➔ Antigravity)
 
-- **Ref:** SPEC-MW-179 / Plane MW-391 (Live Teleprompter Preview & Scribe's Margin Font Size Parity)
-- **Timestamp:** 2026-11-08 12:40 UTC
+- **Ref:** SPEC-MW-180 / Plane MW-392 (Canonical Fireside Panel Width Standardisation & Recording Prompter 18px Typography)
+- **Timestamp:** 2026-11-08 13:30 UTC
 - **Target Agent:** Chat 2 (The Flash Executor)
 - **Operational Mode:** [Use Fast] — Decisions Locked: `1A, 2A`
 - **Workspace Root:** `C:\Users\home\studio`
@@ -18,16 +18,17 @@
 - **Dispatch Status:** [OVER - Director (Naresh)]
 
 ### Objective:
-1. Align **Live Teleprompter Preview** prose container in `ScribesMargin.tsx` to 18px (`text-lg font-serif leading-relaxed max-h-64`) for 1:1 font size parity with the Armchair Script Editor (`SERIF_STYLES`).
-2. Ensure inline sensory anchor spans and `/` & `//` cadence pause badges scale proportionally without micro-text shrinkage (`[&_[data-sensory-cue]]:!text-lg`, `[&_[data-slash-cue]]:!text-sm md:[&_[data-slash-cue]]:!text-base`).
-3. Upscale Scribe Note guidance copy (`text-xs sm:text-sm text-stone-200`) and Cadence HUD metrics to elder readability standards (Rule 48.5).
-4. Maintain `flex-wrap gap-2` on card headers and action buttons for clean, unclipped wrapping on 375px mobile viewports.
+1. Standardise all storytelling panels across `/studio/fireside` to `w-full max-w-xl mx-auto` (`576px`), eliminating three-way width mismatch between Orientation Dock (`max-w-2xl` / 672px), Editor & Voice Recorder (`max-w-xl` / 576px), and Prompter Banner & Mode Switchers (`max-w-md` / 448px).
+2. Upgrade `FiresidePrompterBanner` prose to 18px (`text-lg font-serif leading-relaxed text-stone-200`) with proportional sensory and slash badge scaling (`[&_[data-sensory-cue]]:!text-lg [&_[data-slash-cue]]:!text-sm md:[&_[data-slash-cue]]:!text-base`).
+3. Ensure Video Recorder wrapper in `#fireside-active-studio` matches `w-full max-w-xl mx-auto` so switching between Voice, Video, and Photo modes introduces zero horizontal layout shift.
+4. Add automated regression test asserting 576px width invariants across `FiresideStudioClient.tsx` and `OrientationSoundcheckDock.tsx`.
 
 ### Target File Paths:
-1. `C:\Users\home\studio\src\components\studio\shared\ScribesMargin.tsx`
-2. `C:\Users\home\studio\src\test\narrative_script_input.test.tsx`
-3. `C:\Users\home\studio\qa_checklist_interactive.html`
-4. `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
+1. `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+2. `C:\Users\home\studio\src\components\fireside\OrientationSoundcheckDock.tsx`
+3. `C:\Users\home\studio\src\test\fireside_booth_entry.test.tsx`
+4. `C:\Users\home\studio\qa_checklist_interactive.html`
+5. `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
 
 ---
 
@@ -35,11 +36,11 @@
 
 ---
 
-### Execution Receipt: SPEC-MW-179 (Live Teleprompter Preview & Scribe's Margin Font Size Parity)
+### Execution Receipt: SPEC-MW-180 (Canonical Fireside Panel Width Standardisation & Recording Prompter 18px Typography)
 - • Responding Agent: Chat 2 (The Flash Executor — Antigravity)
-- • Execution Timestamp: 2026-11-08T13:00:00Z
-- • Git Branch / Pushed Commit SHA: `dev @ ab8c360c` (Full SHA: `ab8c360cad681ebdafb8b350f55cf64b8bb26c3c` | Live Staging Verified: `ab8c360` at `https://dev.memoryweaver.studio/api/version`)
-- • Test & Build Gates: Vitest `102/102` test suites (`1,101/1,101` assertions PASS) | `tsc --noEmit` (`0` errors) | `next lint` (`0` warnings) | `qa:validate` (`PASS`) | `npm.cmd run build` (`46/46` routes compiled, exit `0`) | Plane `MW-391` (`Done`) | `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c` synced)
+- • Execution Timestamp: 2026-11-08T13:52:00Z
+- • Git Branch / Pushed Commit SHA: `dev @ 0f46dd87` (Full SHA: `0f46dd87d8a9ea8bc81907cb5cf54805e363ae1c` | Live Staging Verified: `0f46dd8` at `https://dev.memoryweaver.studio/api/version`)
+- • Test & Build Gates: Vitest `102/102` test suites (`1,102/1,102` assertions PASS, incl. new Test 7 in `fireside_booth_entry.test.tsx`) | `tsc --noEmit` (`0` errors) | `next lint` (`0` warnings) | `qa:validate` (`PASS`) | `npm.cmd run build` (`46/46` routes compiled, exit `0`) | Plane `MW-392` (`Done`) | `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c` synced)
 - • Execution Status: COMPLETED
 - • Sign-Off: [OUT - Chat 2 (The Flash Executor)]
 

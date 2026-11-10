@@ -2191,3 +2191,24 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 
+### [2026-11-08 13:52 UTC / 13:52 GMT] — Checkpoint #089 - Canonical Fireside Panel Width Standardisation & Prompter 18px Typography (SPEC-MW-180 / MW-392)
+- **Commit & Edge Status:** Pushed `0f46dd87` (`0f46dd87d8a9ea8bc81907cb5cf54805e363ae1c`) to `origin/dev`; verified live at `https://dev.memoryweaver.studio/api/version` (`commitSha: "0f46dd8"`). Plane ticket `MW-392` created and marked `Done`.
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper**: Audited Card 52 (`media_1794144087323_7b30ef19.jpg` and `media_1794144183259_c5cdf0b4.jpg`): Noticed that panels in `/studio/fireside#fireside-active-studio` were not all the same width. Approved Decision Lock `1A, 2A, Go` under Rule 61 to establish a canonical standard of `w-full max-w-xl mx-auto` (576px).
+  - ⚡ **Chat 2 (The Flash Executor)**:
+    - Standardised all Fireside panels in `src/app/studio/fireside/FiresideStudioClient.tsx` and `src/components/fireside/OrientationSoundcheckDock.tsx` to `w-full max-w-xl mx-auto` (`576px`), eliminating three-way width mismatch between Orientation Dock (`max-w-2xl` / 672px), Editor & Voice Recorder (`max-w-xl` / 576px), and Prompter Banner & Mode Switchers (`max-w-md` / 448px).
+    - Upgraded `FiresidePrompterBanner` prose to 18px (`text-lg font-serif leading-relaxed text-stone-200`) with proportional sensory anchor (`[&_[data-sensory-cue]]:!text-lg`) and breath pause badge scaling (`[&_[data-slash-cue]]:!text-sm md:[&_[data-slash-cue]]:!text-base`).
+    - Standardised Video Memo and Voice Recording mode switcher bars and recorder containers to `w-full max-w-xl` to ensure 0ms, zero-shift transitions between Voice, Video, and Photo modes.
+    - Added automated regression assertion #7 in `src/test/fireside_booth_entry.test.tsx` (7/7 passing; 102/102 test suites passing; 1,102 assertions).
+    - Passed local production build gate `npm.cmd run build` (46/46 routes compiled cleanly, exit code 0).
+    - Auto-synced `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c`) in Google Drive and seeded Firestore QA items on dev staging.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
+  - `C:\Users\home\studio\src\components\fireside\OrientationSoundcheckDock.tsx`
+  - `C:\Users\home\studio\src\test\fireside_booth_entry.test.tsx`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
+  - `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+
