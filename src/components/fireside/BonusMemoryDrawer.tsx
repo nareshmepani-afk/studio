@@ -393,7 +393,7 @@ export const BonusMemoryDrawer: React.FC<BonusMemoryDrawerProps> = ({
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5 text-stone-400" />
-                      <span>Polish</span>
+                      <span>Polish Note</span>
                     </>
                   )}
                 </button>

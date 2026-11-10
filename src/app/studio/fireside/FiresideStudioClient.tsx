@@ -55,6 +55,7 @@ import {
   RotateCcw,
   Cloud,
   Wind,
+  PlusCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { applyTheatricalSlashes, renderPrompterCadenceHtml } from '@/utils/scriptFormatter';
@@ -586,6 +587,12 @@ export default function FiresideStudioClient() {
       setTimeout(() => setNotification(null), 3500);
       return next;
     });
+  }, []);
+
+  const handleOpenBonusDrawer = useCallback(() => {
+    setBonusDrawerSeedPrompt(null);
+    setEditingBonusNote(null);
+    setIsBonusDrawerOpen(true);
   }, []);
 
   const handleAnswerFollowUpNote = useCallback((question: string) => {
@@ -1384,6 +1391,25 @@ export default function FiresideStudioClient() {
               </div>
             </>
           )
+        )}
+
+        {/* Top-Level Bonus Memory Drawer Trigger for In-Progress / Unrecorded Scenes (SPEC-MW-108 / Card 35 / Ticket #259) */}
+        {!hasCompletedReel && (
+          <div className="w-full max-w-xl mx-auto pt-6 pb-2 border-t border-stone-900/80 flex flex-col items-center">
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_OPEN_BONUS_DRAWER_BTN"
+              data-hotspot-id="HS_FIRESIDE_OPEN_BONUS_DRAWER_BTN"
+              onClick={handleOpenBonusDrawer}
+              className="w-full min-h-[56px] px-6 py-3.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-400 text-amber-200 hover:text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98 select-none shadow-lg shadow-black/40"
+            >
+              <PlusCircle className="w-5 h-5 text-amber-400" />
+              <span>[ ➕ Open Bonus Memory Drawer ]</span>
+            </button>
+            <p className="mt-2 text-[11px] font-mono text-stone-500 text-center">
+              Add handwritten archival notes, family reflections, or heirloom photos
+            </p>
+          </div>
         )}
 
         {/* Celebratory Completed Reel Card (Always visible whenever scene has a recorded take) */}
