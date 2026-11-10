@@ -443,6 +443,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   }), [isHook]);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mirrorRef = useRef<HTMLDivElement>(null);
   const [rects, setRects] = useState<Record<string, DOMRect>>({});
   const [isMounted, setIsMounted] = useState(false);
   const [ghostWordInfo, setGhostWordInfo] = useState<{
@@ -468,13 +469,45 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     setIsMounted(true);
   }, []);
 
-  // AUTO-SYNC HEIGHT: Ensures the interaction layer (textarea) matches the visual layer
-  useLayoutEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.style.height = 'auto';
-      editorRef.current.style.height = `${editorRef.current.scrollHeight}px`;
+  // AUTO-SYNC HEIGHT: Ensures the interaction layer (textarea) matches the visual mirror layer
+  const syncEditorHeight = useCallback(() => {
+    const textarea = editorRef.current;
+    if (!textarea) return;
+    const mirror = mirrorRef.current;
+    textarea.style.height = 'auto';
+    const mirrorHeight = mirror?.offsetHeight || 0;
+    const computedHeight = Math.max(mirrorHeight, textarea.scrollHeight);
+    if (computedHeight > 0) {
+      textarea.style.height = `${computedHeight}px`;
     }
-  }, [block.text]);
+    textarea.scrollTop = 0;
+  }, []);
+
+  useLayoutEffect(() => {
+    syncEditorHeight();
+  }, [block.text, syncEditorHeight]);
+
+  useEffect(() => {
+    syncEditorHeight();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && mirrorRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        syncEditorHeight();
+      });
+      resizeObserver.observe(mirrorRef.current);
+    }
+
+    if (typeof document !== 'undefined' && (document as any).fonts?.ready) {
+      (document as any).fonts.ready.then(() => {
+        syncEditorHeight();
+      }).catch(() => {});
+    }
+
+    return () => {
+      resizeObserver?.disconnect();
+    };
+  }, [syncEditorHeight]);
 
   const { isCleanView } = useStudioState();
   const effectiveHideAnchors = hideAnchors || isCleanView;
@@ -1122,14 +1155,16 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           }}
           className="relative z-[50] w-full h-full resize-none overflow-hidden bg-transparent selection:bg-emerald-500/30"
           rows={1}
-          onInput={(e) => {
-            const target = e.target as HTMLTextAreaElement;
-            target.style.height = 'auto';
-            target.style.height = `${target.scrollHeight}px`;
+          onScroll={(e) => {
+            e.currentTarget.scrollTop = 0;
+          }}
+          onInput={() => {
+            syncEditorHeight();
           }}
         />
 
         <div
+          ref={mirrorRef}
           aria-hidden="true"
           style={{
             ...RESOLVED_STYLES,

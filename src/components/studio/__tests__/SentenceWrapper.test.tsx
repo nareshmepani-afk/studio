@@ -251,4 +251,58 @@ describe('SentenceWrapper Cursor Stability', () => {
     expect(textarea.selectionStart).toBe(4);
     expect(textarea.selectionEnd).toBe(11);
   });
+
+  it('Guardrail 3: Dynamic height sync resets height to auto and matches mirror/scrollHeight reflow with scrollTop locked to 0', () => {
+    const multiLineBlock = {
+      id: 'multiline-block',
+      text: 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6',
+      type: 'hook' as const,
+      catalysts: [],
+    };
+
+    const { rerender, container } = render(
+      <SentenceWrapper
+        block={multiLineBlock}
+        onUpdate={vi.fn()}
+        onFocus={vi.fn()}
+        onBlur={vi.fn()}
+        actions={{} as any}
+      />
+    );
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    const mirrorDiv = container.querySelector('[aria-hidden="true"]') as HTMLDivElement;
+
+    // Simulate mirror reflow (e.g. Courier font load expands mirror to 216px)
+    Object.defineProperty(mirrorDiv, 'offsetHeight', { value: 216, configurable: true });
+    Object.defineProperty(textarea, 'scrollHeight', { value: 216, configurable: true });
+
+    // Trigger input / reflow
+    fireEvent.input(textarea);
+
+    expect(textarea.style.height).toBe('216px');
+    expect(textarea.scrollTop).toBe(0);
+
+    // Simulate onScroll event locking scrollTop to 0
+    textarea.scrollTop = 25;
+    fireEvent.scroll(textarea);
+    expect(textarea.scrollTop).toBe(0);
+
+    // Simulate deletion shrinking height
+    Object.defineProperty(mirrorDiv, 'offsetHeight', { value: 72, configurable: true });
+    Object.defineProperty(textarea, 'scrollHeight', { value: 72, configurable: true });
+
+    rerender(
+      <SentenceWrapper
+        block={{ ...multiLineBlock, text: 'Line 1\nLine 2' }}
+        onUpdate={vi.fn()}
+        onFocus={vi.fn()}
+        onBlur={vi.fn()}
+        actions={{} as any}
+      />
+    );
+
+    expect(textarea.style.height).toBe('72px');
+    expect(textarea.scrollTop).toBe(0);
+  });
 });
