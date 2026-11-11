@@ -455,6 +455,24 @@ When authoring or amending ANY test card (`#card-N`) or sub-item (`Item N.M`) in
   2. The script updates `title`, `steps`, `targetRoute`, `bucket`, and `syncedAt`.
   3. **Zero-Overwrite Invariant**: The script is **STRICTLY FORBIDDEN** from overwriting or resetting existing `verdict`, `notes`, `telemetryTrace`, or `screenshots`. Any seed operation that wipes a tester's verified `PASS` verdict or uploaded test screenshot is an immediate Critical Process Violation.
 
+# 30.13. Mandatory Chrome DevTools Preset & Viewport Dimension Specification Rule (GOV-MW-164)
+- **Zero Ambiguity on Viewport Testing**: Whenever authoring or presenting ANY testing instructions, QA cards, or checklist sub-items (`Item N.M`) involving viewport dimensions, responsive breakpoints, mobile safe areas, or device touch simulation, the agent is **STRICTLY FORBIDDEN** from specifying ambiguous widths (e.g. *"test at 850px"*, *"in mobile viewport"*, *"resize browser"*) without explicitly designating:
+  1. **Canonical Chrome DevTools Built-In Preset**: An exact, existing device from Chrome DevTools' standard dropdown list.
+  2. **Explicit Dimensions (`Width × Height`)**: Realistic viewport height (never squished netbook heights like `531px`).
+  3. **DevTools Zoom & Orientation Guidance**: Explicitly specifying `Fit to window` and Portrait/Landscape where appropriate.
+- **Canonical DevTools Device Preset Hierarchy**:
+  - **Mobile Tier (`< 768px`)**:
+    - *Default Standard*: **`iPhone 16 Pro Max` (`440 × 956`)** or **`iPhone 16` (`393 × 852`)**.
+    - *Compact Mobile Fallback*: **`iPhone SE` (`375 × 667`)**.
+  - **Tablet Tier (`768px – 1023px`)**:
+    - *Default Standard*: **`iPad Mini` (`768 × 1024`)** (under DevTools *TABLETS & DESKTOPS*).
+    - *Alternative Tablet (Responsive Mode)*: `Dimensions: Responsive` set to **`850 × 1000`** with Zoom `Fit to window`.
+  - **Desktop Tier (`≥ 1024px`)**:
+    - *Default Standard*: **Toggle Device Mode OFF (`Ctrl + Shift + M`)** in standard maximised desktop browser window.
+    - *Emulated Desktop Preset*: **`iPad Pro 13` (`1024+ × 1366`)** or `Dimensions: Responsive` set to **`1280 × 800`**.
+- **Mandatory Visual Display on QA Cards**: In `qa_checklist_interactive.html` and `/admin/qa`, every responsive sub-item's `⚠️ HOW TO REACH & TEST:` box MUST include an explicit device preset directive:
+  `📱 DevTools Preset: Select "[Device Preset Name]" ([W × H]) from Dimensions dropdown (Zoom: Fit to window).`
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
