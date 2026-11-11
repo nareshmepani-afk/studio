@@ -1401,7 +1401,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         const isPositiveStatus = isPublished || isMasteredReel;
 
                         return (
-                            <header className="w-full min-w-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3 md:pr-16 lg:pr-68 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
+                            <header className="w-full min-w-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3 md:pr-16 lg:pr-72 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
 
                                 {/* Left Cluster: Back Navigation, Act Context & Mode Posture Badge */}
                                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
@@ -1666,7 +1666,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     {/* ROW 3: Pinned Production Control Bar Dock */}
                     {currentStage >= 0 && (
                         <footer className={cn(
-                            "w-full min-w-0 z-20 shrink-0 border-t border-white/10 bg-slate-950/95 backdrop-blur-2xl py-2 px-2 sm:px-4 md:pr-16 lg:pr-68 flex items-center justify-center transition-all duration-500",
+                            "w-full min-w-0 z-20 shrink-0 border-t border-white/10 bg-slate-950/95 backdrop-blur-2xl py-2 px-2 sm:px-4 md:pr-16 lg:pr-72 flex items-center justify-center transition-all duration-500",
                             isDirectorOpen && "opacity-20 blur-sm pointer-events-none"
                         )}>
                             <ProductionControlBar
