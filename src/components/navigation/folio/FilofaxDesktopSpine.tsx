@@ -59,7 +59,7 @@ export function FilofaxDesktopSpine({
       className={cn(
         // Hidden on mobile (<768px), adaptive w-14 on tablet, w-64 on desktop
         'hidden md:flex flex-col',
-        'fixed top-4 right-0 bottom-4 z-30',
+        'fixed top-20 right-0 bottom-24 z-30',
         'transition-all duration-300 ease-in-out',
         'w-14 lg:w-64',
         'shrink-0',

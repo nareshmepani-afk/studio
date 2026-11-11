@@ -458,7 +458,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
   return (
     <div className={cn(
-      "w-full min-w-0 max-w-full sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto pointer-events-auto transition-all duration-500 ease-in-out relative",
+      "w-full min-w-0 max-w-full sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto md:pr-16 lg:pr-68 pointer-events-auto transition-all duration-500 ease-in-out relative",
       isDirectorOpen && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none",
       (isReviewing && !hasSelectedTreatment) && "opacity-90"
     )}>
