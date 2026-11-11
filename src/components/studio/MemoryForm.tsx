@@ -1658,12 +1658,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
 
   return (
-    <div className="relative w-full min-w-0 z-10 px-4 sm:px-8 pb-24 pt-4 md:pr-16 lg:pr-64 overflow-visible">
+    <div className="relative w-full min-w-0 z-10 px-2 sm:px-4 xl:px-8 pb-24 pt-2 sm:pt-4 md:pr-14 lg:pr-64 overflow-visible">
     <LayoutGroup>
-      <div className="w-full relative">
+      <div className="w-full min-w-0 relative">
         {/* --- PERSISTENT PRODUCTION HEADER (Sole Authority: Top Chrome) --- */}
         {productionStage === 0 && modality !== null && !isReviewing && (
-          <div className="mb-12 flex items-center justify-end max-w-[95vw] xl:max-w-screen-2xl mx-auto">
+          <div className="mb-6 sm:mb-8 flex items-center justify-end w-full">
             
             <div className="flex items-center gap-4">
               {modality && (
@@ -1813,7 +1813,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
         </AnimatePresence>
 
         {/* --- MAIN THEATRICAL STAGES --- */}
-        <div className="flex-1 min-w-0 px-4 xl:px-0">
+        <div className="flex-1 min-w-0 px-1 sm:px-2 xl:px-0">
           {/* Desktop Spoken Memory Secured Banner (Parity with Fireside — AUDIT-MW-147) */}
           {spokenAudioTake && productionStage !== 2 && (
             <div className="mb-6 max-w-[95vw] xl:max-w-screen-2xl mx-auto rounded-2xl bg-gradient-to-r from-amber-950/40 via-stone-900/90 to-amber-950/30 border border-amber-500/40 p-4 sm:p-5 shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-3 duration-300">
@@ -1901,7 +1901,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.02 }}
-                className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col pt-4 pb-0"
+                className="w-full min-w-0 max-w-full xl:max-w-screen-2xl mx-auto flex flex-col pt-2 sm:pt-4 pb-0"
               >
                 {isGeneratingDrafts ? (
                   <SynthesizingOverlay 
@@ -2025,7 +2025,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         placeholder="GIVE YOUR MEMORY A CINEMATIC TITLE..."
                         readOnly={isProductionLocked}
                         className={cn(
-                          "w-full bg-transparent border-none text-4xl lg:text-5xl font-serif text-white/90 placeholder:text-white/5 focus:outline-none focus:ring-0 italic transition-all cursor-[inherit]",
+                          "w-full bg-transparent border-none text-2xl sm:text-3xl xl:text-5xl font-serif text-white/90 placeholder:text-white/5 focus:outline-none focus:ring-0 italic transition-all cursor-[inherit]",
                           isProductionLocked && "opacity-60 cursor-not-allowed"
                         )}
                       />
@@ -2108,7 +2108,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           onFocusField={() => setLastFocusedField('metadata')}
                           variant="soundstage"
                         />
-                        <div className="flex flex-wrap gap-x-16 gap-y-10 pl-2 relative z-[1010]">
+                        <div className="flex flex-wrap gap-x-8 xl:gap-x-16 gap-y-6 xl:gap-y-10 pl-2 relative z-[1010]">
                         {/* Narrative Scope */}
                         <div className="space-y-4 pointer-events-auto">
                           <span className="text-[11px] font-black text-emerald-400/70 uppercase tracking-[0.4em] flex items-center">
@@ -2151,10 +2151,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       </div>
                     )}
 
-                    <div id="catalyst-hook" className="relative z-10 space-y-8">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="flex flex-col gap-1 relative">
+                    <div id="catalyst-hook" className="relative z-10 space-y-6 sm:space-y-8 w-full min-w-0">
+                      <div className="flex items-center justify-between w-full min-w-0">
+                        <div className="flex items-center gap-4 w-full min-w-0">
+                            <div className="flex flex-col gap-2 relative w-full min-w-0">
                               {mentorActive && productionStage === 0 && (
                                 <MentorshipHotspot 
                                   number={2} 
@@ -2691,7 +2691,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           }
                         }}
                         className={cn(
-                          "relative transition-all duration-700 rounded-3xl p-8 -mx-8 group/hook min-h-[180px] flex flex-col justify-between gap-6 cursor-text",
+                          "relative transition-all duration-700 rounded-3xl p-4 sm:p-6 lg:p-8 mx-0 group/hook min-h-[180px] flex flex-col justify-between gap-6 cursor-text",
                           "hover:bg-white/[0.02] focus-within:bg-white/[0.04]",
                           "ring-1 ring-transparent focus-within:ring-white/10",
                           isSaturated && "ring-4 ring-amber-500/50 bg-amber-500/10 scale-[1.02] shadow-[0_0_60px_rgba(245,158,11,0.2)]",
@@ -2903,13 +2903,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                               y: { duration: 0.4 },
                               boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                             }}
-                            className="p-8 mt-12 bg-zinc-900/50 border border-emerald-500/20 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group"
+                            className="p-5 sm:p-6 lg:p-8 mt-8 sm:mt-12 bg-zinc-900/50 border border-emerald-500/20 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group"
                           >
                             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-50" />
                             <div className="relative z-10 space-y-6">
-                              <div className="flex items-center justify-between">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex items-center gap-3 pointer-events-auto">
-                                  <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20 group-hover:border-emerald-500/40 transition-all">
+                                  <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20 group-hover:border-emerald-500/40 transition-all shrink-0">
                                     <History className="w-5 h-5 text-emerald-400" />
                                   </div>
                                   <div>
@@ -2917,12 +2917,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                     <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-[0.2em]">Atmospheric Enhancements // READY</p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 shrink-0">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                  <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">Scene Clarity: HIGH</span>
+                                  <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest whitespace-nowrap">Scene Clarity: HIGH</span>
                                 </div>
                               </div>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
                                 {atmosphericSuggestions.map((suggestion, idx) => (
                                   <button
                                     key={idx}
@@ -2946,7 +2946,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   </button>
                                 ))}
                               </div>
-                              <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4">
+                              <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
                                 <p className="text-xs text-zinc-200 font-medium tracking-wide">Click to weave these sensory anchors into your performance blueprint.</p>
                                 <button onClick={() => setAtmosphericSuggestions([])} className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-rose-400 transition-colors whitespace-nowrap">Dismiss All</button>
                               </div>

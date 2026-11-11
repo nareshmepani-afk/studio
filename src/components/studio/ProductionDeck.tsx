@@ -1328,7 +1328,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         <div className={`w-full h-[100dvh] max-h-[100dvh] flex flex-col relative bg-[#020617] overflow-hidden`}>
             {/* The PerspectiveWrapper handles the overall background color transition and the blurry interior swap */}
             <PerspectiveWrapper activeRoom={activeRoom} dominantType={dominantType}>
-                <div className="grid grid-rows-[auto_1fr_auto] h-full w-full relative overflow-hidden" data-blueprint="StudioDeckGrid">
+                <div className="grid grid-rows-[auto_1fr_auto] grid-cols-[minmax(0,1fr)] h-full w-full relative overflow-hidden" data-blueprint="StudioDeckGrid">
                     {/* TOP: Historical Sandbox Banner */}
                     {isDemoMode && (
                         <div className="w-full bg-gradient-to-r from-indigo-950/95 via-purple-950/95 to-indigo-950/95 border-b border-indigo-500/30 px-3 sm:px-5 py-2 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs z-30 shadow-lg backdrop-blur-md shrink-0">
@@ -1401,10 +1401,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         const isPositiveStatus = isPublished || isMasteredReel;
 
                         return (
-                            <header className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
+                            <header className="w-full min-w-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
 
                                 {/* Left Cluster: Back Navigation, Act Context & Mode Posture Badge */}
-                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
                                   <TooltipProvider delayDuration={200}>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -1419,10 +1419,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                                 await handleExit();
                                                 toast.success("Draft Saved", { description: "Your progress is secure." });
                                             }}
-                                            className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-3 rounded-xl hover:bg-white/5 group shrink-0"
+                                            className="flex items-center gap-2 sm:gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-1.5 sm:p-2 pr-2.5 sm:pr-3 rounded-xl hover:bg-white/5 group shrink-0"
                                         >
                                             <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
-                                            <span className="text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold truncate max-w-[160px] sm:max-w-xs md:max-w-sm">
+                                            <span className="text-xs sm:text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold truncate max-w-[160px] sm:max-w-xs md:max-w-sm">
                                                 {actTitle}
                                             </span>
                                         </button>
@@ -1437,7 +1437,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                   {badgeLabel && (
                                       <span
                                           className={cn(
-                                              "hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none shrink-0 min-h-[36px]",
+                                              "inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none shrink-0 min-h-[32px] xl:min-h-[36px]",
                                               isPositiveStatus
                                                   ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
                                                   : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
@@ -1454,7 +1454,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                               <span
                                                   data-testid="mobile-flexible-badge"
                                                   data-hotspot-id="HS_STUDIO_MOBILE_FLEXIBLE_BADGE"
-                                                  className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-teal-500/15 border border-teal-500/40 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)] whitespace-nowrap select-none shrink-0 min-h-[36px]"
+                                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-teal-500/15 border border-teal-500/40 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)] whitespace-nowrap select-none shrink-0 min-h-[32px] xl:min-h-[36px]"
                                               >
                                                   📱 Mobile Recording • Flexible
                                               </span>
@@ -1466,7 +1466,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                                       pendingNextActRef.current = false;
                                                       setIsElevationModalOpen(true);
                                                   }}
-                                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.2)] transition-all whitespace-nowrap cursor-pointer shrink-0 min-h-[36px]"
+                                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.2)] transition-all whitespace-nowrap cursor-pointer shrink-0 min-h-[32px] xl:min-h-[36px]"
                                               >
                                                   ✨ Elevate to Studio Master &rarr;
                                               </button>
@@ -1474,7 +1474,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                       ) : (
                                           <span
                                               data-testid="desktop-studio-master-badge"
-                                              className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/15 border border-amber-400/40 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.15)] whitespace-nowrap select-none shrink-0 min-h-[36px]"
+                                              className="inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/15 border border-amber-400/40 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.15)] whitespace-nowrap select-none shrink-0 min-h-[32px] xl:min-h-[36px]"
                                           >
                                               🔒 Studio Master
                                           </span>
@@ -1483,7 +1483,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                 </div>
 
                                 {/* Right Cluster: Hardware Privacy Shield & Studio Utilities */}
-                                <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 min-w-0 ml-auto">
                                     {/* Studio Surface Switcher Pill */}
                                     <StudioSurfaceSwitcher
                                       currentSurface="soundstage"
@@ -1591,11 +1591,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     {/* ROW 2: Stage Canvas & Production Rail (Sole Scroll Domain) */}
                     <main
                         className={cn(
-                            "min-h-0 flex-1 grid relative overflow-hidden h-full",
+                            "min-h-0 min-w-0 w-full flex-1 grid relative overflow-hidden h-full",
                             !isDragging && "transition-[grid-template-columns] duration-500 ease-in-out"
                         )}
                         style={{
-                            gridTemplateColumns: `${sidebarActualWidth}px 6px 1fr`,
+                            gridTemplateColumns: `${sidebarActualWidth}px 6px minmax(0, 1fr)`,
                             cursor: isDragging ? 'col-resize' : 'default'
                         }}
                     >
@@ -1666,7 +1666,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     {/* ROW 3: Pinned Production Control Bar Dock */}
                     {currentStage >= 0 && (
                         <footer className={cn(
-                            "w-full z-20 shrink-0 border-t border-white/10 bg-slate-950/95 backdrop-blur-2xl py-2 px-3 sm:px-4 flex items-center justify-center transition-all duration-500",
+                            "w-full min-w-0 z-20 shrink-0 border-t border-white/10 bg-slate-950/95 backdrop-blur-2xl py-2 px-2 sm:px-4 flex items-center justify-center transition-all duration-500",
                             isDirectorOpen && "opacity-20 blur-sm pointer-events-none"
                         )}>
                             <ProductionControlBar

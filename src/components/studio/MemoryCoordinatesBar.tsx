@@ -207,7 +207,7 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
         'w-full transition-all',
         isFireside
           ? 'bg-stone-950/80 border border-stone-800/80 rounded-2xl p-3 sm:p-4 shadow-lg backdrop-blur-md'
-          : 'flex flex-wrap gap-x-16 gap-y-10 pl-2 relative z-[1010]',
+          : 'flex flex-wrap gap-x-8 xl:gap-x-16 gap-y-6 xl:gap-y-10 pl-2 relative z-[1010]',
         className
       )}
     >
@@ -215,7 +215,7 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
       <div
         className={cn(
           'flex flex-wrap items-center',
-          isFireside ? 'gap-4 sm:gap-6 justify-between' : 'gap-x-16 gap-y-10'
+          isFireside ? 'gap-4 sm:gap-6 justify-between' : 'gap-x-8 xl:gap-x-16 gap-y-6 xl:gap-y-10'
         )}
       >
         {/* --- 1. MEMORY COORDINATES (City & Country) --- */}

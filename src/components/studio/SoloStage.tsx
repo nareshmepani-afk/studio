@@ -3111,7 +3111,7 @@ export default function SoloStage({
   // --- SUB-RENDERERS FOR 5-ACT JOURNEY ---
   
   const renderIncitingMemory = () => (
-    <div className="max-w-[95vw] xl:max-w-screen-2xl mx-auto w-full pb-8 transition-all duration-700">
+    <div className="w-full min-w-0 max-w-full xl:max-w-screen-2xl mx-auto pb-8 transition-all duration-700">
       <MemoryForm ref={formRef} 
         data={data} 
         update={shieldedUpdate} 
@@ -3135,7 +3135,7 @@ export default function SoloStage({
 
   const renderWeave = () => (
     <div className={cn(
-      "w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto pb-8 transition-all duration-1000",
+      "w-full min-w-0 max-w-full xl:max-w-screen-2xl mx-auto pb-8 transition-all duration-1000",
       data?.structuredScript ? "h-[calc(100vh-180px)]" : ""
     )}>
       {/* PERSISTENCE MANTLE: Keep MemoryForm mounted for flush stability */}

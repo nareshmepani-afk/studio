@@ -458,7 +458,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
   return (
     <div className={cn(
-      "w-full max-w-[98vw] sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto pointer-events-auto transition-all duration-500 ease-in-out relative",
+      "w-full min-w-0 max-w-full sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto pointer-events-auto transition-all duration-500 ease-in-out relative",
       isDirectorOpen && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none",
       (isReviewing && !hasSelectedTreatment) && "opacity-90"
     )}>
@@ -469,17 +469,17 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "bg-slate-950/90 backdrop-blur-3xl border border-white/10 p-2.5 sm:p-3.5 rounded-[1.5rem] sm:rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.6)] ring-1 ring-white/5 flex flex-col gap-2 sm:gap-2.5 max-w-[95vw] xl:max-w-6xl mx-auto transition-all pointer-events-auto",
+          "bg-slate-950/90 backdrop-blur-3xl border border-white/10 p-2 sm:p-3 rounded-[1.5rem] sm:rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.6)] ring-1 ring-white/5 flex flex-col gap-2 max-w-full xl:max-w-6xl mx-auto transition-all pointer-events-auto",
           isDirectorOpen ? "pointer-events-none" : "pointer-events-auto",
           !isComplete && currentStage !== 4 && "border-rose-500/20"
         )}
       >
         <TooltipProvider>
           {/* --- UPPER TIER: STAGE PROGRESSION & ROOM SWITCHER --- */}
-          <div data-tier="upper" className="flex items-center justify-between gap-3 border-b border-white/10 pb-2.5 px-1 sm:px-2 shrink-0">
+          <div data-tier="upper" className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-white/10 pb-2 px-1 sm:px-2 shrink-0">
             {/* Stage Tracker & Act Label */}
-            <div className="flex items-center gap-3">
-              <span className="text-[8px] sm:text-[9px] text-emerald-400 uppercase tracking-[0.4em] font-black hidden sm:inline-block">Stage Controls</span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-[8px] sm:text-[9px] text-emerald-400 uppercase tracking-[0.3em] sm:tracking-[0.4em] font-black hidden sm:inline-block">Stage Controls</span>
               <div className="flex gap-1 sm:gap-1.5">
                 {steps.map((step, idx) => (
                     <Tooltip key={idx}>
@@ -499,7 +499,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                     </Tooltip>
                 ))}
               </div>
-              <span className="text-[9px] sm:text-[10px] font-black text-white/60 uppercase tracking-[0.2em] min-w-[50px] sm:min-w-[60px]">
+              <span className="text-[9px] sm:text-[10px] font-black text-white/60 uppercase tracking-[0.2em] min-w-[44px] sm:min-w-[56px]">
                 {steps[currentStage].act}
               </span>
             </div>
@@ -511,7 +511,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 data-hotspot-id="HS_STAGE_CONTROL_MODE_SOLO_BTN"
                 onClick={() => onSelectRoom?.('solo')}
                 className={cn(
-                  "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
+                  "px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
                   activeRoom === 'solo'
                     ? "bg-emerald-400 text-slate-950 border-emerald-400 font-black shadow-md scale-105"
                     : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
@@ -520,8 +520,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
               >
                 <User className="w-3 h-3" />
                 <span>
-                  <span className="hidden xl:inline">{getActModeLabel('solo', currentStage)}</span>
-                  <span className="inline xl:hidden">{getActModeLabel('solo', currentStage, true)}</span>
+                  <span className="hidden md:inline">{getActModeLabel('solo', currentStage)}</span>
+                  <span className="inline md:hidden">{getActModeLabel('solo', currentStage, true)}</span>
                 </span>
               </button>
 
@@ -530,7 +530,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 data-hotspot-id="HS_STAGE_CONTROL_MODE_COLLAB_BTN"
                 onClick={() => onSelectRoom?.('collaborative')}
                 className={cn(
-                  "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
+                  "px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
                   activeRoom === 'collaborative'
                     ? "bg-cyan-400 text-slate-950 border-cyan-400 font-black shadow-md scale-105"
                     : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
@@ -539,8 +539,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
               >
                 <Users className="w-3 h-3" />
                 <span>
-                  <span className="hidden xl:inline">{getActModeLabel('collaborative', currentStage)}</span>
-                  <span className="inline xl:hidden">{getActModeLabel('collaborative', currentStage, true)}</span>
+                  <span className="hidden md:inline">{getActModeLabel('collaborative', currentStage)}</span>
+                  <span className="inline md:hidden">{getActModeLabel('collaborative', currentStage, true)}</span>
                 </span>
               </button>
 
@@ -549,7 +549,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 data-hotspot-id="HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN"
                 onClick={() => onSelectRoom?.('guest')}
                 className={cn(
-                  "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
+                  "px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
                   activeRoom === 'guest'
                     ? "bg-amber-400 text-slate-950 border-amber-400 font-black shadow-md scale-105"
                     : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
@@ -558,19 +558,19 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
               >
                 <Video className="w-3 h-3" />
                 <span>
-                  <span className="hidden xl:inline">{getActModeLabel('guest', currentStage)}</span>
-                  <span className="inline xl:hidden">{getActModeLabel('guest', currentStage, true)}</span>
+                  <span className="hidden md:inline">{getActModeLabel('guest', currentStage)}</span>
+                  <span className="inline md:hidden">{getActModeLabel('guest', currentStage, true)}</span>
                 </span>
               </button>
             </div>
           </div>
 
           {/* --- LOWER TIER: TELEMETRY HUD & HERO ACTION BUTTONS --- */}
-          <div data-tier="lower" className="flex items-center justify-between gap-3 px-1 sm:px-2 shrink-0">
+          <div data-tier="lower" className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-1 sm:px-2 shrink-0">
             {/* Left: Stage Status & Telemetry HUD */}
-            <div className="flex items-center gap-3 sm:gap-6 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               {currentStage === 0 && (
-                <div className="flex items-center gap-3 sm:gap-6 font-mono text-[10px] sm:text-[11px] tracking-widest uppercase">
+                <div className="flex items-center gap-2 sm:gap-4 font-mono text-[10px] sm:text-[11px] tracking-wider sm:tracking-widest uppercase">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-2 cursor-pointer">
@@ -625,7 +625,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
             </div>
 
             {/* Right: Actions & Primary Button */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-2.5 shrink-0 ml-auto">
               {currentStage === 0 && !isGeneratingDrafts && !isReviewing && !isDirectorOpen && !isTheaterOpen && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -643,7 +643,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                         });
                       }}
                       className={cn(
-                        "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2.5 sm:py-3.5 rounded-2xl border text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shrink-0 whitespace-nowrap",
+                        "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-2 sm:py-3 rounded-2xl border text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shrink-0 whitespace-nowrap",
                         isCleanView 
                           ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
                           : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
@@ -733,7 +733,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                       disabled={isPending || isGeneratingDrafts || isSaving || (isReviewing && !hasSelectedTreatment)}
                       onClick={handleNextClick}
                       className={cn(
-                        "relative px-5 sm:px-8 lg:px-10 py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max",
+                        "relative px-4 sm:px-5 xl:px-8 py-2.5 sm:py-3.5 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.15em] sm:tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max",
                         isReviewing
                           ? hasSelectedTreatment
                             ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)] cursor-pointer"

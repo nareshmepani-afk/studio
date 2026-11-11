@@ -199,9 +199,12 @@ describe('Safeguard 2 & 4: Filofax Desktop Spine Viewport Adaptation & Clipping 
 
     const spine = screen.getByTestId('folio-filofax-desktop-spine');
     expect(spine).toBeInTheDocument();
-    // Hidden on mobile (<768px), w-14 on md (tablet), w-64 on lg (desktop)
+    // Hidden on mobile (<768px), w-14 on md (tablet), w-64 on lg (desktop), anchored inside StageArea
     expect(spine.className).toContain('w-14');
     expect(spine.className).toContain('lg:w-64');
+    expect(spine.className).toContain('top-4');
+    expect(spine.className).toContain('right-0');
+    expect(spine.className).toContain('bottom-4');
   });
 
   it('Safeguard 4: enforces overflow-visible on spine container to shield protruding tabs', () => {
