@@ -109,7 +109,7 @@ describe('Safeguard 1: Mobile Safe-Area & Virtual Keyboard Shield', () => {
 
     // Parent container contains safe-area bottom class
     const parent = dialButton.parentElement;
-    expect(parent?.className).toContain('bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]');
+    expect(parent?.className).toContain('bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))]');
 
     fireEvent.click(dialButton);
     expect(handleOpenDrawer).toHaveBeenCalledTimes(1);

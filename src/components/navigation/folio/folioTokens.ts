@@ -70,7 +70,7 @@ export function resolveFolioSceneState(
 
 export const FOLIO_LAYOUT = {
   /** Safeguard 1: Dynamic iOS safe-area bottom offset for floating dial */
-  SAFE_AREA_DIAL_BOTTOM: 'bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]',
+  SAFE_AREA_DIAL_BOTTOM: 'bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))]',
   /** Safeguard 2: Tablet Micro-Spine width (768px – 1023px) */
   MICRO_SPINE_WIDTH: 'w-14',
   /** Safeguard 2: Full Desktop Spine width (>= 1024px) */

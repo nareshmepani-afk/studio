@@ -5,7 +5,7 @@
  * Architecture Reference: ARCH-MW-139 / SPEC-MW-139 (Safeguard 1)
  *
  * Constitutional Principles:
- *  • Safeguard 1: Safe-Area Inset Bottom (bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))]).
+ *  • Safeguard 1: Safe-Area Inset Bottom (bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))]).
  *  • Safeguard 1: Virtual Keyboard Conflict Shield (auto-hide when isEditing === true).
  *  • Rule 20: Strict UK English orthography.
  *  • Rule 26: 48px min touch target & elder typographic baseline (>= 12px text-xs).
@@ -58,9 +58,8 @@ export function FloatingChapterDial({
         aria-label={`Open chapter folio: Part ${currentScene.partNumber}, Scene ${displaySceneNum} of ${totalScenes}`}
         className={cn(
           'min-h-[48px] px-4 py-2 rounded-full flex items-center gap-2.5',
-          'bg-stone-950/90 border border-amber-500/40 shadow-[0_8px_30px_rgba(0,0,0,0.7)] backdrop-blur-md',
-          'hover:border-amber-400 hover:bg-stone-900 active:scale-95 transition-all cursor-pointer',
-          'ring-1 ring-amber-400/20'
+          'bg-amber-950/95 backdrop-blur-xl border-2 border-amber-400/90 ring-2 ring-amber-500/35 shadow-[0_0_24px_rgba(245,158,11,0.4),0_8px_24px_rgba(0,0,0,0.95)]',
+          'hover:border-amber-300 hover:bg-amber-900/90 active:scale-95 transition-all cursor-pointer'
         )}
       >
         <div className="w-6 h-6 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
