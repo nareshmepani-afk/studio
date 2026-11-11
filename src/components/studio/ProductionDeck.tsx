@@ -1437,7 +1437,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                   {badgeLabel && (
                                       <span
                                           className={cn(
-                                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none shrink-0 min-h-[36px]",
+                                              "hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none shrink-0 min-h-[36px]",
                                               isPositiveStatus
                                                   ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
                                                   : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
@@ -1454,7 +1454,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                               <span
                                                   data-testid="mobile-flexible-badge"
                                                   data-hotspot-id="HS_STUDIO_MOBILE_FLEXIBLE_BADGE"
-                                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-teal-500/15 border border-teal-500/40 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)] whitespace-nowrap select-none shrink-0 min-h-[36px]"
+                                                  className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-teal-500/15 border border-teal-500/40 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)] whitespace-nowrap select-none shrink-0 min-h-[36px]"
                                               >
                                                   📱 Mobile Recording • Flexible
                                               </span>
@@ -1474,7 +1474,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                       ) : (
                                           <span
                                               data-testid="desktop-studio-master-badge"
-                                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/15 border border-amber-400/40 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.15)] whitespace-nowrap select-none shrink-0 min-h-[36px]"
+                                              className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/15 border border-amber-400/40 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.15)] whitespace-nowrap select-none shrink-0 min-h-[36px]"
                                           >
                                               🔒 Studio Master
                                           </span>
@@ -1634,7 +1634,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
                         {/* THE STAGE: CONTENT AREA WITH BLACK OUT GUARD */}
                          <div className={cn(
-                             "relative flex-1 min-h-0 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
+                             "relative flex-1 min-w-0 min-h-0 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
                              modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
                          )} data-blueprint="StageArea">
                                {currentStage === 2 && !lobbyConfirmed && !hasUnsavedTake && !memoryData?.videoUrl && !isRehearsalFlight ? (

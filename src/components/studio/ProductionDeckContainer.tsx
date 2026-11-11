@@ -827,7 +827,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   }
 
   const containerContent = (
-    <div className="flex-1 overflow-hidden h-full flex flex-col">
+    <div className="flex-1 min-w-0 overflow-hidden h-full flex flex-col">
         <ProductionDeck 
           ref={deckRef}
           memoryData={selectedProductionData} 

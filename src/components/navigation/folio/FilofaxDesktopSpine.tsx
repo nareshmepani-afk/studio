@@ -62,6 +62,7 @@ export function FilofaxDesktopSpine({
         'fixed top-20 right-0 bottom-6 z-30',
         'transition-all duration-300 ease-in-out',
         'w-14 lg:w-64',
+        'shrink-0',
         // Safeguard 4: Overflow-visible parent to prevent clipping protruding active tabs
         'overflow-visible',
         className

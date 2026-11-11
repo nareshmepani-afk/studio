@@ -1658,7 +1658,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
 
   return (
-    <div className="relative w-full z-10 px-8 pb-24 pt-4 lg:pr-64 overflow-visible">
+    <div className="relative w-full min-w-0 z-10 px-4 sm:px-8 pb-24 pt-4 md:pr-16 lg:pr-64 overflow-visible">
     <LayoutGroup>
       <div className="w-full relative">
         {/* --- PERSISTENT PRODUCTION HEADER (Sole Authority: Top Chrome) --- */}
