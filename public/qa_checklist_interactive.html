@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Master QA Verification Suite — Grouped by Route (be630a7f)</title>
+  <title>Master QA Verification Suite — Grouped by Route (80657aaa)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body {
@@ -70,11 +70,11 @@
           <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             🟢 ROLLOUT VERIFIED ON STAGING
           </span>
-          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">be630a7f</strong></span>
+          <span class="text-xs font-mono text-gray-400">Target Commit: <strong id="header-target-sha" class="text-emerald-300">80657aaa</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">be630a7</strong></span>
+          <span class="text-xs font-mono text-gray-400">Active Edge SHA: <strong id="header-edge-sha" class="text-emerald-300">80657aa</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
-          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">11 Nov 2026, 15:57 UTC</strong></span>
+          <span class="text-xs font-mono text-gray-400">Checklist Updated: <strong id="header-updated-time" class="text-amber-300">11 Nov 2026, 16:25 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
           <span class="text-xs font-mono text-gray-400">Edge Deployed: <strong id="header-edge-deploy-time" class="text-emerald-300">28 Oct 2026, 16:50 UTC</strong></span>
           <span class="text-xs font-mono text-gray-500">•</span>
@@ -7988,11 +7988,19 @@
                   <div class="p-2.5 bg-black/60 rounded-xl border border-gray-800 text-[11px] font-mono space-y-1 mt-2">
                     <div class="text-amber-300 font-bold uppercase tracking-wider">⚠️ HOW TO REACH &amp; TEST:</div>
                     <div class="text-gray-300 space-y-1">
-                      <div>📱 <strong class="text-amber-300">DevTools Presets:</strong> For Tablet Micro-Spine, select <strong class="text-amber-300">iPad Mini (768 &times; 1024)</strong> (or Responsive <strong class="text-amber-300">850 &times; 1000</strong>). For Desktop Full Ledger, select <strong class="text-emerald-300">iPad Pro 13</strong> or toggle Device Mode OFF (<code class="text-gray-400">Ctrl + Shift + M</code> / <strong class="text-emerald-300">1280 &times; 800</strong>).</div>
+                      <div>📱 <strong class="text-amber-300">DevTools Presets:</strong> Test across <strong class="text-amber-300">iPad Mini (768 &times; 1024)</strong> for Tablet Micro-Spine, <strong class="text-emerald-300">iPad Pro 13 (1032 &times; 1376)</strong> for Compact Desktop Full Ledger, and <strong class="text-sky-300">Standard Full HD Monitor (1920 &times; 1080)</strong> (<code class="text-gray-400">Ctrl + Shift + M</code>, Zoom: <em>Fit to window</em>).</div>
                       <div>1. Open Desktop Soundstage Act I: <code class="text-amber-300">https://dev.memoryweaver.studio/studio/production/part-1-scene-1?act=1&amp;clean_slate=true</code>.</div>
-                      <div>2. On <strong class="text-amber-300">iPad Mini (768 &times; 1024)</strong>: confirm wide secondary header pills hide gracefully, the page has zero horizontal overflow, and the right spine collapses into the compact 56px (<code class="text-amber-300">w-14</code>) Roman numeral Micro-Spine.</div>
-                      <div>3. Toggle Device Mode OFF (or select <strong class="text-emerald-300">iPad Pro 13</strong> / <strong class="text-emerald-300">1280 &times; 800</strong>): confirm the spine expands into the 256px wide (<code class="text-emerald-300">w-64</code>) Full Ledger showing full chapter &amp; scene titles and take status dots.</div>
+                      <div>2. On <strong class="text-amber-300">iPad Mini (768 &times; 1024)</strong>: confirm all top header buttons (<code class="text-amber-200">✈️ Pre-Flight</code>, <code class="text-teal-300">📱 Mobile Recording • Flexible</code>, <code class="text-amber-200">✨ Elevate to Studio Master &rarr;</code>, <code class="text-emerald-300">🎬 Soundstage | 🔥 Fireside</code>, <code class="text-rose-300">🚫 SEVERED • RE-ARM</code>, <code class="text-emerald-300">👁️ SENSORY VIEW ON</code>) wrap cleanly with zero overlap, the right spine docks visibly as the 56px (<code class="text-amber-300">w-14</code>) Roman numeral Micro-Spine, and all stage textareas, Script Supervisor cards, and Bottom Stage Controls are 100% visible without right-edge clipping.</div>
+                      <div>3. Switch to <strong class="text-emerald-300">iPad Pro 13 (1032 &times; 1376)</strong> and <strong class="text-sky-300">Standard Full HD Monitor (1920 &times; 1080)</strong>: confirm the right spine expands into the 256px (<code class="text-emerald-300">w-64</code>) Full Ledger showing full chapter &amp; scene titles, and the bottom Stage Controls bar displays full labels (<code class="text-emerald-300">✍️ SOLO SCRIPTING</code>, <code class="text-cyan-300">👥 CO-SCRIPTING</code>, <code class="text-amber-300">🤖 AI MENTOR</code>, <code class="text-emerald-300">SCRIPT: 292 WORDS</code>) without truncation.</div>
                     </div>
+                  </div>
+                  <div class="mt-2 p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-[11px] font-mono text-emerald-200 space-y-1" id="item-resolution-ledger-54-2">
+                    <div class="font-bold text-emerald-300 uppercase tracking-wider">✅ DEVELOPER RESOLUTION LEDGER (GRID CONTAINMENT, HEADER WRAP &amp; SPINE ANCHOR FIX):</div>
+                    <ol class="list-decimal list-inside space-y-0.5 text-gray-300">
+                      <li><strong>Grid Track Containment (`ProductionDeck.tsx`):</strong> Enforced <code>grid-cols-[minmax(0,1fr)]</code> on <code>StudioDeckGrid</code> and <code>minmax(0, 1fr)</code> on <code>&lt;main&gt;</code> StageArea so wide child toolbars never expand the layout beyond <code>768px</code> or push the right-docked <code>FilofaxDesktopSpine</code> off-screen.</li>
+                      <li><strong>Top Header Zero-Overlap Wrap (`ProductionDeck.tsx`):</strong> Converted <code>&lt;header&gt;</code> and its Left/Right clusters to <code>flex-wrap</code> with <code>inline-flex</code> badges so <code>✨ Elevate to Studio Master &rarr;</code> never collides over <code>Soundstage | Fireside</code> or <code>SENSORY VIEW ON</code> on <code>768px</code> or <code>1032px</code>.</li>
+                      <li><strong>Scriptorium &amp; Control Bar Full Visibility (`MemoryForm.tsx`, `ProductionControlBar.tsx`, `FilofaxDesktopSpine.tsx`):</strong> Removed negative horizontal margin bleed (<code>-mx-8</code> &rarr; <code>mx-0</code>) on Story Hook, anchored <code>FilofaxDesktopSpine</code> cleanly at <code>top-4 right-0 bottom-4</code> inside <code>StageArea</code>, and removed telemetry <code>overflow-hidden</code> clipping so all buttons, textareas, and labels remain 100% visible across <code>768px</code>, <code>1032px</code>, and <code>1920px</code>.</li>
+                    </ol>
                   </div>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -9005,7 +9013,7 @@
                   </div>
                   <ul class="text-xs text-gray-300 list-disc list-inside space-y-1.5 pl-2 mt-2">
                     <li><strong>1-Click Full Report Copy:</strong> Click <strong class="text-amber-300 font-bold">[ 📋 Copy Full Report for Agent ]</strong> in the top HUD bar (or directly via the quick button below). Confirm the button flashes <code class="text-emerald-300">✅ Copied!</code> with zero console error, and pasting into any text box shows <code>Target Commit SHA: fc10d6e3</code> plus the full <code>Sub-Item Breakdown</code> for Cards 56, 57, and 58.</li>
-                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_be630a7f_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
+                    <li><strong>JSON State Export Parity:</strong> Click <strong class="text-sky-300 font-bold">[ 💾 Export JSON ]</strong> in the top HUD bar (or via the quick button below). Open the downloaded <code>qa_master_checklist_80657aaa_...json</code> file and confirm it contains <code>"itemVerdicts"</code> (including <code>"58_1": "pass"</code> through <code>"58_5": "pass"</code> and your <code>"56_1".."56_5"</code> clicks) alongside <code>"verdicts"</code> (<code>"57"</code> and <code>"58"</code> marked <code>"pass"</code>).</li>
                     <li><strong>Auto-Rollup to Parent Card:</strong> Click <strong class="text-emerald-400 font-bold">[ Pass ]</strong> on this item (once Items <code>56.1–56.4</code> are also marked <code>Pass</code>) and confirm <strong>Card 56</strong> automatically updates its badge to <code class="text-emerald-300">ALL 5/5 ITEMS PASSED</code> and promotes <strong>Card 56 Verdict</strong> to <code>Pass</code> without needing a second click at the bottom of the card.</li>
                   </ul>
                 </div>
@@ -11793,7 +11801,7 @@ ${shotsSection}`;
 - **Checklist Template Version**: ${templateUpdated}
 - **Report Exported At**: ${nowFormatted}
 - **Active Edge Deployment**: ${edgeDeploy}
-- **Target Commit SHA**: be630a7f | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
+- **Target Commit SHA**: 80657aaa | **Edge Commit SHA**: ${edgeSha} | **Environment**: dev.memoryweaver.studio
 - **Summary**: ${pass} Passed | ${fail} Failed | ${retest} Re-test | ${pending} Pending | Total: ${TOTAL}
 
 ## 🛫 Route Group 1: https://dev.memoryweaver.studio/studio/production/first_flight_rehearsal
@@ -11897,7 +11905,7 @@ ${subItemsBlock}`;
       });
       const payload = {
         meta: {
-          commit: 'be630a7f',
+          commit: '80657aaa',
           edgeCommitSha: edgeSha,
           checklistTemplateUpdated: templateUpdated,
           edgeDeployed: edgeDeploy,
@@ -11925,7 +11933,7 @@ ${subItemsBlock}`;
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `qa_master_checklist_be630a7f_${Date.now()}.json`;
+      a.download = `qa_master_checklist_80657aaa_${Date.now()}.json`;
       a.click();
       showToast('JSON exported successfully');
     }
