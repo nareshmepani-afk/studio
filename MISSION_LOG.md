@@ -12,7 +12,7 @@
 
 - **Active Sprint:** Sprint 5 — Fireside Video Studio, Heirloom Folio Navigation & 60/60 QA SSOT Baseline
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `f334bb6`, Head: `f334bb65`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `fe79b1f`, Head: `fe79b1fa`)
 
 - **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rules 1–61 Codified)
 
@@ -2276,3 +2276,13 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\src\test\qa_template.test.ts`
   - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
   - `C:\Users\home\studio\MISSION_LOG.md`
+
+
+### [2026-11-16 17:35 UTC / 17:35 GMT] — Checkpoint #093 - Card 60 Browser Smoke Verification PASS & Final RC1 Commercial & Gifting Go-Live Sign-Off
+- **Commit & Edge Status:** Live edge confirmed on SHA `fe79b1f` (serving commit for `fe79b1fa`). Cloud Firestore (`qa_suites/active_deck/items`), `qa_checklist_interactive.html`, and `src/lib/qa/qaHtmlContent.ts` verified in 100% 3-way SSOT alignment (60/60 Cards PASS, 148/148 Firestore Items PASS, 0 pending, 0 failed, 0 open inquiries).
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper (Gemini)**: Executed live browser smoke verification of Card 60 across `/pricing`, `/gift`, `/gift/confirmation`, `/unboxing/MW-VAULT-4DY3-98SW`, `/remote?sessionId=test-session-rc1`, and `/admin/mfa-setup`, confirming all 5 sub-items verified PASS on live edge SHA `fe79b1f`. Approved Option A Go-Live Sign-Off locking our 100% 3-way SSOT baseline.
+  - ⚡ **Chat 2 (The Flash Executor / Equal Co-Architect)**: Verified clean git status, zero pending card drift in Firestore, updated platform coordinates and flight recorder checkpoints, and synced canonical release receipt to `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c`) in Google Drive.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\MISSION_LOG.md`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
