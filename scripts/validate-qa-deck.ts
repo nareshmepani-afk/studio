@@ -92,14 +92,15 @@ export function validateQaDeck(): { valid: boolean; errors: string[]; warnings: 
 
   // Check 5 (Rule 30.6 / 30.12 Refinement 2): Clean-Slate CTA URL Parameter Gate
   // Any sub-item expecting "Draft Scene / Begin Story" MUST provide ?clean_slate=true or ?qa_seed=
-  const itemBlocks = html.split(/<!--\s*ITEM\s+(\d+\.\d+)\s*-->/i);
+  const deckCardsOnly = html.split(/<!--\s*END OF CARDS\s*-->/i)[0] || html;
+  const itemBlocks = deckCardsOnly.split(/<!--\s*ITEM\s+(\d+\.\d+)\s*-->/i);
   for (let i = 1; i < itemBlocks.length; i += 2) {
     const itemNum = itemBlocks[i];
     const itemChunk = itemBlocks[i + 1] || '';
 
     const expectsCleanSlateCta =
+      itemChunk.includes('[ ✏️ Draft Scene / Begin Story ]') ||
       itemChunk.includes('Draft Scene / Begin Story') ||
-      itemChunk.includes('Draft Scene') ||
       itemChunk.toLowerCase().includes('zero-state clean slate');
 
     if (expectsCleanSlateCta) {

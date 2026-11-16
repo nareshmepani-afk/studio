@@ -66,7 +66,7 @@ export interface AgentHandoffContext {
 }
 
 const CANONICAL_QA_DECK_DOC_ID = '17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c';
-const DEFAULT_SPOTLIGHT_CARD_NUMS = [59, 58, 54, 53, 52, 35];
+const DEFAULT_SPOTLIGHT_CARD_NUMS = [60, 59, 58, 54, 53, 52, 35];
 
 function resolveBinary(plugin: 'gdocs' | 'gdrive'): string {
   const binDir = path.join(
@@ -540,8 +540,8 @@ export function formatMarkdownDeck(
   md += `${handoff.checkpointBody}\n\n`;
   md += `---\n\n`;
 
-  // SECTION 2: 59/59 CARD SSOT RECONCILIATION SUMMARY & COMPACT ROLLUP MATRIX
-  md += `## 2. 📊 59/59 CARD SSOT RECONCILIATION SUMMARY (FIRESTORE × GIT × HTML)\n\n`;
+  // SECTION 2: CARD SSOT RECONCILIATION SUMMARY & COMPACT ROLLUP MATRIX
+  md += `## 2. 📊 ${qaSummary.totalCards}/${qaSummary.totalCards} CARD SSOT RECONCILIATION SUMMARY (FIRESTORE × GIT × HTML)\n\n`;
   md += `- **Overall Card Tally:** **${qaSummary.passedCards} / ${qaSummary.totalCards} Cards PASS** (${qaSummary.pendingCards} Pending)\n`;
   md += `- **Cloud Firestore (\`qa_suites/active_deck/items\`):** **${qaSummary.firestoreItemsPass} / ${qaSummary.firestoreItemsTotal} Items PASS** • **${qaSummary.firestoreItemsFail} FAIL** • **${qaSummary.firestoreItemsRetest} RETEST** • **${qaSummary.firestoreItemsPending} PENDING** • **${qaSummary.openInquiriesCount} Open Inquiries**\n\n`;
 
@@ -553,10 +553,10 @@ export function formatMarkdownDeck(
     }
     md += `\n`;
   } else {
-    md += `> 🟢 **ALL 59 CARDS & ALL ${qaSummary.firestoreItemsTotal} FIRESTORE ITEMS VERIFIED PASS — ZERO OPEN INQUIRIES.**\n\n`;
+    md += `> 🟢 **ALL ${qaSummary.totalCards} CARDS & ALL ${qaSummary.firestoreItemsTotal} FIRESTORE ITEMS VERIFIED PASS — ZERO OPEN INQUIRIES.**\n\n`;
   }
 
-  md += `### 🗂️ Complete 59-Card SSOT Rollup Matrix\n\n`;
+  md += `### 🗂️ Complete ${qaSummary.totalCards}-Card SSOT Rollup Matrix\n\n`;
   md += `| Card # | Milestone & Verification Title | Sub-Items | Firestore | Git Default | SSOT Verdict |\n`;
   md += `| :---: | :--- | :---: | :---: | :---: | :---: |\n`;
   for (const row of qaSummary.cardMatrix) {

@@ -106,8 +106,8 @@ export async function seedQaFirestore() {
   let created = 0;
   let preserved = 0;
 
-  for (let cardNum = 1; cardNum <= 59; cardNum++) {
-    const nextCardStr = cardNum < 59 ? `id="card-${cardNum + 1}"` : '<!-- END OF CARDS -->';
+  for (let cardNum = 1; cardNum <= 60; cardNum++) {
+    const nextCardStr = cardNum < 60 ? `id="card-${cardNum + 1}"` : '<!-- END OF CARDS -->';
     const cMatch = html.match(new RegExp(`id="card-${cardNum}"[\\s\\S]*?(?=${nextCardStr}|$)`));
     if (!cMatch) continue;
     const cardChunk = cMatch[0];

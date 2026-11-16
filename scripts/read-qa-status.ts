@@ -122,10 +122,10 @@ export function scanPendingCardsFromHtml(): {
     48: 'Superseded by Card 49 & Card 59 (Unified Responsive Production Board).',
   };
 
-  for (let i = 1; i <= 59; i++) {
+  for (let i = 1; i <= 60; i++) {
     if (defaultVerdicts[i]) continue; // Already passed
 
-    const nextCardStr = i < 59 ? 'id="card-' + (i + 1) + '"' : '<!-- END OF CARDS -->';
+    const nextCardStr = i < 60 ? 'id="card-' + (i + 1) + '"' : '<!-- END OF CARDS -->';
     const cMatch = html.match(new RegExp('id="card-' + i + '"[\\s\\S]*?(?=' + nextCardStr + '|$)'));
     if (!cMatch) continue;
     const chunk = cMatch[0];
@@ -202,7 +202,7 @@ export async function getCloudAndHtmlQaSummary(timeoutMs: number = 5000): Promis
 
   // Fallback synthesis if Firestore was unreachable
   if (items.length === 0) {
-    for (let c = 1; c <= 59; c++) {
+    for (let c = 1; c <= 60; c++) {
       const isPass = !!defaultVerdicts[c];
       items.push({ id: String(c), cardNumber: c, verdict: isPass ? 'PASS' : 'PENDING', notes: '' });
       itemsById.set(String(c), { id: String(c), cardNumber: c, verdict: isPass ? 'PASS' : 'PENDING', notes: '' });
@@ -232,8 +232,8 @@ export async function getCloudAndHtmlQaSummary(timeoutMs: number = 5000): Promis
   const { blockers, superseded } = scanPendingCardsFromHtml();
 
   const cardMatrix: CardMatrixRow[] = [];
-  for (let c = 1; c <= 59; c++) {
-    const nextCardStr = c < 59 ? 'id="card-' + (c + 1) + '"' : '<!-- END OF CARDS -->';
+  for (let c = 1; c <= 60; c++) {
+    const nextCardStr = c < 60 ? 'id="card-' + (c + 1) + '"' : '<!-- END OF CARDS -->';
     const cMatch = html.match(new RegExp('id="card-' + c + '"[\\s\\S]*?(?=' + nextCardStr + '|$)'));
     const chunk = cMatch ? cMatch[0] : '';
 
@@ -278,10 +278,10 @@ export async function getCloudAndHtmlQaSummary(timeoutMs: number = 5000): Promis
   }
 
   const passedCards = cardMatrix.filter((r) => r.overallVerdict === 'PASS').length;
-  const pendingCards = 59 - passedCards;
+  const pendingCards = 60 - passedCards;
 
   return {
-    totalCards: 59,
+    totalCards: 60,
     passedCards,
     pendingCards,
     firestoreItemsTotal: total,
