@@ -22,6 +22,12 @@ service cloud.firestore {
       allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Chamber II: Living Chronicles Private Diary Studio (RFC-MW-156 / AUDIT-MW-147 / MW-378)
+    // Strictly owner-private for both reads and writes (never exposed to public Cinema).
+    match /users/{userId}/chronicles/{logId=**} {
+      allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Anyone can list and read memories (public Cinema).
     match /users/{userId}/memories {
       allow read, list: if true;

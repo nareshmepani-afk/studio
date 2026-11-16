@@ -1,9 +1,11 @@
 /**
- * 🛡️ Memory Persistence Guard & Storage Integrity Sentinel (AUDIT-MW-147)
+ * 🛡️ Memory Persistence Guard & Storage Integrity Sentinel (AUDIT-MW-147 / MW-378)
  *
  * Enforces strict database integrity barriers against ephemeral browser state leaking
  * into persistent Firestore storage. Specifically prohibits temporary `blob:` URLs
- * from ever being written into `audioUrl`, `videoUrl`, or `takes[].mediaUrl`.
+ * from ever being written into `audioUrl`, `videoUrl`, `mediaUrl`, `imageUrl`,
+ * `takes[]` (`mediaUrl`, `url`), `photos[]` (`url`, `storageUrl`, `voiceNoteUrl`),
+ * or `bonusMemories[]` (`audioUrl`, `photoUrl`, `mediaUrl`).
  *
  * Supports dual-chamber collection parameterisation:
  * - 'memories' (default): v1.0 Heirloom Folio memoirs
@@ -36,8 +38,13 @@ export class IllegalBlobPersistenceError extends Error {
   }
 }
 
+function isEphemeralBlobUrl(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().startsWith('blob:');
+}
+
 /**
- * Asserts that a memory payload contains zero ephemeral `blob:` URLs in media fields.
+ * Asserts that a memory or chronicle payload contains zero ephemeral `blob:` URLs
+ * across root media fields and nested `takes[]`, `photos[]`, and `bonusMemories[]` arrays.
  * Throws `IllegalBlobPersistenceError` if any `blob:` pointer is detected.
  */
 export function assertMemoryWriteIntegrity(
@@ -47,30 +54,49 @@ export function assertMemoryWriteIntegrity(
 ): void {
   if (!payload || typeof payload !== 'object') return;
 
-  // Check audioUrl
-  if (typeof payload.audioUrl === 'string' && payload.audioUrl.trim().startsWith('blob:')) {
-    throw new IllegalBlobPersistenceError('audioUrl', docId, payload.audioUrl, targetCollection);
+  // 1. Root media URL fields
+  const rootMediaFields = ['audioUrl', 'videoUrl', 'mediaUrl', 'imageUrl'] as const;
+  for (const field of rootMediaFields) {
+    if (isEphemeralBlobUrl(payload[field])) {
+      throw new IllegalBlobPersistenceError(field, docId, payload[field], targetCollection);
+    }
   }
 
-  // Check videoUrl
-  if (typeof payload.videoUrl === 'string' && payload.videoUrl.trim().startsWith('blob:')) {
-    throw new IllegalBlobPersistenceError('videoUrl', docId, payload.videoUrl, targetCollection);
-  }
-
-  // Check mediaUrl at root
-  if (typeof payload.mediaUrl === 'string' && payload.mediaUrl.trim().startsWith('blob:')) {
-    throw new IllegalBlobPersistenceError('mediaUrl', docId, payload.mediaUrl, targetCollection);
-  }
-
-  // Check takes array
+  // 2. Takes array
   if (Array.isArray(payload.takes)) {
     payload.takes.forEach((take: any, idx: number) => {
       if (!take || typeof take !== 'object') return;
-      if (typeof take.mediaUrl === 'string' && take.mediaUrl.trim().startsWith('blob:')) {
+      if (isEphemeralBlobUrl(take.mediaUrl)) {
         throw new IllegalBlobPersistenceError(`takes[${idx}].mediaUrl`, docId, take.mediaUrl, targetCollection);
       }
-      if (typeof take.url === 'string' && take.url.trim().startsWith('blob:')) {
+      if (isEphemeralBlobUrl(take.url)) {
         throw new IllegalBlobPersistenceError(`takes[${idx}].url`, docId, take.url, targetCollection);
+      }
+    });
+  }
+
+  // 3. Photos array (HeirloomPhotoAttachment: url, storageUrl, voiceNoteUrl)
+  if (Array.isArray(payload.photos)) {
+    payload.photos.forEach((photo: any, idx: number) => {
+      if (!photo || typeof photo !== 'object') return;
+      const photoUrlFields = ['url', 'storageUrl', 'voiceNoteUrl'] as const;
+      for (const field of photoUrlFields) {
+        if (isEphemeralBlobUrl(photo[field])) {
+          throw new IllegalBlobPersistenceError(`photos[${idx}].${field}`, docId, photo[field], targetCollection);
+        }
+      }
+    });
+  }
+
+  // 4. Bonus Memories array (audioUrl, photoUrl, mediaUrl)
+  if (Array.isArray(payload.bonusMemories)) {
+    payload.bonusMemories.forEach((bonus: any, idx: number) => {
+      if (!bonus || typeof bonus !== 'object') return;
+      const bonusUrlFields = ['audioUrl', 'photoUrl', 'mediaUrl'] as const;
+      for (const field of bonusUrlFields) {
+        if (isEphemeralBlobUrl(bonus[field])) {
+          throw new IllegalBlobPersistenceError(`bonusMemories[${idx}].${field}`, docId, bonus[field], targetCollection);
+        }
       }
     });
   }
@@ -88,41 +114,57 @@ export function assertZeroBlobUrls(
 }
 
 /**
- * Sanitises an outgoing memory payload by stripping or nullifying any ephemeral `blob:` URLs.
- * Ensures that if an upload has not completed yet, the database does not receive stale pointers.
+ * Sanitises an outgoing memory or chronicle payload by stripping or nullifying any ephemeral `blob:` URLs
+ * across root media fields and nested `takes[]`, `photos[]`, and `bonusMemories[]`.
  */
 export function sanitizeMemoryPayloadForStorage<T extends Record<string, any>>(
   payload: T,
-   
   _targetCollection: VaultCollectionTarget = 'memories'
 ): T {
   if (!payload || typeof payload !== 'object') return payload;
 
   const sanitized: Record<string, any> = { ...payload };
 
-  if (typeof sanitized.audioUrl === 'string' && sanitized.audioUrl.trim().startsWith('blob:')) {
-    sanitized.audioUrl = null;
-  }
-
-  if (typeof sanitized.videoUrl === 'string' && sanitized.videoUrl.trim().startsWith('blob:')) {
-    sanitized.videoUrl = null;
-  }
-
-  if (typeof sanitized.mediaUrl === 'string' && sanitized.mediaUrl.trim().startsWith('blob:')) {
-    sanitized.mediaUrl = null;
+  const rootMediaFields = ['audioUrl', 'videoUrl', 'mediaUrl', 'imageUrl'] as const;
+  for (const field of rootMediaFields) {
+    if (isEphemeralBlobUrl(sanitized[field])) {
+      sanitized[field] = null;
+    }
   }
 
   if (Array.isArray(sanitized.takes)) {
     sanitized.takes = sanitized.takes.map((take: any) => {
       if (!take || typeof take !== 'object') return take;
       const cleanTake = { ...take };
-      if (typeof cleanTake.mediaUrl === 'string' && cleanTake.mediaUrl.trim().startsWith('blob:')) {
-        cleanTake.mediaUrl = null;
-      }
-      if (typeof cleanTake.url === 'string' && cleanTake.url.trim().startsWith('blob:')) {
-        cleanTake.url = null;
-      }
+      if (isEphemeralBlobUrl(cleanTake.mediaUrl)) cleanTake.mediaUrl = null;
+      if (isEphemeralBlobUrl(cleanTake.url)) cleanTake.url = null;
       return cleanTake;
+    });
+  }
+
+  if (Array.isArray(sanitized.photos)) {
+    sanitized.photos = sanitized.photos.map((photo: any) => {
+      if (!photo || typeof photo !== 'object') return photo;
+      const cleanPhoto = { ...photo };
+      for (const field of ['url', 'storageUrl', 'voiceNoteUrl'] as const) {
+        if (isEphemeralBlobUrl(cleanPhoto[field])) {
+          cleanPhoto[field] = null;
+        }
+      }
+      return cleanPhoto;
+    });
+  }
+
+  if (Array.isArray(sanitized.bonusMemories)) {
+    sanitized.bonusMemories = sanitized.bonusMemories.map((bonus: any) => {
+      if (!bonus || typeof bonus !== 'object') return bonus;
+      const cleanBonus = { ...bonus };
+      for (const field of ['audioUrl', 'photoUrl', 'mediaUrl'] as const) {
+        if (isEphemeralBlobUrl(cleanBonus[field])) {
+          cleanBonus[field] = null;
+        }
+      }
+      return cleanBonus;
     });
   }
 

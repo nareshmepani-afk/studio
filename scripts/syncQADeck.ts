@@ -272,8 +272,10 @@ function extractCards(html: string): TestCard[] {
     let nextIdx = -1;
     if (i < uniqueCardIds.length - 1) {
       nextIdx = html.indexOf(`id="card-${uniqueCardIds[i + 1]}"`, cardIdx);
+    } else {
+      nextIdx = html.indexOf('<script', cardIdx);
     }
-    const chunk = nextIdx !== -1 ? html.slice(cardIdx, nextIdx) : html.slice(cardIdx, cardIdx + 25000);
+    const chunk = nextIdx !== -1 ? html.slice(cardIdx, nextIdx) : html.slice(cardIdx, cardIdx + 60000);
 
     // Title
     const titleMatch = chunk.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i) || chunk.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
@@ -288,21 +290,25 @@ function extractCards(html: string): TestCard[] {
           .trim()
       : `Card ${cardNum}`;
 
-    // Badges
+    // Badges (deduplicated via Set so sub-item badges never repeat 10x)
     const badgeMatches = [
       ...chunk.matchAll(
         /<span[^>]*class="[^"]*(?:bg-amber-500|bg-emerald-500|bg-sky-500|bg-purple-500)[^"]*"[^>]*>([\s\S]*?)<\/span>/gi
       )
     ];
-    const badges = badgeMatches
-      .map(m =>
-        m[1]
-          .replace(/<[^>]+>/g, '')
-          .replace(/&amp;/g, '&')
-          .replace(/&bull;/g, '•')
-          .trim()
+    const badges = Array.from(
+      new Set(
+        badgeMatches
+          .map(m =>
+            m[1]
+              .replace(/<[^>]+>/g, '')
+              .replace(/&amp;/g, '&')
+              .replace(/&bull;/g, '•')
+              .trim()
+          )
+          .filter(b => b && !b.includes('CARD') && !b.includes('EVALUATED') && !b.includes('VERIFIED'))
       )
-      .filter(b => b && !b.includes('CARD') && !b.includes('EVALUATED') && !b.includes('VERIFIED'));
+    );
 
     // Primary route launchers in card header
     const launcherMatches = [
@@ -337,6 +343,7 @@ function extractCards(html: string): TestCard[] {
       const block = m[2];
 
       const itemTitleMatch =
+        block.match(new RegExp(`Item\\s+${itemNumber.replace('.', '\\.')}<\\/span>\\s*<span[^>]*>([\\s\\S]*?)<\\/span>`, 'i')) ||
         block.match(/<span[^>]*id="item-title-[^"]*"[^>]*>([\s\S]*?)<\/span>/i) ||
         block.match(/<span[^>]*class="[^"]*text-white[^"]*"[^>]*>([\s\S]*?)<\/span>/i);
       const itemTitle = itemTitleMatch
@@ -371,13 +378,19 @@ function extractCards(html: string): TestCard[] {
       );
 
       let resolutionLedger: string | undefined;
-      const ledgerMatch = block.match(/id="item-resolution-ledger-[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+      const ledgerMatch = block.match(
+        /id="item-resolution-ledger-[^"]*"[^>]*>([\s\S]*?<\/ol>\s*<\/div>|[\s\S]*?<\/div>)/i
+      );
       if (ledgerMatch) {
         resolutionLedger = ledgerMatch[1]
+          .replace(/<\/li>/gi, ' • ')
           .replace(/<[^>]+>/g, ' ')
           .replace(/&amp;/g, '&')
           .replace(/&rarr;/g, '→')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
           .replace(/\s+/g, ' ')
+          .replace(/\s*•\s*$/, '')
           .trim();
       }
 

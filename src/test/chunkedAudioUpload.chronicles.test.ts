@@ -181,5 +181,88 @@ describe('AUDIT-MW-147 / RFC-MW-156: Dual-Chamber Media Persistence & Storage Pa
       expect(clean.takes[0].mediaUrl).toBeNull();
       expect(clean.takes[1].mediaUrl).toBe('https://firebasestorage.googleapis.com/take-clean.webm');
     });
+
+    it('inspects and blocks nested blob: URLs in imageUrl, photos[], and bonusMemories[] across both chambers (MW-378)', () => {
+      // imageUrl
+      expect(() => {
+        assertZeroBlobUrls({ imageUrl: 'blob:https://dev.memoryweaver.studio/img-1' }, 'memories');
+      }).toThrow(/imageUrl/);
+
+      // photos[].url, storageUrl, voiceNoteUrl
+      expect(() => {
+        assertZeroBlobUrls(
+          { photos: [{ id: 'p1', url: 'blob:https://dev.memoryweaver.studio/photo-blob' }] },
+          'chronicles'
+        );
+      }).toThrow(/photos\[0\]\.url/);
+
+      expect(() => {
+        assertZeroBlobUrls(
+          { photos: [{ id: 'p2', storageUrl: 'blob:https://dev.memoryweaver.studio/storage-blob' }] },
+          'memories'
+        );
+      }).toThrow(/photos\[0\]\.storageUrl/);
+
+      expect(() => {
+        assertZeroBlobUrls(
+          { photos: [{ id: 'p3', voiceNoteUrl: 'blob:https://dev.memoryweaver.studio/voice-blob' }] },
+          'chronicles'
+        );
+      }).toThrow(/photos\[0\]\.voiceNoteUrl/);
+
+      // bonusMemories[].audioUrl, photoUrl, mediaUrl
+      expect(() => {
+        assertZeroBlobUrls(
+          { bonusMemories: [{ id: 'b1', audioUrl: 'blob:https://dev.memoryweaver.studio/bonus-audio' }] },
+          'memories'
+        );
+      }).toThrow(/bonusMemories\[0\]\.audioUrl/);
+
+      expect(() => {
+        assertZeroBlobUrls(
+          { bonusMemories: [{ id: 'b2', photoUrl: 'blob:https://dev.memoryweaver.studio/bonus-photo' }] },
+          'chronicles'
+        );
+      }).toThrow(/bonusMemories\[0\]\.photoUrl/);
+
+      expect(() => {
+        assertZeroBlobUrls(
+          { bonusMemories: [{ id: 'b3', mediaUrl: 'blob:https://dev.memoryweaver.studio/bonus-media' }] },
+          'chronicles'
+        );
+      }).toThrow(/bonusMemories\[0\]\.mediaUrl/);
+
+      // sanitizeMemoryPayloadForStorage strips nested photo & bonus memory blobs cleanly
+      const sanitized = sanitizeMemoryPayloadForStorage(
+        {
+          imageUrl: 'blob:https://dev.memoryweaver.studio/img-1',
+          photos: [
+            {
+              id: 'p1',
+              url: 'blob:https://dev.memoryweaver.studio/photo-blob',
+              storageUrl: 'https://firebasestorage.googleapis.com/photo.jpg',
+              voiceNoteUrl: 'blob:https://dev.memoryweaver.studio/voice-blob',
+            },
+          ],
+          bonusMemories: [
+            {
+              id: 'b1',
+              audioUrl: 'blob:https://dev.memoryweaver.studio/bonus-audio',
+              photoUrl: 'https://firebasestorage.googleapis.com/bonus.jpg',
+              mediaUrl: 'blob:https://dev.memoryweaver.studio/bonus-media',
+            },
+          ],
+        },
+        'chronicles'
+      );
+
+      expect(sanitized.imageUrl).toBeNull();
+      expect(sanitized.photos[0].url).toBeNull();
+      expect(sanitized.photos[0].storageUrl).toBe('https://firebasestorage.googleapis.com/photo.jpg');
+      expect(sanitized.photos[0].voiceNoteUrl).toBeNull();
+      expect(sanitized.bonusMemories[0].audioUrl).toBeNull();
+      expect(sanitized.bonusMemories[0].photoUrl).toBe('https://firebasestorage.googleapis.com/bonus.jpg');
+      expect(sanitized.bonusMemories[0].mediaUrl).toBeNull();
+    });
   });
 });

@@ -43,4 +43,35 @@ describe('MW-86: Firestore Security Rules Perimeter Gate (/gift_vouchers)', () =
     const clientCanWrite = false; // Evaluated from rule: allow read, write: if false;
     expect(clientCanWrite).toBe(false);
   });
+
+  describe('MW-378 / AUDIT-MW-147: Dual-Chamber Firestore & Storage Isolation Rules', () => {
+    const storageRulesPath = path.join(process.cwd(), 'storage.rules');
+    const storageRulesContent = fs.readFileSync(storageRulesPath, 'utf8');
+
+    it('enforces strict owner-only access on /users/{userId}/chronicles/{logId=**} in firestore.rules', () => {
+      const chroniclesFirestoreMatch = rulesContent.match(
+        /match\s+\/users\/\{userId\}\/chronicles\/\{logId=\*\*\}\s*\{[\s\S]*?\}/
+      );
+      expect(chroniclesFirestoreMatch).not.toBeNull();
+      expect(chroniclesFirestoreMatch![0]).toContain(
+        'allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;'
+      );
+    });
+
+    it('prevents Firebase Storage OR-precedence trap by excluding chronicles from wildcard public read in storage.rules', () => {
+      const chroniclesStorageMatch = storageRulesContent.match(
+        /match\s+\/users\/\{userId\}\/chronicles\/\{allPaths=\*\*\}\s*\{[\s\S]*?\}/
+      );
+      expect(chroniclesStorageMatch).not.toBeNull();
+      expect(chroniclesStorageMatch![0]).toContain(
+        'allow read, write, delete: if request.auth != null && request.auth.uid == userId;'
+      );
+
+      // Ensure no unconditional `match /users/{userId}/{allPaths=**} { allow read: if true; }` exists
+      expect(storageRulesContent).not.toMatch(
+        /match\s+\/users\/\{userId\}\/\{allPaths=\*\*\}\s*\{\s*allow\s+read:\s*if\s+true/
+      );
+      expect(storageRulesContent).toContain("allow read: if chamber != 'chronicles';");
+    });
+  });
 });

@@ -290,6 +290,11 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     const activeDirectiveSrc = fs.readFileSync(activeDirectivePath, 'utf8');
     expect(activeDirectiveSrc).toContain('QA-SSOT-V2 / Plane MW-401');
     expect(activeDirectiveSrc).toContain('[OUT - Chat 2 (The Flash Executor)]');
+
+    // Verify 3 parser cleanups in syncQADeck.ts (Set badge deduplication, Item title anchor, and resolution ledger <ol> alternation)
+    expect(syncScriptSrc).toContain('new Set(');
+    expect(syncScriptSrc).toContain('[\\s\\S]*?<\\/ol>\\s*<\\/div>|[\\s\\S]*?<\\/div>');
+    expect(syncScriptSrc).toContain("html.indexOf('<script', cardIdx)");
   });
 });
 

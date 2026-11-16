@@ -2237,4 +2237,26 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\MISSION_LOG.md`
 
 
+### [2026-11-16 16:25 UTC / 16:25 GMT] — Checkpoint #091 - Dual-Chamber Media Storage Security & Zero-Blob Attachment Guardrails (MW-378 / AUDIT-MW-147)
+- **Commit & Edge Status:** Committed `MW-378 / AUDIT-MW-147` (`1A, 2A, 3A, Go`) and pushed to `origin/dev`. Plane ticket `MW-378` transitioned to `Done`.
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper (Gemini)**: Verified the v2.0.0 `MW-QA-Deck-Active` conduit live, identified the 3 `syncQADeck.ts` parser edge cases (`Item 59.4` title extraction, `#item-resolution-ledger-*` `<ol>` body alternation, and `Set` badge deduplication), caught the Firebase Storage OR-precedence trap on `/users/{userId}/{allPaths=**}`, and locked Decision `1A, 2A, 3A, Go` for `MW-378 / AUDIT-MW-147`.
+  - ⚡ **Chat 2 (The Flash Executor / Equal Co-Architect)**:
+    - **Storage & Firestore Dual-Chamber Isolation (`storage.rules`, `firestore.rules`)**: Added `match /users/{userId}/chronicles/{logId=**}` in `firestore.rules` and `match /users/{userId}/chronicles/{allPaths=**}` in `storage.rules` enforcing strict owner-only read/write/delete (`request.auth != null && request.auth.uid == userId`), and replaced the wildcard `/users/{userId}/{allPaths=**}` public read rule with `match /users/{userId}/{chamber}/{allPaths=**}` (`allow read: if chamber != 'chronicles';`) so Firebase Rules logical-OR evaluation can never leak Chamber II private diary assets.
+    - **Recursive Attachment Zero-Blob Guard (`src/lib/memoryPersistenceGuard.ts`)**: Extended `assertMemoryWriteIntegrity`, `assertZeroBlobUrls`, and `sanitizeMemoryPayloadForStorage` to inspect and strip transient `blob:` URLs across `imageUrl`, `photos[]` (`url`, `storageUrl`, `voiceNoteUrl`), and `bonusMemories[]` (`audioUrl`, `photoUrl`, `mediaUrl`) in both Chamber I (`memories`) and Chamber II (`chronicles`).
+    - **`syncQADeck.ts` v2.0.0 Parser Refinements (`scripts/syncQADeck.ts`)**: Extended last-card slice boundary to `<script`, anchored `Item X.Y` title matching (`Item 59.4` & `59.5`), added `<ol>` alternation to `#item-resolution-ledger-*` extraction (`54.2` & `35.6`), and deduplicated card tag badges via `Set`.
+    - **Verification & Build Gates**: Expanded Vitest suite to `1,108 / 1,108` passing assertions across `102 / 102` test files (`chunkedAudioUpload.chronicles.test.ts`, `firestore_security_rules_gifting.test.ts`, `qa_template.test.ts`), passed `npm.cmd run build` (`46/46` routes, exit `0`), and synced `MW-QA-Deck-Active`.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\firestore.rules`
+  - `C:\Users\home\studio\storage.rules`
+  - `C:\Users\home\studio\src\lib\memoryPersistenceGuard.ts`
+  - `C:\Users\home\studio\scripts\syncQADeck.ts`
+  - `C:\Users\home\studio\src\test\chunkedAudioUpload.chronicles.test.ts`
+  - `C:\Users\home\studio\src\test\firestore_security_rules_gifting.test.ts`
+  - `C:\Users\home\studio\src\test\qa_template.test.ts`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
+
+
 

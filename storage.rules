@@ -3,11 +3,23 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // User-specific files, including media attachments for memories.
-    // Public cinema playback handles global read-access safely.
-    // Write and delete enforce strict tenant isolation for authenticated users.
-    match /users/{userId}/{allPaths=**} {
-      allow read: if true;
+    // Chamber II: Private Living Chronicles Diary Studio (RFC-MW-156 / AUDIT-MW-147 / MW-378)
+    // Strictly owner-private for reads, writes, and deletes.
+    match /users/{userId}/chronicles/{allPaths=**} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Chamber I: User-specific Heirloom Folio & Public Cinema Media (fireside, memories, etc.)
+    // Explicitly excludes `chronicles` from public read so Firebase Rules OR-precedence
+    // can never override Chamber II owner-only read isolation.
+    match /users/{userId}/{chamber}/{allPaths=**} {
+      allow read: if chamber != 'chronicles';
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Direct root files under /users/{userId}/{fileName} (e.g. profile avatars)
+    match /users/{userId}/{fileName} {
+      allow read: if fileName != 'chronicles';
       allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
 
