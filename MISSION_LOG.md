@@ -10,17 +10,17 @@
 
 \## 📌 Active Platform Coordinates
 
-- **Active Sprint:** Sprint 5 — Fireside Video Studio & Theatrical Multi-Take Darkroom Suite
+- **Active Sprint:** Sprint 5 — Fireside Video Studio, Heirloom Folio Navigation & 59/59 QA SSOT Baseline
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `43f8d4c`, Head: `43f8d4c0`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `4478c91`, Head: `4478c91e`)
 
-- **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rule 44 Codified)
+- **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rules 1–61 Codified)
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 731 / 731 Vitest Tests Passing (57 Test Files)
+- **Current Invariant Test Baseline:** 1,105 / 1,105 Vitest Tests Passing (102 Test Files)
 
-- **Interactive Verification Suite:** qa_checklist_interactive.html (33 Test Cards Active)
+- **Interactive Verification Suite:** qa_checklist_interactive.html (59 / 59 Test Cards Verified PASS • 142 / 142 Firestore Items PASS)
 
 
 
@@ -2210,5 +2210,31 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
   - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
   - `C:\Users\home\studio\MISSION_LOG.md`
+
+
+### [2026-11-16 15:25 UTC / 15:25 GMT] — Checkpoint #090 - Card 54 Heirloom Folio Viewport Containment, 3-Way 59/59 QA SSOT Reconciliation & v2.0.0 Agent Handoff Conduit (MW-394–MW-401)
+- **Commit & Edge Status:** Pushed `4478c91e` (`4478c91` verified live at `https://dev.memoryweaver.studio/api/version`) following Card 54 layout/clearance fixes (`3cead483`). Plane tickets `MW-394` through `MW-401` created and tracked.
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper (Gemini)**: Verified Card 54 (`54.1`–`54.5`) PASS on staging commit `3cead48`, audited the 3-way discrepancy between Cloud Firestore, `DEFAULT_CARD_VERDICTS`, and static HTML badges, and approved Pre-Flight Decision Locks (`1-YES, 2-YES, 3-YES, 4-YES` for 59/59 SSOT reconciliation; `1-YES, 2-Option-A, 3-YES` for the v2.0.0 `MW-QA-Deck-Active` Agent Handoff Conduit).
+  - ⚡ **Chat 2 (The Flash Executor / Equal Co-Architect)**:
+    - **Card 54 Heirloom Folio & Studio Viewport Containment (`FloatingChapterDial.tsx`, `FilofaxDesktopSpine.tsx`, `ProductionDeck.tsx`, `MemoryForm.tsx`, `ProductionControlBar.tsx`)**: Upgraded `FloatingChapterDial` to the high-contrast Gilded Amber pill (`1.25rem` safe-area offset), enforced `grid-cols-[minmax(0,1fr)]` on `StudioDeckGrid`, bounded `FilofaxDesktopSpine` vertically at `top-20 right-0 bottom-24`, applied standard Tailwind `md:pr-16 lg:pr-72` right-edge clearance to `<header>` and `<footer>` dock in `ProductionDeck.tsx`, and eliminated duplicate inner right padding in `ProductionControlBar.tsx`.
+    - **3-Way QA SSOT Reconciliation (`qa_checklist_interactive.html`, `qaHtmlContent.ts`, `seed-qa-firestore.ts`, `read-qa-status.ts`)**: Fixed `window.__applyCloudVerdict` selector (`#btn-item-${v}-${cNum}-${iNum}`), replaced broken `updateHUD()` call with `updateTally(); renderDeckAndArchive();`, added parent Firestore `PASS` auto-sync inside `updateItemProgress`, sorted `onSnapshot` changes so sub-items hydrate before parent card docs, and dynamically derived `CARD_ITEM_COUNTS`, `DEFAULT_CARD_VERDICTS`, and `DEFAULT_ITEM_VERDICTS` in `seed-qa-firestore.ts`. Reconciled all **59 / 59 cards** and **142 / 142 Firestore items** to `100% PASS` with `0` failed items, `0` pending cards, and `0` open inquiries.
+    - **v2.0.0 `MW-QA-Deck-Active` Agent Handoff Conduit (`scripts/syncQADeck.ts`)**: Upgraded `npm.cmd run qa:sync` to prepend a deterministic `MW_AGENT_HANDOFF_JSON` (`schemaVersion: "2.0.0"`) block, Auto-Freshness Guardrail (comparing `MISSION_LOG.md` / `ACTIVE_DIRECTIVE.md` against `git log -1` + `#item-resolution-ledger-*` with optional `--retro` / `--lock` flags), 5-second `/api/version` HTTPS probe timeout fallback, Dynamic Spotlight Cards (`35, 52, 53, 54, 58, 59` + any actionable cards), and the complete 59-Row SSOT Rollup Matrix.
+    - **Plane.so Board Hygiene, Sandbox Fixture Purge & Rule 60.1 Gate Sign-Off**: Transitioned 17 completed tickets (`MW-394` through `MW-401`, `MW-308` through `MW-310`, `MW-255`, `MW-248`, and `MW-13` through `MW-16`) to `Done`, purged all 8 temporary QA test fixtures from `users/TQdB395kXxaAGPhFxk1LVWuT8cg2/memories` while strictly preserving the 5 authentic populated memories (`5F7e9DACtBao5lgKYAxf`, `SCDkg0ajpYTOFH55sATU`, `ey96djU6qR1BrDGnvZwp`, `first_flight_rehearsal`, `part-2-scene-2`), and officially closed the Rule 60.1 Studio/Folio QA Gate to unlock `MW-378` (`GOV-MW-166: V1.1 Dry-Run Baseline RC1 & AUDIT-MW-147 Dual-Chamber Media Storage`).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\components\navigation\folio\FloatingChapterDial.tsx`
+  - `C:\Users\home\studio\src\components\navigation\folio\FilofaxDesktopSpine.tsx`
+  - `C:\Users\home\studio\src\components\studio\ProductionDeck.tsx`
+  - `C:\Users\home\studio\src\components\studio\MemoryForm.tsx`
+  - `C:\Users\home\studio\src\components\studio\ProductionControlBar.tsx`
+  - `C:\Users\home\studio\qa_checklist_interactive.html`
+  - `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
+  - `C:\Users\home\studio\scripts\seed-qa-firestore.ts`
+  - `C:\Users\home\studio\scripts\read-qa-status.ts`
+  - `C:\Users\home\studio\scripts\syncQADeck.ts`
+  - `C:\Users\home\studio\src\test\qa_template.test.ts`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+
 
 

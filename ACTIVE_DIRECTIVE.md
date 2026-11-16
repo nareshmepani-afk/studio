@@ -9,26 +9,29 @@
 
 # 1. ACTIVE DIRECTIVE DISPATCH (Director & Lead Architecture ➔ Antigravity)
 
-- **Ref:** SPEC-MW-180 / Plane MW-392 (Canonical Fireside Panel Width Standardisation & Recording Prompter 18px Typography)
-- **Timestamp:** 2026-11-08 13:30 UTC
+- **Ref:** QA-SSOT-V2 / Plane MW-401 (3-Way 59/59 QA SSOT Reconciliation & v2.0.0 Agent Handoff Conduit in `MW-QA-Deck-Active`)
+- **Timestamp:** 2026-11-16 15:25 UTC
 - **Target Agent:** Chat 2 (The Flash Executor)
-- **Operational Mode:** [Use Fast] — Decisions Locked: `1A, 2A`
+- **Operational Mode:** [Use Fast] — Decisions Locked: `1-YES, 2-Option-A, 3-YES`
 - **Workspace Root:** `C:\Users\home\studio`
 - **Target Branch:** `dev`
-- **Dispatch Status:** [OVER - Director (Naresh)]
+- **Dispatch Status:** [OVER - Lead Architecture (Gemini) & Director (Naresh)]
 
 ### Objective:
-1. Standardise all storytelling panels across `/studio/fireside` to `w-full max-w-xl mx-auto` (`576px`), eliminating three-way width mismatch between Orientation Dock (`max-w-2xl` / 672px), Editor & Voice Recorder (`max-w-xl` / 576px), and Prompter Banner & Mode Switchers (`max-w-md` / 448px).
-2. Upgrade `FiresidePrompterBanner` prose to 18px (`text-lg font-serif leading-relaxed text-stone-200`) with proportional sensory and slash badge scaling (`[&_[data-sensory-cue]]:!text-lg [&_[data-slash-cue]]:!text-sm md:[&_[data-slash-cue]]:!text-base`).
-3. Ensure Video Recorder wrapper in `#fireside-active-studio` matches `w-full max-w-xl mx-auto` so switching between Voice, Video, and Photo modes introduces zero horizontal layout shift.
-4. Add automated regression test asserting 576px width invariants across `FiresideStudioClient.tsx` and `OrientationSoundcheckDock.tsx`.
+1. Enforce a single 100% accurate Source of Truth across all 59 QA cards and 142 items between Cloud Firestore (`qa_suites/active_deck/items`), `DEFAULT_CARD_VERDICTS` / `DEFAULT_ITEM_VERDICTS` (`qa_checklist_interactive.html` + `src/lib/qa/qaHtmlContent.ts`), and static HTML button badges (`!bg-emerald-500`).
+2. Record canonical `developerResolution` ledgers on Item `35.6` (`src/test/orthography_grammar.test.ts` + DevTools `/login` `spellcheck="false"`) and Item `54.2` (Commit `3cead48` viewport containment & `lg:pr-72` toolbar clearance).
+3. Upgrade `scripts/syncQADeck.ts` to `schemaVersion: "2.0.0"`, prepending the `MW_AGENT_HANDOFF_JSON` block, Auto-Freshness Guardrail (reading `MISSION_LOG.md` Checkpoint #090 + `ACTIVE_DIRECTIVE.md` with live `git log -1` + `#item-resolution-ledger-*` fallback and `--retro` / `--lock` CLI flags), 5-second `/api/version` HTTPS timeout fallback, Dynamic Spotlight Cards (`35, 52, 53, 54, 58, 59` + any actionable cards), and the 59-Row SSOT Rollup Matrix.
+4. Update `MISSION_LOG.md` (Checkpoint #090), `ACTIVE_DIRECTIVE.md`, `scripts/read-qa-status.ts`, and `src/test/qa_template.test.ts`.
 
 ### Target File Paths:
-1. `C:\Users\home\studio\src\app\studio\fireside\FiresideStudioClient.tsx`
-2. `C:\Users\home\studio\src\components\fireside\OrientationSoundcheckDock.tsx`
-3. `C:\Users\home\studio\src\test\fireside_booth_entry.test.tsx`
-4. `C:\Users\home\studio\qa_checklist_interactive.html`
-5. `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
+1. `C:\Users\home\studio\scripts\syncQADeck.ts`
+2. `C:\Users\home\studio\scripts\read-qa-status.ts`
+3. `C:\Users\home\studio\scripts\seed-qa-firestore.ts`
+4. `C:\Users\home\studio\MISSION_LOG.md`
+5. `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+6. `C:\Users\home\studio\qa_checklist_interactive.html`
+7. `C:\Users\home\studio\src\lib\qa\qaHtmlContent.ts`
+8. `C:\Users\home\studio\src\test\qa_template.test.ts`
 
 ---
 
@@ -36,11 +39,11 @@
 
 ---
 
-### Execution Receipt: SPEC-MW-180 (Canonical Fireside Panel Width Standardisation & Recording Prompter 18px Typography)
+### Execution Receipt: QA-SSOT-V2 / MW-401 (3-Way 59/59 QA SSOT Reconciliation & v2.0.0 Agent Handoff Conduit)
 - • Responding Agent: Chat 2 (The Flash Executor — Antigravity)
-- • Execution Timestamp: 2026-11-08T13:52:00Z
-- • Git Branch / Pushed Commit SHA: `dev @ 0f46dd87` (Full SHA: `0f46dd87d8a9ea8bc81907cb5cf54805e363ae1c` | Live Staging Verified: `0f46dd8` at `https://dev.memoryweaver.studio/api/version`)
-- • Test & Build Gates: Vitest `102/102` test suites (`1,102/1,102` assertions PASS, incl. new Test 7 in `fireside_booth_entry.test.tsx`) | `tsc --noEmit` (`0` errors) | `next lint` (`0` warnings) | `qa:validate` (`PASS`) | `npm.cmd run build` (`46/46` routes compiled, exit `0`) | Plane `MW-392` (`Done`) | `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c` synced)
+- • Execution Timestamp: 2026-11-16T15:28:00Z
+- • Git Branch / Pushed Commit SHA: `dev @ 4478c91e` (Live Staging Verified: `4478c91` at `https://dev.memoryweaver.studio/api/version`)
+- • Test & Build Gates: Vitest `102/102` test suites (`1,105/1,105` assertions PASS) | `qa:status` (`142/142 PASS`, `0 FAIL`, `0 PENDING`, `0 Open Inquiries`, `59/59 Cards PASS`) | `qa:validate` (`PASS` — 8 temporary QA fixtures purged, 5 authentic memories preserved) | `npm.cmd run build` (`46/46` routes compiled, exit `0`) | Plane `MW-394`–`MW-401`, `MW-308`–`MW-310`, `MW-255`, `MW-248`, `MW-13`–`MW-16` (`Done`) | Rule 60.1 Gate Closed (`MW-378 / AUDIT-MW-147` unlocked) | `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c` v2.0.0 synced)
 - • Execution Status: COMPLETED
 - • Sign-Off: [OUT - Chat 2 (The Flash Executor)]
 

@@ -269,6 +269,27 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
         expect(subBtnMatch![1]).toContain('!bg-emerald-500');
       }
     }
+
+    // v2.0.0 Agent Handoff Conduit & Auto-Freshness Guardrail Shield
+    const syncScriptPath = path.resolve(__dirname, '../../scripts/syncQADeck.ts');
+    const syncScriptSrc = fs.readFileSync(syncScriptPath, 'utf8');
+    expect(syncScriptSrc).toContain("schemaVersion: '2.0.0'");
+    expect(syncScriptSrc).toContain('MW_AGENT_HANDOFF_JSON_START');
+    expect(syncScriptSrc).toContain('MW_AGENT_HANDOFF_JSON_END');
+    expect(syncScriptSrc).toContain('DEFAULT_SPOTLIGHT_CARD_NUMS = [59, 58, 54, 53, 52, 35]');
+    expect(syncScriptSrc).toContain('probeLiveEdgeVersion(5000)');
+    expect(syncScriptSrc).toContain('--retro=');
+    expect(syncScriptSrc).toContain('--lock=');
+
+    const missionLogPath = path.resolve(__dirname, '../../MISSION_LOG.md');
+    const missionLogSrc = fs.readFileSync(missionLogPath, 'utf8');
+    expect(missionLogSrc).toContain('Checkpoint #090');
+    expect(missionLogSrc).toContain('1,105 / 1,105 Vitest Tests Passing (102 Test Files)');
+
+    const activeDirectivePath = path.resolve(__dirname, '../../ACTIVE_DIRECTIVE.md');
+    const activeDirectiveSrc = fs.readFileSync(activeDirectivePath, 'utf8');
+    expect(activeDirectiveSrc).toContain('QA-SSOT-V2 / Plane MW-401');
+    expect(activeDirectiveSrc).toContain('[OUT - Chat 2 (The Flash Executor)]');
   });
 });
 
