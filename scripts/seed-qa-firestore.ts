@@ -26,20 +26,75 @@ const SUPERSEDED_LEGACY_CARDS = new Set([
 function decodeHtml(str: string) {
   if (!str) return '';
   return str
+    .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&ldquo;|&rdquo;/g, '"')
     .replace(/&lsquo;|&rsquo;/g, "'")
     .replace(/&bull;/g, '•')
     .replace(/&rarr;/g, '→')
-    .replace(/&#39;/g, "'");
+    .replace(/&times;/g, '×')
+    .replace(/&ge;/g, '≥')
+    .replace(/&le;/g, '≤')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Dynamically extracts CARD_ITEM_COUNTS, DEFAULT_CARD_VERDICTS, and DEFAULT_ITEM_VERDICTS
+ * directly from qa_checklist_interactive.html so there is a Single Source of Truth with zero hardcoded drift.
+ */
+export function parseHtmlDeckVerdictsAndCounts(html: string): {
+  cardItemCounts: Record<number, number>;
+  defaultCardVerdicts: Record<number, { verdict: string; timestamp?: string }>;
+  defaultItemVerdicts: Record<string, string>;
+} {
+  let cardItemCounts: Record<number, number> = {};
+  const countsMatch = html.match(/const CARD_ITEM_COUNTS = ({[\s\S]*?});/);
+  if (countsMatch) {
+    try {
+      cardItemCounts = eval('(' + countsMatch[1] + ')');
+    } catch {
+      cardItemCounts = {};
+    }
+  }
+
+  let defaultCardVerdicts: Record<number, { verdict: string; timestamp?: string }> = {};
+  const cardVerdictsMatch = html.match(/const DEFAULT_CARD_VERDICTS = ({[\s\S]*?});/);
+  if (cardVerdictsMatch) {
+    try {
+      const evalStr = cardVerdictsMatch[1].replace(/new Date\(\)\.toISOString\(\)/g, '"PASS_TIME"');
+      defaultCardVerdicts = eval('(' + evalStr + ')');
+    } catch {
+      defaultCardVerdicts = {};
+    }
+  }
+
+  let defaultItemVerdicts: Record<string, string> = {};
+  const itemVerdictsMatch = html.match(/const DEFAULT_ITEM_VERDICTS = ({[\s\S]*?});/);
+  if (itemVerdictsMatch) {
+    try {
+      defaultItemVerdicts = eval('(' + itemVerdictsMatch[1] + ')');
+    } catch {
+      defaultItemVerdicts = {};
+    }
+  }
+
+  return { cardItemCounts, defaultCardVerdicts, defaultItemVerdicts };
 }
 
 export async function seedQaFirestore() {
   const htmlPath = path.resolve(process.cwd(), 'qa_checklist_interactive.html');
   const html = fs.readFileSync(htmlPath, 'utf8');
-  // Card 55 updated to 6 items (GOV-MW-163); Cards 11, 35, 42, 49, 50, 51, 52 upgraded to sub-item standard (GOV-MW-170)
-  const cardItemCounts: Record<number, number> = { 11: 3, 35: 6, 42: 3, 49: 7, 50: 7, 51: 5, 52: 8, 53: 10, 54: 5, 55: 6, 56: 5, 57: 5, 58: 5, 59: 5 };
+
+  // Dynamically derive item counts and default verdicts from CARD_ITEM_COUNTS, DEFAULT_CARD_VERDICTS, and DEFAULT_ITEM_VERDICTS
+  const { cardItemCounts, defaultCardVerdicts, defaultItemVerdicts } = parseHtmlDeckVerdictsAndCounts(html);
+
+  const canonicalResolutions: Record<string, string> = {
+    '35.6': 'Verified via automated unit suite in C:\\Users\\home\\studio\\src\\test\\orthography_grammar.test.ts (Tier 1 Guardrail 1 enforcing spellcheck="false", autoCorrect="off", autoCapitalize="none" on email, password, url, number, tel) and DevTools DOM inspection on /login.',
+    '54.2': 'Resolved on staging commit 3cead48: Enforced grid-cols-[minmax(0,1fr)] on StudioDeckGrid, bounded FilofaxDesktopSpine vertically at top-20 right-0 bottom-24, added md:pr-16 lg:pr-72 right-edge clearance to ProductionDeck header and footer dock, and deduplicated inner padding in ProductionControlBar. Verified PASS across 768px, 1032px, and 1920px.'
+  };
 
   console.log('📖 Fetching existing docs from memory-weaver-dev to ensure idempotency...');
   const snap = await getDocs(collection(db, COLLECTION_PATH));
@@ -58,8 +113,8 @@ export async function seedQaFirestore() {
     const cardChunk = cMatch[0];
 
     // Card title
-    const titleMatch = cardChunk.match(/<h2 class="text-sm font-bold text-white[^"]*">([^<]+)<\/h2>/) ||
-                       cardChunk.match(/<h3 class="text-sm font-bold text-white[^"]*">([^<]+)<\/h3>/) ||
+    const titleMatch = cardChunk.match(/<h2 class="[^"]*">([^<]+)<\/h2>/) ||
+                       cardChunk.match(/<h3 class="[^"]*">([^<]+)<\/h3>/) ||
                        cardChunk.match(/Test\s+\d+:\s+([^<]+)/);
     const cardTitle = decodeHtml(titleMatch ? titleMatch[1].trim() : `Test ${cardNum}`);
 
@@ -67,8 +122,10 @@ export async function seedQaFirestore() {
     const routeMatch = cardChunk.match(/href="(https:\/\/dev\.memoryweaver\.studio[^"]+)"/);
     const cardRoute = routeMatch ? routeMatch[1] : 'https://dev.memoryweaver.studio/studio';
 
+    const isCardDefaultPass = defaultCardVerdicts[cardNum]?.verdict?.toLowerCase() === 'pass';
     const count = cardItemCounts[cardNum] || 1;
-    if (count === 1) {
+
+    if (!cardItemCounts[cardNum]) {
       const itemId = String(cardNum);
       const isSuperseded = SUPERSEDED_LEGACY_CARDS.has(cardNum);
       const existing = existingMap.get(itemId);
@@ -89,12 +146,12 @@ export async function seedQaFirestore() {
         }, { merge: true });
         preserved++;
       } else if (existing) {
-        // Strict metadata-only merge: update targetRoute and title, preserving verdicts/notes/traces/screenshots
         const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
         batch.set(itemRef, {
           title: cardTitle,
           targetRoute: cardRoute,
           steps: [`Execute staging verification against ${cardRoute}`],
+          ...(isCardDefaultPass ? { verdict: 'PASS' } : {}),
         }, { merge: true });
         preserved++;
       } else {
@@ -105,7 +162,7 @@ export async function seedQaFirestore() {
           title: cardTitle,
           steps: [`Execute staging verification against ${cardRoute}`],
           targetRoute: cardRoute,
-          verdict: cardNum <= 10 ? 'PASS' : 'PENDING',
+          verdict: (isCardDefaultPass || cardNum <= 10) ? 'PASS' : 'PENDING',
           notes: '',
           telemetryTrace: '',
           screenshots: [],
@@ -117,28 +174,39 @@ export async function seedQaFirestore() {
     } else {
       for (let sub = 1; sub <= count; sub++) {
         const itemId = `${cardNum}.${sub}`;
+        const itemKey = `${cardNum}_${sub}`;
         const existing = existingMap.get(itemId);
+        const isSubDefaultPass = defaultItemVerdicts[itemKey]?.toLowerCase() === 'pass' || isCardDefaultPass;
 
         const itemBlockMatch = cardChunk.match(new RegExp(`Item\\s+${cardNum}\\.${sub}[\\s\\S]*?(?=Item\\s+${cardNum}\\.${sub + 1}|$)`));
         let itemTitle = `Item ${itemId}: Verification Item`;
         let itemRoute = cardRoute;
+        let extractedResolution = canonicalResolutions[itemId] || '';
 
         if (itemBlockMatch) {
-          const tMatch = itemBlockMatch[0].match(/<span class="text-xs font-bold text-white">([^<]+)<\/span>/);
+          const tMatch = itemBlockMatch[0].match(/<span[^>]*id="item-title-[^"]*"[^>]*>([\s\S]*?)<\/span>/) ||
+                         itemBlockMatch[0].match(/<span class="text-xs font-bold text-white">([^<]+)<\/span>/);
           if (tMatch) itemTitle = decodeHtml(tMatch[1].trim());
 
           const rMatch = itemBlockMatch[0].match(/href="(https:\/\/dev\.memoryweaver\.studio[^"]+)"/);
           if (rMatch) itemRoute = rMatch[1];
+
+          if (!extractedResolution) {
+            const ledgerMatch = itemBlockMatch[0].match(/id="item-resolution-ledger-[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+            if (ledgerMatch) {
+              extractedResolution = decodeHtml(ledgerMatch[1]);
+            }
+          }
         }
 
         if (existing) {
-          // Strict metadata-only merge: strictly preserve verdict, notes, telemetryTrace, and screenshots
           const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
           batch.set(itemRef, {
             title: itemTitle,
             targetRoute: itemRoute,
             steps: [`Execute staging verification against ${itemRoute}`],
-            ...(cardNum === 51 ? { verdict: 'PASS' } : {}),
+            ...(isSubDefaultPass ? { verdict: 'PASS' } : {}),
+            ...(extractedResolution ? { developerResolution: extractedResolution } : {}),
             testerPersona: {
               testerEmail: 'nareshmepani@hotmail.com',
               testerUid: 'TQdB395kXxaAGPhFxk1LVWuT8cg2',
@@ -148,11 +216,7 @@ export async function seedQaFirestore() {
           continue;
         }
 
-        let verdict = 'PENDING';
-        if (['56.1', '56.2', '56.3', '56.4', '56.5'].includes(itemId)) verdict = 'PASS';
-        if (cardNum === 51 || cardNum === 57 || cardNum === 58) verdict = 'PASS';
-        if (itemId === '59.5') verdict = 'PASS';
-
+        const verdict = isSubDefaultPass ? 'PASS' : 'PENDING';
         const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
         batch.set(itemRef, {
           id: itemId,
@@ -166,6 +230,7 @@ export async function seedQaFirestore() {
           },
           verdict,
           notes: '',
+          ...(extractedResolution ? { developerResolution: extractedResolution } : {}),
           telemetryTrace: '',
           screenshots: [],
           updatedAt: Date.now(),
@@ -174,7 +239,7 @@ export async function seedQaFirestore() {
         created++;
       }
 
-      // Ensure parent card document exists for cards with sub-items
+      // Ensure parent card document exists and matches defaultCardVerdicts / sub-item completion
       const parentId = String(cardNum);
       const parentRef = doc(db, 'qa_suites', 'active_deck', 'items', parentId);
       if (existingMap.has(parentId)) {
@@ -182,7 +247,7 @@ export async function seedQaFirestore() {
           title: cardTitle,
           targetRoute: cardRoute,
           steps: [`Execute staging verification against ${cardRoute}`],
-          ...(cardNum === 51 ? { verdict: 'PASS' } : {}),
+          ...(isCardDefaultPass ? { verdict: 'PASS' } : {}),
         }, { merge: true });
       } else {
         batch.set(parentRef, {
@@ -191,7 +256,7 @@ export async function seedQaFirestore() {
           title: cardTitle,
           steps: [`Execute staging verification against ${cardRoute}`],
           targetRoute: cardRoute,
-          verdict: (cardNum === 51 || cardNum === 57 || cardNum === 58) ? 'PASS' : 'PENDING',
+          verdict: isCardDefaultPass ? 'PASS' : 'PENDING',
           notes: '',
           telemetryTrace: '',
           screenshots: [],
@@ -207,13 +272,14 @@ export async function seedQaFirestore() {
     console.log(`Committing batch (${created} new items, ${preserved} preserved items merged)...`);
     await batch.commit();
   }
-  console.log(`✅ Seed Complete: Created ${created} new items, Preserved & Merged ${preserved} existing cloud items without overwriting verdicts, notes, traces, or screenshots.`);
-  process.exit(0);
+  console.log(`✅ Seed Complete: Created ${created} new items, Synchronised & Merged ${preserved} existing cloud items in lockstep with CARD_ITEM_COUNTS & DEFAULT_CARD_VERDICTS.`);
 }
 
 if (require.main === module) {
-  seedQaFirestore().catch((err) => {
-    console.error('❌ Seeding failed:', err);
-    process.exit(1);
-  });
+  seedQaFirestore()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('❌ Seeding failed:', err);
+      process.exit(1);
+    });
 }

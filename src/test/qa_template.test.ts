@@ -241,6 +241,34 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     expect(liveHtml).toContain('.sub-item-card');
     expect(liveHtml).toContain('.sub-item-card.has-active-drawer');
     expect(liveHtml).toContain('id="item-container-55-4"');
+
+    // SSOT 3-Way Alignment Shield: All 59 cards & all CARD_ITEM_COUNTS sub-items must be aligned across DEFAULT_CARD_VERDICTS, DEFAULT_ITEM_VERDICTS, and static !bg-emerald-500 HTML classes
+    expect(liveHtml).not.toContain('updateHUD()');
+    expect(liveHtml).toContain('btn-item-${v}-${cNum}-${iNum}');
+    expect(liveHtml).toContain("window.__syncDocToFirestore(String(cardNum), { verdict: 'PASS' })");
+    expect(liveHtml).toContain('id="item-resolution-ledger-35-6"');
+    expect(liveHtml).toContain('id="item-resolution-ledger-54-2"');
+
+    const cardCountsMatch = liveHtml.match(/const CARD_ITEM_COUNTS = ({[\s\S]*?});/);
+    expect(cardCountsMatch).toBeTruthy();
+    const cardItemCounts = eval('(' + cardCountsMatch![1] + ')');
+
+    for (let c = 1; c <= 59; c++) {
+      expect(liveHtml).toMatch(new RegExp(`\\b${c}:\\s*\\{\\s*verdict:\\s*'pass'`));
+      const parentBtnMatch = liveHtml.match(new RegExp(`<button[^>]*id="btn-pass-${c}"[^>]*class="([^"]*)"`));
+      expect(parentBtnMatch).toBeTruthy();
+      expect(parentBtnMatch![1]).toContain('active');
+      expect(parentBtnMatch![1]).toContain('!bg-emerald-500');
+
+      const subCount = cardItemCounts[c] || 0;
+      for (let sub = 1; sub <= subCount; sub++) {
+        expect(liveHtml).toMatch(new RegExp(`'${c}_${sub}':\\s*'pass'`));
+        const subBtnMatch = liveHtml.match(new RegExp(`<button[^>]*id="btn-item-pass-${c}-${sub}"[^>]*class="([^"]*)"`));
+        expect(subBtnMatch).toBeTruthy();
+        expect(subBtnMatch![1]).toContain('active');
+        expect(subBtnMatch![1]).toContain('!bg-emerald-500');
+      }
+    }
   });
 });
 

@@ -170,7 +170,8 @@ export async function readQaStatus() {
 
   // Pending items architectural scan
   const { blockers, superseded } = scanPendingCardsFromHtml();
-  console.log(`\n📋 PENDING CARDS AUDIT (44 Pending Cards in Deck):`);
+  const totalPendingCards = blockers.length + superseded.length;
+  console.log(`\n📋 PENDING CARDS AUDIT (${totalPendingCards} Pending Cards in Deck):`);
   console.log(`  [A] True Go-Live Blockers: ${blockers.length} cards (Cards: ${blockers.map((b) => b.cardNum).join(', ')})`);
   console.log(`  [B] Legacy Superseded:     ${superseded.length} cards (Cards: ${superseded.map((s) => s.cardNum).join(', ')})`);
   console.log(`\n──────────────────────────────────────────`);

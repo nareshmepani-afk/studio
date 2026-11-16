@@ -432,7 +432,11 @@ export async function syncQADeck(customOperator?: string): Promise<{ docId: stri
       if (updatedHtml !== htmlContent) {
         htmlContent = updatedHtml;
         fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-        console.log(`🔖 Auto-stamped Commit SHA (${sha8}) and Timestamp (${nowUtc}) into qa_checklist_interactive.html`);
+        const publicQaPath = path.join(workspaceRoot, 'public', 'qa_checklist_interactive.html');
+        fs.writeFileSync(publicQaPath, htmlContent, 'utf8');
+        const qaModulePath = path.join(workspaceRoot, 'src', 'lib', 'qa', 'qaHtmlContent.ts');
+        fs.writeFileSync(qaModulePath, 'export const QA_HTML_STRING = ' + JSON.stringify(htmlContent) + ';\n', 'utf8');
+        console.log(`🔖 Auto-stamped Commit SHA (${sha8}) and Timestamp (${nowUtc}) into qa_checklist_interactive.html & qaHtmlContent.ts`);
       }
     }
   } catch {
