@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { sanitiseRecipientName } from '@/lib/dedicationMuse';
 import { GIFT_TIER_DISPLAY } from '@/types/gift';
 import type { GiftTier, VoucherStatus, UnboxingLanguage } from '@/types/gift';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 export interface SerializedGiftVoucher {
   code: string;
@@ -561,7 +562,7 @@ export default function UnboxingCeremonyStage({ voucher, code }: UnboxingCeremon
                             {/* Visible High-Density 30% Error Correction (Level H) QR Code */}
                             <div className="flex flex-col items-center justify-center p-2.5 bg-white rounded-xl border border-[#D4AF37]/50 shadow-inner my-1 inline-block">
                               <QRCodeCanvas
-                                value={`https://dev.memoryweaver.studio/unboxing/${voucher.code || code}`}
+                                value={`${resolvePublicAppUrl()}/unboxing/${voucher.code || code}`}
                                 size={144}
                                 level="H"
                                 includeMargin={true}

@@ -1,4 +1,5 @@
 import { getTwilioClient } from './client';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 /**
  * 📨 Twilio Unified Messaging Abstraction (SMS & WhatsApp)
@@ -98,8 +99,7 @@ export function resolveStatusCallbackUrl(customCallback?: string): string {
     return customCallback;
   }
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://dev.memoryweaver.studio').trim();
-  const cleanAppUrl = appUrl.endsWith('/') ? appUrl.slice(0, -1) : appUrl;
+  const cleanAppUrl = resolvePublicAppUrl().replace(/\/$/, '');
 
   return `${cleanAppUrl}/api/twilio/status-callback`;
 }

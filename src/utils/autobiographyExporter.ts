@@ -2,6 +2,7 @@ import type { Memory } from '@/types';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { clearCadenceMarkers } from '@/utils/scriptFormatter';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 /**
  * Generates the styled HTML document for the 2-page heirloom autobiography booklet.
@@ -36,9 +37,7 @@ export function generateAutobiographyHtml(memory: Memory, userEmail?: string): s
   })();
 
   const locationStr = [memory.location, memory.country].filter(Boolean).join(', ') || 'Global Archive';
-  const qrTargetUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/cinema/tv?id=${memory.id || 'preview'}`
-    : `https://dev.memoryweaver.studio/cinema/tv?id=${memory.id || 'preview'}`;
+  const qrTargetUrl = `${resolvePublicAppUrl()}/cinema/tv?id=${memory.id || 'preview'}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrTargetUrl)}`;
 
   // Format document title which determines the suggested filename in browser "Save as PDF" dialog

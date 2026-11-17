@@ -80,7 +80,11 @@ export function BugReportModal({ isOpen, onClose, user }: BugReportModalProps) {
         });
 
         if (res.success) {
-          toast.success("Issue Reported", { description: "Diagnostics sent directly to our support queue." });
+          toast.success("Issue Reported", {
+            description: res.reportId
+              ? `Ref ${res.reportId} logged to triage queue & support desk.`
+              : "Diagnostics sent directly to our support queue."
+          });
           setDescription('');
           onClose();
         } else {

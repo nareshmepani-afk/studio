@@ -12,6 +12,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import type { Memory } from '@/types';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 interface CinemaShareModalProps {
   isOpen: boolean;
@@ -25,9 +26,7 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
 
   if (!memory) return null;
 
-  const cinemaShareUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/cinema?id=${memory.id}`
-    : `https://dev.memoryweaver.studio/cinema?id=${memory.id}`;
+  const cinemaShareUrl = `${resolvePublicAppUrl()}/cinema?id=${memory.id}`;
 
   const handleCopyCinemaLink = async () => {
     let copied = false;

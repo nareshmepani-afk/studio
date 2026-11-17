@@ -18,7 +18,7 @@
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 1,135 / 1,135 Vitest Tests Passing (103 Test Files)
+- **Current Invariant Test Baseline:** 1,139 / 1,139 Vitest Tests Passing (103 Test Files)
 
 - **Interactive Verification Suite:** qa_checklist_interactive.html (60 / 60 Test Cards Verified PASS • 148 / 148 Firestore Items PASS)
 
@@ -2306,3 +2306,26 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\src\test\prod_cutover_hardening.test.ts`
   - `C:\Users\home\studio\MISSION_LOG.md`
   - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+
+
+### [2026-11-17 17:20 UTC / 17:20 GMT] — Checkpoint #095 - Pre-Walkthrough Production URL Hardening, End-to-End Bug Triage Pipeline & Rules Closure (MW-408)
+- **Commit & Edge Status:** Completed Pre-Walkthrough Production Hardening & End-to-End Bug Progression Pipeline ahead of founder staging walkthrough and `dev -> master` cutover (with Stripe Live Mode preserved strictly as the final switch).
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper (Naresh & Lead Architecture)**: Completed Cloudflare DNS + Firebase App Hosting Custom Domain setup (`https://memoryweaver.studio` 200 OK & `www.memoryweaver.studio` 302 → apex), bound `master` GitHub branch + `prod` environment on `memory-weaver-8rk9t`, confirmed 5 Secret Manager secrets, and locked 6 co-architect adjustments including unique `bug_reports/{reportId}` documents, admin-gated `users-reels`, allowlisted URL regression scans, and surgical 1-line URL fallback waivers on `autobiographyExporter.ts:41` and `SoloStage.tsx:1874`.
+  - ⚡ **Gemini Strategic Co-Architect**:
+    - **Canonical URL Hardening (`src/config/environment.ts` + 14 Customer/Email/API Files)**: Implemented `resolvePublicAppUrl()` preferring `NEXT_PUBLIC_APP_URL` → host header → non-localhost browser origin → Firebase project identity (`https://memoryweaver.studio` vs `https://dev.memoryweaver.studio`) and eliminated all hardcoded staging URLs across gifting (`/gift/confirmation`, `UnboxingCeremonyStage`, `VoucherMintingConsole`), cinema sharing (`CinemaShareModal`, `MemoryCinematicViewer`, `SoloStage.tsx:1874`, `autobiographyExporter.ts:41`), emails (`sendWelcomeEmailAction`, `sendStudioTransitionAction`, `admin/emailActions`, `emailTemplates`), bug alerts (`sendBugReportAction`), and checkout/billing/Twilio fallbacks.
+    - **End-to-End Bug Triage Progression (`sendBugReportAction.ts`, `/api/admin/bugs`, `BugTriageConsole.tsx`, `AdminDashboardContent.tsx`, `scripts/read-bug-reports.ts`)**: Persisted every submitted report to `bug_reports/{reportId}` (`OPEN` → `TRIAGED` → `FIXED_ON_DEV` → `VERIFIED`) without `traceId` session collisions, linked alert emails directly to `/admin?suite=bugs&reportId=...&traceId=...`, added `Bug Triage Queue` UI in `/admin` with auto-highlighting and Plane ref saving, and added `npm run qa:bugs` CLI (`--sync-plane` supported).
+    - **Security Rules Closure (`firestore.rules`, `storage.rules`)**: Gated `bug_reports/{reportId}` and `users-reels/{inviteId}/{allPaths=**}` strictly on `isAdmin == true` and updated `scripts/prod-preflight.ts` + `src/test/prod_cutover_hardening.test.ts` (`1,139 / 1,139` Vitest tests across `103` files).
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\config\environment.ts`
+  - `C:\Users\home\studio\src\lib\bugReports.ts`
+  - `C:\Users\home\studio\src\actions\sendBugReportAction.ts`
+  - `C:\Users\home\studio\src\app\api\admin\bugs\route.ts`
+  - `C:\Users\home\studio\src\components\admin\BugTriageConsole.tsx`
+  - `C:\Users\home\studio\src\app\admin\AdminDashboardContent.tsx`
+  - `C:\Users\home\studio\scripts\read-bug-reports.ts`
+  - `C:\Users\home\studio\firestore.rules`
+  - `C:\Users\home\studio\storage.rules`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+

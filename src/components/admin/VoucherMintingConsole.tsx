@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
+import { resolvePublicAppUrl } from '@/config/environment';
 import {
   GiftTier,
   DeliveryMode,
@@ -352,7 +353,7 @@ export function VoucherMintingConsole() {
   };
 
   const copyUnboxingLink = (code: string) => {
-    const url = `https://dev.memoryweaver.studio/unboxing/${code}`;
+    const url = `${resolvePublicAppUrl()}/unboxing/${code}`;
     navigator.clipboard.writeText(url);
     setCopiedCode(code);
     toast.success('Unboxing URL copied to clipboard!');
@@ -734,7 +735,7 @@ export function VoucherMintingConsole() {
                 </button>
 
                 <a
-                  href={`https://dev.memoryweaver.studio/unboxing/${item.code}`}
+                  href={`${resolvePublicAppUrl()}/unboxing/${item.code}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs font-mono border border-amber-500/30 flex items-center gap-1.5 transition"

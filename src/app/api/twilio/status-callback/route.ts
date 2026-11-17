@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import twilio from 'twilio';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,7 @@ export async function GET() {
           From: '+447...',
         },
       },
-      edgeUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://dev.memoryweaver.studio',
+      edgeUrl: resolvePublicAppUrl(),
       version: '1.1.0-beta',
     },
     { headers: CORS_HEADERS }
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
     const authToken = process.env.TWILIO_AUTH_TOKEN || '';
 
     // Reconstruct edge URL with strict Zero-Localhost invariant
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://dev.memoryweaver.studio').trim().replace(/\/$/, '');
+    const appUrl = resolvePublicAppUrl().replace(/\/$/, '');
     const webhookUrl = `${appUrl}/api/twilio/status-callback`;
 
     // Signature verification (bypassed only when test bypass flag is active)

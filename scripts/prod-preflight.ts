@@ -237,6 +237,9 @@ function checkSecurityRulesAndHygiene(rootDir: string, failures: string[], warni
     if (!/match \/users\/\{userId\}[\s\S]*request\.auth != null && request\.auth\.uid == userId/.test(fsRules)) {
       failures.push('firestore.rules must guard users/{userId} writes with request.auth != null && request.auth.uid == userId.');
     }
+    if (!/match \/bug_reports\/\{reportId\}[\s\S]*request\.auth\.token\.isAdmin == true/.test(fsRules)) {
+      failures.push('firestore.rules must gate bug_reports/{reportId} on request.auth.token.isAdmin == true.');
+    }
   }
 
   if (!fs.existsSync(storagePath)) {
@@ -248,6 +251,9 @@ function checkSecurityRulesAndHygiene(rootDir: string, failures: string[], warni
     }
     if (!/match \/qa-evidence\/\{allPaths=\*\*\}[\s\S]*request\.auth\.token\.isAdmin == true/.test(stRules)) {
       failures.push('storage.rules must lock qa-evidence/** to request.auth.token.isAdmin == true.');
+    }
+    if (!/match \/users-reels\/\{inviteId\}\/\{allPaths=\*\*\}[\s\S]*request\.auth\.token\.isAdmin == true/.test(stRules)) {
+      failures.push('storage.rules must lock users-reels/{inviteId}/** to request.auth.token.isAdmin == true.');
     }
   }
 

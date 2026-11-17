@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import { adminDb } from '@/lib/firebase-admin';
 import { createStripeBillingPortalSession, getOrCreateStripeCustomer } from '@/lib/stripe';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,8 +30,7 @@ export async function POST(req: NextRequest) {
 
     const origin =
       req.headers.get('origin') ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      'https://dev.memoryweaver.studio';
+      resolvePublicAppUrl(req.headers.get('x-forwarded-host') || req.headers.get('host'));
 
     if (!customerId) {
       if (session.email) {

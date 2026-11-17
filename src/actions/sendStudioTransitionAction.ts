@@ -3,6 +3,7 @@
 import { Resend } from 'resend';
 import { headers } from 'next/headers';
 import { STUDIO_EMAILS, STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 interface StudioTransitionEmailParams {
   email: string;
@@ -19,9 +20,7 @@ export async function sendStudioTransitionAction(params: StudioTransitionEmailPa
 
   try {
     const headersList = await headers();
-    const host = headersList.get('x-forwarded-host') || headersList.get('host') || 'dev.memoryweaver.studio';
-    const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = resolvePublicAppUrl(headersList.get('x-forwarded-host') || headersList.get('host'));
 
     const studioUrl = targetPath ? `${baseUrl}${targetPath}` : `${baseUrl}/studio`;
 

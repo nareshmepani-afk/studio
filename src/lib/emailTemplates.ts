@@ -10,6 +10,8 @@
  * Adheres strictly to UK English orthography and dark mode email client standards.
  */
 
+import { resolvePublicAppUrl } from '@/config/environment';
+
 export type EmailTemplateId = 
   | 'welcome_host_pass'
   | 'collaborator_invite'
@@ -37,8 +39,8 @@ export const EMAIL_TEMPLATES_CATALOG: EmailTemplateMetadata[] = [
       name: 'Director Eleanor Vance',
       email: 'eleanor.vance@gmail.com',
       claimedMemoryTitle: 'Summer on the Coast, 1964',
-      studioUrl: 'https://dev.memoryweaver.studio/studio',
-      cinemaUrl: 'https://dev.memoryweaver.studio/cinema'
+      studioUrl: `${resolvePublicAppUrl()}/studio`,
+      cinemaUrl: `${resolvePublicAppUrl()}/cinema`
     },
     availableTags: ['{{name}}', '{{email}}', '{{claimedMemoryTitle}}', '{{studioUrl}}', '{{cinemaUrl}}']
   },
@@ -54,7 +56,7 @@ export const EMAIL_TEMPLATES_CATALOG: EmailTemplateMetadata[] = [
       memoryTitle: 'The Orchard Harvest & Family Roots',
       role: 'Guest Director & Storyteller',
       passcode: '8492',
-      inviteUrl: 'https://dev.memoryweaver.studio/studio?collab=8492'
+      inviteUrl: `${resolvePublicAppUrl()}/studio?collab=8492`
     },
     availableTags: ['{{inviterName}}', '{{inviteeEmail}}', '{{memoryTitle}}', '{{role}}', '{{passcode}}', '{{inviteUrl}}']
   },
@@ -66,7 +68,7 @@ export const EMAIL_TEMPLATES_CATALOG: EmailTemplateMetadata[] = [
     description: 'Security gateway access recovery email with 1-hour expiration guard and direct link.',
     defaultProps: {
       email: 'director@memoryweaver.studio',
-      resetLink: 'https://dev.memoryweaver.studio/auth/reset-password?token=SAMPLE_TOKEN',
+      resetLink: `${resolvePublicAppUrl()}/auth/reset-password?token=SAMPLE_TOKEN`,
       expiresInMinutes: '60'
     },
     availableTags: ['{{email}}', '{{resetLink}}', '{{expiresInMinutes}}']
@@ -83,7 +85,7 @@ export const EMAIL_TEMPLATES_CATALOG: EmailTemplateMetadata[] = [
       memoryTitle: 'The Orchard Harvest & Family Roots',
       releaseYear: '2026',
       runtime: '04:18',
-      cinemaUrl: 'https://dev.memoryweaver.studio/cinema?id=demo_memory_orchard'
+      cinemaUrl: `${resolvePublicAppUrl()}/cinema?id=demo_memory_orchard`
     },
     availableTags: ['{{hostName}}', '{{recipientName}}', '{{memoryTitle}}', '{{releaseYear}}', '{{runtime}}', '{{cinemaUrl}}']
   }
@@ -178,7 +180,7 @@ export function renderEmailWrapper({
               <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 12px;">
                 <tr>
                   <td class="mw-logo-box" align="center" bgcolor="#000000" style="width: 48px; height: 48px; background-color: #000000; border: 1.5px solid #f59e0b; border-radius: 14px; text-align: center;">
-                    <img src="https://dev.memoryweaver.studio/icon.svg" width="28" height="28" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: transparent;" />
+                    <img src="${resolvePublicAppUrl()}/icon.svg" width="28" height="28" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: transparent;" />
                   </td>
                 </tr>
               </table>
@@ -259,8 +261,9 @@ export function renderWelcomeHostPassEmail(params?: {
 }) {
   const name = params?.name || 'Storyteller';
   const claimedMemoryTitle = params?.claimedMemoryTitle || 'Family Heritage Chronicle';
-  const studioUrl = params?.studioUrl || 'https://dev.memoryweaver.studio/studio';
-  const cinemaUrl = params?.cinemaUrl || (params?.claimedMemoryId ? `https://dev.memoryweaver.studio/cinema?id=${params.claimedMemoryId}` : 'https://dev.memoryweaver.studio/cinema');
+  const appUrl = resolvePublicAppUrl();
+  const studioUrl = params?.studioUrl || `${appUrl}/studio`;
+  const cinemaUrl = params?.cinemaUrl || (params?.claimedMemoryId ? `${appUrl}/cinema?id=${params.claimedMemoryId}` : `${appUrl}/cinema`);
 
   const contentHtml = `
     <p class="mw-text-white" style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #ffffff;">
@@ -347,7 +350,7 @@ export function renderCollaboratorInviteEmail(params?: {
   const memoryTitle = params?.memoryTitle || 'The Orchard Harvest & Family Roots';
   const role = params?.role || 'Guest Director & Storyteller';
   const passcode = params?.passcode || '8492';
-  const inviteUrl = params?.inviteUrl || `https://dev.memoryweaver.studio/studio?collab=${passcode}`;
+  const inviteUrl = params?.inviteUrl || `${resolvePublicAppUrl()}/studio?collab=${passcode}`;
 
   const contentHtml = `
     <p class="mw-text-white" style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #ffffff;">
@@ -415,7 +418,7 @@ export function renderPasswordResetEmail(params?: {
   expiresInMinutes?: string | number;
 }) {
   const email = params?.email || 'director@memoryweaver.studio';
-  const resetLink = params?.resetLink || 'https://dev.memoryweaver.studio/auth/reset-password?token=mw_sec_demo';
+  const resetLink = params?.resetLink || `${resolvePublicAppUrl()}/auth/reset-password?token=mw_sec_demo`;
   const expiresInMinutes = params?.expiresInMinutes || '60';
 
   const contentHtml = `
@@ -481,7 +484,7 @@ export function renderPremiereNotificationEmail(params?: {
   const memoryTitle = params?.memoryTitle || 'The Orchard Harvest & Family Roots';
   const releaseYear = params?.releaseYear || '2026';
   const runtime = params?.runtime || '04:18';
-  const cinemaUrl = params?.cinemaUrl || 'https://dev.memoryweaver.studio/cinema';
+  const cinemaUrl = params?.cinemaUrl || `${resolvePublicAppUrl()}/cinema`;
 
   const contentHtml = `
     <p class="mw-text-white" style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #ffffff;">

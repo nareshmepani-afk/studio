@@ -11,6 +11,8 @@
 
 export const PRODUCTION_PROJECT_ID = 'memory-weaver-8rk9t';
 export const STAGING_PROJECT_ID = 'memory-weaver-dev';
+export const PRODUCTION_APP_URL = 'https://memoryweaver.studio';
+export const STAGING_APP_URL = 'https://dev.memoryweaver.studio';
 
 /**
  * Resolves the active Firebase project ID. Prefers the Admin SDK app's project ID
@@ -43,4 +45,31 @@ export function isStagingProject(projectId: string | null): boolean {
 export function resolveStorageBucket(bucketName?: string | null): string | null {
   const candidate = (bucketName || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '').trim();
   return candidate.length > 0 ? candidate : null;
+}
+
+/**
+ * Resolves the canonical public origin for customer links, QR codes, emails, and webhooks.
+ * Prefers live browser origin, then NEXT_PUBLIC_APP_URL, then optional request host header,
+ * then Firebase project identity (returning PRODUCTION_APP_URL on prod, STAGING_APP_URL on staging).
+ */
+export function resolvePublicAppUrl(hostHeader?: string | null): string {
+  const configuredUrl = (process.env.NEXT_PUBLIC_APP_URL || '').trim().replace(/\/$/, '');
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+  const cleanHost = (hostHeader || '').split(',')[0].trim();
+  if (cleanHost) {
+    const proto = cleanHost.includes('localhost') || cleanHost.includes('127.0.0.1') ? 'http' : 'https';
+    return `${proto}://${cleanHost}`;
+  }
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.origin &&
+    window.location.origin.startsWith('http') &&
+    !window.location.origin.startsWith('http://localhost') &&
+    !window.location.origin.startsWith('http://127.0.0.1')
+  ) {
+    return window.location.origin.replace(/\/$/, '');
+  }
+  return isProductionProject(resolveProjectId()) ? PRODUCTION_APP_URL : STAGING_APP_URL;
 }

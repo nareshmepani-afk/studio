@@ -3,6 +3,7 @@
 import { Resend } from 'resend';
 import { headers } from 'next/headers';
 import { STUDIO_EMAILS, STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 interface WelcomeEmailParams {
   email: string;
@@ -21,9 +22,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
 
   try {
     const headersList = await headers();
-    const host = headersList.get('x-forwarded-host') || headersList.get('host') || 'dev.memoryweaver.studio';
-    const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = resolvePublicAppUrl(headersList.get('x-forwarded-host') || headersList.get('host'));
 
     const studioUrl = `${baseUrl}/studio`;
     const cinemaUrl = claimedMemoryId ? `${baseUrl}/cinema?id=${claimedMemoryId}` : `${baseUrl}/cinema`;
@@ -98,7 +97,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
               <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 16px;">
                 <tr>
                   <td class="mw-logo-box" align="center" bgcolor="#000000" style="width: 56px; height: 56px; background-color: #000000; border: 1.5px solid #1e293b; border-radius: 18px; text-align: center;">
-                    <img src="https://dev.memoryweaver.studio/icon.svg" width="32" height="32" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: #000000;" />
+                    <img src="${baseUrl}/icon.svg" width="32" height="32" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: #000000;" />
                   </td>
                 </tr>
               </table>

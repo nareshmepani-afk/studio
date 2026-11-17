@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import { getSession, verifyAdminWhitelist } from '@/lib/session';
 import { EmailTemplateId, renderEmailTemplateById, renderWelcomeHostPassEmail } from '@/lib/emailTemplates';
 import { STUDIO_EMAILS, STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
+import { resolvePublicAppUrl } from '@/config/environment';
 import dns from 'dns/promises';
 
 export interface EmailDispatchReceipt {
@@ -281,11 +282,12 @@ export async function retriggerClientOnboardingPassAction(
     }
 
     const name = recipientName || 'Storyteller Director';
+    const appUrl = resolvePublicAppUrl();
     const { subject, html } = renderWelcomeHostPassEmail({
       name,
       email: trimmedEmail,
-      studioUrl: 'https://dev.memoryweaver.studio/studio',
-      cinemaUrl: 'https://dev.memoryweaver.studio/cinema'
+      studioUrl: `${appUrl}/studio`,
+      cinemaUrl: `${appUrl}/cinema`
     });
 
     const resendApiKey = process.env.RESEND_API_KEY;

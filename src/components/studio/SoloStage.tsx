@@ -43,6 +43,7 @@ import { MentorshipHotspot } from './MentorshipHotspot';
 import { generateDirectorsNotepad } from '@/actions/aiWeaver';
 import { ProductionControlBar } from './ProductionControlBar';
 import { StudioSurfaceSwitcher } from './StudioSurfaceSwitcher';
+import { resolvePublicAppUrl } from '@/config/environment';
 import CinemaStageSwitch from './CinemaStageSwitch';
 import { Memory, FusionManifest, PremiereMode } from '@/types';
 import { resolveMemoryMilestones } from '@/lib/curriculum/milestoneTruth';
@@ -1871,7 +1872,7 @@ export default function SoloStage({
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/cinema?id=${data?.id || 'demo'}${basePin}`;
     }
-    return `https://dev.memoryweaver.studio/cinema?id=${data?.id || 'demo'}${basePin}`;
+    return `${resolvePublicAppUrl()}/cinema?id=${data?.id || 'demo'}${basePin}`;
   }, [data?.id, isPinProtected, sharePin]);
 
   const handleCopyCinemaLink = () => {

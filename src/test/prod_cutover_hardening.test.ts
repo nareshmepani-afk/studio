@@ -365,3 +365,182 @@ describe('MW-409: purge-prod-qa refuses staging and defaults to dry-run', () => 
     });
   });
 });
+
+describe('Canonical Origin Resolution & Zero Hardcoded Staging Links', () => {
+  const saved = { ...process.env };
+  const origWindow = globalThis.window;
+
+  afterEach(() => {
+    process.env = { ...saved };
+    if (origWindow !== undefined) {
+      globalThis.window = origWindow;
+    }
+  });
+
+  it('resolvePublicAppUrl prefers NEXT_PUBLIC_APP_URL, then prod project ID, defaulting to staging when unset', async () => {
+    // Temporarily clear browser origin override so server resolution rules run cleanly
+    const mockWin = { ...globalThis.window, location: { origin: '' } };
+    vi.stubGlobal('window', mockWin);
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    delete process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    delete process.env.GCLOUD_PROJECT;
+    delete process.env.GOOGLE_CLOUD_PROJECT;
+
+    const { resolvePublicAppUrl } = await import('@/config/environment');
+    expect(resolvePublicAppUrl()).toBe('https://dev.memoryweaver.studio');
+    expect(resolvePublicAppUrl('memoryweaver.studio')).toBe('https://memoryweaver.studio');
+
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'memory-weaver-8rk9t';
+    expect(resolvePublicAppUrl()).toBe('https://memoryweaver.studio');
+
+    process.env.NEXT_PUBLIC_APP_URL = 'https://memoryweaver.studio/';
+    expect(resolvePublicAppUrl()).toBe('https://memoryweaver.studio');
+    vi.unstubAllGlobals();
+  });
+
+  it('has zero hardcoded https://dev.memoryweaver.studio URLs in customer/email/share/billing src files outside allowlist', () => {
+    const ALLOWED_DEV_URL_FILES = new Set([
+      'src/config/environment.ts',
+      'src/lib/audienceCsvParser.ts',
+      'src/lib/missionLog.ts',
+      'src/components/admin/MissionControlConsole.tsx',
+      'src/config/businessRules.ts',
+    ]);
+    const offenders: string[] = [];
+
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        const rel = path.relative(ROOT, full).replace(/\\/g, '/');
+        if (entry.isDirectory()) {
+          if (rel === 'src/test' || rel === 'src/tests' || entry.name === '__tests__') continue;
+          walk(full);
+        } else if (/\.(ts|tsx|js|mjs)$/.test(entry.name) && entry.name !== 'qaHtmlContent.ts') {
+          if (ALLOWED_DEV_URL_FILES.has(rel)) continue;
+          const lines = fs.readFileSync(full, 'utf8').split(/\r?\n/);
+          lines.forEach((line, idx) => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
+            if (line.includes('https://dev.memoryweaver.studio')) {
+              offenders.push(`${rel}:${idx + 1}`);
+            }
+          });
+        }
+      }
+    };
+    walk(path.join(ROOT, 'src'));
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('End-to-End Bug Progression Pipeline (Firestore + Admin API + Plane Formatter)', () => {
+  it('sendBugReportAction persists distinct bug_reports/{reportId} documents without traceId overwrite', async () => {
+    vi.resetModules();
+    const docSets: { id: string; data: any }[] = [];
+    const docMock = vi.fn((id: string) => ({
+      set: vi.fn(async (data: any) => {
+        docSets.push({ id, data });
+      }),
+    }));
+    const colMock = vi.fn(() => ({ doc: docMock }));
+
+    vi.doMock('@/lib/firebase-admin', () => ({
+      adminDb: { collection: colMock },
+    }));
+    vi.doMock('next/headers', () => ({
+      headers: async () => new Headers({ host: 'dev.memoryweaver.studio' }),
+    }));
+    delete process.env.RESEND_API_KEY;
+
+    const { sendBugReportAction } = await import('@/actions/sendBugReportAction');
+    const sharedDiag = {
+      traceId: 'mw_telemetry_shared_tab',
+      userId: 'u_test_1',
+      userEmail: 'tester@googlemail.com',
+      userAgent: 'Vitest',
+      path: '/studio',
+      timestamp: '2026-11-17T17:10:00Z',
+      version: 'v1.1.0-beta',
+    };
+
+    const r1 = await sendBugReportAction({ description: 'First bug in same tab', diagnostics: sharedDiag });
+    const r2 = await sendBugReportAction({ description: 'Second bug in same tab', diagnostics: sharedDiag });
+
+    expect(r1.success).toBe(true);
+    expect(r2.success).toBe(true);
+    expect(r1.reportId).toBeTruthy();
+    expect(r2.reportId).toBeTruthy();
+    expect(r1.reportId).not.toBe(r2.reportId);
+    expect(docSets.length).toBe(2);
+    expect(docSets[0].data.status).toBe('OPEN');
+    expect(docSets[0].data.traceId).toBe('mw_telemetry_shared_tab');
+    expect(docSets[1].data.traceId).toBe('mw_telemetry_shared_tab');
+
+    vi.doUnmock('@/lib/firebase-admin');
+    vi.doUnmock('next/headers');
+  });
+
+  it('rejects unauthenticated requests on /api/admin/bugs and allows authorized GET/PATCH', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/session', () => ({
+      requireAdminSession: vi.fn().mockResolvedValue({
+        authorized: false,
+        status: 401,
+        error: 'Unauthorised: Admin session required',
+      }),
+    }));
+
+    const { GET: unauthGet, PATCH: unauthPatch } = await import('@/app/api/admin/bugs/route');
+    expect((await unauthGet({ nextUrl: new URL('http://localhost/api/admin/bugs') } as any)).status).toBe(401);
+    expect((await unauthPatch(new Request('http://localhost/api/admin/bugs', { method: 'PATCH', body: '{}' }))).status).toBe(401);
+    vi.doUnmock('@/lib/session');
+
+    vi.resetModules();
+    const setMock = vi.fn().mockResolvedValue(undefined);
+    const getMock = vi.fn().mockResolvedValue({
+      docs: [{ id: 'bug_123_abc', data: () => ({ reportId: 'bug_123_abc', traceId: 'trc_1', status: 'OPEN', description: 'Bug' }) }],
+    });
+    const docMock = vi.fn(() => ({ set: setMock }));
+    const colMock = vi.fn(() => ({
+      orderBy: vi.fn(() => ({ limit: vi.fn(() => ({ get: getMock })) })),
+      doc: docMock,
+    }));
+
+    vi.doMock('@/lib/session', () => ({
+      requireAdminSession: vi.fn().mockResolvedValue({
+        authorized: true,
+        session: { uid: 'admin-1', email: 'nareshmepani@googlemail.com', isAdmin: true, mfaVerified: true },
+      }),
+    }));
+    vi.doMock('@/lib/firebaseAdmin', () => ({
+      adminDb: { collection: colMock },
+    }));
+
+    const { GET: authGet, PATCH: authPatch } = await import('@/app/api/admin/bugs/route');
+    const getRes = await authGet({ nextUrl: new URL('http://localhost/api/admin/bugs?traceId=trc_1') } as any);
+    expect(getRes.status).toBe(200);
+    const getJson = await getRes.json();
+    expect(getJson.reports).toHaveLength(1);
+
+    const patchRes = await authPatch(
+      new Request('http://localhost/api/admin/bugs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId: 'bug_123_abc', status: 'FIXED_ON_DEV', planeIssueId: 'MW-410', resolutionNotes: 'Fixed!' }),
+      })
+    );
+    expect(patchRes.status).toBe(200);
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'FIXED_ON_DEV', planeIssueId: 'MW-410', resolutionNotes: 'Fixed!' }),
+      { merge: true }
+    );
+
+    const { formatBugReportForPlane } = await import('../../scripts/read-bug-reports');
+    const formatted = formatBugReportForPlane({ reportId: 'bug_123_abc', description: 'Test button overlap on Safari', path: '/studio', status: 'OPEN' });
+    expect(formatted.title).toContain('[BUG bug_123_abc]');
+    expect(formatted.description).toContain('Route:** /studio');
+
+    vi.doUnmock('@/lib/session');
+    vi.doUnmock('@/lib/firebaseAdmin');
+  });
+});

@@ -16,6 +16,7 @@ import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 interface MemoryCinematicViewerProps {
   memory: Memory | null;
@@ -44,9 +45,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     setMounted(true);
   }, []);
 
-  const cinemaShareUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/cinema?id=${memory?.id}`
-    : `https://dev.memoryweaver.studio/cinema?id=${memory?.id}`;
+  const cinemaShareUrl = `${resolvePublicAppUrl()}/cinema?id=${memory?.id}`;
 
   const handleCopyCinemaLink = () => {
     if (typeof window !== 'undefined') {

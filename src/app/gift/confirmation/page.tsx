@@ -22,6 +22,7 @@ import {
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { GIFT_TIER_DISPLAY, GiftTier } from '@/types/gift';
+import { resolvePublicAppUrl } from '@/config/environment';
 
 function GiftConfirmationContent() {
   const searchParams = useSearchParams();
@@ -71,7 +72,7 @@ function GiftConfirmationContent() {
       });
   }, [sessionId]);
 
-  const unboxingUrl = `https://dev.memoryweaver.studio/unboxing/${voucherData.code}`;
+  const unboxingUrl = `${resolvePublicAppUrl()}/unboxing/${voucherData.code}`;
 
   const shareText = `Dear ${voucherData.recipientName},\n\nI have commissioned a special heirloom gift for you on Memory Weaver to record and preserve your life story for our family.\n\nOpen your wax-sealed unboxing ceremony here:\n${unboxingUrl}`;
 
