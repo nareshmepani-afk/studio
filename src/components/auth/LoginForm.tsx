@@ -7,12 +7,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock, LogIn, Ticket, Sparkles, ArrowRight } from 'lucide-react';
+import { Mail, Lock, LogIn, Ticket, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import { firebaseConfig } from '@/lib/config-schema';
-import { validateAuthAttempt } from '@/actions/authActions';
+import { validateAuthAttempt, joinPrelaunchListAction } from '@/actions/authActions';
+import { extractUnboxingVoucherCode } from '@/lib/prelaunch-shared';
 import { useSearchParams } from 'next/navigation';
 
 const LoginForm = () => {
@@ -34,6 +35,13 @@ const LoginForm = () => {
   const [email, setEmail] = useState('test@example.com');
   const [password, setPassword] = useState('password');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isJoiningList, setIsJoiningList] = useState(false);
+  const [prelaunchNotice, setPrelaunchNotice] = useState<{
+    email: string;
+    message: string;
+    joined?: boolean;
+    status?: string;
+  } | null>(null);
   // THE INVISIBLE GUIDE: Focus the primary input for Login on desktop pointers only to prevent mobile keyboard shove
   const isDesktopPointer = typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia('(pointer: fine)').matches : false;
   const emailRef = usePrimaryFocus(isDesktopPointer);
@@ -41,6 +49,7 @@ const LoginForm = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSubmitting(true);
+    setPrelaunchNotice(null);
 
     try {
       let token: string | null = null;
@@ -55,15 +64,48 @@ const LoginForm = () => {
       }
 
       console.log("[LoginForm] reCAPTCHA token resolved:", !!token);
-      
-      // Verify token on the server before proceeding
-      await validateAuthAttempt(token, 'LOGIN', email);
-      
-      await login(email, password);
+
+      const voucherCode = extractUnboxingVoucherCode(redirect);
+
+      // Verify token & Pre-Launch access on the server before signing in
+      const attempt = await validateAuthAttempt(token, 'LOGIN', email, { voucherCode });
+
+      if (attempt && attempt.success === false && attempt.code === 'PRELAUNCH_RESTRICTED') {
+        setPrelaunchNotice({
+          email: email.trim().toLowerCase(),
+          message:
+            attempt.message ||
+            'Memory Weaver is currently in private pre-launch preview for invited Testers and Gift Voucher recipients.',
+          joined: attempt.alreadyListed,
+        });
+        return;
+      }
+
+      await login(email, password, redirect || undefined);
     } catch (error: any) {
       console.error("Login failed from form submission:", error?.message || error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleJoinPrelaunchList = async () => {
+    setIsJoiningList(true);
+    try {
+      const res = await joinPrelaunchListAction({ email });
+      setPrelaunchNotice({
+        email: email.trim().toLowerCase(),
+        message: res.message,
+        joined: res.success,
+        status: res.status,
+      });
+    } catch (err: any) {
+      setPrelaunchNotice({
+        email: email.trim().toLowerCase(),
+        message: err?.message || 'Unable to save to the Pre-Launch List right now.',
+      });
+    } finally {
+      setIsJoiningList(false);
     }
   };
 
@@ -145,7 +187,7 @@ const LoginForm = () => {
           </Button>
 
           {/* New to Memory Weaver? Create an Account link preserving redirect */}
-          <div className="pt-2 text-center border-t border-white/10">
+          <div className="pt-2 text-center border-t border-white/10 space-y-3">
             <p className="text-xs text-white/60">
               New to Memory Weaver?{' '}
               <Link
@@ -158,6 +200,40 @@ const LoginForm = () => {
             </p>
           </div>
         </form>
+
+        {prelaunchNotice && (
+          <div
+            data-testid="PRELAUNCH_LOGIN_NOTICE"
+            className="mt-5 relative z-10 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-3"
+          >
+            <div className="flex items-start gap-3">
+              {prelaunchNotice.joined ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              ) : (
+                <Sparkles className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
+              )}
+              <div className="space-y-1 text-left">
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-200">
+                  {prelaunchNotice.joined ? 'Pre-Launch List Updated' : 'Private Pre-Launch Access'}
+                </p>
+                <p className="text-xs text-white/80 leading-relaxed">
+                  {prelaunchNotice.message}
+                </p>
+              </div>
+            </div>
+            {!prelaunchNotice.joined && (
+              <Button
+                type="button"
+                onClick={handleJoinPrelaunchList}
+                disabled={isJoiningList}
+                data-testid="PRELAUNCH_JOIN_LIST_BTN"
+                className="w-full h-10 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl"
+              >
+                {isJoiningList ? 'Saving to Pre-Launch List...' : 'Join Pre-Launch List'}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Guest Entrance Shortcut */}

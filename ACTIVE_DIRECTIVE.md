@@ -42,11 +42,11 @@
 
 ---
 
-### Execution Receipt: PRE-WALKTHROUGH-HARDENING / Plane MW-408 (Checkpoint #095)
+### Execution Receipt: UNIFIED-PRELAUNCH-GATE / Checkpoint #096
 - • Responding Agent: Chat 2 (The Flash Executor — Antigravity)
-- • Execution Timestamp: 2026-11-17T17:20:00Z
+- • Execution Timestamp: 2026-11-17T19:00:00Z
 - • Git Branch: `dev`
-- • Test & Build Gates: `npm run prod:preflight` (`PASSED`) | `firebase_validate_security_rules` (`firestore` & `storage` OK) | Vitest `103/103` test suites (`1,139/1,139` assertions PASS) | `npm.cmd run build` (`PASS`)
-- • Cloud Firestore Status: `memory-weaver-dev` `qa_suites/active_deck/items` verified 60/60 Cards PASS, 148/148 Items PASS (`qa:status`); `bug_reports` + `users-reels` rules validated & deployed to `memory-weaver-dev`.
+- • Test & Build Gates: `npm run prod:preflight` (`PASSED`) | `firebase_validate_security_rules` (`firestore` & `storage` OK) | `npx tsc --noEmit` (`PASS`) | Vitest `104/104` test suites (`1,148/1,148` assertions PASS) | `npm.cmd run build` (`PASS`)
+- • Cloud Firestore Status: `memory-weaver-dev` `qa_suites/active_deck/items` verified 60/60 Cards PASS, 148/148 Items PASS (`qa:status`); `prelaunch_config` + `prelaunch_list` rules validated & deployed to `memory-weaver-dev`.
 - • Execution Status: COMPLETED
 - • Sign-Off: [OUT - Chat 2 (The Flash Executor)]

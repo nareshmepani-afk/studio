@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import type { User, Director, UserAccount } from '@/types'; 
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
 import { sendWelcomeEmailAction } from '@/actions/sendWelcomeEmailAction';
+import { extractUnboxingVoucherCode } from '@/lib/prelaunch-shared';
 import localforage from 'localforage';
 
 type CombinedUser = FirebaseUser & Partial<UserAccount & Director>;
@@ -45,6 +46,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (firebaseUser) {
+        const resolveActiveVoucherCode = (): string | null => {
+          if (typeof window === 'undefined') return null;
+          const params = new URLSearchParams(window.location.search);
+          const redirectParam = params.get('redirect') || params.get('redirectTo');
+          return (
+            extractUnboxingVoucherCode(redirectParam) ||
+            extractUnboxingVoucherCode(window.location.pathname)
+          );
+        };
+
         // ... (existing firebase logic)
         const syncSessionWithAction = async (token: string) => {
           try {
@@ -52,7 +63,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               throw new Error("UnrecognizedActionError: Simulated Next.js server action hash mismatch.");
             }
 
-            await createSessionAction(token);
+            const sessionRes = await createSessionAction(token, {
+              voucherCode: resolveActiveVoucherCode(),
+            });
+            if (sessionRes && sessionRes.success === false && sessionRes.code === 'PRELAUNCH_RESTRICTED') {
+              await signOut(auth);
+              setUser(null);
+              setLoading(false);
+              setSyncStatus('error');
+              return;
+            }
             setSyncStatus('synced');
 
             const cachedToken = await localforage.getItem<string>('cached_session_sync_token');
@@ -107,10 +127,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = useCallback(async (email: string, password: string, redirectTo?: string) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Surgical Refresh
-      const idToken = await userCredential.user.getIdToken();
-      await createSessionAction(idToken);
-      router.refresh();
 
       // Determine redirect destination from parameter, query string, or default
       let target = redirectTo;
@@ -118,6 +134,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const params = new URLSearchParams(window.location.search);
         target = params.get('redirect') || params.get('redirectTo') || undefined;
       }
+
+      const voucherCode =
+        extractUnboxingVoucherCode(target) ||
+        (typeof window !== 'undefined' ? extractUnboxingVoucherCode(window.location.pathname) : null);
+
+      // Surgical Refresh
+      const idToken = await userCredential.user.getIdToken();
+      const sessionRes = await createSessionAction(idToken, { voucherCode });
+      if (sessionRes && sessionRes.success === false && sessionRes.code === 'PRELAUNCH_RESTRICTED') {
+        await signOut(auth);
+        throw new Error(sessionRes.message || 'Memory Weaver is currently in private pre-launch preview.');
+      }
+      router.refresh();
 
       router.push(target || '/studio');
       toast.success('Login Successful', { description: "Welcome back!" });
@@ -154,12 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       await setDoc(userProfileRef, newUserProfile);
-      
-      // Surgical Refresh
-      const idToken = await firebaseUser.getIdToken();
-      await createSessionAction(idToken);
-      router.refresh();
-      
+
       let target = redirectTo;
       let claimedMemoryId: string | undefined;
       if (!target && typeof window !== 'undefined') {
@@ -172,6 +196,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           claimedMemoryId = url.searchParams.get('id') || undefined;
         } catch(e) {}
       }
+
+      const voucherCode =
+        extractUnboxingVoucherCode(target) ||
+        (typeof window !== 'undefined' ? extractUnboxingVoucherCode(window.location.pathname) : null);
+
+      // Surgical Refresh
+      const idToken = await firebaseUser.getIdToken();
+      const sessionRes = await createSessionAction(idToken, { voucherCode });
+      if (sessionRes && sessionRes.success === false && sessionRes.code === 'PRELAUNCH_RESTRICTED') {
+        await signOut(auth);
+        throw new Error(sessionRes.message || 'Memory Weaver is currently in private pre-launch preview.');
+      }
+      router.refresh();
 
       // Option A: Non-blocking Welcome Email dispatch via Resend
       sendWelcomeEmailAction({

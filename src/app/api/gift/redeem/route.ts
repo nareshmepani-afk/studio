@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/session';
+import { upsertPrelaunchTesterForGift } from '@/lib/prelaunch';
 import { GiftVoucherDocument, RedemptionResult } from '@/types/gift';
 
 export const dynamic = 'force-dynamic';
@@ -51,6 +52,8 @@ export async function POST(req: NextRequest) {
       throw new Error('Firebase Admin DB not initialized');
     }
 
+    let recipientDisplayName = '';
+
     const result = await adminDb.runTransaction(async (transaction) => {
       const voucherRef = adminDb!.collection('gift_vouchers').doc(code.toUpperCase());
       const voucherSnap = await transaction.get(voucherRef);
@@ -73,6 +76,7 @@ export async function POST(req: NextRequest) {
       }
 
       const userData = userSnap.data()!;
+      recipientDisplayName = String(userData.displayName || userData.name || '').trim();
 
       if (userData.membershipTier === 'generational_vault' && voucher.tier === 'generational_vault') {
         throw { status: 409, code: 'ALREADY_LIFETIME_HOLDER', message: 'You already have a lifetime Generational Vault' };
@@ -123,6 +127,15 @@ export async function POST(req: NextRequest) {
         giftMessage: voucher.giftMessage,
       } as RedemptionResult;
     });
+
+    try {
+      await upsertPrelaunchTesterForGift(adminDb, {
+        email: session.email,
+        name: recipientDisplayName || session.email.split('@')[0] || '',
+      });
+    } catch (syncErr) {
+      console.warn('[GiftRedeem] Non-blocking prelaunch tester sync notice:', syncErr);
+    }
 
     return NextResponse.json({ success: true, ...result }, { headers: CORS_HEADERS });
 

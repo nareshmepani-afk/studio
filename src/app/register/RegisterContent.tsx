@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Film, Info, Loader2, UserPlus, Mail, Lock, CheckCircle2 } from 'lucide-react';
+import { Film, Info, Loader2, UserPlus, Mail, Lock, CheckCircle2, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Navbar } from '@/components/layout/Navbar';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import { firebaseConfig } from '@/lib/config-schema';
 import { validateAuthAttempt } from '@/actions/authActions';
+import { extractUnboxingVoucherCode } from '@/lib/prelaunch-shared';
 
 export default function RegisterContent() {
   const searchParams = useSearchParams();
@@ -44,6 +45,11 @@ export default function RegisterContent() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [waitlistStatus, setWaitlistStatus] = useState<{
+    email: string;
+    message: string;
+    alreadyListed?: boolean;
+  } | null>(null);
   
   // THE INVISIBLE GUIDE: Focus the primary input for Registration on desktop pointers only
   const isDesktopPointer = typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia('(pointer: fine)').matches : false;
@@ -86,13 +92,35 @@ export default function RegisterContent() {
       }
 
       console.log("[RegisterPage] reCAPTCHA token generated:", !!token);
-      
-      // Verify token on the server before proceeding
-      await validateAuthAttempt(token, 'REGISTER', email);
-      
-      await register(name, email, password);
-    } catch (error) {
+
+      const voucherCode = extractUnboxingVoucherCode(redirect);
+
+      // Verify token & Pre-Launch gate on the server before creating Firebase Auth account
+      const attempt = await validateAuthAttempt(token, 'REGISTER', email, {
+        name: name.trim(),
+        voucherCode,
+      });
+
+      if (attempt && attempt.success === false && attempt.code === 'PRELAUNCH_RESTRICTED') {
+        setWaitlistStatus({
+          email: email.trim().toLowerCase(),
+          message:
+            attempt.message ||
+            'You are on the Memory Weaver Pre-Launch List. We will notify you as soon as your Tester access or public launch opens.',
+          alreadyListed: attempt.alreadyListed,
+        });
+        toast.success("You're on the Pre-Launch List", {
+          description: `${email.trim().toLowerCase()} has been saved for pre-launch activation.`,
+        });
+        return;
+      }
+
+      await register(name, email, password, redirect || undefined);
+    } catch (error: any) {
       console.error("Register page submit error:", error);
+      toast.error("Registration Unavailable", {
+        description: error?.message || "Please verify your details and try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -170,6 +198,42 @@ export default function RegisterContent() {
                 </div>
               </div>
 
+              {waitlistStatus ? (
+                <div
+                  data-testid="PRELAUNCH_WAITLIST_CONFIRMATION"
+                  className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center space-y-4"
+                >
+                  <div className="mx-auto w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-amber-300" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-bold text-white">
+                      {waitlistStatus.alreadyListed
+                        ? 'Already on the Pre-Launch List'
+                        : "You're on the Pre-Launch List"}
+                    </h2>
+                    <p className="text-xs font-mono text-amber-300">{waitlistStatus.email}</p>
+                    <p className="text-sm text-white/75 leading-relaxed">
+                      {waitlistStatus.message}
+                    </p>
+                  </div>
+                  <div className="pt-2 flex flex-col gap-2">
+                    <Link
+                      href="/gift"
+                      className="inline-flex items-center justify-center h-10 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition-colors"
+                    >
+                      Gifting a Memory Weaver Vault?
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setWaitlistStatus(null)}
+                      className="text-xs text-white/50 hover:text-white transition-colors py-1.5"
+                    >
+                      Try another email address
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <form onSubmit={handleSubmit} className="space-y-5" suppressHydrationWarning={true}>
                 <div className="space-y-2 group/field">
                   <Label htmlFor="name" className="text-[10px] uppercase tracking-[0.2em] text-white/40 group-focus-within/field:text-primary transition-colors ml-1 font-bold">Full Name</Label>
@@ -274,6 +338,7 @@ export default function RegisterContent() {
                   Register Production Hub
                 </Button>
               </form>
+              )}
 
               <div className="mt-8 pt-6 border-t border-white/5 flex flex-col items-center gap-4">
                 <p className="text-sm text-white/40">

@@ -240,6 +240,12 @@ function checkSecurityRulesAndHygiene(rootDir: string, failures: string[], warni
     if (!/match \/bug_reports\/\{reportId\}[\s\S]*request\.auth\.token\.isAdmin == true/.test(fsRules)) {
       failures.push('firestore.rules must gate bug_reports/{reportId} on request.auth.token.isAdmin == true.');
     }
+    if (!/match \/prelaunch_config\/\{docId\}[\s\S]*request\.auth\.token\.isAdmin == true/.test(fsRules)) {
+      failures.push('firestore.rules must gate prelaunch_config/{docId} on request.auth.token.isAdmin == true.');
+    }
+    if (!/match \/prelaunch_list\/\{emailKey\}[\s\S]*request\.auth\.token\.isAdmin == true/.test(fsRules)) {
+      failures.push('firestore.rules must gate prelaunch_list/{emailKey} on request.auth.token.isAdmin == true.');
+    }
   }
 
   if (!fs.existsSync(storagePath)) {

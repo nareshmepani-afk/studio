@@ -17,6 +17,7 @@ import { useAudioFeedback } from '@/hooks/studio/useAudioFeedback';
 import { toast } from 'sonner';
 import { scrollToFirstMissingCatalyst } from '@/lib/curriculum/actValidation';
 import { OpticsPrivacyShield } from './OpticsPrivacyShield';
+import { ReportIssueTrigger } from '@/components/feedback/ReportIssueTrigger';
 
 interface ProductionControlBarProps {
   currentStage: number;
@@ -699,6 +700,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
               {/* Milestone MW-89: Hardware Privacy Shield adjacent to stage action triggers */}
               <OpticsPrivacyShield className="shrink-0" compact />
+
+              <ReportIssueTrigger variant="icon-pill" label="Report Issue" className="shrink-0" />
 
               {/* HERO PRIMARY ACTION BUTTON */}
               <Tooltip>

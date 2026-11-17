@@ -24,7 +24,7 @@ import {
 import { 
   LogOut, Video, Settings, Film, History, Home, UserCircle2, 
   Clapperboard, Lock, BookOpen, Coffee, MessageSquare, Gift, 
-  Menu, Compass, ChevronDown, ChevronRight 
+  Menu, Compass, ChevronDown, ChevronRight, Bug 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter, usePathname } from 'next/navigation';
@@ -33,6 +33,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
 import { OpticsPrivacyShield } from './OpticsPrivacyShield';
 import { StudioUpgradeBadge } from './StudioUpgradeBadge';
+import { ReportIssueTrigger } from '@/components/feedback/ReportIssueTrigger';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function Navbar() {
@@ -296,6 +297,7 @@ export function Navbar() {
             <div data-hotspot-id="HS_NAV_THEME_TOGGLE">
               <ThemeToggle />
             </div>
+            <ReportIssueTrigger variant="icon-pill" label="Issue" className="hidden md:inline-flex shrink-0" />
             {isGuestDirectorView ? (
               <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-full whitespace-nowrap">
                 Guest Remote
@@ -357,6 +359,16 @@ export function Navbar() {
                     <DropdownMenuItem onClick={() => router.push('/contact')}>
                       <MessageSquare className="mr-2 h-4 w-4" />
                       <span>Contact Support</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new Event('open-telemetry-report'));
+                        }
+                      }}
+                    >
+                      <Bug className="mr-2 h-4 w-4 text-amber-400" />
+                      <span>Report Issue</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/')}>
                       <Home className="mr-2 h-4 w-4" />
@@ -506,6 +518,12 @@ export function Navbar() {
                         </div>
                         <ChevronRight className="h-4 w-4 text-slate-500" />
                       </button>
+
+                      <ReportIssueTrigger
+                        variant="menu-item"
+                        label="Report Issue"
+                        onTriggered={() => setMobileDrawerOpen(false)}
+                      />
                     </div>
                   </div>
 

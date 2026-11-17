@@ -2,13 +2,34 @@
 
 import { setSessionCookie, deleteSession } from "@/lib/session";
 import { adminAuth } from '@/lib/firebase-admin';
+import { evaluatePrelaunchAccess } from '@/lib/prelaunch';
 
-export async function createSessionAction(idToken: string) {
+export async function createSessionAction(
+  idToken: string,
+  options?: { voucherCode?: string | null }
+) {
   if (!adminAuth) {
     console.error("[createSessionAction] Firebase Admin SDK is not initialized.");
     return { success: false, message: "Server-side authentication is not configured." };
   }
   try {
+    const decoded = await adminAuth.verifyIdToken(idToken);
+    const access = await evaluatePrelaunchAccess({
+      email: decoded.email || null,
+      name: typeof decoded.name === 'string' ? decoded.name : null,
+      voucherCode: options?.voucherCode || null,
+      isAdminTokenClaim: decoded.isAdmin === true,
+      recordIfBlocked: false,
+    });
+
+    if (!access.allowed) {
+      return {
+        success: false,
+        code: 'PRELAUNCH_RESTRICTED' as const,
+        message: access.message || 'Memory Weaver is currently in private pre-launch preview.',
+      };
+    }
+
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
     

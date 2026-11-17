@@ -32,6 +32,7 @@ import type { UnifiedCurriculumMemory } from '@/types/curriculum';
 import { isSceneCompleted } from '@/types/curriculum';
 import { OpticsPrivacyShield } from '@/components/studio/OpticsPrivacyShield';
 import { FiresideProfileDrawer } from '@/components/fireside/FiresideProfileDrawer';
+import { ReportIssueTrigger } from '@/components/feedback/ReportIssueTrigger';
 
 export interface FiresideAuthHeaderProps {
   className?: string;
@@ -190,6 +191,8 @@ export function FiresideAuthHeader({
                 <span>Sign Out</span>
               </button>
 
+              <ReportIssueTrigger variant="icon-pill" label="Issue" className="shrink-0" />
+
               {/* Mobile Slide-Over Account & Navigation Drawer (min 44px touch target) */}
               <FiresideProfileDrawer />
             </div>
@@ -212,6 +215,8 @@ export function FiresideAuthHeader({
                   <ExternalLink className="w-3 h-3" />
                 </span>
               </Link>
+
+              <ReportIssueTrigger variant="icon-pill" label="Issue" className="shrink-0" />
 
               {/* Mobile Slide-Over Account & Navigation Drawer (min 44px touch target) */}
               <FiresideProfileDrawer />

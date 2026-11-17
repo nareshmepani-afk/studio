@@ -284,7 +284,7 @@ describe('QA Interactive Checklist Master Standard & Anti-Regression Shield', ()
     const missionLogPath = path.resolve(__dirname, '../../MISSION_LOG.md');
     const missionLogSrc = fs.readFileSync(missionLogPath, 'utf8');
     expect(missionLogSrc).toContain('Checkpoint #090');
-    expect(missionLogSrc).toContain('1,139 / 1,139 Vitest Tests Passing (103 Test Files)');
+    expect(missionLogSrc).toContain('1,148 / 1,148 Vitest Tests Passing (104 Test Files)');
 
     const activeDirectivePath = path.resolve(__dirname, '../../ACTIVE_DIRECTIVE.md');
     const activeDirectiveSrc = fs.readFileSync(activeDirectivePath, 'utf8');

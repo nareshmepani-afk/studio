@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from '@/lib/constants';
 import { adminAuth } from '@/lib/firebase-admin';
+import { evaluatePrelaunchAccess } from '@/lib/prelaunch';
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 5; // 5 days
 
@@ -25,7 +26,7 @@ export async function GET() {
 
 // 2. POST: Create a session
 export async function POST(request: Request) {
-  const { idToken } = await request.json();
+  const { idToken, voucherCode } = await request.json();
 
   if (!idToken) {
     return NextResponse.json({ error: 'ID token is required' }, { status: 400 });
@@ -33,6 +34,25 @@ export async function POST(request: Request) {
 
   try {
     if (!adminAuth) throw new Error("Admin Auth not initialized");
+    const decoded = await adminAuth.verifyIdToken(idToken);
+    const access = await evaluatePrelaunchAccess({
+      email: decoded.email || null,
+      name: typeof decoded.name === 'string' ? decoded.name : null,
+      voucherCode: typeof voucherCode === 'string' ? voucherCode : null,
+      isAdminTokenClaim: decoded.isAdmin === true,
+      recordIfBlocked: false,
+    });
+
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: access.message || 'Memory Weaver is currently in private pre-launch preview.',
+          code: 'PRELAUNCH_RESTRICTED',
+        },
+        { status: 403 }
+      );
+    }
+
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn: SESSION_MAX_AGE_SECONDS * 1000 });
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, SESSION_COOKIE_OPTIONS);

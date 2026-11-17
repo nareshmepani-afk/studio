@@ -18,7 +18,7 @@
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 1,139 / 1,139 Vitest Tests Passing (103 Test Files)
+- **Current Invariant Test Baseline:** 1,148 / 1,148 Vitest Tests Passing (104 Test Files)
 
 - **Interactive Verification Suite:** qa_checklist_interactive.html (60 / 60 Test Cards Verified PASS • 148 / 148 Firestore Items PASS)
 
@@ -2326,6 +2326,39 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\scripts\read-bug-reports.ts`
   - `C:\Users\home\studio\firestore.rules`
   - `C:\Users\home\studio\storage.rules`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+
+
+### [2026-11-17 19:00 UTC / 19:00 GMT] — Checkpoint #096 - Unified Pre-Launch List Gate, 1-Click Tester Activation Switch & Visible Report Issue Triggers
+- **Commit & Edge Status:** Implemented the unified Firestore-backed Pre-Launch Gate (`prelaunch_config/settings` + `prelaunch_list/{emailKey}`), fail-closed ID-token session enforcement, `/admin?suite=prelaunch` Tester management console with bulk Google Sheet/CSV import, and visible `Report Issue` triggers across mobile and desktop UI.
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper (Naresh & Lead Architecture)**: Consolidated allowlist and waitlist into a single soft-coded `prelaunch_list/{emailKey}` roster with 1-click `isTester` activation switching (`TESTER` ↔ `WAITLIST`), eliminating `+devmemoryweaver` test aliases and preserving public access for `/cinema`, `/gift`, and `/unboxing/[code]`.
+  - ⚡ **Chat 2 (The Flash Executor / Equal Co-Architect)**:
+    - **Unified Pre-Launch Engine (`src/lib/prelaunch-shared.ts`, `src/lib/prelaunch.ts`)**: Defaulted `prelaunch_config/settings` to `RESTRICTED` on production (`memory-weaver-8rk9t`) and `PUBLIC` on staging (`memory-weaver-dev`), separating client-safe email/Sheet parsers (`prelaunch-shared.ts`) from Admin SDK evaluators (`prelaunch.ts`).
+    - **Pre-Auth Gate & Session Fail-Closed Shield (`authActions.ts`, `createSessionAction.ts`, `/api/auth/session`, `useAuth.tsx`, `RegisterContent.tsx`, `LoginForm.tsx`)**: Uninvited `/register` attempts (or clicking `Join Pre-Launch List` on `/login`) upsert into `prelaunch_list` as `WAITLIST` without creating orphan Auth accounts; `createSessionAction` & `/api/auth/session` verify Firebase ID tokens against active `TESTER`, `ADMIN`, or valid unredeemed `GIFT_VOUCHER` status; `/api/gift/redeem` auto-promotes redeemed recipients to `TESTER`.
+    - **1-Click Admin Console & Visible Bug Triggers (`/api/admin/prelaunch`, `PrelaunchAccessConsole.tsx`, `ReportIssueTrigger.tsx`)**: Added master `RESTRICTED` ↔ `PUBLIC` toggle, `ALL` / `TESTER` / `WAITLIST` tabs, 1-click Tester switch, bulk TSV/CSV Sheet import, mounted `Report Issue` buttons in `FiresideAuthHeader`, `Navbar`, `PublicFooter`, and `ProductionControlBar` (`SoloStage.tsx` preserved untouched), deployed updated `firestore.rules` to `memory-weaver-dev`, and verified `1,148 / 1,148` Vitest tests across `104` files + `npm run prod:preflight`.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\lib\prelaunch-shared.ts`
+  - `C:\Users\home\studio\src\lib\prelaunch.ts`
+  - `C:\Users\home\studio\src\actions\authActions.ts`
+  - `C:\Users\home\studio\src\actions\createSessionAction.ts`
+  - `C:\Users\home\studio\src\app\api\auth\session\route.ts`
+  - `C:\Users\home\studio\src\app\api\gift\redeem\route.ts`
+  - `C:\Users\home\studio\src\hooks\useAuth.tsx`
+  - `C:\Users\home\studio\src\app\register\RegisterContent.tsx`
+  - `C:\Users\home\studio\src\components\auth\LoginForm.tsx`
+  - `C:\Users\home\studio\src\app\api\admin\prelaunch\route.ts`
+  - `C:\Users\home\studio\src\components\admin\PrelaunchAccessConsole.tsx`
+  - `C:\Users\home\studio\src\app\admin\AdminDashboardContent.tsx`
+  - `C:\Users\home\studio\src\components\feedback\ReportIssueTrigger.tsx`
+  - `C:\Users\home\studio\src\components\fireside\FiresideAuthHeader.tsx`
+  - `C:\Users\home\studio\src\components\layout\Navbar.tsx`
+  - `C:\Users\home\studio\src\components\public\PublicFooter.tsx`
+  - `C:\Users\home\studio\src\components\studio\ProductionControlBar.tsx`
+  - `C:\Users\home\studio\firestore.rules`
+  - `C:\Users\home\studio\scripts\prod-preflight.ts`
+  - `C:\Users\home\studio\src\test\prelaunch_access.test.ts`
   - `C:\Users\home\studio\MISSION_LOG.md`
   - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Film } from 'lucide-react';
+import { ReportIssueTrigger } from '@/components/feedback/ReportIssueTrigger';
 
 const footerLinks = {
   product: [
@@ -99,6 +100,9 @@ export function PublicFooter() {
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <ReportIssueTrigger variant="footer-link" label="Report Issue" />
+                </li>
               </ul>
             </nav>
           </div>
