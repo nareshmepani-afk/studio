@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 // Try reading .env.local for PLANE credentials
-let PLANE_API_KEY = process.env.PLANE_API_KEY || 'plane_api_0522384011a2489f8d95713b1f811043';
+// Credentials are ENV-ONLY (process.env or .env.local). No secret literal may ever be committed here (MW-405).
+let PLANE_API_KEY = process.env.PLANE_API_KEY || '';
 let PLANE_WORKSPACE_SLUG = process.env.PLANE_WORKSPACE_SLUG || 'memory-weaver-studio';
 let PLANE_PROJECT_ID = process.env.PLANE_PROJECT_ID || 'ef45f4c8-ea7e-490d-8282-e959e484ae07'; // Core Engine (MW)
 
@@ -17,6 +18,12 @@ if (fs.existsSync(envPath)) {
   if (slugMatch) PLANE_WORKSPACE_SLUG = slugMatch[1].trim();
   const projMatch = envContent.match(/PLANE_PROJECT_ID=(.+)/);
   if (projMatch) PLANE_PROJECT_ID = projMatch[1].trim();
+}
+
+// Fail closed: refuse to run without an explicitly configured API key.
+if (!PLANE_API_KEY) {
+  console.error('ERROR: PLANE_API_KEY is not set. Define it in .env.local (gitignored) or the process environment.');
+  process.exit(1);
 }
 
 const PLANE_HOST = 'api.plane.so';

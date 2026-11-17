@@ -1,7 +1,7 @@
 'use server';
 
 import { verifyRecaptchaToken } from '@/lib/fraud-defense';
-import { headers } from 'next/headers';
+import { resolveProjectId, isStagingProject } from '@/config/environment';
 import { logToDb } from '@/utils/telemetry/dbLogger';
 
 export async function validateAuthAttempt(token: string, action: 'LOGIN' | 'REGISTER', email?: string) {
@@ -9,14 +9,11 @@ export async function validateAuthAttempt(token: string, action: 'LOGIN' | 'REGI
   await logToDb(`${logMessagePrefix} - Initiating validation...`, 'INFO');
   console.log(`[AuthAction] Validating ${action} attempt for ${email || 'anonymous'}`);
   
-  const headersList = await headers();
-  const host = headersList.get('x-original-host') || headersList.get('x-forwarded-host') || headersList.get('host') || '';
-  
-  const isStagingBypassAllowed = 
-    host.includes('dev.memoryweaver.studio') || 
-    host.includes('memory-weaver-dev') || 
-    host.includes('localhost') || 
-    host.includes('127.0.0.1');
+  // SECURITY: the bypass is decided by the server-resolved Firebase project (staging only), NEVER by
+  // request headers (Host / X-Forwarded-Host / X-Original-Host are client-spoofable and would otherwise
+  // let a caller impersonate dev.memoryweaver.studio against a production backend). Fails closed when unknown.
+  const projectId = resolveProjectId();
+  const isStagingBypassAllowed = isStagingProject(projectId);
 
   if (isStagingBypassAllowed && token === 'BYPASS_STAGE_RECAPTCHA') {
     await logToDb(`${logMessagePrefix} - Bypassed reCAPTCHA verification on staging.`, 'INFO');

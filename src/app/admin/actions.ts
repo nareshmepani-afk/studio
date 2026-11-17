@@ -5,6 +5,7 @@ import { verifyAdminWhitelist, getSession } from '@/lib/session';
 import { verifyTotp, generateBase32Secret } from '@/utils/totp';
 import { cookies, headers } from 'next/headers';
 import { SESSION_COOKIE_NAME } from '@/lib/constants';
+import { resolveProjectId, isProductionProject } from '@/config/environment';
 
 export async function verifyAdminCredentials(googleIdToken: string, totpToken?: string) {
   try {
@@ -271,7 +272,8 @@ export async function inviteAdminUser(newEmail: string) {
 export async function getBackendEnvironmentDetails() {
   try {
     const adminApp = (await import('@/lib/firebase-admin')).adminApp;
-    const projectId = adminApp?.options?.projectId || process.env.GCLOUD_PROJECT || 'memory-weaver-dev';
+    // Server-resolved project ID is the source of truth for the environment label (never a client-controllable header).
+    const projectId = resolveProjectId(adminApp?.options?.projectId) || 'unknown';
     
     const headersList = await headers();
     const rawHost = headersList.get('x-original-host') || 
@@ -281,15 +283,12 @@ export async function getBackendEnvironmentDetails() {
 
     let envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV' = 'DEV-APP';
 
-    if (rawHost.includes('localhost') || rawHost.includes('127.0.0.1')) {
-      envContext = 'LOCAL-DEV';
-    } else if (rawHost.startsWith('admin.memoryweaver.studio')) {
+    if (isProductionProject(projectId)) {
       envContext = 'LIVE-PRODUCTION';
-    } else if (rawHost.startsWith('dev.memoryweaver.studio')) {
-      envContext = 'DEV-APP';
+    } else if (rawHost.includes('localhost') || rawHost.includes('127.0.0.1')) {
+      envContext = 'LOCAL-DEV';
     } else {
-      // If hostname doesn't match perfectly but runs in prod project, fallback safely
-      envContext = projectId === 'memory-weaver-8rk9t' ? 'LIVE-PRODUCTION' : 'DEV-APP';
+      envContext = 'DEV-APP';
     }
 
     return {

@@ -4,6 +4,7 @@ import { adminDb, adminAuth, adminApp } from '@/lib/firebase-admin';
 import { UserJourneySnapshot } from '@/types/adminCrm';
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
+import { resolveProjectId } from '@/config/environment';
 
 let cachedKeys: Record<string, string> | null = null;
 let cachedKeysExpiry = 0;
@@ -36,7 +37,9 @@ async function verifyAdminAuth(): Promise<boolean> {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('session')?.value;
     if (!sessionCookie) return false;
-    const projectId = adminApp?.options?.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
+    // Fail closed: never fall back to a hard-coded project (a staging backend must not validate prod-audience tokens).
+    const projectId = resolveProjectId(adminApp?.options?.projectId);
+    if (!projectId) return false;
     const header = jose.decodeProtectedHeader(sessionCookie);
     if (!header.kid) return false;
 

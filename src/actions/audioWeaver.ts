@@ -3,10 +3,18 @@
 import { adminStorage } from '@/lib/firebase-admin';
 import pRetry, { AbortError } from 'p-retry';
 import { getActiveModel } from '@/ai/models.server';
+import { resolveStorageBucket } from '@/config/environment';
 
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 // Safe ambient fallback to prevent stalling the Recording Floor
-const SAFE_BACKUP_URL = "https://firebasestorage.googleapis.com/v0/b/memory-weaver-8rk9t.appspot.com/o/assets%2Fsfx%2Fambient_director_fallback.mp3?alt=media";
+// Derived from the ACTIVE environment's bucket (never a hard-coded other-environment bucket) so staging cannot touch prod assets.
+const FALLBACK_SFX_PATH = "assets%2Fsfx%2Fambient_director_fallback.mp3";
+function getSafeBackupUrl(): string | null {
+  const bucketName = resolveStorageBucket();
+  return bucketName
+    ? `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${FALLBACK_SFX_PATH}?alt=media`
+    : null;
+}
 const GENERATION_TIMEOUT_MS = 45000; // Hard 45s limit as per Directive
 
 /**
@@ -134,8 +142,9 @@ export async function generateSoundtrack(
   } catch (error: any) {
     console.error("[Audio Weaver] PIPELINE FAILURE/TIMEOUT:", error.message || error);
     // Return the safe ambient backup to ensure the user isn't left in silence
-    console.log("[Audio Weaver] Serving cinematic fallback: ", SAFE_BACKUP_URL);
-    return SAFE_BACKUP_URL;
+    const safeBackupUrl = getSafeBackupUrl();
+    console.log("[Audio Weaver] Serving cinematic fallback: ", safeBackupUrl);
+    return safeBackupUrl;
   } finally {
     const memory = process.memoryUsage();
     console.log(`[Audio Weaver] Memory Snapshot (Post-Gen): RSS: ${Math.round(memory.rss / 1024 / 1024)}MB, Heap: ${Math.round(memory.heapUsed / 1024 / 1024)}MB / ${Math.round(memory.heapTotal / 1024 / 1024)}MB`);
