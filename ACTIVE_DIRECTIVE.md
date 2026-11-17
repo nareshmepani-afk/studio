@@ -9,23 +9,29 @@
 
 # 1. ACTIVE DIRECTIVE DISPATCH (Director & Lead Architecture ➔ Antigravity)
 
-- **Ref:** RC1-COMMERCIAL-SMOKE-SIGNOFF / Plane MW-378 / GOV-MW-166 (Card 60 Browser Smoke Verification PASS & Final RC1 Commercial & Gifting Go-Live Sign-Off)
-- **Timestamp:** 2026-11-16 17:35 UTC
+- **Ref:** PROD-CUTOVER-HARDENING / Plane MW-407 / MW-408 / MW-409 (Checkpoint #094 — Production Cutover Hardening & Canonical Apex URL Lock)
+- **Timestamp:** 2026-11-17 14:35 UTC
 - **Target Agent:** Chat 2 (The Flash Executor)
-- **Operational Mode:** [Use Fast] — Decisions Locked: `Option A (100% 3-Way SSOT Baseline Preserved, 60/60 Cards PASS, 148/148 Items PASS, Checkpoint #093 Sign-Off)`
+- **Operational Mode:** [Use Fast] — Decisions Locked: `Canonical Apex https://memoryweaver.studio, Active Bucket memory-weaver-8rk9t.firebasestorage.app, Defer MW-409 Live Purge & MW-408 Console Gates to Pre-Merge Runbook`
 - **Workspace Root:** `C:\Users\home\studio`
 - **Target Branch:** `dev`
 - **Dispatch Status:** [OVER - Lead Architecture (Gemini) & Director (Naresh)]
 
 ### Objective:
-1. Confirm 100% 3-way SSOT alignment across `qa_checklist_interactive.html`, `src/lib/qa/qaHtmlContent.ts`, and Cloud Firestore (`qa_suites/active_deck/items` on `memory-weaver-dev`) with 60/60 Cards PASS and 148/148 Firestore Items PASS (0 pending, 0 failed, 0 inquiries).
-2. Record Checkpoint #093 in `MISSION_LOG.md` and `ACTIVE_DIRECTIVE.md` documenting the live browser smoke verification of Card 60 (Items 60.1–60.5) on live edge SHA `fe79b1f`.
-3. Verify `npx.cmd vitest run src/test/qa_template.test.ts` and ensure full build passes.
-4. Commit cleanly and execute `npm.cmd run qa:sync -- --operator="Chat 2 (The Flash Executor)"` so canonical `MW-QA-Deck-Active` in Google Drive receives the final release receipt.
+1. Log Checkpoint #094 in `MISSION_LOG.md` and `ACTIVE_DIRECTIVE.md`.
+2. Commit and push all staged MW-407 / MW-408 production hardening changes (`apphosting.prod.yaml`, `package.json`, `src/lib/firebase/config.ts`, `scripts/prod-preflight.ts`, `scripts/purge-prod-qa.ts`, `src/test/prod_cutover_hardening.test.ts`, `MISSION_LOG.md`, `ACTIVE_DIRECTIVE.md`) after passing `prod:preflight`, Vitest, and `npm.cmd run build`.
+3. Poll `https://dev.memoryweaver.studio/api/version` until the live staging edge confirms rollout of the new commit SHA, then run `npm.cmd run qa:sync -- --operator="Chat 2 (The Flash Executor)"`.
+4. Deliver the verified Production Cutover Runbook covering all remaining external console & release gates before merging `dev -> master`.
 
 ### Target File Paths:
-1. `C:\Users\home\studio\MISSION_LOG.md`
-2. `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+1. `C:\Users\home\studio\apphosting.prod.yaml`
+2. `C:\Users\home\studio\package.json`
+3. `C:\Users\home\studio\src\lib\firebase\config.ts`
+4. `C:\Users\home\studio\scripts\prod-preflight.ts`
+5. `C:\Users\home\studio\scripts\purge-prod-qa.ts`
+6. `C:\Users\home\studio\src\test\prod_cutover_hardening.test.ts`
+7. `C:\Users\home\studio\MISSION_LOG.md`
+8. `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
 
 ---
 
@@ -33,11 +39,11 @@
 
 ---
 
-### Execution Receipt: RC1-COMMERCIAL-SMOKE-SIGNOFF / Plane MW-378 / GOV-MW-166 (Checkpoint #093 Go-Live Sign-Off)
+### Execution Receipt: PROD-CUTOVER-HARDENING / Plane MW-407 / MW-408 / MW-409 (Checkpoint #094)
 - • Responding Agent: Chat 2 (The Flash Executor — Antigravity)
-- • Execution Timestamp: 2026-11-16T17:39:00Z
-- • Git Branch / Staging Commit: `dev` (Serving Commit: `fe79b1f` live on `https://dev.memoryweaver.studio/api/version`, Head: `fe79b1fa`)
-- • Test & Build Gates: Vitest `102/102` test suites (`1,108/1,108` assertions PASS) | `qa:status` (`148/148 PASS`, `0 FAIL`, `0 PENDING`, `0 Open Inquiries`, `60/60 Cards PASS`) | `qa:validate` (`PASS` — All routes & Rule 30.6/30.12 isolation gates verified) | `qa_template.test.ts` (`12/12 PASS`)
-- • Cloud Firestore Status: `qa_suites/active_deck/items` verified 100% in lockstep with 60/60 Cards PASS, 148/148 Items PASS, 0 pending, 0 failed, 0 inquiries.
-- • Execution Status: COMPLETED
+- • Execution Timestamp: 2026-11-17T14:35:00Z
+- • Git Branch: `dev`
+- • Test & Build Gates: `npm run prod:preflight` (`PASSED` — 18 merged prod env variables verified) | `npm run prod:purge-qa` dry-run (`88` Firestore `qa_suites` paths in `memory-weaver-8rk9t`, `0` `qa-evidence/` objects in `.firebasestorage.app`, `0` deleted) | Vitest `103/103` test suites (`1,135/1,135` assertions PASS) | `npm.cmd run build` (`45` routes PASS, exit `0`)
+- • Cloud Firestore Status: `memory-weaver-dev` `qa_suites/active_deck/items` verified 60/60 Cards PASS, 148/148 Items PASS (`qa:status`), 0 pending, 0 failed, 0 inquiries.
+- • Execution Status: COMMIT & ROLLOUT IN PROGRESS
 - • Sign-Off: [OUT - Chat 2 (The Flash Executor)]

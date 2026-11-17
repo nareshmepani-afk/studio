@@ -277,3 +277,91 @@ describe('MW-403 / MW-404 / Hygiene: Commit 2 QA Admin APIs, crmActions & Stagin
     vi.doUnmock('@/lib/firebaseAdmin');
   });
 });
+
+describe('MW-407 / MW-408: apphosting.prod.yaml hardening & prod-preflight fail-closed checks', () => {
+  it('passes full production preflight audit against repository apphosting.yaml + apphosting.prod.yaml', async () => {
+    const { runProdPreflightAudit } = await import('../../scripts/prod-preflight');
+    const report = runProdPreflightAudit(ROOT);
+    expect(report.failures).toEqual([]);
+    expect(report.passed).toBe(true);
+    expect(report.mergedVariables.NEXT_PUBLIC_BYPASS_CAPTCHA?.value).toBe('false');
+    expect(report.mergedVariables.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.value).toBe('memory-weaver-8rk9t');
+    expect(report.mergedVariables.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.value).toBe('memory-weaver-8rk9t.firebasestorage.app');
+    expect(report.mergedVariables.GOOGLE_CLOUD_PROJECT_ID?.value).toBe('memory-weaver-8rk9t');
+    expect(report.mergedVariables.NEXT_PUBLIC_APP_URL?.value).toBe('https://memoryweaver.studio');
+    expect(read('src/lib/firebase/config.ts')).not.toContain('memory-weaver-8rk9t.appspot.com');
+  });
+
+  it('fails closed when NEXT_PUBLIC_BYPASS_CAPTCHA leaks from base apphosting.yaml or is set to true', async () => {
+    const { parseAppHostingEnv, validateMergedProdConfig } = await import('../../scripts/prod-preflight');
+    const base = parseAppHostingEnv(read('apphosting.yaml'));
+    const prod = parseAppHostingEnv(read('apphosting.prod.yaml'));
+
+    const missingBypass = prod.filter((e) => e.variable !== 'NEXT_PUBLIC_BYPASS_CAPTCHA');
+    expect(validateMergedProdConfig(base, missingBypass).some((m) => m.includes('NEXT_PUBLIC_BYPASS_CAPTCHA'))).toBe(true);
+
+    const trueBypass = prod.map((e) =>
+      e.variable === 'NEXT_PUBLIC_BYPASS_CAPTCHA' ? { ...e, value: 'true' } : e
+    );
+    expect(validateMergedProdConfig(base, trueBypass).some((m) => m.includes('NEXT_PUBLIC_BYPASS_CAPTCHA'))).toBe(true);
+  });
+
+  it('fails closed on placeholder reCAPTCHA site keys or leaked staging/dev strings', async () => {
+    const { parseAppHostingEnv, validateMergedProdConfig } = await import('../../scripts/prod-preflight');
+    const base = parseAppHostingEnv(read('apphosting.yaml'));
+    const prod = parseAppHostingEnv(read('apphosting.prod.yaml'));
+
+    const missingSiteKey = prod.filter((e) => e.variable !== 'NEXT_PUBLIC_RECAPTCHA_SITE_KEY');
+    const siteKeyFailures = validateMergedProdConfig(base, missingSiteKey);
+    expect(siteKeyFailures.some((m) => m.includes('NEXT_PUBLIC_RECAPTCHA_SITE_KEY') && m.includes('placeholder'))).toBe(true);
+
+    const leakedDevUrl = prod.map((e) =>
+      e.variable === 'NEXT_PUBLIC_APP_URL' ? { ...e, value: 'https://dev.memoryweaver.studio' } : e
+    );
+    expect(validateMergedProdConfig(base, leakedDevUrl).some((m) => m.includes('CANONICAL_PROD_APP_URL') || m.includes('https://memoryweaver.studio'))).toBe(true);
+
+    const nonApexUrl = prod.map((e) =>
+      e.variable === 'NEXT_PUBLIC_APP_URL' ? { ...e, value: 'https://app.memoryweaver.studio' } : e
+    );
+    expect(validateMergedProdConfig(base, nonApexUrl).some((m) => m.includes('https://memoryweaver.studio'))).toBe(true);
+
+    const leakedTestStripe = [...prod, { variable: 'STRIPE_SECRET_KEY', value: 'sk_test_12345' }];
+    expect(validateMergedProdConfig(base, leakedTestStripe).some((m) => m.includes('Stripe test-mode key'))).toBe(true);
+  });
+});
+
+describe('MW-409: purge-prod-qa refuses staging and defaults to dry-run', () => {
+  it('assertProdPurgeTarget refuses memory-weaver-dev even with --confirm-prod', async () => {
+    const { assertProdPurgeTarget } = await import('../../scripts/purge-prod-qa');
+    expect(() =>
+      assertProdPurgeTarget(
+        {
+          project_id: 'memory-weaver-dev',
+          client_email: 'a@memory-weaver-dev.iam.gserviceaccount.com',
+          private_key: '---KEY---',
+        },
+        ['--confirm-prod']
+      )
+    ).toThrow(/REFUSED/);
+    expect(() => assertProdPurgeTarget(null, ['--confirm-prod'])).toThrow(/Missing valid/);
+  });
+
+  it('defaults to dryRun: true unless --confirm-prod is passed for memory-weaver-8rk9t', async () => {
+    const { assertProdPurgeTarget } = await import('../../scripts/purge-prod-qa');
+    const prodSa = {
+      project_id: 'memory-weaver-8rk9t',
+      client_email: 'a@memory-weaver-8rk9t.iam.gserviceaccount.com',
+      private_key: '---KEY---',
+    };
+    expect(assertProdPurgeTarget(prodSa, [])).toEqual({
+      projectId: 'memory-weaver-8rk9t',
+      dryRun: true,
+      includeStorage: false,
+    });
+    expect(assertProdPurgeTarget(prodSa, ['--confirm-prod'])).toEqual({
+      projectId: 'memory-weaver-8rk9t',
+      dryRun: false,
+      includeStorage: false,
+    });
+  });
+});

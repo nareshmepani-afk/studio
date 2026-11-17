@@ -12,13 +12,13 @@
 
 - **Active Sprint:** Sprint 5 — Fireside Video Studio, Heirloom Folio Navigation & 60/60 QA SSOT Baseline
 
-- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Serving Commit: `fe79b1f`, Head: `fe79b1fa`)
+- **Target Edge Environment:** `https://dev.memoryweaver.studio` (Production Cutover Hardening Baseline, Head: `dev`)
 
 - **Active Governance Document:** `C:\Users\home\studio\.agents\AGENTS.md` (Rules 1–61 Codified)
 
 - **Executive Knowledge Vault:** NotebookLM `🏛️ Memory Weaver: Executive Board & Architecture Vault`
 
-- **Current Invariant Test Baseline:** 1,108 / 1,108 Vitest Tests Passing (102 Test Files)
+- **Current Invariant Test Baseline:** 1,135 / 1,135 Vitest Tests Passing (103 Test Files)
 
 - **Interactive Verification Suite:** qa_checklist_interactive.html (60 / 60 Test Cards Verified PASS • 148 / 148 Firestore Items PASS)
 
@@ -2284,5 +2284,25 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - 🎬 **Creative Director & Gatekeeper (Gemini)**: Executed live browser smoke verification of Card 60 across `/pricing`, `/gift`, `/gift/confirmation`, `/unboxing/MW-VAULT-4DY3-98SW`, `/remote?sessionId=test-session-rc1`, and `/admin/mfa-setup`, confirming all 5 sub-items verified PASS on live edge SHA `fe79b1f`. Approved Option A Go-Live Sign-Off locking our 100% 3-way SSOT baseline.
   - ⚡ **Chat 2 (The Flash Executor / Equal Co-Architect)**: Verified clean git status, zero pending card drift in Firestore, updated platform coordinates and flight recorder checkpoints, and synced canonical release receipt to `MW-QA-Deck-Active` (`17_Nuc3VTM1DC9V9kII9dej-Q_5XL70Rl-mZN7uA-O3c`) in Google Drive.
 - **Target Files Impacted:**
+  - `C:\Users\home\studio\MISSION_LOG.md`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+
+
+### [2026-11-17 14:35 UTC / 14:35 GMT] — Checkpoint #094 - Production Cutover Security Hardening, Storage Bucket Fix & Canonical Apex URL Lock (MW-402–MW-409)
+- **Commit & Edge Status:** Security & cutover hardening executed across `dc13a61b` (Commit 1: B1/B4/project-gated reCAPTCHA), `4bc5296b` (Commit 2: Option A Admin-Gated QA APIs, `stagingAdmin.ts` lock, unified `firestore.rules`/`storage.rules` deployed to `memory-weaver-dev`, `crmActions` fix, `users.json` & static HTML removal), and Checkpoint #094 (`apphosting.prod.yaml` hardening, canonical apex `https://memoryweaver.studio` lock, active `.firebasestorage.app` bucket fix, `prod:preflight`, and `prod:purge-qa`).
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper (Naresh & Lead Architecture)**: Locked canonical production apex URL (`https://memoryweaver.studio` with `www` 301-redirecting to apex), approved Option A admin-gated QA APIs and fail-closed `prod:preflight`, rotated `memory-weaver-dev` service account keys (`MW-406` Done), and scheduled `MW-408` / `MW-409` console verification gates immediately prior to `dev -> master` merge.
+  - ⚡ **Chat 2 & Gemini Strategic Co-Architects**:
+    - **App Hosting Production Hardening (`apphosting.prod.yaml`)**: Explicitly overrode `NEXT_PUBLIC_BYPASS_CAPTCHA: "false"`, wired real production reCAPTCHA Enterprise key `6LeeZdIsAAAAAN1jn9Pw3z1VZfB8zmLZTwqDYZMK`, set `GOOGLE_CLOUD_PROJECT_ID: 'memory-weaver-8rk9t'`, locked `NEXT_PUBLIC_APP_URL: 'https://memoryweaver.studio'`, and updated `NEXT_PUBLIC_CACHE_BUST: "2026-11-17-PROD-RC1"` so zero staging/placeholder values leak from `apphosting.yaml`.
+    - **Critical Production Storage Bucket Fix (`apphosting.prod.yaml`, `src/lib/firebase/config.ts`)**: Replaced non-existent `memory-weaver-8rk9t.appspot.com` with verified active GCS bucket `memory-weaver-8rk9t.firebasestorage.app` after Admin SDK dry-run caught `The specified bucket does not exist`.
+    - **Fail-Closed Preflight & MW-409 Purge Guards (`scripts/prod-preflight.ts`, `scripts/purge-prod-qa.ts`, `src/test/prod_cutover_hardening.test.ts`)**: Authored `npm run prod:preflight` to audit merged App Hosting production config, security rules, and repo hygiene; authored dry-run-first `npm run prod:purge-qa` strictly locked to `memory-weaver-8rk9t` (requiring `--confirm-prod`; dry-run identified 88 legacy `qa_suites` Firestore paths in Prod and 0 `qa-evidence/` objects); expanded Vitest suite to `1,135 / 1,135` assertions passing across `103` test files (`24/24` in `prod_cutover_hardening.test.ts`).
+    - **Plane.so Synchronisation**: Closed `MW-402`, `MW-403`, `MW-404`, `MW-406`, `MW-407`; updated `MW-408` with final DNS/SSL, Auth Authorized Domains, Stripe Live Webhook, Branch Binding, and Secret Manager gate checklist; `MW-405` (Plane key rotation) & `MW-409` (live `--confirm-prod` purge + `users.json` history audit) queued for cutover window.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\apphosting.prod.yaml`
+  - `C:\Users\home\studio\package.json`
+  - `C:\Users\home\studio\src\lib\firebase\config.ts`
+  - `C:\Users\home\studio\scripts\prod-preflight.ts`
+  - `C:\Users\home\studio\scripts\purge-prod-qa.ts`
+  - `C:\Users\home\studio\src\test\prod_cutover_hardening.test.ts`
   - `C:\Users\home\studio\MISSION_LOG.md`
   - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`

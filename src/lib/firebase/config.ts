@@ -7,7 +7,7 @@ const productionConfig = {
   apiKey: "AIzaSyANRmF5M5guN3PJ-IDw-3a8W3WaIvk-NJE",
   authDomain: 'memory-weaver-8rk9t.firebaseapp.com',
   projectId: 'memory-weaver-8rk9t',
-  storageBucket: 'memory-weaver-8rk9t.appspot.com',
+  storageBucket: 'memory-weaver-8rk9t.firebasestorage.app',
   messagingSenderId: '67296998103',
   appId: '1:67296998103:web:f48699405c37bcf4567692',
 };

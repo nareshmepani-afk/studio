@@ -24,6 +24,8 @@
     "qa:inquiries": "tsx scripts/read-qa-inquiries.ts",
     "qa:validate": "tsx scripts/validate-qa-deck.ts",
     "qa:seed": "tsx scripts/seed-qa-firestore.ts",
+    "prod:preflight": "tsx scripts/prod-preflight.ts",
+    "prod:purge-qa": "tsx scripts/purge-prod-qa.ts",
     "prepare": "husky"
   },
   "dependencies": {
