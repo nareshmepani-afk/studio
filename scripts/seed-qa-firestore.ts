@@ -1,19 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDocs, collection, writeBatch } from 'firebase/firestore';
-
-const stagingConfig = {
-  apiKey: 'AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98',
-  authDomain: 'memory-weaver-dev.firebaseapp.com',
-  projectId: 'memory-weaver-dev',
-  storageBucket: 'memory-weaver-dev.firebasestorage.app',
-  messagingSenderId: '98973313245',
-  appId: '1:98973313245:web:bbe45fb78d08d0563c1334',
-};
-
-const app = getApps().length ? getApps()[0] : initializeApp(stagingConfig);
-const db = getFirestore(app);
+import { getStagingAdmin } from './lib/stagingAdmin';
 
 const COLLECTION_PATH = 'qa_suites/active_deck/items';
 
@@ -96,13 +83,15 @@ export async function seedQaFirestore() {
     '54.2': 'Resolved on staging commit 3cead48: Enforced grid-cols-[minmax(0,1fr)] on StudioDeckGrid, bounded FilofaxDesktopSpine vertically at top-20 right-0 bottom-24, added md:pr-16 lg:pr-72 right-edge clearance to ProductionDeck header and footer dock, and deduplicated inner padding in ProductionControlBar. Verified PASS across 768px, 1032px, and 1920px.'
   };
 
-  console.log('📖 Fetching existing docs from memory-weaver-dev to ensure idempotency...');
-  const snap = await getDocs(collection(db, COLLECTION_PATH));
+  console.log('📖 Fetching existing docs from memory-weaver-dev via Admin SDK...');
+  const { adminDb } = getStagingAdmin();
+  const colRef = adminDb.collection(COLLECTION_PATH);
+  const snap = await colRef.get();
   const existingMap = new Map<string, any>();
   snap.forEach((d) => existingMap.set(d.id, d.data()));
   console.log(`Found ${existingMap.size} existing items on memory-weaver-dev.`);
 
-  const batch = writeBatch(db);
+  const batch = adminDb.batch();
   let created = 0;
   let preserved = 0;
 
@@ -131,7 +120,7 @@ export async function seedQaFirestore() {
       const existing = existingMap.get(itemId);
 
       if (isSuperseded) {
-        const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
+        const itemRef = colRef.doc(itemId);
         batch.set(itemRef, {
           id: itemId,
           cardNumber: cardNum,
@@ -146,7 +135,7 @@ export async function seedQaFirestore() {
         }, { merge: true });
         preserved++;
       } else if (existing) {
-        const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
+        const itemRef = colRef.doc(itemId);
         batch.set(itemRef, {
           title: cardTitle,
           targetRoute: cardRoute,
@@ -155,7 +144,7 @@ export async function seedQaFirestore() {
         }, { merge: true });
         preserved++;
       } else {
-        const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
+        const itemRef = colRef.doc(itemId);
         batch.set(itemRef, {
           id: itemId,
           cardNumber: cardNum,
@@ -200,7 +189,7 @@ export async function seedQaFirestore() {
         }
 
         if (existing) {
-          const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
+          const itemRef = colRef.doc(itemId);
           batch.set(itemRef, {
             title: itemTitle,
             targetRoute: itemRoute,
@@ -217,7 +206,7 @@ export async function seedQaFirestore() {
         }
 
         const verdict = isSubDefaultPass ? 'PASS' : 'PENDING';
-        const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
+        const itemRef = colRef.doc(itemId);
         batch.set(itemRef, {
           id: itemId,
           cardNumber: cardNum,
@@ -241,7 +230,7 @@ export async function seedQaFirestore() {
 
       // Ensure parent card document exists and matches defaultCardVerdicts / sub-item completion
       const parentId = String(cardNum);
-      const parentRef = doc(db, 'qa_suites', 'active_deck', 'items', parentId);
+      const parentRef = colRef.doc(parentId);
       if (existingMap.has(parentId)) {
         batch.set(parentRef, {
           title: cardTitle,

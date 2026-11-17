@@ -149,3 +149,131 @@ describe('validateAuthAttempt: reCAPTCHA bypass is project-gated (header-spoof p
     expect(verifyMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('MW-403 / MW-404 / Hygiene: Commit 2 QA Admin APIs, crmActions & Staging Lock', () => {
+  it('removes static public/qa_checklist_interactive.html and users.json from repo & ignores them', () => {
+    expect(fs.existsSync(path.join(ROOT, 'public/qa_checklist_interactive.html'))).toBe(false);
+    expect(fs.existsSync(path.join(ROOT, 'users.json'))).toBe(false);
+    const gitignore = read('.gitignore');
+    expect(gitignore).toContain('users.json');
+    expect(gitignore).toContain('.env.staging.local');
+    const genDocs = read('scripts/generateLivingDocs.js');
+    expect(genDocs).not.toContain('public/qa_checklist_interactive.html');
+  });
+
+  it('qa_checklist_interactive.html & qaFirebaseService route via /api/admin/qa/* and accept legacy + new evidence URLs', () => {
+    const qaHtml = read('qa_checklist_interactive.html');
+    expect(qaHtml).not.toContain('https://www.gstatic.com/firebasejs/');
+    expect(qaHtml).toContain('/api/admin/qa/items');
+    expect(qaHtml).toContain('/api/admin/qa/evidence');
+    expect(qaHtml).toContain('/api/admin/qa/fixtures');
+    expect(qaHtml).toContain('function isCloudScreenshotUrl(');
+    expect(qaHtml).toContain("url.startsWith('/api/admin/qa/evidence')");
+    expect(qaHtml).toContain("url.startsWith('https://')");
+
+    const qaSvc = read('src/lib/qa/qaFirebaseService.ts');
+    expect(qaSvc).not.toContain('firebase/firestore');
+    expect(qaSvc).not.toContain('firebase/storage');
+    expect(qaSvc).toContain('/api/admin/qa/items');
+    expect(qaSvc).toContain('/api/admin/qa/evidence');
+  });
+
+  it('assertStagingServiceAccount refuses production memory-weaver-8rk9t and accepts memory-weaver-dev', async () => {
+    const { assertStagingServiceAccount } = await import('../../scripts/lib/stagingAdmin');
+    expect(() =>
+      assertStagingServiceAccount({
+        project_id: 'memory-weaver-8rk9t',
+        client_email: 'a@b.iam.gserviceaccount.com',
+        private_key: '---KEY---',
+      })
+    ).toThrow(/REFUSED/);
+    expect(() => assertStagingServiceAccount(null)).toThrow(/Missing valid/);
+
+    const ok = assertStagingServiceAccount({
+      project_id: 'memory-weaver-dev',
+      client_email: 'a@memory-weaver-dev.iam.gserviceaccount.com',
+      private_key: '---KEY---',
+    });
+    expect(ok.project_id).toBe('memory-weaver-dev');
+  });
+
+  it('crmActions uses SESSION_COOKIE_NAME and requires isAdmin === true && mfaVerified === true', () => {
+    const crm = read('src/actions/crmActions.ts');
+    expect(crm).toContain('cookieStore.get(SESSION_COOKIE_NAME)');
+    expect(crm).not.toContain("cookieStore.get('session')");
+    expect(crm).toContain('payload.isAdmin === true && payload.mfaVerified === true');
+    expect(crm).not.toContain('payload.admin');
+  });
+
+  it('rejects unauthenticated requests on /api/qa/cleanup-fixtures and /api/admin/qa/* (401/403)', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/session', () => ({
+      requireAdminSession: vi.fn().mockResolvedValue({
+        authorized: false,
+        status: 401,
+        error: 'Unauthorised: Admin session required',
+      }),
+    }));
+
+    const { POST: cleanupPost } = await import('@/app/api/qa/cleanup-fixtures/route');
+    const { GET: itemsGet, PATCH: itemsPatch } = await import('@/app/api/admin/qa/items/route');
+    const { GET: evGet, POST: evPost } = await import('@/app/api/admin/qa/evidence/route');
+    const { GET: fixGet, POST: fixPost, DELETE: fixDel } = await import('@/app/api/admin/qa/fixtures/route');
+
+    expect((await cleanupPost(new Request('http://localhost/api/qa/cleanup-fixtures', { method: 'POST', body: '{}' }))).status).toBe(401);
+    expect((await itemsGet()).status).toBe(401);
+    expect((await itemsPatch(new Request('http://localhost/api/admin/qa/items', { method: 'PATCH', body: '{}' }))).status).toBe(401);
+    expect((await evGet({ nextUrl: new URL('http://localhost/api/admin/qa/evidence?path=qa-evidence/54/a.png') } as any)).status).toBe(401);
+    expect((await evPost(new Request('http://localhost/api/admin/qa/evidence', { method: 'POST' }))).status).toBe(401);
+    expect((await fixGet({ nextUrl: new URL('http://localhost/api/admin/qa/fixtures') } as any)).status).toBe(401);
+    expect((await fixPost(new Request('http://localhost/api/admin/qa/fixtures', { method: 'POST', body: '{}' }))).status).toBe(401);
+    expect((await fixDel(new Request('http://localhost/api/admin/qa/fixtures', { method: 'DELETE', body: '{}' }))).status).toBe(401);
+    vi.doUnmock('@/lib/session');
+  });
+
+  it('PATCH /api/admin/qa/items preserves legacy https:// URLs and /api/admin/qa/evidence?path=... URLs when authorized', async () => {
+    vi.resetModules();
+    const setMock = vi.fn().mockResolvedValue(undefined);
+    const docMock = vi.fn(() => ({ set: setMock }));
+    const colMock = vi.fn(() => ({ doc: docMock }));
+
+    vi.doMock('@/lib/session', () => ({
+      requireAdminSession: vi.fn().mockResolvedValue({
+        authorized: true,
+        session: { uid: 'admin-1', email: 'nareshmepani@googlemail.com', isAdmin: true, mfaVerified: true },
+      }),
+    }));
+    vi.doMock('@/lib/firebaseAdmin', () => ({
+      adminDb: { collection: colMock },
+      adminAuth: null,
+      adminStorage: null,
+    }));
+
+    const { PATCH } = await import('@/app/api/admin/qa/items/route');
+    const legacyUrl = 'https://firebasestorage.googleapis.com/v0/b/memory-weaver-dev.firebasestorage.app/o/qa-evidence%2F52%2F52.1_1793982716576.png?alt=media&token=4782aae5';
+    const newUrl = '/api/admin/qa/evidence?path=qa-evidence%2F60%2F60.1_1234.png';
+
+    const res = await PATCH(
+      new Request('http://localhost/api/admin/qa/items', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: '52.1',
+          updates: { screenshots: [legacyUrl, newUrl, 'javascript:alert(1)'] },
+        }),
+      })
+    );
+
+    expect(res.status).toBe(200);
+    expect(docMock).toHaveBeenCalledWith('52.1');
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        screenshots: [legacyUrl, newUrl],
+        updatedBy: 'nareshmepani@googlemail.com',
+      }),
+      { merge: true }
+    );
+    vi.doUnmock('@/lib/session');
+    vi.doUnmock('@/lib/firebaseAdmin');
+  });
+});

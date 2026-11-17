@@ -11600,6 +11600,18 @@
       }
     }
 
+    function isCloudScreenshotUrl(url) {
+      return Boolean(url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/api/admin/qa/evidence')));
+    }
+
+    function formatExportScreenshotUrl(url) {
+      if (!url) return '';
+      if (url.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
+        return window.location.origin + url;
+      }
+      return url;
+    }
+
     function addItemImage(cardNum, itemNum, file) {
       if (!file) return;
       const key = `${cardNum}_${itemNum}`;
@@ -11622,7 +11634,7 @@
               saveState();
               if (window.__syncDocToFirestore) {
                 window.__syncDocToFirestore(`${cardNum}.${itemNum}`, {
-                  screenshots: itemImages[key].filter(s => s && s.startsWith('http'))
+                  screenshots: itemImages[key].filter(isCloudScreenshotUrl)
                 });
               }
               showToast(`☁️ Screenshot uploaded to Cloud Storage!`);
@@ -11645,7 +11657,7 @@
       saveState();
       if (window.__syncDocToFirestore) {
         window.__syncDocToFirestore(`${cardNum}.${itemNum}`, {
-          screenshots: itemImages[key].filter(s => s && s.startsWith('http'))
+          screenshots: itemImages[key].filter(isCloudScreenshotUrl)
         });
       }
     }
@@ -11679,7 +11691,7 @@
         list.forEach((url, idx) => {
           const div = document.createElement('div');
           div.className = 'relative group rounded-lg overflow-hidden border border-gray-700 aspect-video bg-black';
-          const isCloud = url && url.startsWith('http');
+          const isCloud = isCloudScreenshotUrl(url);
           div.innerHTML = `
             <img src="${url}" class="w-full h-full object-cover cursor-pointer" onclick="window.open('${url}', '_blank')" title="${isCloud ? 'Click to open full 4K screenshot in new tab' : 'Local screenshot'}" />
             ${isCloud ? `<span class="absolute bottom-1 left-1 bg-black/80 text-amber-300 rounded px-1.5 py-0.5 text-[9px] font-mono border border-amber-500/30">☁️ Cloud</span>` : `<span class="absolute bottom-1 left-1 bg-black/80 text-gray-400 rounded px-1.5 py-0.5 text-[9px] font-mono">Local</span>`}
@@ -11744,7 +11756,7 @@
         saveState();
         if (window.__syncDocToFirestore) {
           window.__syncDocToFirestore(`${cardNum}.${itemNum}`, {
-            screenshots: shotList.filter(u => u && u.startsWith('http'))
+            screenshots: shotList.filter(isCloudScreenshotUrl)
           });
         }
         if (btn) btn.innerHTML = origText;
@@ -11753,8 +11765,8 @@
       let shotsSection = `- Screenshots Attached: ${shotList.length}`;
       if (shotList.length > 0) {
         shotsSection += '\n' + shotList.map((url, i) => {
-          if (url && url.startsWith('http')) {
-            return `  - Screenshot ${i + 1}: ${url}`;
+          if (isCloudScreenshotUrl(url)) {
+            return `  - Screenshot ${i + 1}: ${formatExportScreenshotUrl(url)}`;
           } else {
             return `  - Screenshot ${i + 1}: [Local image attached in browser]`;
           }
@@ -12285,8 +12297,8 @@ ${shotsSection}`;
             const shots = itemImages[k] || [];
           let iShots = '';
           if (shots.length > 0) {
-            const urls = shots.filter(u => u && u.startsWith('http'));
-            iShots = urls.length > 0 ? ` | Screenshots (${shots.length}): ${urls.map((u, idx) => `[#${idx + 1}](${u})`).join(', ')}` : ` | Screenshots: ${shots.length}`;
+            const urls = shots.filter(isCloudScreenshotUrl);
+            iShots = urls.length > 0 ? ` | Screenshots (${shots.length}): ${urls.map((u, idx) => `[#${idx + 1}](${formatExportScreenshotUrl(u)})`).join(', ')}` : ` | Screenshots: ${shots.length}`;
           }
             subItemsBlock += `  - Item ${i}.${sub}: ${iv}${iNote}${iCon}${iTel}${iShots}\n`;
           }
@@ -12642,102 +12654,98 @@ ${subItemsBlock}`;
     }
   </script>
 
-  <!-- FIREBASE CLOUD FIRESTORE REAL-TIME SYNC & LIVE PERSONA PROBE -->
+  <!-- ADMIN-GATED SERVER QA ENGINE (Option A — MW-404: Admin SDK APIs behind __session + isAdmin/mfaVerified) -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-    const stagingConfig = {
-      apiKey: "AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98",
-      authDomain: 'memory-weaver-dev.firebaseapp.com',
-      projectId: "memory-weaver-dev",
-      storageBucket: "memory-weaver-dev.firebasestorage.app",
-      messagingSenderId: "98973313245",
-      appId: "1:98973313245:web:bbe45fb78d08d0563c1334",
-    };
-
     const TESTER_UID = 'TQdB395kXxaAGPhFxk1LVWuT8cg2';
 
     try {
-      const app = initializeApp(stagingConfig, 'qa-active-deck-bridge');
-      const db = getFirestore(app);
-      const storage = getStorage(app);
-      const colRef = collection(db, 'qa_suites', 'active_deck', 'items');
-
-      // Cloud storage upload for screenshot evidence
+      // Admin-gated Cloud Storage upload for screenshot evidence (POST /api/admin/qa/evidence)
       window.__uploadQaScreenshot = async function(cardNum, itemId, fileOrBlob) {
         try {
-          const filename = `${itemId}_${Date.now()}.png`;
-          const storageRef = ref(storage, `qa-evidence/${cardNum}/${filename}`);
-          const snapshot = await uploadBytes(storageRef, fileOrBlob, {
-            contentType: fileOrBlob.type || 'image/png'
+          const formData = new FormData();
+          formData.append('cardNum', String(cardNum));
+          formData.append('itemId', String(itemId));
+          formData.append('file', fileOrBlob, `${itemId}_${Date.now()}.png`);
+
+          const res = await fetch('/api/admin/qa/evidence', {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: formData
           });
-          const downloadUrl = await getDownloadURL(snapshot.ref);
-          return downloadUrl;
+          if (!res.ok) {
+            console.warn('[QA Cloud Storage] Admin upload rejected:', res.status);
+            return null;
+          }
+          const data = await res.json();
+          return data?.url || null;
         } catch (err) {
           console.warn('[QA Cloud Storage] Upload failed:', err);
           return null;
         }
       };
 
-      // Real-time Firestore sync
+      // Admin-gated Firestore item upsert (PATCH /api/admin/qa/items)
       window.__syncDocToFirestore = async function(itemId, updates) {
         try {
-          const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', String(itemId));
-          await setDoc(itemRef, {
-            ...updates,
-            updatedAt: Date.now(),
-            updatedBy: 'tester@dev.memoryweaver.studio'
-          }, { merge: true });
+          const res = await fetch('/api/admin/qa/items', {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: String(itemId), updates })
+          });
+          if (!res.ok) {
+            console.warn('[Cloud Sync] Admin item update rejected:', res.status);
+          }
         } catch (e) {
-          console.warn('[Cloud Sync] Failed to update Firestore:', e);
+          console.warn('[Cloud Sync] Failed to update Firestore via Admin API:', e);
         }
       };
 
-      // Provision sandbox scene in Firestore directly
+      // Admin-gated sandbox scene fixture provisioner (POST /api/admin/qa/fixtures)
       window.__provisionFixtureInCloud = async function(docId, sceneId) {
-        const payload = {
-          id: docId,
-          userId: TESTER_UID,
-          sceneId: sceneId || 'part-1-scene-1',
-          promptId: sceneId || 'part-1-scene-1',
-          title: 'QA Sandbox Scene',
-          prose: '',
-          isQATestFixture: true,
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-        };
-        const userMemRef = doc(db, 'users', TESTER_UID, 'memories', docId);
-        await setDoc(userMemRef, payload, { merge: true });
-        const rootMemRef = doc(db, 'memories', docId);
-        await setDoc(rootMemRef, payload, { merge: true });
-        console.log(`🧪 [Sandbox Seeder] Provisioned ${docId} in Firestore.`);
+        const res = await fetch('/api/admin/qa/fixtures', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: TESTER_UID,
+            docId,
+            sceneId: sceneId || 'part-1-scene-1'
+          })
+        });
+        if (!res.ok) {
+          throw new Error(`Admin fixture provision failed (${res.status})`);
+        }
+        console.log(`🧪 [Sandbox Seeder] Provisioned ${docId} via Admin API.`);
+        await pollPersonaFixtureProbe();
       };
 
-      // Reset sandbox scene in Firestore directly
+      // Admin-gated sandbox scene fixture reset (DELETE /api/admin/qa/fixtures)
       window.__resetFixtureInCloud = async function(docId) {
-        const userMemRef = doc(db, 'users', TESTER_UID, 'memories', docId);
-        await deleteDoc(userMemRef).catch(() => {});
-        const rootMemRef = doc(db, 'memories', docId);
-        await deleteDoc(rootMemRef).catch(() => {});
-        console.log(`🔄 [Sandbox Seeder] Purged ${docId} from Firestore.`);
+        await fetch('/api/admin/qa/fixtures', {
+          method: 'DELETE',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: TESTER_UID, docId })
+        }).catch(() => {});
+        console.log(`🔄 [Sandbox Seeder] Purged ${docId} via Admin API.`);
+        await pollPersonaFixtureProbe();
       };
 
-      // Live Browser Firestore onSnapshot Probe on Tester Memories (Refinement 1)
-      const userMemsCol = collection(db, 'users', TESTER_UID, 'memories');
-      onSnapshot(userMemsCol, (snap) => {
-        const memoriesMap = new Map();
-        snap.forEach(d => memoriesMap.set(d.id, d.data()));
-
-        // Probe Item 55.5
-        const fixture55_5 = memoriesMap.get(`qa_fixture_${TESTER_UID}_55_5`);
+      async function pollPersonaFixtureProbe() {
         const stateEl55_5 = document.getElementById('persona-prose-state-55-5');
         const ctaEl55_5 = document.getElementById('persona-expected-cta-55-5');
-
-        if (stateEl55_5 && ctaEl55_5) {
-          if (fixture55_5) {
-            const proseLen = (fixture55_5.prose || '').length;
+        if (!stateEl55_5 || !ctaEl55_5) return;
+        try {
+          const docId = `qa_fixture_${TESTER_UID}_55_5`;
+          const res = await fetch(`/api/admin/qa/fixtures?userId=${encodeURIComponent(TESTER_UID)}&docId=${encodeURIComponent(docId)}`, {
+            credentials: 'same-origin',
+            cache: 'no-store'
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.exists) {
+            const proseLen = Number(data.proseLength || 0);
             if (proseLen === 0) {
               stateEl55_5.textContent = '0 chars (Clean Sandbox - Pristine)';
               stateEl55_5.className = 'text-emerald-400 font-bold';
@@ -12755,70 +12763,73 @@ ${subItemsBlock}`;
             ctaEl55_5.textContent = '[ ✏️ Draft Scene / Begin Story ]';
             ctaEl55_5.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
           }
+        } catch (err) {
+          console.warn('[Persona Live Probe] Error:', err);
         }
-      }, (err) => {
-        console.warn('[Persona Live Probe] Error:', err);
-      });
+      }
 
-      // Instant Hot-Update on Active Deck Items (Under 1s Cloud Sync) (Refinement 3)
-      onSnapshot(colRef, (snapshot) => {
-        const changes = snapshot.docChanges();
-        // Sort changes so sub-items (id.includes('.')) are applied BEFORE parent card docs,
-        // guaranteeing that 100% sub-item PASS status is already hydrated before any parent doc is evaluated.
-        const sortedChanges = [...changes].sort((a, b) => {
-          const aIsSub = a.doc.id.includes('.') ? 0 : 1;
-          const bIsSub = b.doc.id.includes('.') ? 0 : 1;
-          return aIsSub - bIsSub;
-        });
-
-        sortedChanges.forEach((change) => {
-          const data = change.doc.data();
-          const id = change.doc.id;
-          if (!data) return;
-
-          // Apply verdicts, notes, traces (batching DOM layout re-renders until the end of the snapshot loop)
-          if (window.__applyCloudVerdict) {
-            window.__applyCloudVerdict(id, data.verdict, data.notes, data.telemetryTrace, true);
+      async function syncActiveDeckFromAdminApi() {
+        try {
+          const res = await fetch('/api/admin/qa/items', {
+            credentials: 'same-origin',
+            cache: 'no-store'
+          });
+          if (!res.ok) {
+            console.warn('[Cloud Sync] Admin QA items fetch returned:', res.status);
+            return;
           }
-          if (data.screenshots && Array.isArray(data.screenshots) && data.screenshots.length > 0 && window.__applyCloudScreenshots) {
-            window.__applyCloudScreenshots(id, data.screenshots);
-          }
+          const payload = await res.json();
+          const rawItems = Array.isArray(payload?.items) ? payload.items : [];
+          // Sort so sub-items (id.includes('.')) are applied BEFORE parent card docs
+          const sortedItems = [...rawItems].sort((a, b) => {
+            const aIsSub = String(a.id).includes('.') ? 0 : 1;
+            const bIsSub = String(b.id).includes('.') ? 0 : 1;
+            return aIsSub - bIsSub;
+          });
 
-          // Hot-patch title
-          const titleEl = document.getElementById(`item-title-${id.replace('.', '-')}`);
-          if (titleEl && data.title) {
-            titleEl.textContent = data.title;
-          }
+          sortedItems.forEach((data) => {
+            const id = String(data.id || '');
+            if (!id) return;
 
-          // Hot-patch target route link
-          const routeLinkEl = document.getElementById(`item-route-link-${id.replace('.', '-')}`);
-          if (routeLinkEl && data.targetRoute) {
-            routeLinkEl.href = data.targetRoute;
-          }
-
-          // Hot-patch developer resolution if present
-          if (data.developerResolution) {
-            const ledgerEl = document.getElementById(`item-resolution-ledger-${id.replace('.', '-')}`);
-            if (ledgerEl) {
-              const resTextEl = ledgerEl.querySelector('ol');
-              if (resTextEl && data.developerResolution) {
-                // Keep resolution fresh
-              }
+            if (window.__applyCloudVerdict) {
+              window.__applyCloudVerdict(id, data.verdict, data.notes, data.telemetryTrace, true);
             }
+            if (Array.isArray(data.screenshots) && data.screenshots.length > 0 && window.__applyCloudScreenshots) {
+              window.__applyCloudScreenshots(id, data.screenshots);
+            }
+
+            const titleEl = document.getElementById(`item-title-${id.replace('.', '-')}`);
+            if (titleEl && data.title) {
+              titleEl.textContent = data.title;
+            }
+
+            const routeLinkEl = document.getElementById(`item-route-link-${id.replace('.', '-')}`);
+            if (routeLinkEl && data.targetRoute) {
+              routeLinkEl.href = data.targetRoute;
+            }
+          });
+
+          if (sortedItems.length > 0) {
+            Object.keys(CARD_ITEM_COUNTS).forEach(c => updateItemProgress(parseInt(c, 10)));
+            updateTally();
+            renderDeckAndArchive();
+            saveState();
           }
-        });
-
-        if (sortedChanges.length > 0) {
-          Object.keys(CARD_ITEM_COUNTS).forEach(c => updateItemProgress(parseInt(c, 10)));
-          updateTally();
-          renderDeckAndArchive();
-          saveState();
+        } catch (err) {
+          console.warn('[Cloud Sync] Admin API sync warning:', err);
         }
-      }, (err) => {
-        console.warn('[Cloud Sync] onSnapshot subscription warning:', err);
-      });
+      }
 
-      console.log('🟢 [QA Cloud Engine] Real-time Firestore bridge active (memory-weaver-dev)');
+      syncActiveDeckFromAdminApi();
+      pollPersonaFixtureProbe();
+      setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          syncActiveDeckFromAdminApi();
+          pollPersonaFixtureProbe();
+        }
+      }, 15000);
+
+      console.log('🟢 [QA Cloud Engine] Admin-gated server API bridge active (/api/admin/qa/*)');
     } catch (e) {
       console.warn('[Cloud Sync] Init error:', e);
     }

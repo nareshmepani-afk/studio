@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebaseAdmin';
 import { isSafeQaFixtureForCleanup } from '@/lib/qa/qaFixtureSeeder';
+import { requireAdminSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,14 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: Request) {
   try {
+    const authResult = await requireAdminSession();
+    if (!authResult.authorized) {
+      return NextResponse.json(
+        { success: false, error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     if (!adminDb) {
       return NextResponse.json(
         { success: false, error: 'Firebase Admin Database not initialized' },

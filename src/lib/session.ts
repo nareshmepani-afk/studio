@@ -98,3 +98,27 @@ export async function verifyAdminWhitelist(email: string): Promise<{ isValid: bo
   }
 }
 
+export type AdminSessionResult =
+  | { authorized: true; session: Awaited<ReturnType<typeof getAuthenticatedUser>> }
+  | { authorized: false; status: 401 | 403; error: string };
+
+/**
+ * Enforces an MFA-verified administrator session on server routes (/api/admin/*, /api/qa/*).
+ * Fail-closed: verifies the Firebase session cookie, custom claims (isAdmin && mfaVerified),
+ * and the active admin_users whitelist in Firestore.
+ */
+export async function requireAdminSession(): Promise<AdminSessionResult> {
+  const session = await getSession();
+  if (!session || !session.email) {
+    return { authorized: false, status: 401, error: 'Unauthorised: Admin session required' };
+  }
+  if (session.isAdmin !== true || session.mfaVerified !== true) {
+    return { authorized: false, status: 403, error: 'Forbidden: MFA-verified admin claim required' };
+  }
+  const whitelist = await verifyAdminWhitelist(session.email);
+  if (!whitelist.isValid) {
+    return { authorized: false, status: 403, error: 'Forbidden: Account not active on admin whitelist' };
+  }
+  return { authorized: true, session };
+}
+

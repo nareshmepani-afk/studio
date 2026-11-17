@@ -18,21 +18,11 @@
 
 import fs from 'fs';
 import path from 'path';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getStagingAdmin } from './lib/stagingAdmin';
 import { MASTER_STORY_STRUCTURE } from '../src/lib/curriculum/masterStoryStructure';
 
 const CHECKLIST_PATH = path.resolve(__dirname, '../qa_checklist_interactive.html');
 const TESTER_UID = 'TQdB395kXxaAGPhFxk1LVWuT8cg2';
-
-const stagingConfig = {
-  apiKey: 'AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98',
-  authDomain: 'memory-weaver-dev.firebaseapp.com',
-  projectId: 'memory-weaver-dev',
-  storageBucket: 'memory-weaver-dev.firebasestorage.app',
-  messagingSenderId: '98973313245',
-  appId: '1:98973313245:web:bbe45fb78d08d0563c1334',
-};
 
 export function validateQaDeck(): { valid: boolean; errors: string[]; warnings: string[] } {
   const errors: string[] = [];
@@ -122,10 +112,8 @@ export function validateQaDeck(): { valid: boolean; errors: string[]; warnings: 
 
 export async function runLivePersonaDiagnostic(): Promise<void> {
   try {
-    const app = getApps().length ? getApps()[0] : initializeApp(stagingConfig, 'persona-validator');
-    const db = getFirestore(app);
-
-    const userMemsSnap = await getDocs(collection(db, 'users', TESTER_UID, 'memories'));
+    const { adminDb } = getStagingAdmin();
+    const userMemsSnap = await adminDb.collection('users').doc(TESTER_UID).collection('memories').get();
     const populatedScenes = new Map<string, { docId: string; proseLen: number }>();
     userMemsSnap.forEach((d) => {
       const data = d.data();

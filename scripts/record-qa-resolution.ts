@@ -1,17 +1,4 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-
-const stagingConfig = {
-  apiKey: 'AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98',
-  authDomain: 'memory-weaver-dev.firebaseapp.com',
-  projectId: 'memory-weaver-dev',
-  storageBucket: 'memory-weaver-dev.firebasestorage.app',
-  messagingSenderId: '98973313245',
-  appId: '1:98973313245:web:bbe45fb78d08d0563c1334',
-};
-
-const app = getApps().length ? getApps()[0] : initializeApp(stagingConfig, 'qa-resolution-recorder');
-const db = getFirestore(app);
+import { getStagingAdmin } from './lib/stagingAdmin';
 
 export async function recordQaResolution(
   itemId: string,
@@ -19,9 +6,9 @@ export async function recordQaResolution(
   resolvedBy = 'Chat 2 (The Flash Executor)',
   commitSha = 'b1fd5c9c'
 ) {
-  const itemRef = doc(db, 'qa_suites', 'active_deck', 'items', itemId);
-  await setDoc(
-    itemRef,
+  const { adminDb } = getStagingAdmin();
+  const itemRef = adminDb.collection('qa_suites').doc('active_deck').collection('items').doc(itemId);
+  await itemRef.set(
     {
       developerResolution: resolution,
       resolutionStatus: 'RESOLVED',

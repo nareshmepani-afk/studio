@@ -1,15 +1,10 @@
-import { db, storage, auth } from '@/lib/firebase';
-import {
-  collection,
-  doc,
-  onSnapshot,
-  setDoc,
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  type Unsubscribe,
-} from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+/**
+ * Admin-gated client wrapper for QA deck operations (Option A — MW-404).
+ *
+ * All reads, writes, and evidence uploads route through same-origin `/api/admin/qa/*`
+ * endpoints authenticated via the MFA-verified `__session` HttpOnly admin cookie
+ * and executed server-side with the Firebase Admin SDK.
+ */
 
 export interface QaChecklistItem {
   id: string; // e.g. "56.1"
@@ -25,72 +20,88 @@ export interface QaChecklistItem {
   updatedBy: string;
 }
 
-const ITEMS_COLLECTION = 'qa_suites/active_deck/items';
+export async function fetchQaItems(): Promise<Record<string, QaChecklistItem>> {
+  const res = await fetch('/api/admin/qa/items', { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch QA items (${res.status})`);
+  }
+  const data = await res.json();
+  const items: Record<string, QaChecklistItem> = {};
+  for (const item of data.items || []) {
+    if (item?.id) items[item.id] = item as QaChecklistItem;
+  }
+  return items;
+}
 
 export function subscribeToQaItems(
   onUpdate: (items: Record<string, QaChecklistItem>) => void,
-  onError?: (err: Error) => void
-): Unsubscribe {
-  const colRef = collection(db, ITEMS_COLLECTION);
-  return onSnapshot(
-    colRef,
-    (snapshot) => {
-      const items: Record<string, QaChecklistItem> = {};
-      snapshot.forEach((d) => {
-        items[d.id] = d.data() as QaChecklistItem;
-      });
-      onUpdate(items);
-    },
-    (err) => {
-      console.error('[QA Cloud Service] onSnapshot subscription failure:', err);
-      onError?.(err);
+  onError?: (err: Error) => void,
+  pollIntervalMs = 15000
+): () => void {
+  let active = true;
+  const pull = async () => {
+    try {
+      const items = await fetchQaItems();
+      if (active) onUpdate(items);
+    } catch (err: any) {
+      if (active) onError?.(err instanceof Error ? err : new Error(String(err)));
     }
-  );
+  };
+  void pull();
+  const timer = setInterval(() => void pull(), pollIntervalMs);
+  return () => {
+    active = false;
+    clearInterval(timer);
+  };
 }
 
 export async function updateQaItem(
   itemId: string,
   updates: Partial<QaChecklistItem>
 ): Promise<void> {
-  const itemRef = doc(db, ITEMS_COLLECTION, itemId);
-  const payload: Partial<QaChecklistItem> = {
-    ...updates,
-    updatedAt: Date.now(),
-    updatedBy: auth.currentUser?.email || 'admin@memoryweaver.studio',
-  };
-  await setDoc(itemRef, payload, { merge: true });
+  const res = await fetch('/api/admin/qa/items', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: itemId, updates }),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update QA item ${itemId} (${res.status})`);
+  }
 }
 
 export async function uploadQaScreenshot(
   cardId: string,
   itemId: string,
-  file: Blob
+  file: Blob,
+  existingScreenshots: string[] = []
 ): Promise<string> {
-  const filename = `${itemId}_${Date.now()}.png`;
-  const storageRef = ref(storage, `qa-evidence/${cardId}/${filename}`);
-  const snapshot = await uploadBytes(storageRef, file, {
-    contentType: file.type || 'image/png',
-  });
-  const downloadUrl = await getDownloadURL(snapshot.ref);
+  const formData = new FormData();
+  formData.append('cardNum', cardId);
+  formData.append('itemId', itemId);
+  formData.append('file', file);
 
-  const itemRef = doc(db, ITEMS_COLLECTION, itemId);
-  await updateDoc(itemRef, {
-    screenshots: arrayUnion(downloadUrl),
-    updatedAt: Date.now(),
-    updatedBy: auth.currentUser?.email || 'admin@memoryweaver.studio',
+  const res = await fetch('/api/admin/qa/evidence', {
+    method: 'POST',
+    body: formData,
   });
+  if (!res.ok) {
+    throw new Error(`Failed to upload QA evidence (${res.status})`);
+  }
+  const data = await res.json();
+  const downloadUrl = String(data.url || '');
 
+  await updateQaItem(itemId, {
+    screenshots: Array.from(new Set([...existingScreenshots, downloadUrl])),
+  });
   return downloadUrl;
 }
 
 export async function deleteQaScreenshot(
   itemId: string,
-  downloadUrl: string
+  downloadUrl: string,
+  existingScreenshots: string[] = []
 ): Promise<void> {
-  const itemRef = doc(db, ITEMS_COLLECTION, itemId);
-  await updateDoc(itemRef, {
-    screenshots: arrayRemove(downloadUrl),
-    updatedAt: Date.now(),
-    updatedBy: auth.currentUser?.email || 'admin@memoryweaver.studio',
+  await updateQaItem(itemId, {
+    screenshots: existingScreenshots.filter((u) => u !== downloadUrl),
   });
 }

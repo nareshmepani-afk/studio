@@ -74,4 +74,32 @@ describe('MW-86: Firestore Security Rules Perimeter Gate (/gift_vouchers)', () =
       expect(storageRulesContent).toContain("allow read: if chamber != 'chronicles';");
     });
   });
+
+  describe('MW-403 / MW-404: Unified Admin-Gated Security Rules (firestore.rules & storage.rules)', () => {
+    const storageRulesPath = path.join(process.cwd(), 'storage.rules');
+    const storageRulesContent = fs.readFileSync(storageRulesPath, 'utf8');
+
+    it('gates system_logs strictly on custom claim isAdmin == true (no consumer email domain check)', () => {
+      const sysLogsMatch = rulesContent.match(/match\s+\/system_logs\/\{logId\}\s*\{[\s\S]*?\}/);
+      expect(sysLogsMatch).not.toBeNull();
+      expect(sysLogsMatch![0]).toContain('request.auth != null && request.auth.token.isAdmin == true');
+      expect(sysLogsMatch![0]).not.toMatch(/gmail|googlemail|hotmail/);
+    });
+
+    it('locks qa_suites/** in firestore.rules and qa-evidence/** in storage.rules to isAdmin == true', () => {
+      const qaSuitesMatch = rulesContent.match(/match\s+\/qa_suites\/\{allPaths=\*\*\}\s*\{[\s\S]*?\}/);
+      expect(qaSuitesMatch).not.toBeNull();
+      expect(qaSuitesMatch![0]).toContain('allow read, write: if request.auth != null && request.auth.token.isAdmin == true;');
+
+      const qaEvidenceMatch = storageRulesContent.match(/match\s+\/qa-evidence\/\{allPaths=\*\*\}\s*\{[\s\S]*?\}/);
+      expect(qaEvidenceMatch).not.toBeNull();
+      expect(qaEvidenceMatch![0]).toContain('allow read, write: if request.auth != null && request.auth.token.isAdmin == true;');
+    });
+
+    it('requires request.auth != null before uid match on users/{userId} writes', () => {
+      const userDocMatch = rulesContent.match(/match\s+\/users\/\{userId\}\s*\{[\s\S]*?\}/);
+      expect(userDocMatch).not.toBeNull();
+      expect(userDocMatch![0]).toContain('allow write, create: if request.auth != null && request.auth.uid == userId;');
+    });
+  });
 });

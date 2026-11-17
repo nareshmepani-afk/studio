@@ -5,6 +5,7 @@ import { UserJourneySnapshot } from '@/types/adminCrm';
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
 import { resolveProjectId } from '@/config/environment';
+import { SESSION_COOKIE_NAME } from '@/lib/constants';
 
 let cachedKeys: Record<string, string> | null = null;
 let cachedKeysExpiry = 0;
@@ -35,7 +36,7 @@ async function getPublicKey(kid: string): Promise<any> {
 async function verifyAdminAuth(): Promise<boolean> {
   try {
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
+    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     if (!sessionCookie) return false;
     // Fail closed: never fall back to a hard-coded project (a staging backend must not validate prod-audience tokens).
     const projectId = resolveProjectId(adminApp?.options?.projectId);
@@ -49,8 +50,8 @@ async function verifyAdminAuth(): Promise<boolean> {
       issuer: `https://session.firebase.google.com/${projectId}`,
     });
 
-    // Check custom claims for admin privileges
-    return !!payload.admin;
+    // Check custom claims minted by /admin/login & /admin/mfa-setup (isAdmin + mfaVerified).
+    return payload.isAdmin === true && payload.mfaVerified === true;
   } catch (error) {
     console.error('[CRM Auth verification failed]:', error);
     return false;

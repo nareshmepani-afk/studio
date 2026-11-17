@@ -10,11 +10,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
-    // Users can only manage their own user document. 
+    // Users can only manage their own user document.
     // Public read allowed for Cinema attribution (Director names).
     match /users/{userId} {
       allow read: if true;
-      allow write, create: if request.auth.uid == userId;
+      allow write, create: if request.auth != null && request.auth.uid == userId;
     }
 
     // Fireside Voice Studio Drafts (Milestone MW-87 / Ticket #248)
@@ -50,12 +50,9 @@ service cloud.firestore {
       allow read, write, create: if request.auth != null && request.auth.uid == userId;
     }
 
-    // System Logs read access for authorized admin domains
+    // System Logs read access for MFA-verified administrators only (MW-403)
     match /system_logs/{logId} {
-      allow read: if request.auth != null && 
-        (request.auth.token.email.matches('.*@gmail\\.com$') || 
-         request.auth.token.email.matches('.*@googlemail\\.com$') ||
-         request.auth.token.email.matches('.*@hotmail\\.com$'));
+      allow read: if request.auth != null && request.auth.token.isAdmin == true;
     }
 
     // Gift Vouchers — all operations via Admin SDK (server-side only).
@@ -64,9 +61,9 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // QA Suite & Active Testing Deck (Native Cloud QA Suite / Admin QA)
+    // QA Suite & Active Testing Deck — admin-only (Option A routes /admin/qa via Admin SDK; MW-404)
     match /qa_suites/{allPaths=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null && request.auth.token.isAdmin == true;
     }
   }
 }

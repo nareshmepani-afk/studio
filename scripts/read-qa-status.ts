@@ -1,19 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
-
-const stagingConfig = {
-  apiKey: 'AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98',
-  authDomain: 'memory-weaver-dev.firebaseapp.com',
-  projectId: 'memory-weaver-dev',
-  storageBucket: 'memory-weaver-dev.firebasestorage.app',
-  messagingSenderId: '98973313245',
-  appId: '1:98973313245:web:bbe45fb78d08d0563c1334',
-};
-
-const app = getApps().length ? getApps()[0] : initializeApp(stagingConfig, 'qa-status-reader');
-const db = getFirestore(app);
+import { getStagingAdmin } from './lib/stagingAdmin';
 
 const COLLECTION_PATH = 'qa_suites/active_deck/items';
 
@@ -186,7 +173,8 @@ export async function getCloudAndHtmlQaSummary(timeoutMs: number = 5000): Promis
   const itemsById = new Map<string, any>();
 
   try {
-    const fetchPromise = getDocs(collection(db, COLLECTION_PATH));
+    const { adminDb } = getStagingAdmin();
+    const fetchPromise = adminDb.collection(COLLECTION_PATH).get();
     const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
     const snapshot = await Promise.race([fetchPromise, timeoutPromise]);
     if (snapshot && 'forEach' in snapshot) {
@@ -196,8 +184,8 @@ export async function getCloudAndHtmlQaSummary(timeoutMs: number = 5000): Promis
         itemsById.set(d.id, data);
       });
     }
-  } catch {
-    // Fallback to local HTML SSOT if offline
+  } catch (err: any) {
+    console.warn(`⚠️ [QA Status] Staging Admin SDK unavailable (${err?.message || err}). Falling back to local HTML SSOT synthesis.`);
   }
 
   // Fallback synthesis if Firestore was unreachable

@@ -1,21 +1,10 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getStagingAdmin } from './lib/stagingAdmin';
 
-const stagingConfig = {
-  apiKey: 'AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98',
-  authDomain: 'memory-weaver-dev.firebaseapp.com',
-  projectId: 'memory-weaver-dev',
-  storageBucket: 'memory-weaver-dev.firebasestorage.app',
-  messagingSenderId: '98973313245',
-  appId: '1:98973313245:web:bbe45fb78d08d0563c1334',
-};
-
-const app = getApps().length ? getApps()[0] : initializeApp(stagingConfig, 'qa-inquiries-reader');
-const db = getFirestore(app);
 const COLLECTION_PATH = 'qa_suites/active_deck/items';
 
 export async function readQaInquiries() {
-  const snapshot = await getDocs(collection(db, COLLECTION_PATH));
+  const { adminDb } = getStagingAdmin();
+  const snapshot = await adminDb.collection(COLLECTION_PATH).get();
   const items: any[] = [];
   snapshot.forEach((d) => items.push(d.data()));
 
