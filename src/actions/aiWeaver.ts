@@ -2,6 +2,7 @@
 
 import { getAI } from '@/ai/genkit';
 import { getActiveModel } from '@/ai/models.server';
+import { GENKIT_MODELS } from '@/ai/models';
 import { z } from 'genkit';
 import pRetry from 'p-retry';
 import { VertexAI } from '@google-cloud/vertexai';
@@ -57,6 +58,29 @@ function sanitizeProse(text: string): string {
 }
 
 /**
+ * Builds an optimal Genkit generationConfig for the target Gemini model.
+ * - Non-lite Flash models (gemini-3.8-flash, gemini-flash-latest) attach thinkingConfig: { thinkingBudget: 0 }
+ *   to avoid burning 570+ internal thinking tokens and 8s+ latency.
+ * - Flash-Lite models (gemini-3.5-flash-lite, gemini-flash-lite-latest) MUST NOT receive thinkingConfig
+ *   because Google's API rejects thinkingConfig on -lite models with HTTP 400 INVALID_ARGUMENT.
+ */
+function buildGenkitConfig(modelName: string, extraConfig: Record<string, any> = {}): Record<string, any> {
+  const isLite = (modelName || '').toLowerCase().includes('lite');
+  if (isLite) {
+    const { thinkingConfig: _omit, ...rest } = extraConfig;
+    return rest;
+  }
+  return {
+    thinkingConfig: { thinkingBudget: 0 },
+    ...extraConfig,
+  };
+}
+
+function extractRetryErrorMessage(err: any): string {
+  return err?.error?.message || err?.message || String(err || 'Unknown AI error');
+}
+
+/**
  * Server action to strip screenplay, camera, film editing cues,
  * and stage notes from generated narrative prose.
  */
@@ -90,17 +114,18 @@ export async function expandWithAI(
   }
 
   const ai = await getAI();
+  const activeModel = await getActiveModel('genkit');
   const key = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
   console.log("[AI Weaver] API Key Signature:", key ? `${key.substring(0, 5)}...${key.substring(key.length - 4)}` : "MISSING");
   
   try {
-    const sensoryDetailsStr = sensoryConfig.map(s => {
-       const val = sensoryValues[s.id];
+    const sensoryDetailsStr = (sensoryConfig || []).map(s => {
+       const val = sensoryValues?.[s.id];
        if (val) return `${s.label}: ${val}`;
        return null;
     }).filter(Boolean).join('\n');
 
-    const prompt = `
+    const sharedContext = `
       You are an award-winning Literary Memoirist and Family Historian specializing in "Literary Depth."
       Your task is to transform raw memory fragments into a narrative that explores the internal world and the "invisible" heritage carried across borders.
       
@@ -113,7 +138,7 @@ export async function expandWithAI(
 
       [INCOMING DATA]
       "Description": ${description}
-      "Emotion Tags": ${emotionTags.length > 0 ? emotionTags.join(', ') : 'None specified'}
+      "Emotion Tags": ${(emotionTags || []).length > 0 ? emotionTags.join(', ') : 'None specified'}
       "Context": ${
         isRewriteOfSelection 
           ? `(Focusing on this specific segment): "${currentProse}"` 
@@ -131,50 +156,89 @@ export async function expandWithAI(
       - BRITISH ENGLISH (en-GB) ONLY (Rule 20.3): Enforce British/Commonwealth English spelling throughout (e.g. colour, favourite, theatre, realise, centre, honour, travelling).
       - DIASPORA VOICE SHIELD: Preserve all South Asian, Gujarati, Punjabi, Hindi, and East African heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji) verbatim without anglicising or replacing them.
       - Write for future generations.
-      
-      Craft four (4) distinct "Takes" in this literary style, but HEAVILY influenced by the [DIRECTOR'S INTENT]. 
-      Each Take must be a single, rhythmic, and meaningful paragraph (100-140 words) meant to be spoken aloud.
-      
-      Take 1 ("poetic"): Internal world focus. Reflective and deeply metaphorical spoken monologue.
-      Take 2 ("direct"): Humanity and persistence focus. Documentary-style spoken monologue with authentic weight.
-      Take 3 ("nostalgic"): Ancestral and generational focus. Passing down values like "Learn. Adapt. Endure."
-      Take 4 ("master"): THE MEMORY WEAVE (Master Fusion Synthesis). A harmonized monologue that seamlessly fuses authentic personal voice, emotional depth, sensory physical texture, and dynamic rhythm into a single master score.
-      
-      Return strictly JSON:
-      {
-         "poetic": "string",
-         "direct": "string",
-         "nostalgic": "string",
-         "master": "string"
-      }
     `;
 
-    console.log("[AI Weaver] Sending prompt to Genkit...");
-    const { output } = await pRetry(async () => {
-      return await ai.generate({
-        prompt,
-        output: {
-          schema: z.object({
-            poetic: z.string(),
-            direct: z.string(),
-            nostalgic: z.string(),
-            master: z.string().optional(),
-          }),
-        },
-      });
-    }, { retries: 2, onFailedAttempt: error => console.warn(`[AI Weaver] Attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left.`) });
+    const takeSpecs: Array<{ key: 'poetic' | 'direct' | 'nostalgic' | 'master'; instruction: string }> = [
+      {
+        key: 'poetic',
+        instruction: 'Take 1 ("poetic"): Internal world focus. Reflective and deeply metaphorical spoken monologue (100-140 words).'
+      },
+      {
+        key: 'direct',
+        instruction: 'Take 2 ("direct"): Humanity and persistence focus. Documentary-style spoken monologue with authentic weight (100-140 words).'
+      },
+      {
+        key: 'nostalgic',
+        instruction: 'Take 3 ("nostalgic"): Ancestral and generational focus. Passing down values like "Learn. Adapt. Endure." (100-140 words).'
+      },
+      {
+        key: 'master',
+        instruction: 'Take 4 ("master"): THE MEMORY WEAVE (Master Fusion Synthesis). A harmonized monologue that seamlessly fuses authentic personal voice, emotional depth, sensory physical texture, and dynamic rhythm into a single master score (100-140 words).'
+      }
+    ];
 
-    if (output) {
-      console.log("[AI Weaver] Successfully generated cinematic takes (including Master Fusion Take)");
-      return {
-        poetic: sanitizeProse(output.poetic),
-        direct: sanitizeProse(output.direct),
-        nostalgic: sanitizeProse(output.nostalgic),
-        master: sanitizeProse(output.master || output.poetic)
-      };
+    console.log(`[AI Weaver] Launching 4 parallel Sensory Takes on ${activeModel} (thinkingBudget: 0)...`);
+    const settled = await Promise.allSettled(
+      takeSpecs.map(({ key: takeKey, instruction }) =>
+        pRetry(
+          async () => {
+            const singlePrompt = `${sharedContext}\n\n[ASSIGNED TAKE]\n${instruction}\nReturn ONLY the single spoken paragraph (100-140 words). No JSON wrapper, no preamble, no quotes.`;
+            const res = await ai.generate({
+              prompt: singlePrompt,
+              model: activeModel,
+              config: buildGenkitConfig(activeModel, {
+                maxOutputTokens: 450,
+                temperature: 0.7,
+              }),
+            });
+            // Support either direct text response or legacy mocked structured output
+            if (res?.output && typeof res.output === 'object' && (res.output as any)[takeKey]) {
+              return String((res.output as any)[takeKey]);
+            }
+            const rawText = (res?.text || '').trim().replace(/^```(?:markdown|text)?\s*|\s*```$/g, '').replace(/^"|"$/g, '').trim();
+            if (!rawText) throw new Error(`Empty response for take ${takeKey}`);
+            return rawText;
+          },
+          {
+            retries: 1,
+            onFailedAttempt: (error: any) =>
+              console.warn(`[AI Weaver] Sensory take (${takeKey}) attempt ${error.attemptNumber} failed: ${extractRetryErrorMessage(error)}`),
+          }
+        )
+      )
+    );
+
+    const fallbackTake = sanitizeProse(currentProse || description || 'A treasured memory preserved in spoken voice.');
+    const resolved: Record<'poetic' | 'direct' | 'nostalgic' | 'master', string> = {
+      poetic: '',
+      direct: '',
+      nostalgic: '',
+      master: '',
+    };
+
+    let successCount = 0;
+    takeSpecs.forEach(({ key: takeKey }, idx) => {
+      const item = settled[idx];
+      if (item.status === 'fulfilled' && item.value) {
+        resolved[takeKey] = sanitizeProse(item.value);
+        successCount++;
+      } else {
+        resolved[takeKey] = fallbackTake;
+      }
+    });
+
+    if (successCount === 0) {
+      const firstErr = settled.find((s): s is PromiseRejectedResult => s.status === 'rejected')?.reason;
+      throw firstErr || new Error('AI returned empty output across all parallel takes');
     }
-    
-    throw new Error("AI returned empty output");
+
+    console.log(`[AI Weaver] Successfully generated ${successCount}/4 parallel cinematic takes.`);
+    return {
+      poetic: resolved.poetic,
+      direct: resolved.direct,
+      nostalgic: resolved.nostalgic,
+      master: resolved.master || resolved.poetic,
+    };
   } catch (error: any) {
     console.error("[AI Weaver] Connection Failure:", error.message || error);
     throw new Error(`AI Bridge Blocked: ${error.message || 'Check Vertex AI Status'}`);
@@ -203,6 +267,7 @@ export async function getAtmosphericPolish(description: string): Promise<string[
     const { output } = await pRetry(async () => {
       return await ai.generate({
         prompt,
+        model: GENKIT_MODELS.FLASH_LITE,
         output: {
           schema: z.array(z.string()),
         },
@@ -223,6 +288,7 @@ export async function getAtmosphericPolish(description: string): Promise<string[
 export async function fuseVideoStory(hook: string, transcript: string): Promise<string> {
   console.log("[AI Weaver] fuseVideoStory (Fusion Protocol) triggered");
   const ai = await getAI();
+  const activeModel = await getActiveModel('genkit');
   try {
     const prompt = `
       You are the "Lead Editor" and "Auteur" for Chronicle Cinema. 
@@ -245,7 +311,11 @@ export async function fuseVideoStory(hook: string, transcript: string): Promise<
     `;
 
     const { text } = await pRetry(async () => {
-      return await ai.generate(prompt);
+      return await ai.generate({
+        prompt,
+        model: activeModel,
+        config: buildGenkitConfig(activeModel, { maxOutputTokens: 500 }),
+      });
     }, { retries: 2 });
 
     return text?.trim() || "";
@@ -682,6 +752,7 @@ export async function analyzeCompositionAnchors(blocks: ScriptBlock[]): Promise<
     const { output } = await pRetry(async () => {
       return await ai.generate({
         prompt,
+        model: GENKIT_MODELS.FLASH_LITE,
         output: {
           schema: z.array(z.object({
             blockId: z.string(),
@@ -693,7 +764,7 @@ export async function analyzeCompositionAnchors(blocks: ScriptBlock[]): Promise<
       });
     }, { 
       retries: 2,
-      onFailedAttempt: error => console.warn(`[AI Weaver] Composition Analysis Attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left.`)
+      onFailedAttempt: error => console.warn(`[AI Weaver] Composition Analysis Attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left: ${extractRetryErrorMessage(error)}`)
     });
     
     if (output) {
@@ -745,7 +816,11 @@ export async function polishDescription(description: string, options: { sensoryF
 
   try {
     const { text } = await pRetry(async () => {
-      return await ai.generate(prompt);
+      return await ai.generate({
+        prompt,
+        model: GENKIT_MODELS.FLASH_LITE,
+        config: { maxOutputTokens: 250, temperature: 0.4 },
+      });
     }, { retries: 2 });
     
     const result = text?.trim() || "";
@@ -786,7 +861,11 @@ export async function checkAndPolishGrammar(text: string): Promise<string> {
     `;
 
     const { text: resultText } = await pRetry(async () => {
-      return await ai.generate(prompt);
+      return await ai.generate({
+        prompt,
+        model: GENKIT_MODELS.FLASH_LITE,
+        config: { maxOutputTokens: 1500, temperature: 0.1 },
+      });
     }, { retries: 2 });
     
     let raw = (resultText?.trim() || text)
@@ -852,6 +931,7 @@ export async function weaveBonusNote(
     const { text: resultText } = await pRetry(async () => {
       return await ai.generate({
         prompt,
+        model: GENKIT_MODELS.FLASH_LITE,
         config: {
           maxOutputTokens: 250,
           temperature: 0.35,
@@ -918,6 +998,7 @@ export async function proofreadScript(blocks: ScriptBlock[]): Promise<Array<{
     const { output } = await pRetry(async () => {
       return await ai.generate({
         prompt,
+        model: GENKIT_MODELS.FLASH_LITE,
         output: {
           schema: z.array(z.object({
             blockId: z.string(),
@@ -937,8 +1018,8 @@ export async function proofreadScript(blocks: ScriptBlock[]): Promise<Array<{
 }
 
 /**
- * Generates three distinct variations of the story hook for the Director's Cut ceremony.
- * Upgraded to Cinematic Synthesis Engine V4 (Perspective Aware).
+ * Generates four distinct variations of the story hook for the Director's Cut ceremony.
+ * Upgraded to Cinematic Synthesis Engine V7.0 (Parallel 4-Vision Fan-Out with Zero-Thinking Fast Mode).
  */
 export async function generateDraftOptions(
   description: string,
@@ -967,7 +1048,8 @@ export async function generateDraftOptions(
     }
   }>
 }> {
-  console.log(`[AI Weaver] generateDraftOptions V6.1 triggered. Scope: ${timeframeScope} (${durationQuantity} ${durationUnit}), Age: ${narratorAgeAtTime}`);
+  const startTimeMs = Date.now();
+  console.log(`[AI Weaver] generateDraftOptions V7.0 (Parallel) triggered. Scope: ${timeframeScope} (${durationQuantity} ${durationUnit}), Age: ${narratorAgeAtTime}`);
   
   try {
     const cookieStore = await cookies();
@@ -979,8 +1061,10 @@ export async function generateDraftOptions(
     if (e.message?.includes("CORRUPTED_METADATA_STREAM")) throw e;
   }
 
+  const safeDescription = (description || '').trim();
+
   // Mathematical Temporal Span Calculation Engine
-  const yearMatch = description.match(/\b(19\d\d|20\d\d)\b/);
+  const yearMatch = safeDescription.match(/\b(19\d\d|20\d\d)\b/);
   const parsedAnchorYear = (memory_date !== 'Unknown' && memory_date !== 'none' && !isNaN(Number(memory_date))) 
     ? Number(memory_date) 
     : (yearMatch ? Number(yearMatch[1]) : null);
@@ -990,17 +1074,98 @@ export async function generateDraftOptions(
   
   const anchorYearStr = parsedAnchorYear !== null ? `${parsedAnchorYear}` : (memory_date !== 'Unknown' ? memory_date : 'Historical Era');
   const temporalSpanStr = (parsedAnchorYear !== null && endYear !== null) ? `${parsedAnchorYear}–${endYear}` : anchorYearStr;
-    const allowedYears = buildAllowedYearSet(description, parsedAnchorYear, durationQuantity);
+  const allowedYears = buildAllowedYearSet(safeDescription, parsedAnchorYear, durationQuantity);
 
-  const rawWordCount = description.trim().split(/\s+/).filter(Boolean).length;
+  const rawWordCount = safeDescription.split(/\s+/).filter(Boolean).length;
   const targetScale = Math.max(rawWordCount, 230);
   const targetMin = Math.round(targetScale * 0.85);
   const targetMax = Math.round(targetScale * 1.15);
 
-  const ai = await getAI();
-  
-  const prompt = `
-    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.7 (MATHEMATICAL TEMPORAL HORIZON, DISTINCT INGRESS & WORD-COUNT SCALE PARITY)
+  const fallbackProse = (await stripScreenplayCues(safeDescription)) as string;
+  const cleanedHook = fallbackProse && fallbackProse.length > 0
+    ? fallbackProse
+    : "A timeless reflection of heritage, survival, and family roots.";
+  const defaultTemporalSummary = `Preserved narrative anchors anchored in ${anchorYearStr !== 'Historical Era' ? anchorYearStr : 'the family record'}.`;
+
+  const fallbackVisions: Array<{
+    visionType: string;
+    visionFocus: string;
+    cleanScript: string;
+    stageDirections: Array<{ type: 'visual' | 'audio' | 'beat'; content: string; timecode: string }>;
+    beatSheet: string[];
+    preFlightBrief: { sensoryAnchors: string[]; vocalInstructions: string[]; heroMoment: string };
+  }> = [
+    {
+      visionType: "The Soul-Print",
+      visionFocus: "The Soul-Print: Internal resonance & deep family values.",
+      cleanScript: cleanedHook,
+      stageDirections: [{ type: "audio", content: "Warm ambient acoustic tone", timecode: "00:00" }],
+      beatSheet: ["Spiritual Bedrock", "Enduring Heritage"],
+      preFlightBrief: {
+        sensoryAnchors: ["Family Values", "Heritage Soil"],
+        vocalInstructions: ["Speak with reflective warmth", "Maintain steady cadence"],
+        heroMoment: "Core value revelation."
+      }
+    },
+    {
+      visionType: "The Atmospheric Weave",
+      visionFocus: "The Atmospheric Weave: Vivid sensory contrast & physical atmosphere.",
+      cleanScript: cleanedHook,
+      stageDirections: [{ type: "audio", content: "Documentary room tone", timecode: "00:00" }],
+      beatSheet: ["Sensory Contrast", "Physical Landscape"],
+      preFlightBrief: {
+        sensoryAnchors: ["Environmental Contrast", "Tactile Texture"],
+        vocalInstructions: ["Grounded, authentic delivery", "Pause for sensory beats"],
+        heroMoment: "Atmospheric shift."
+      }
+    },
+    {
+      visionType: "The Flow",
+      visionFocus: "Generational Momentum: Effortless teleprompter rhythm & narrative cadence.",
+      cleanScript: cleanedHook,
+      stageDirections: [{ type: "audio", content: "Subtle rhythmic pulse", timecode: "00:00" }],
+      beatSheet: ["Spoken Momentum", "Legacy Arc"],
+      preFlightBrief: {
+        sensoryAnchors: ["Generational Arc", "Spoken Rhythm"],
+        vocalInstructions: ["Maintain natural flow", "Direct teleprompter engagement"],
+        heroMoment: "Legacy affirmation."
+      }
+    },
+    {
+      visionType: "The Memory Weave",
+      visionFocus: "Crown Synthesis: Master fusion of authentic voice, emotional depth, and rhythm.",
+      cleanScript: cleanedHook,
+      stageDirections: [{ type: "audio", content: "Full cinematic orchestral rise", timecode: "00:00" }],
+      beatSheet: ["Master Synthesis", "Crown Monologue"],
+      preFlightBrief: {
+        sensoryAnchors: ["Master Heritage", "Crown Resolution"],
+        vocalInstructions: ["Resonant directorial climax", "Measured concluding pause"],
+        heroMoment: "Crown memory synthesis."
+      }
+    }
+  ];
+
+  const visionSpecs = [
+    {
+      visionType: "The Soul-Print",
+      ingressDirective: 'Start with an internal reflection or spiritual bedrock values statement (e.g., "Strength was the only currency my family ever traded in..."). Focus on internal resonance & deep family values.',
+    },
+    {
+      visionType: "The Atmospheric Weave",
+      ingressDirective: 'Start directly with a vivid, visceral sensory or environmental contrast (e.g., "Sun-baked earth gave way to the chill of rain on the windowpane..."). Focus on tactile texture & physical atmosphere.',
+    },
+    {
+      visionType: "The Flow",
+      ingressDirective: 'Start with spoken momentum or direct narrative action emerging organically from the narrator\'s authentic prose keywords. Focus on effortless teleprompter reading rhythm.',
+    },
+    {
+      visionType: "The Memory Weave",
+      ingressDirective: 'Start with a grand master thesis fusing heritage and adaptation. Crown synthesis fusing authentic personal voice, emotional depth, sensory texture, and dynamic rhythm into a master score.',
+    },
+  ];
+
+  const sharedDirective = `
+    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V7.0 (MATHEMATICAL TEMPORAL HORIZON, DISTINCT INGRESS & WORD-COUNT SCALE PARITY)
 
     [THE IDENTITY HEADER & NARRATOR PERSPECTIVE]
     - NARRATOR STATUS: Adult reflecting on ${anchorYearStr !== 'Historical Era' ? `the era of ${anchorYearStr}` : 'family roots and memory anchors'}.
@@ -1009,216 +1174,173 @@ export async function generateDraftOptions(
     - THE SEED PRINCIPLE: ${narratorAgeAtTime < 4 ? 'Because age is < 4, the narrator is the "Seed," not the "Sower." They have ZERO episodic memory. They were carried and shielded.' : 'Narrator is speaking from lived memory and reflective perspective.'}
     - VANTAGE POINT: Frame history with authentic legacy perspective. Prioritize specific family members mentioned in [DATA ANCHORS]. Do not default to "My mother" unless explicitly stated; use inclusive "parents" per user raw input.
 
-    [DISTINCT NARRATIVE INGRESS & OPENING HOOK MANDATE - CRITICAL]
-    - ZERO DUPLICATE OPENINGS: NO TWO VISIONS MAY START WITH THE SAME WORDS OR SENTENCE STRUCTURE.
-    - BANNED CANNED TEMPLATES: NEVER start multiple options with repetitive phrases like "The history I carry...", "My parents describe...", "I was raised on the stories of...", or "The family tells me...".
-    - REQUIRED OPENING INGRESS BY SCORE ANGLE:
-      1. THE SOUL-PRINT: Start with an internal reflection or spiritual bedrock values statement (e.g., "Strength was the only currency my family ever traded in...", "We were born of soil, sweat, and unyielding quiet resolve...").
-      2. THE ATMOSPHERIC WEAVE: Start directly with a vivid, visceral sensory or environmental contrast (e.g., "Sun-baked Kenyan earth gave way to the freezing drizzle of London tarmac...", "A wall of grey English mist greeted the plane as it touched down...").
-      3. THE FLOW: Start with spoken momentum or direct narrative action emerging organically from the narrator's authentic prose keywords.
-      4. THE MEMORY WEAVE (Master Fusion): Start with a grand master thesis fusing heritage and adaptation (e.g., "Across three continents and six decades, our family story remains a single continuous arc of survival...").
-
     [TIMELESS TEMPORAL CALCULATION HORIZON & ACCURACY MANDATE]
     - ANCHOR YEAR (MEMORY MARK): ${anchorYearStr} (Narrator age: ${narratorAgeAtTime} year old).
     - TIMELINE SPAN HORIZON: ${temporalSpanStr} (${durationQuantity} ${durationUnit}).
-    - TEMPORAL FIDELITY RULE: Honor the user's MEMORY MARK anchor year (${anchorYearStr}) as the primary temporal baseline, allowing narrative events to span seamlessly across ${temporalSpanStr}. Both the initial anchor year (${anchorYearStr}) and span completion years (e.g. ${endYear || 'subsequent years'}) are mathematically valid narrative anchors.
+    - TEMPORAL FIDELITY RULE: Honor the user's MEMORY MARK anchor year (${anchorYearStr}) as the primary temporal baseline, allowing narrative events to span seamlessly across ${temporalSpanStr}.
     - BAN AMBIGUOUS RELATIVE TEMPORAL PHRASES: NEVER write floating relative phrases like "Rewind thirty years", "A few decades ago", "Thirty years back", or "Some years ago".
-    - TIMELESS ORAL HISTORY & ZERO TEMPORAL EXTRAPOLATION RULE (GOV-MW-162): Monologues are preserved for 30–100+ years into the future. Only use calendar years explicitly declared in [DATA ANCHORS] or the primary anchor (${anchorYearStr}). If the narrator recounts earlier ancestral events without specifying an exact calendar year, use respectful relative phrasing ('In those early years,', 'Generations before that turning point,', 'Long before my own memory began,'). You are STRICTLY FORBIDDEN from inventing or extrapolating unstated calendar years (such as 1956, 1960, etc.) to fill historical gaps.
+    - TIMELESS ORAL HISTORY & ZERO TEMPORAL EXTRAPOLATION RULE (GOV-MW-162): Only use calendar years explicitly declared in [DATA ANCHORS] or the primary anchor (${anchorYearStr}). If recounting earlier ancestral events without an exact calendar year, use respectful relative phrasing ('In those early years,', 'Generations before that turning point,', 'Long before my own memory began,'). Strictly forbidden from inventing unstated calendar years (such as 1956, 1960, etc.).
 
     [STRICT VOCABULARY & FACTUAL FIDELITY MANDATE - CRITICAL]
     - FACTUAL FIDELITY: Strictly adhere to the exact facts, terminology, and historical details provided in User Memory.
-    - NO CONTRADICTORY SYNONYMS: NEVER re-introduce terms or concepts that contradict or modify the user's authentic prose (e.g. if the user explicitly describes ancestors as "settled agricultural labourers", NEVER write "nomadic labourers" or hallucinate unmentioned labels).
-    - ZERO HISTORICAL HALLUCINATION: Respect all phrasing corrections, deletions, and vocabulary choices in the user's input text.
+    - NO CONTRADICTORY SYNONYMS: NEVER re-introduce terms or concepts that contradict or modify the user's authentic prose.
+    - BANNED CANNED TEMPLATES: NEVER start with "The history I carry...", "My parents describe...", "I was raised on the stories of...", or "The family tells me...".
+    - BANNED AI CLICHÉS: NEVER use "odyssey", "lineage", "tapestry", "vibrant", "testament", "unfolding", "interwoven", "symphony".
 
     [THE SOIL OF TRUTH - DATA ANCHORS]
-    - User Memory: "${description}"
+    - User Memory: "${safeDescription}"
     - The Mantra: "Learn, adapt, work hard, keep going."
 
-    [FULL-LENGTH SPOKEN MONOLOGUE WORD-COUNT SCALE PARITY MANDATE - CRITICAL]
-    - TARGET MONOLOGUE LENGTH: ALL FOUR AI VISIONS MUST BE FULL-LENGTH SPOKEN PERFORMANCE MONOLOGUES TARGETING ~${targetScale} WORDS (ALLOWABLE RANGE: ${targetMin} TO ${targetMax} WORDS).
-    - ZERO TRUNCATION RULE: DO NOT GENERATE SHORT 100-140 WORD SNIPPETS FOR ANY VISION CARD. EACH OPTION MUST PROVIDE EQUAL NARRATIVE RICHNESS AND DURATION PARITY (~2:00 TO 2:30 MINUTES PERFORMANCE TIME).
-    - 1. THE SOUL-PRINT: ~${targetScale} words. Internal resonance & deep family values, fully expanded into a complete spoken performance.
-    - 2. THE ATMOSPHERIC WEAVE: ~${targetScale} words. Vivid sensory contrast & physical atmosphere, fully expanded into a complete spoken performance.
-    - 3. THE FLOW: ~${targetScale} words. Spoken momentum, natural narrative flow, and effortless teleprompter reading rhythm.
-    - 4. THE MEMORY WEAVE (Master Fusion): ~${targetScale} words. Crown synthesis fusing authentic personal voice, emotional depth, sensory texture, and dynamic rhythm into a master score.
-
-    [STRICT FORMATTING MUZZLE]
-    - CLEAN SCRIPT: Prose ONLY. No "V.O.", "Narrator:", or technical brackets.
-    - NO IDENTITY THEFT: Never imply the 1-year-old was an adult (No "I worked," No "I learned").
-
-    [UK ENGLISH COMPLIANCE]
-    - British spellings ONLY: labour, colour, realise, grey, centre, programme.
-
-    [OUTPUT SCHEMA V6.3]
-    Return a JSON object with this exact structure. You MUST provide EXACTLY FOUR objects in the "visions" array (The Soul-Print, The Atmospheric Weave, The Flow, and The Memory Weave):
-    {
-      "polishedOriginalHook": "Refined UK English version of raw input.",
-      "temporalSummary": "Rationale for the inherited perspective and specific family framing.",
-      "visions": [
-        {
-          "visionType": "The Soul-Print",
-          "visionFocus": "A 5-word subtitle for the UI (e.g., 'The Seed of an Odyssey')",
-          "cleanScript": "Spoken prose (NO technical jargon)",
-          "beatSheet": ["5-6 emotional arc strings for the UI"],
-          "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "Cue" }],
-          "preFlightBrief": {
-            "sensoryAnchors": ["3 triggers"],
-            "vocalInstructions": ["3 pacing tips"],
-            "heroMoment": "One high-impact direct-to-lens sentence"
-          }
-        },
-        {
-          "visionType": "The Atmospheric Weave",
-          "visionFocus": "...",
-          "cleanScript": "...",
-          "beatSheet": ["..."],
-          "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "..." }],
-          "preFlightBrief": { "sensoryAnchors": ["..."], "vocalInstructions": ["..."], "heroMoment": "..." }
-        },
-        {
-          "visionType": "The Flow",
-          "visionFocus": "...",
-          "cleanScript": "...",
-          "beatSheet": ["..."],
-          "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "..." }],
-          "preFlightBrief": { "sensoryAnchors": ["..."], "vocalInstructions": ["..."], "heroMoment": "..." }
-        },
-        {
-          "visionType": "The Memory Weave",
-          "visionFocus": "Master synthesis fusing voice, emotion, atmosphere, and rhythm.",
-          "cleanScript": "...",
-          "beatSheet": ["..."],
-          "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "..." }],
-          "preFlightBrief": { "sensoryAnchors": ["..."], "vocalInstructions": ["..."], "heroMoment": "..." }
-        }
-      ]
-    }
+    [FULL-LENGTH SPOKEN MONOLOGUE WORD-COUNT SCALE PARITY MANDATE]
+    - TARGET MONOLOGUE LENGTH: Full-length spoken performance monologue targeting ~${targetScale} words (allowable range: ${targetMin} to ${targetMax} words).
+    - CLEAN SCRIPT: First-person spoken prose ONLY. No "V.O.", "Narrator:", camera directions, or technical brackets.
+    - NO IDENTITY THEFT: Never imply a 1-year-old was an adult.
+    - UK ENGLISH COMPLIANCE & DIASPORA VOICE SHIELD: British spellings ONLY (labour, colour, realise, grey, centre, programme, favourite, honour) and preserve South Asian / diaspora heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji) verbatim.
   `;
 
-    try {
-    const { output } = await pRetry(async () => {
-      try {
-        const activeModel = await getActiveModel('genkit');
-        console.log(`[AI Weaver] ai.generate starting with model: ${activeModel}`);
-        return await ai.generate({
-          prompt,
-          model: activeModel,
-          output: {
-            schema: z.object({
-              polishedOriginalHook: z.string(),
-              temporalSummary: z.string(),
-              visions: z.array(z.object({
-                visionType: z.string(),
-                visionFocus: z.string(),
-                cleanScript: z.string(),
-                stageDirections: z.array(z.object({
-                  type: z.enum(['visual', 'audio', 'beat']),
-                  content: z.string(),
-                  timecode: z.string()
-                })),
-                beatSheet: z.array(z.string()),
-                preFlightBrief: z.object({
-                  sensoryAnchors: z.array(z.string()),
-                  vocalInstructions: z.array(z.string()),
-                  heroMoment: z.string()
-                })
-              })).min(3).max(4)
-            }),
+  const SingleVisionSchema = z.object({
+    polishedOriginalHook: z.string().optional(),
+    temporalSummary: z.string().optional(),
+    visionType: z.string(),
+    visionFocus: z.string(),
+    cleanScript: z.string(),
+    stageDirections: z.array(z.object({
+      type: z.enum(['visual', 'audio', 'beat']),
+      content: z.string(),
+      timecode: z.string(),
+    })),
+    beatSheet: z.array(z.string()),
+    preFlightBrief: z.object({
+      sensoryAnchors: z.array(z.string()),
+      vocalInstructions: z.array(z.string()),
+      heroMoment: z.string(),
+    }),
+  });
+
+  try {
+    const ai = await getAI();
+    const activeModel = await getActiveModel('genkit');
+    console.log(`[AI Weaver] Launching 4 parallel vision calls on model: ${activeModel} (thinkingBudget: 0)`);
+
+    const settled = await Promise.allSettled(
+      visionSpecs.map((spec, idx) =>
+        pRetry(
+          async () => {
+            const singleVisionPrompt = `
+              ${sharedDirective}
+
+              [ASSIGNED SCORE ANGLE (${idx + 1} OF 4): ${spec.visionType}]
+              - OPENING INGRESS & FOCUS: ${spec.ingressDirective}
+              - Write a complete ~${targetScale}-word spoken monologue for "${spec.visionType}".
+              ${idx === 0 ? '- Also include "polishedOriginalHook" (refined UK English version of the raw input) and "temporalSummary" (1-sentence rationale for the perspective framing).' : ''}
+            `;
+
+            const res = await ai.generate({
+              prompt: singleVisionPrompt,
+              model: activeModel,
+              output: {
+                schema: SingleVisionSchema,
+              },
+              config: buildGenkitConfig(activeModel, {
+                maxOutputTokens: 2048,
+                temperature: 0.75,
+              }),
+            });
+
+            const out: any = res?.output;
+            if (!out) {
+              throw new Error(`Empty output for vision ${spec.visionType}`);
+            }
+
+            // Support legacy test mocks that return { visions: [...] }
+            if (Array.isArray(out.visions) && out.visions.length > 0) {
+              const matched = out.visions[idx] || out.visions[0];
+              return {
+                ...matched,
+                visionType: matched.visionType || spec.visionType,
+                polishedOriginalHook: out.polishedOriginalHook,
+                temporalSummary: out.temporalSummary,
+              };
+            }
+
+            return {
+              ...out,
+              visionType: spec.visionType,
+            };
           },
-          config: {
-            maxOutputTokens: 8192,
-            temperature: 0.75
+          {
+            retries: 1,
+            onFailedAttempt: (error: any) => {
+              console.warn(
+                `[AI Weaver] Vision "${spec.visionType}" attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left. Error: ${extractRetryErrorMessage(error)}`
+              );
+            },
           }
-        });
-      } catch (genError: any) {
-        console.error("[AI Weaver] ai.generate internal error:", genError.message || genError);
-        throw genError; // Re-throw for pRetry
+        )
+      )
+    );
+
+    let resolvedPolishedHook = cleanedHook;
+    let resolvedTemporalSummary = defaultTemporalSummary;
+    let fulfilledCount = 0;
+
+    const finalVisions = visionSpecs.map((spec, idx) => {
+      const result = settled[idx];
+      if (result.status === 'fulfilled' && result.value && result.value.cleanScript) {
+        fulfilledCount++;
+        const v = result.value;
+        if (v.polishedOriginalHook && idx === 0) {
+          resolvedPolishedHook = sanitizeProseTemporalFidelity(sanitizeProse(v.polishedOriginalHook), allowedYears);
+        }
+        if (v.temporalSummary && idx === 0) {
+          resolvedTemporalSummary = v.temporalSummary;
+        }
+
+        return {
+          visionType: v.visionType || spec.visionType,
+          visionFocus: v.visionFocus || fallbackVisions[idx].visionFocus,
+          cleanScript: sanitizeProseTemporalFidelity(sanitizeProse(v.cleanScript), allowedYears),
+          stageDirections: Array.isArray(v.stageDirections) && v.stageDirections.length > 0
+            ? v.stageDirections
+            : fallbackVisions[idx].stageDirections,
+          beatSheet: Array.isArray(v.beatSheet) && v.beatSheet.length > 0
+            ? v.beatSheet
+            : fallbackVisions[idx].beatSheet,
+          preFlightBrief: v.preFlightBrief
+            ? {
+                sensoryAnchors: Array.isArray(v.preFlightBrief.sensoryAnchors)
+                  ? v.preFlightBrief.sensoryAnchors.map((a: string) =>
+                      sanitizeSensoryAnchorTemporalFidelity(a, allowedYears)
+                    )
+                  : fallbackVisions[idx].preFlightBrief.sensoryAnchors,
+                vocalInstructions: Array.isArray(v.preFlightBrief.vocalInstructions)
+                  ? v.preFlightBrief.vocalInstructions
+                  : fallbackVisions[idx].preFlightBrief.vocalInstructions,
+                heroMoment: v.preFlightBrief.heroMoment || fallbackVisions[idx].preFlightBrief.heroMoment,
+              }
+            : fallbackVisions[idx].preFlightBrief,
+        };
       }
-    }, {
-      retries: 3,
-      onFailedAttempt: (error: any) => {
-        console.warn(`[AI Weaver] Draft Generation attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left. Error: ${error.message}`);
-      }
+
+      console.warn(`[AI Weaver] Vision "${spec.visionType}" fell back to resilient template.`);
+      return fallbackVisions[idx];
     });
 
-    if (!output) throw new Error("AI Weaver failed to generate output.");
+    console.log(
+      `[AI Weaver] generateDraftOptions V7.0 completed (${fulfilledCount}/4 AI visions) in ${Date.now() - startTimeMs}ms.`
+    );
 
-    // GOV-MW-162 Truth Shield: Deterministic multi-layer temporal sanitization
-    output.polishedOriginalHook = sanitizeProseTemporalFidelity(output.polishedOriginalHook, allowedYears);
-    if (output.visions && Array.isArray(output.visions)) {
-      output.visions = output.visions.map((v: any) => ({
-        ...v,
-        cleanScript: sanitizeProseTemporalFidelity(sanitizeProse(v.cleanScript), allowedYears),
-        preFlightBrief: v.preFlightBrief ? {
-          ...v.preFlightBrief,
-          sensoryAnchors: Array.isArray(v.preFlightBrief.sensoryAnchors)
-            ? v.preFlightBrief.sensoryAnchors.map((a: string) => sanitizeSensoryAnchorTemporalFidelity(a, allowedYears))
-            : v.preFlightBrief.sensoryAnchors
-        } : v.preFlightBrief
-      }));
-    }
-
-    return output;
+    return {
+      polishedOriginalHook: resolvedPolishedHook,
+      temporalSummary: resolvedTemporalSummary,
+      visions: finalVisions,
+    };
   } catch (error: any) {
     console.error("[AI Weaver] Draft Options Failure. Executing resilient fallback spectrum...", error);
-    
-    // RESILIENT FALLBACK SPECTRUM: Prevent user lock-out on transient model quota / API knots
-    const fallbackProse = (await stripScreenplayCues(description || "")) as string;
-    const cleanedHook = fallbackProse && fallbackProse.length > 0 ? fallbackProse : "A timeless reflection of heritage, survival, and family roots.";
-    
     return {
       polishedOriginalHook: cleanedHook,
-      temporalSummary: `Preserved narrative anchors anchored in ${anchorYearStr !== 'Historical Era' ? anchorYearStr : 'the family record'}.`,
-      visions: [
-        {
-          visionType: "The Poetic Weave",
-          visionFocus: "The Soul-Print: Internal resonance & deep family values.",
-          cleanScript: cleanedHook,
-          stageDirections: [{ type: "audio", content: "Warm ambient acoustic tone", timecode: "00:00" }],
-          beatSheet: ["Spiritual Bedrock", "Enduring Heritage"],
-          preFlightBrief: {
-            sensoryAnchors: ["Family Values", "Heritage Soil"],
-            vocalInstructions: ["Speak with reflective warmth", "Maintain steady cadence"],
-            heroMoment: "Core value revelation."
-          }
-        },
-        {
-          visionType: "The Direct Weave",
-          visionFocus: "The Atmospheric Weave: Vivid sensory contrast & physical atmosphere.",
-          cleanScript: cleanedHook,
-          stageDirections: [{ type: "audio", content: "Documentary room tone", timecode: "00:00" }],
-          beatSheet: ["Sensory Contrast", "Physical Landscape"],
-          preFlightBrief: {
-            sensoryAnchors: ["Environmental Contrast", "Tactile Texture"],
-            vocalInstructions: ["Grounded, authentic delivery", "Pause for sensory beats"],
-            heroMoment: "Atmospheric shift."
-          }
-        },
-        {
-          visionType: "The Flow",
-          visionFocus: "Generational Momentum: Effortless teleprompter rhythm & narrative cadence.",
-          cleanScript: cleanedHook,
-          stageDirections: [{ type: "audio", content: "Subtle rhythmic pulse", timecode: "00:00" }],
-          beatSheet: ["Spoken Momentum", "Legacy Arc"],
-          preFlightBrief: {
-            sensoryAnchors: ["Generational Arc", "Spoken Rhythm"],
-            vocalInstructions: ["Maintain natural flow", "Direct teleprompter engagement"],
-            heroMoment: "Legacy affirmation."
-          }
-        },
-        {
-          visionType: "The Memory Weave",
-          visionFocus: "Crown Synthesis: Master fusion of authentic voice, emotional depth, and rhythm.",
-          cleanScript: cleanedHook,
-          stageDirections: [{ type: "audio", content: "Full cinematic orchestral rise", timecode: "00:00" }],
-          beatSheet: ["Master Synthesis", "Crown Monologue"],
-          preFlightBrief: {
-            sensoryAnchors: ["Master Heritage", "Crown Resolution"],
-            vocalInstructions: ["Resonant directorial climax", "Measured concluding pause"],
-            heroMoment: "Crown memory synthesis."
-          }
-        }
-      ]
+      temporalSummary: defaultTemporalSummary,
+      visions: fallbackVisions,
     };
   } finally {
     const memory = process.memoryUsage();
@@ -1242,7 +1364,7 @@ export async function generateDirectorialBrief(
   const ai = await getAI();
   
   try {
-    const audioCues = stageDirections
+    const audioCues = (stageDirections || [])
       .filter(sd => sd.type === 'audio')
       .map(sd => sd.content)
       .join(', ');
@@ -1280,6 +1402,7 @@ export async function generateDirectorialBrief(
     const { output } = await pRetry(async () => {
       return await ai.generate({
         prompt,
+        model: GENKIT_MODELS.FLASH_LITE,
         output: {
           schema: z.object({
             preFlightBrief: z.object({

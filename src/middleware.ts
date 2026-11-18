@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import * as jose from 'jose';
 import { SESSION_COOKIE_NAME } from './lib/constants';
-import { STAGING_COOKIE_NAME, isValidStagingToken, computeStagingToken, getStagingPasscode } from './lib/stagingAuth';
+import {
+  STAGING_COOKIE_NAME,
+  isValidStagingToken,
+  computeStagingToken,
+  getStagingPasscode,
+  verifySignedStagingInviteToken,
+} from './lib/stagingAuth';
 import { serverLog } from './utils/telemetry/serverLogger';
 
 const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
@@ -166,6 +172,8 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/_next') ||
       pathname.startsWith('/staging-lock') ||
       pathname.startsWith('/api/auth/staging-unlock') ||
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/api/admin/') ||
       pathname.startsWith('/api/version') ||
       pathname.startsWith('/api/dev/ping') ||
       pathname.startsWith('/api/webhooks/') ||
@@ -183,14 +191,21 @@ export async function middleware(request: NextRequest) {
       const isAuthorized = await isValidStagingToken(stagingToken);
 
       if (!isAuthorized) {
-        // MW-87: Check if query parameter carries valid staging passcode (?passcode=... or ?stage_key=...)
+        // MW-87: Check if query parameter carries valid staging passcode (?passcode=..., ?stage_key=..., or expiring ?stage_token=...)
+        const queryStageToken = request.nextUrl.searchParams.get('stage_token');
         const queryPass = request.nextUrl.searchParams.get('passcode') || request.nextUrl.searchParams.get('stage_key');
         const expectedPass = getStagingPasscode();
-        if (queryPass && queryPass.trim().toUpperCase() === expectedPass.toUpperCase()) {
+        const isQueryPassValid = Boolean(queryPass && queryPass.trim().toUpperCase() === expectedPass.toUpperCase());
+        const isSignedTokenValid = !isQueryPassValid && Boolean(queryStageToken)
+          ? await verifySignedStagingInviteToken(queryStageToken)
+          : false;
+
+        if (isQueryPassValid || isSignedTokenValid) {
           const validToken = await computeStagingToken(expectedPass);
           const cleanUrl = new URL(request.url);
           cleanUrl.searchParams.delete('passcode');
           cleanUrl.searchParams.delete('stage_key');
+          cleanUrl.searchParams.delete('stage_token');
           const autoResponse = NextResponse.redirect(cleanUrl);
           autoResponse.cookies.set(STAGING_COOKIE_NAME, validToken, {
             path: '/',

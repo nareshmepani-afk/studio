@@ -28,26 +28,52 @@ if (serviceAccountRaw) {
   }
 }
 
+let cachedAuthClient: any = null;
+let cachedAccessToken: string | null = null;
+let cachedTokenExpiresAtMs = 0;
+const TOKEN_TTL_FALLBACK_MS = 45 * 60 * 1000; // 45 minutes safe cache window
+
+async function resolveServiceAccountAccessToken(): Promise<string | null> {
+  if (!credentials) return null;
+  const now = Date.now();
+  if (cachedAccessToken && now < cachedTokenExpiresAtMs - 60_000) {
+    return cachedAccessToken;
+  }
+
+  if (!cachedAuthClient) {
+    const auth = new GoogleAuth({
+      credentials,
+      scopes: [
+        'https://www.googleapis.com/auth/generative-language',
+        'https://www.googleapis.com/auth/cloud-platform',
+      ],
+    });
+    cachedAuthClient = await auth.getClient();
+  }
+
+  const tokenResponse = await cachedAuthClient.getAccessToken();
+  const token = tokenResponse?.token || null;
+  if (token) {
+    cachedAccessToken = token;
+    const expiryDate = cachedAuthClient?.credentials?.expiry_date;
+    cachedTokenExpiresAtMs =
+      typeof expiryDate === 'number' && expiryDate > now
+        ? expiryDate
+        : now + TOKEN_TTL_FALLBACK_MS;
+  }
+  return token;
+}
+
 /**
- * Returns a configured Genkit instance with a fresh Service Account token.
+ * Returns a configured Genkit instance with a fresh or cached Service Account token.
  * This is called by Server Actions to ensure a valid connection.
  */
 export async function getAI() {
-  let customHeaders: Record<string, string> = {};
+  const customHeaders: Record<string, string> = {};
 
   if (credentials) {
     try {
-      const auth = new GoogleAuth({
-        credentials,
-        scopes: [
-          'https://www.googleapis.com/auth/generative-language',
-          'https://www.googleapis.com/auth/cloud-platform'
-        ],
-      });
-      const client = await auth.getClient();
-      const tokenResponse = await client.getAccessToken();
-      const token = tokenResponse.token;
-      
+      const token = await resolveServiceAccountAccessToken();
       if (token) {
         customHeaders['Authorization'] = `Bearer ${token}`;
       }

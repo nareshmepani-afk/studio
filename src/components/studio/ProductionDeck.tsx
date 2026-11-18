@@ -1040,10 +1040,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             try {
                                 const url = await generateSoundtrack(audioCue.content, memoryData.id, vision.visionType);
                                 if (synthesisAbortRef.current) break; // Check again after await
-                                if (url) {
-                                    console.log(`[ProductionDeck] Soundtrack synthesized for vision ${index + 1} of ${completeDrafts.length} (${vision.visionType}):`, url);
-                                    setReviewDrafts((prev: any[] | null) => prev?.map((v: any, i: number) => i === index ? { ...v, generatedSoundtrackUrl: url } : v) || null);
+                                if (!url) {
+                                    // Avoid firing 4 more redundant server actions when Replicate is unconfigured
+                                    break;
                                 }
+                                console.log(`[ProductionDeck] Soundtrack synthesized for vision ${index + 1} of ${completeDrafts.length} (${vision.visionType}):`, url);
+                                setReviewDrafts((prev: any[] | null) => prev?.map((v: any, i: number) => i === index ? { ...v, generatedSoundtrackUrl: url } : v) || null);
                             } catch (e) {
                                 console.error(`[ProductionDeck] Soundtrack failure for vision ${index + 1}:`, e);
                             }

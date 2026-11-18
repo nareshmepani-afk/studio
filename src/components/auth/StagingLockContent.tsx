@@ -1,72 +1,76 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { DEFAULT_STAGING_PASSCODE } from '@/lib/stagingAuth';
+import { useSearchParams } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function StagingLockContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const [passcode, setPasscode] = useState(DEFAULT_STAGING_PASSCODE);
+  const [passcode, setPasscode] = useState('');
+  const [showPasscode, setShowPasscode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const destination = searchParams.get('from') || '/studio';
 
-  const submitPasscode = useCallback(async (codeToSubmit: string) => {
-    if (!codeToSubmit.trim()) {
-      setError('Please enter the staging access passcode.');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch('/api/auth/staging-unlock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passcode: codeToSubmit.trim() })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        setError(data.error || 'Invalid passcode. Access denied.');
-        setLoading(false);
+  const submitUnlockPayload = useCallback(
+    async (payload: { passcode?: string; stageToken?: string }) => {
+      const code = (payload.passcode || '').trim();
+      const token = (payload.stageToken || '').trim();
+      if (!code && !token) {
+        setError('Please enter the staging access passcode.');
         return;
       }
 
-      setSuccess(true);
-      // Brief delay for visual feedback before seamless redirect
-      setTimeout(() => {
-        window.location.href = destination;
-      }, 900);
-    } catch (err: any) {
-      console.error('[StagingLock] Network error:', err);
-      setError('Network error validating passcode. Please try again.');
-      setLoading(false);
-    }
-  }, [destination]);
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch('/api/auth/staging-unlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(token ? { stageToken: token } : { passcode: code }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          setError(data.error || 'Invalid passcode. Access denied.');
+          setLoading(false);
+          return;
+        }
+
+        setSuccess(true);
+        // Brief delay for visual feedback before seamless redirect
+        setTimeout(() => {
+          window.location.href = destination;
+        }, 900);
+      } catch (err: any) {
+        console.error('[StagingLock] Network error:', err);
+        setError('Network error validating passcode. Please try again.');
+        setLoading(false);
+      }
+    },
+    [destination]
+  );
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    await submitPasscode(passcode);
+    await submitUnlockPayload({ passcode });
   };
 
-  // Auto-unlock if URL query parameter provides passcode or auto=true
+  // Auto-unlock only when an explicit signed invite token or query passcode is provided in the link
   useEffect(() => {
+    const queryStageToken = searchParams.get('stage_token');
     const queryPass = searchParams.get('passcode') || searchParams.get('key');
-    const autoParam = searchParams.get('auto');
-    if (queryPass) {
+    if (queryStageToken) {
+      submitUnlockPayload({ stageToken: queryStageToken });
+    } else if (queryPass) {
       setPasscode(queryPass);
-      submitPasscode(queryPass);
-    } else if (autoParam === 'true') {
-      submitPasscode(DEFAULT_STAGING_PASSCODE);
+      submitUnlockPayload({ passcode: queryPass });
     }
-  }, [searchParams, submitPasscode]);
+  }, [searchParams, submitUnlockPayload]);
 
   return (
     <div className="min-h-screen bg-[#050505] text-neutral-200 flex flex-col justify-between p-4 sm:p-8 font-sans relative overflow-hidden selection:bg-amber-500/30 selection:text-amber-200">
@@ -105,7 +109,7 @@ export default function StagingLockContent() {
               Authorised Access Only
             </h1>
             <p className="text-xs sm:text-sm text-neutral-400 mt-2 leading-relaxed">
-              This preview environment is restricted to verified studio directors and core development team members.
+              This preview environment is restricted to verified studio directors and invited testers.
             </p>
           </div>
 
@@ -115,29 +119,31 @@ export default function StagingLockContent() {
                 <label htmlFor="passcode" className="block text-[11px] font-mono font-bold uppercase tracking-wider text-neutral-400">
                   Studio Access Passcode
                 </label>
+              </div>
+              <div className="relative">
+                <input
+                  id="passcode"
+                  data-testid="STAGING_LOCK_PASSCODE_INPUT"
+                  type={showPasscode ? 'text' : 'password'}
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  placeholder="Enter access passcode..."
+                  autoComplete="off"
+                  spellCheck={false}
+                  autoFocus
+                  disabled={loading || success}
+                  className="w-full bg-black/70 border border-white/15 focus:border-amber-500/70 rounded-xl pl-4 pr-11 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none transition-all font-mono tracking-wider"
+                />
                 <button
                   type="button"
-                  onClick={() => {
-                    setPasscode(DEFAULT_STAGING_PASSCODE);
-                    setError(null);
-                  }}
-                  className="text-[10px] font-mono text-amber-400/90 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"
+                  onClick={() => setShowPasscode((prev) => !prev)}
+                  data-testid="STAGING_LOCK_TOGGLE_VISIBILITY_BTN"
+                  aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer p-1"
                 >
-                  <span>⚡ Quick Fill: {DEFAULT_STAGING_PASSCODE}</span>
+                  {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <input
-                id="passcode"
-                type="text"
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Enter access passcode..."
-                autoComplete="off"
-                spellCheck={false}
-                autoFocus
-                disabled={loading || success}
-                className="w-full bg-black/70 border border-white/15 focus:border-amber-500/70 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none transition-all font-mono tracking-wider uppercase"
-              />
             </div>
 
             {error && (

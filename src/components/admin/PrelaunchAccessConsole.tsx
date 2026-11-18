@@ -4,11 +4,17 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
   ClipboardPaste,
+  Copy,
+  Eye,
+  EyeOff,
   Globe,
+  KeyRound,
+  Link2,
   Lock,
   RefreshCw,
   Search,
   ShieldCheck,
+  Sparkles,
   Trash2,
   UserPlus,
   Users,
@@ -68,7 +74,34 @@ export function PrelaunchAccessConsole() {
   const [importingBulk, setImportingBulk] = useState(false);
   const [togglingKey, setTogglingKey] = useState<string | null>(null);
 
+  // Staging Perimeter Vault (/api/admin/staging-access)
+  const [stagingPasscode, setStagingPasscode] = useState('MW-STAGE-2026');
+  const [stagingMaskedPasscode, setStagingMaskedPasscode] = useState('•••••••••2026');
+  const [stagingIsCustomEnv, setStagingIsCustomEnv] = useState(false);
+  const [stagingBrowserUnlocked, setStagingBrowserUnlocked] = useState(false);
+  const [revealStagingPasscode, setRevealStagingPasscode] = useState(false);
+  const [unlockingThisBrowser, setUnlockingThisBrowser] = useState(false);
+  const [magicTargetPath, setMagicTargetPath] = useState<'/register' | '/studio' | '/gift'>('/register');
+  const [magicLinkMode, setMagicLinkMode] = useState<'24h' | '7d' | 'direct'>('24h');
+  const [mintingMagicLink, setMintingMagicLink] = useState(false);
+
   const bulkPreview = useMemo(() => parseBulkEmailsInput(bulkText), [bulkText]);
+
+  const fetchStagingVault = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/staging-access', { cache: 'no-store' });
+      if (!res || typeof res.json !== 'function') return;
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        if (data.passcode) setStagingPasscode(data.passcode);
+        if (data.maskedPasscode) setStagingMaskedPasscode(data.maskedPasscode);
+        setStagingIsCustomEnv(Boolean(data.isCustomEnv));
+        setStagingBrowserUnlocked(Boolean(data.browserUnlocked));
+      }
+    } catch {
+      // Non-fatal in test/isolated environments
+    }
+  }, []);
 
   const fetchRoster = useCallback(async () => {
     setLoading(true);
@@ -94,7 +127,77 @@ export function PrelaunchAccessConsole() {
 
   useEffect(() => {
     fetchRoster();
-  }, [fetchRoster]);
+    fetchStagingVault();
+  }, [fetchRoster, fetchStagingVault]);
+
+  const handleCopyStagingPasscode = async () => {
+    try {
+      await navigator.clipboard.writeText(stagingPasscode);
+      toast.success('Staging Passcode Copied', {
+        description: 'Ready to paste into /staging-lock or share privately.',
+      });
+    } catch {
+      toast.error('Clipboard Copy Failed');
+    }
+  };
+
+  const handleUnlockThisBrowser = async () => {
+    setUnlockingThisBrowser(true);
+    try {
+      const res = await fetch('/api/admin/staging-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'unlock_browser' }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to unlock staging cookie');
+      }
+      setStagingBrowserUnlocked(true);
+      toast.success('Staging Perimeter Unlocked', {
+        description: '30-day staging access cookie set on this browser.',
+      });
+    } catch (err: any) {
+      toast.error('Unlock Failed', { description: err?.message });
+    } finally {
+      setUnlockingThisBrowser(false);
+    }
+  };
+
+  const handleCopyMagicLink = async (copyFullInvite = false) => {
+    setMintingMagicLink(true);
+    try {
+      const ttlHours = magicLinkMode === '7d' ? 168 : 24;
+      const res = await fetch('/api/admin/staging-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'mint_link',
+          targetPath: magicTargetPath,
+          ttlHours,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to generate staging magic link');
+      }
+      const urlToCopy = magicLinkMode === 'direct' ? data.directUrl : data.signedUrl;
+      const textToCopy = copyFullInvite ? data.inviteMessage : urlToCopy;
+      await navigator.clipboard.writeText(textToCopy);
+      toast.success(
+        copyFullInvite ? 'Tester Invite Message Copied' : 'Staging Magic Link Copied',
+        {
+          description: copyFullInvite
+            ? `Includes 1-click ${magicLinkMode === '7d' ? '7-day' : '24-hour'} link and fallback passcode.`
+            : urlToCopy,
+        }
+      );
+    } catch (err: any) {
+      toast.error('Magic Link Generation Failed', { description: err?.message });
+    } finally {
+      setMintingMagicLink(false);
+    }
+  };
 
   const handleToggleMode = async () => {
     const nextMode: PrelaunchMode = mode === 'RESTRICTED' ? 'PUBLIC' : 'RESTRICTED';
@@ -282,6 +385,147 @@ export function PrelaunchAccessConsole() {
 
   return (
     <div className="space-y-6">
+      {/* Staging Perimeter Vault (/staging-lock Passcode & Magic Link Builder) */}
+      <div
+        data-testid="ADMIN_STAGING_PERIMETER_VAULT"
+        className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-slate-900/90 via-slate-900/75 to-amber-950/20 p-5"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <KeyRound className="h-4 w-4 text-amber-400" />
+              <h3 className="text-sm font-bold text-white tracking-wide">
+                Staging Perimeter Vault (dev.memoryweaver.studio)
+              </h3>
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                {stagingIsCustomEnv ? 'Custom Secret Active' : 'Master Key Active'}
+              </span>
+              {stagingBrowserUnlocked && (
+                <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                  This Browser Unlocked (30d)
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 max-w-2xl">
+              Public hints and prefilled passcodes have been removed from{' '}
+              <span className="font-mono text-slate-300">/staging-lock</span>. Copy the staging key,
+              unlock this browser in 1 click, or generate a signed magic link for invited testers.
+            </p>
+          </div>
+
+          {/* Masked Passcode + Reveal/Copy + 1-Click Browser Unlock */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-950/90 px-3 py-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold mr-1">
+                Key:
+              </span>
+              <code
+                data-testid="ADMIN_STAGING_PASSCODE_VALUE"
+                className="text-xs font-mono font-bold text-amber-300 tracking-wider select-all"
+              >
+                {revealStagingPasscode ? stagingPasscode : stagingMaskedPasscode}
+              </code>
+              <button
+                type="button"
+                onClick={() => setRevealStagingPasscode((v) => !v)}
+                data-testid="ADMIN_STAGING_PASSCODE_TOGGLE"
+                aria-label={revealStagingPasscode ? 'Hide staging passcode' : 'Reveal staging passcode'}
+                className="ml-1.5 p-1 rounded-md text-slate-400 hover:text-amber-300 hover:bg-slate-800/80 transition-colors"
+                title={revealStagingPasscode ? 'Hide passcode' : 'Reveal passcode'}
+              >
+                {revealStagingPasscode ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyStagingPasscode}
+                data-testid="ADMIN_COPY_STAGING_PASSCODE"
+                aria-label="Copy staging passcode"
+                className="p-1 rounded-md text-slate-400 hover:text-amber-300 hover:bg-slate-800/80 transition-colors"
+                title="Copy staging passcode"
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleUnlockThisBrowser}
+              disabled={unlockingThisBrowser}
+              data-testid="ADMIN_UNLOCK_THIS_BROWSER_BTN"
+              className="border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 text-xs"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 mr-1.5 text-amber-400" />
+              {unlockingThisBrowser
+                ? 'Unlocking...'
+                : stagingBrowserUnlocked
+                  ? 'Refresh 30d Browser Unlock'
+                  : 'Unlock This Browser (30d)'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Tester Magic Link Builder */}
+        <div className="mt-4 pt-3.5 border-t border-slate-800/80 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Link2 className="h-3.5 w-3.5 text-amber-400" />
+              Tester Magic Link:
+            </span>
+            <select
+              aria-label="Magic link target route"
+              data-testid="ADMIN_MAGIC_TARGET_SELECT"
+              value={magicTargetPath}
+              onChange={(e) => setMagicTargetPath(e.target.value as '/register' | '/studio' | '/gift')}
+              className="rounded-lg border border-slate-700 bg-slate-950/90 px-2.5 py-1 text-xs text-slate-200"
+            >
+              <option value="/register">Target: /register (Onboarding)</option>
+              <option value="/studio">Target: /studio (Scriptorium)</option>
+              <option value="/gift">Target: /gift (Gift Checkout)</option>
+            </select>
+
+            <select
+              aria-label="Magic link expiry mode"
+              data-testid="ADMIN_MAGIC_EXPIRY_SELECT"
+              value={magicLinkMode}
+              onChange={(e) => setMagicLinkMode(e.target.value as '24h' | '7d' | 'direct')}
+              className="rounded-lg border border-slate-700 bg-slate-950/90 px-2.5 py-1 text-xs text-slate-200"
+            >
+              <option value="24h">24h Signed Token (?stage_token=)</option>
+              <option value="7d">7d Signed Token (?stage_token=)</option>
+              <option value="direct">Direct Passcode (?passcode=)</option>
+            </select>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => handleCopyMagicLink(false)}
+              disabled={mintingMagicLink}
+              data-testid="ADMIN_COPY_MAGIC_LINK_BTN"
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs h-8"
+            >
+              <Link2 className="h-3.5 w-3.5 mr-1.5" />
+              Copy 1-Click Magic Link
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => handleCopyMagicLink(true)}
+              disabled={mintingMagicLink}
+              data-testid="ADMIN_COPY_INVITE_SNIPPET_BTN"
+              className="border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-800 text-xs h-8"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-400" />
+              Copy WhatsApp / Email Invite
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Master Gate Mode Controller */}
       <div
         className={`rounded-2xl border p-6 transition-colors ${

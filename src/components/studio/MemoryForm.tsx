@@ -1908,6 +1908,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                     error={synthesisError} 
                     onRetry={onNext}
                     onCancel={() => globalActions.setIsGeneratingDrafts(false)}
+                    sourceExcerpt={prose || description}
                   />
                 ) : isReviewing ? (
                   <SelectionDeck 
@@ -3007,6 +3008,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       subtitle="The AI Weaver is interlacing emotional resonance and atmospheric details into your scene blueprint."
                       error={expansionError}
                       onRetry={handleAIExpand}
+                      sourceExcerpt={prose || description}
                       onCancel={() => {
                         setIsExpanding(false);
                         setExpansionError(null);

@@ -30,81 +30,261 @@ interface SynthesizingOverlayProps {
   onCancel?: () => void;
   title?: string;
   subtitle?: string;
+  sourceExcerpt?: string;
 }
 
-export const SynthesizingOverlay = ({ error, onRetry, onCancel, title, subtitle }: SynthesizingOverlayProps) => (
-  <div className="flex-1 flex flex-col items-center justify-center space-y-12 min-h-[60vh]">
-    <div className="relative">
-      <motion.div 
-        animate={{ rotate: error ? 0 : 360 }}
-        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-        className={cn(
-          "w-32 h-32 rounded-full border-2 border-dashed transition-colors duration-500",
-          error ? "border-rose-500/40" : "border-emerald-500/20"
+const WEAVING_PHASES = [
+  { id: 'horizon', label: 'Anchoring Historical & Temporal Horizon', thresholdSec: 0 },
+  { id: 'sensory', label: 'Composing Soul-Print & Sensory Contrast', thresholdSec: 2 },
+  { id: 'cadence', label: 'Calibrating Spoken Rhythm & Teleprompter Cadence', thresholdSec: 4 },
+  { id: 'harmonic', label: 'Harmonic Master Pass — Polishing Final Scores', thresholdSec: 6 },
+];
+
+const GHOST_SCORE_BLUEPRINTS = [
+  { code: '01', name: 'The Soul-Print', focus: 'Internal resonance & family values', accent: 'border-emerald-500/25 bg-emerald-500/5 text-emerald-300' },
+  { code: '02', name: 'The Atmospheric Weave', focus: 'Tactile texture & physical contrast', accent: 'border-sky-500/25 bg-sky-500/5 text-sky-300' },
+  { code: '03', name: 'The Flow', focus: 'Spoken momentum & reading cadence', accent: 'border-amber-500/25 bg-amber-500/5 text-amber-300' },
+  { code: '04', name: 'The Memory Weave', focus: 'Crown master fusion score', accent: 'border-purple-500/25 bg-purple-500/5 text-purple-300' },
+];
+
+export const SynthesizingOverlay = ({
+  error,
+  onRetry,
+  onCancel,
+  title,
+  subtitle,
+  sourceExcerpt,
+}: SynthesizingOverlayProps) => {
+  const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
+
+  React.useEffect(() => {
+    if (error) return;
+    setElapsedSeconds(0);
+    const timer = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [error]);
+
+  const activePhaseIndex = React.useMemo(() => {
+    let idx = 0;
+    for (let i = 0; i < WEAVING_PHASES.length; i++) {
+      if (elapsedSeconds >= WEAVING_PHASES[i].thresholdSec) {
+        idx = i;
+      }
+    }
+    return idx;
+  }, [elapsedSeconds]);
+
+  const formattedElapsed = React.useMemo(() => {
+    const mins = Math.floor(elapsedSeconds / 60);
+    const secs = elapsedSeconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }, [elapsedSeconds]);
+
+  const cleanExcerpt = React.useMemo(() => {
+    if (!sourceExcerpt) return '';
+    const stripped = sourceExcerpt.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!stripped) return '';
+    const words = stripped.split(' ');
+    return words.length > 14 ? `${words.slice(0, 14).join(' ')}...` : stripped;
+  }, [sourceExcerpt]);
+
+  return (
+    <div
+      data-testid="SYNTHESISING_OVERLAY"
+      className="flex-1 flex flex-col items-center justify-center space-y-8 min-h-[60vh] px-4 py-6 max-w-4xl mx-auto w-full"
+    >
+      <div className="relative">
+        <motion.div
+          animate={{ rotate: error ? 0 : 360 }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+          className={cn(
+            'w-28 h-28 rounded-full border-2 border-dashed transition-colors duration-500',
+            error ? 'border-rose-500/40' : 'border-emerald-500/30'
+          )}
+        />
+        <motion.div
+          animate={{ rotate: error ? 0 : -360 }}
+          transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+          className={cn(
+            'absolute inset-0 w-28 h-28 rounded-full border-2 border-dashed scale-125 transition-colors duration-500',
+            error ? 'border-amber-500/30' : 'border-sky-500/25'
+          )}
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          {error ? (
+            <AlertTriangle className="w-10 h-10 text-rose-500 animate-pulse" />
+          ) : (
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/25 shadow-lg shadow-emerald-500/10"
+            >
+              <Sparkles className="w-7 h-7 text-emerald-400" />
+            </motion.div>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-3 max-w-lg text-center">
+        {!error && (
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono uppercase tracking-widest">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <span>Parallel Synthesis Active</span>
+            <span className="text-white/30">•</span>
+            <span data-testid="SYNTHESISING_ELAPSED_TIMER">{formattedElapsed}</span>
+          </div>
         )}
-      />
-      <motion.div 
-        animate={{ rotate: error ? 0 : -360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        className={cn(
-          "absolute inset-0 w-32 h-32 rounded-full border-2 border-dashed scale-125 transition-colors duration-500",
-          error ? "border-amber-500/30" : "border-sky-500/20"
-        )}
-      />
-      <div className="absolute inset-0 flex items-center justify-center">
-        {error ? (
-          <AlertTriangle className="w-10 h-10 text-rose-500 animate-pulse" />
-        ) : (
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20"
+
+        <h3
+          className={cn(
+            'text-xl sm:text-2xl font-headline italic transition-colors duration-500',
+            error ? 'text-rose-400' : 'text-white'
+          )}
+        >
+          {error ? 'Thread Tangled' : title || 'Weaving Narrative Pathways'}
+        </h3>
+
+        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/50 leading-relaxed">
+          {error
+            ? error.includes('Server Components') ||
+              error.includes('digest') ||
+              error.includes('omitted in production')
+              ? 'The AI Weaver encountered a transient knot while synthesizing your performance options. Re-weaving the thread will clear the path.'
+              : error
+            : subtitle ||
+              'The AI Weaver is interlacing your memories into four parallel cinematic script options.'}
+        </p>
+
+        {!error && cleanExcerpt && (
+          <p
+            data-testid="SYNTHESISING_PHRASE_ECHO"
+            className="text-xs italic text-amber-200/80 bg-amber-500/5 border border-amber-500/15 rounded-xl px-3.5 py-2 mx-auto max-w-md"
           >
-            <Sparkles className="w-8 h-8 text-emerald-400" />
-          </motion.div>
+            Weaving from your words: &ldquo;{cleanExcerpt}&rdquo;
+          </p>
         )}
       </div>
-    </div>
-    
-    <div className="space-y-4 max-w-sm text-center">
-      <h3 className={cn(
-        "text-xl font-headline italic transition-colors duration-500",
-        error ? "text-rose-400" : "text-white"
-      )}>
-        {error ? "Thread Tangled" : (title || "Weaving Narrative Pathways")}
-      </h3>
-      <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 leading-relaxed">
-        {error 
-          ? ((error.includes("Server Components") || error.includes("digest") || error.includes("omitted in production"))
-              ? "The AI Weaver encountered a transient knot while synthesizing your performance options. Re-weaving the thread will clear the path."
-              : error)
-          : (subtitle || "The AI Weaver is interlacing your memories into cinematic script options.")}
-      </p>
-    </div>
-    
-    {error && (
-      <div className="flex gap-4">
-        {onRetry && (
-          <button 
-            onClick={onRetry}
-            className="flex items-center gap-3 px-6 py-3 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 rounded-xl transition-all"
+
+      {!error && (
+        <>
+          {/* Live Staged Progress Rail */}
+          <div
+            data-testid="SYNTHESISING_PHASE_RAIL"
+            className="w-full max-w-xl rounded-2xl border border-white/10 bg-black/40 p-4 space-y-3"
           >
-            <RotateCcw className="w-4 h-4 text-rose-400" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">Re-weave thread</span>
-          </button>
-        )}
-        {onCancel && (
-          <button 
-            onClick={onCancel}
-            className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all"
+            <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-emerald-300">
+              <span>{WEAVING_PHASES[activePhaseIndex].label}</span>
+              <span>
+                Step {activePhaseIndex + 1} / {WEAVING_PHASES.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {WEAVING_PHASES.map((phase, idx) => (
+                <div
+                  key={phase.id}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all duration-500',
+                    idx < activePhaseIndex
+                      ? 'bg-emerald-400'
+                      : idx === activePhaseIndex
+                        ? 'bg-emerald-400/80 animate-pulse'
+                        : 'bg-white/10'
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* 4 Parallel Ghost Blueprint Cards */}
+          <div
+            data-testid="SYNTHESISING_GHOST_CARDS"
+            className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
           >
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Cancel</span>
-          </button>
-        )}
-      </div>
-    )}
-  </div>
-);
+            {GHOST_SCORE_BLUEPRINTS.map((card, idx) => (
+              <div
+                key={card.code}
+                className={cn(
+                  'rounded-2xl border p-3.5 space-y-2.5 backdrop-blur-md transition-all duration-500',
+                  card.accent
+                )}
+              >
+                <div className="flex items-center justify-between text-[10px] font-mono">
+                  <span className="opacity-70">{card.code} // SCORE</span>
+                  <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                    Synthesising...
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-white">{card.name}</div>
+                <div className="text-[10px] text-white/50 leading-snug">{card.focus}</div>
+                <div className="space-y-1.5 pt-1">
+                  <div
+                    className="h-1.5 rounded-full bg-white/15 animate-pulse"
+                    style={{ width: `${85 - idx * 5}%` }}
+                  />
+                  <div
+                    className="h-1.5 rounded-full bg-white/10 animate-pulse"
+                    style={{ width: `${65 + idx * 5}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {elapsedSeconds >= 12 && (
+            <p
+              data-testid="SYNTHESISING_SLOW_REASSURANCE"
+              className="text-[11px] font-mono text-amber-300/80 text-center"
+            >
+              Taking extra care to craft full-length spoken monologues — almost ready.
+            </p>
+          )}
+
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              data-testid="SYNTHESISING_CANCEL_BTN"
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all cursor-pointer"
+            >
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white/90">
+                Cancel &amp; Return to Script
+              </span>
+            </button>
+          )}
+        </>
+      )}
+
+      {error && (
+        <div className="flex gap-4">
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="flex items-center gap-3 px-6 py-3 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 rounded-xl transition-all"
+            >
+              <RotateCcw className="w-4 h-4 text-rose-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">
+                Re-weave thread
+              </span>
+            </button>
+          )}
+          {onCancel && (
+            <button
+              onClick={onCancel}
+              className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all"
+            >
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                Cancel
+              </span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },

@@ -1,13 +1,15 @@
 // 1. Genkit-specific model references (require provider prefix)
 export const GENKIT_MODELS = {
-  FLASH: 'googleai/gemini-flash-latest',
+  FLASH: 'googleai/gemini-3.8-flash',
+  FLASH_LITE: 'googleai/gemini-3.5-flash-lite',
+  FLASH_LATEST: 'googleai/gemini-flash-latest',
   PRO: 'googleai/gemini-pro-latest',
 } as const;
 
 // 2. Vertex AI-specific model names (usually no provider prefix)
 export const VERTEX_MODELS = {
-  FLASH: 'gemini-1.5-flash',
-  PRO: 'gemini-1.5-pro',
+  FLASH: 'gemini-3.8-flash',
+  PRO: 'gemini-2.5-pro',
 } as const;
 
 // 3. Replicate (Third-Party) Model Version Hashes
@@ -17,26 +19,26 @@ export const REPLICATE_MODELS = {
 
 // 4. Raw/General model names for generic or future API libraries
 export const RAW_MODELS = {
-  FLASH: 'gemini-2.5-flash',
-  PRO: 'gemini-1.5-pro',
+  FLASH: 'gemini-3.8-flash',
+  PRO: 'gemini-2.5-pro',
 } as const;
 
 // Registry Lists for HUD Selectors
 export const GENKIT_OPTIONS = [
+  'googleai/gemini-3.8-flash',
+  'googleai/gemini-3.5-flash-lite',
   'googleai/gemini-flash-latest',
+  'googleai/gemini-flash-lite-latest',
   'googleai/gemini-pro-latest',
-  'googleai/gemini-2.5-flash',
   'googleai/gemini-2.5-pro',
-  'googleai/gemini-1.5-flash',
-  'googleai/gemini-1.5-pro',
 ];
 
 export const VERTEX_OPTIONS = [
-  'gemini-1.5-pro',
-  'gemini-1.5-flash',
-  'gemini-2.5-flash',
   'gemini-2.5-pro',
-  'gemini-1.0-pro',
+  'gemini-3.8-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-pro-latest',
+  'gemini-flash-latest',
 ];
 
 export const REPLICATE_OPTIONS = [
