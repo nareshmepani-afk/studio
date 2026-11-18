@@ -246,6 +246,9 @@ function checkSecurityRulesAndHygiene(rootDir: string, failures: string[], warni
     if (!/match \/prelaunch_list\/\{emailKey\}[\s\S]*request\.auth\.token\.isAdmin == true/.test(fsRules)) {
       failures.push('firestore.rules must gate prelaunch_list/{emailKey} on request.auth.token.isAdmin == true.');
     }
+    if (!/match \/founder_decisions\/\{id\}[\s\S]*request\.auth\.token\.isAdmin == true/.test(fsRules)) {
+      failures.push('firestore.rules must gate founder_decisions/{id} on request.auth.token.isAdmin == true.');
+    }
   }
 
   if (!fs.existsSync(storagePath)) {

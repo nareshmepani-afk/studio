@@ -51,7 +51,8 @@ export function Navbar() {
     pathname?.startsWith('/studio/chapter') ||
     pathname?.startsWith('/cinema/tv') ||
     pathname?.startsWith('/admin') ||
-    pathname?.startsWith('/unboxing')
+    pathname?.startsWith('/unboxing') ||
+    pathname?.startsWith('/staging-lock')
   ) {
     return null;
   }
@@ -128,7 +129,7 @@ export function Navbar() {
           </Tooltip>
           
           {(isAuthenticated || isGuestDirectorView) ? (
-            <nav className="flex flex-1 items-center space-x-2 sm:space-x-3 lg:space-x-4 xl:space-x-6 overflow-visible min-w-0">
+            <nav className="hidden md:flex flex-1 items-center space-x-2 md:space-x-3 lg:space-x-4 xl:space-x-6 overflow-hidden min-w-0">
               {isGuestDirectorView ? (
                 // Focused Guest Director View
                  <Tooltip>

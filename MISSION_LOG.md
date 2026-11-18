@@ -2362,3 +2362,26 @@ Surface Chooser Card on /studio � Option 2 approved. Backlog MW-99 to be creat
   - `C:\Users\home\studio\MISSION_LOG.md`
   - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
 
+
+### [2026-11-18 08:38 UTC / 08:38 GMT] — Checkpoint #097 - Mobile Navbar Overlap Fix (/staging-lock & <768px) & Interactive Founder Decision Form (/admin?suite=decisions)
+- **Commit & Edge Status:** Resolved mobile Navbar overlap on `/staging-lock` and narrow viewports (`~390px–412px`), and built the Firestore-backed Founder Cutover Decision Form in `/admin?suite=decisions` paired with `npm run qa:decisions`.
+- **Partner Disciplines:**
+  - 🎬 **Creative Director & Gatekeeper (Naresh & Lead Architecture)**: Flagged mobile Navbar overlap on `/staging-lock` (`Memory Studio` / `Memory Cinema` colliding behind right-hand action controls) and replaced back-and-forth chat confirmation questions with a structured Firestore-backed Founder Decision Form pre-seeded with remaining production cutover items (`MW-409`, `MW-408`, `MW-405`).
+  - ⚡ **Chat 2 (The Flash Executor / Equal Co-Architect)**:
+    - **Mobile Navbar Isolation & Responsive Fix (`src/components/layout/Navbar.tsx`, `src/test/navbar_isolation.test.tsx`)**: Added `/staging-lock` suppression to `Navbar` early return and changed authenticated `<nav>` from `flex flex-1` to `hidden md:flex flex-1 overflow-hidden min-w-0` so mobile viewports below `768px` route cleanly through the mobile drawer without colliding behind the right-side controls.
+    - **Founder Cutover Decision Queue (`src/lib/founderDecisions.ts`, `/api/admin/decisions`, `FounderDecisionForm.tsx`, `AdminDashboardContent.tsx`, `scripts/read-founder-decisions.ts`)**: Created `requireAdminSession()`-gated CRUD API auto-seeding `founder_decisions/{id}` cleanly for `MW-409` purge approval, `MW-408` Prod Web App ID (`f48699` vs `e2b08f`), `MW-408` Auth & reCAPTCHA domain checks, and `MW-405` Plane API rotation, featuring pre-selected recommendations, 1-click `Defer to Plane Ticket`, notes, console links, batch `Save Decisions`, `firestore.rules` + `prod:preflight` lock, and `npm run qa:decisions`.
+- **Target Files Impacted:**
+  - `C:\Users\home\studio\src\components\layout\Navbar.tsx`
+  - `C:\Users\home\studio\src\lib\founderDecisions.ts`
+  - `C:\Users\home\studio\src\app\api\admin\decisions\route.ts`
+  - `C:\Users\home\studio\src\components\admin\FounderDecisionForm.tsx`
+  - `C:\Users\home\studio\src\app\admin\AdminDashboardContent.tsx`
+  - `C:\Users\home\studio\scripts\read-founder-decisions.ts`
+  - `C:\Users\home\studio\firestore.rules`
+  - `C:\Users\home\studio\scripts\prod-preflight.ts`
+  - `C:\Users\home\studio\package.json`
+  - `C:\Users\home\studio\src\test\navbar_isolation.test.tsx`
+  - `C:\Users\home\studio\src\test\founder_decisions.test.ts`
+  - `C:\Users\home\studio\MISSION_LOG.md`
+  - `C:\Users\home\studio\ACTIVE_DIRECTIVE.md`
+

@@ -22,7 +22,8 @@ import { VoucherMintingConsole } from '@/components/admin/VoucherMintingConsole'
 import { MissionControlConsole } from '@/components/admin/MissionControlConsole';
 import { BugTriageConsole } from '@/components/admin/BugTriageConsole';
 import { PrelaunchAccessConsole } from '@/components/admin/PrelaunchAccessConsole';
-import { Bug, Lock } from 'lucide-react';
+import { FounderDecisionForm } from '@/components/admin/FounderDecisionForm';
+import { Bug, Lock, ClipboardCheck } from 'lucide-react';
 import { getBackendEnvironmentDetails } from './actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -32,7 +33,7 @@ import Link from 'next/link';
 export default function AdminDashboardContent() {
   const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch'>('devops');
+  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function AdminDashboardContent() {
       // Rehydrate active suite from URL search params (?suite=email, ?suite=vouchers, or ?tab=access)
       const urlParams = new URLSearchParams(window.location.search);
       const suiteParam = urlParams.get('suite') || urlParams.get('tab');
-      if (suiteParam && ['devops', 'business', 'access', 'email', 'knowledge', 'vouchers', 'mission', 'bugs', 'prelaunch'].includes(suiteParam)) {
+      if (suiteParam && ['devops', 'business', 'access', 'email', 'knowledge', 'vouchers', 'mission', 'bugs', 'prelaunch', 'decisions'].includes(suiteParam)) {
         setActiveSuite(suiteParam as any);
       } else if (urlParams.get('traceId') || urlParams.get('reportId') || urlParams.get('userId')) {
         setActiveSuite('bugs');
@@ -262,6 +263,18 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
+                onClick={() => setActiveSuite('decisions')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
+                  activeSuite === 'decisions'
+                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                }`}
+              >
+                <ClipboardCheck className="h-4 w-4 text-amber-400" />
+                <span>Founder Decisions</span>
+              </button>
+
+              <button
                 onClick={() => setActiveSuite('bugs')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'bugs'
@@ -338,6 +351,7 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'mission' && 'Mission Control & Flight Recorder'}
                   {activeSuite === 'knowledge' && 'Living Knowledge Hub'}
                   {activeSuite === 'prelaunch' && 'Pre-Launch Gate & Tester List'}
+                  {activeSuite === 'decisions' && 'Founder Cutover Decision Form'}
                   {activeSuite === 'bugs' && 'Bug Triage & Diagnostic Progression'}
                 </h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
@@ -349,6 +363,7 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'mission' && 'Real-time multi-agent flight recorder tracking active platform coordinates, partner discipline checkpoints, target files, and sprint roadmap.'}
                   {activeSuite === 'knowledge' && 'Search, filter, and inspect compiled business rules, operational playbooks, subscription tier pricing, and lifecycle policies.'}
                   {activeSuite === 'prelaunch' && 'Control RESTRICTED vs PUBLIC access in 1 click, toggle Tester activation switches per visitor, and bulk-import testers from Google Sheets or CSV.'}
+                  {activeSuite === 'decisions' && 'Confirm cutover decisions via pre-selected recommendations, add notes, or defer any item directly to Plane without back-and-forth chat questions.'}
                   {activeSuite === 'bugs' && 'Inspect submitted patron & tester bug reports persisted from BugReportModal, trace session links, sync to Plane.so, and verify dev-to-production progression.'}
                 </p>
               </div>
@@ -364,6 +379,7 @@ export default function AdminDashboardContent() {
               {activeSuite === 'mission' && <MissionControlConsole />}
               {activeSuite === 'knowledge' && <KnowledgeHub />}
               {activeSuite === 'prelaunch' && <PrelaunchAccessConsole />}
+              {activeSuite === 'decisions' && <FounderDecisionForm />}
               {activeSuite === 'bugs' && <BugTriageConsole />}
             </div>
 

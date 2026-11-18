@@ -42,11 +42,11 @@
 
 ---
 
-### Execution Receipt: UNIFIED-PRELAUNCH-GATE / Checkpoint #096
+### Execution Receipt: MOBILE-NAVBAR-AND-FOUNDER-DECISIONS / Checkpoint #097
 - • Responding Agent: Chat 2 (The Flash Executor — Antigravity)
-- • Execution Timestamp: 2026-11-17T19:00:00Z
+- • Execution Timestamp: 2026-11-18T08:38:00Z
 - • Git Branch: `dev`
-- • Test & Build Gates: `npm run prod:preflight` (`PASSED`) | `firebase_validate_security_rules` (`firestore` & `storage` OK) | `npx tsc --noEmit` (`PASS`) | Vitest `104/104` test suites (`1,148/1,148` assertions PASS) | `npm.cmd run build` (`PASS`)
-- • Cloud Firestore Status: `memory-weaver-dev` `qa_suites/active_deck/items` verified 60/60 Cards PASS, 148/148 Items PASS (`qa:status`); `prelaunch_config` + `prelaunch_list` rules validated & deployed to `memory-weaver-dev`.
+- • Test & Build Gates: `npm run prod:preflight` (`PASSED`) | `firebase_validate_security_rules` (`firestore` OK) | Targeted Vitest suites (`founder_decisions`, `navbar_isolation`, `gifting_navbar_integration`, `responsive_device_ui_shield`, `prod_cutover_hardening`) `PASS` | `npm.cmd run build` (`PASS`)
+- • Cloud Firestore Status: `memory-weaver-dev` `firestore.rules` deployed with `founder_decisions/{id}` admin guard & 4 initial cutover cards seeded (`qa:decisions`).
 - • Execution Status: COMPLETED
 - • Sign-Off: [OUT - Chat 2 (The Flash Executor)]

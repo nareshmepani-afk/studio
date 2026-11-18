@@ -25,6 +25,7 @@
     "qa:validate": "tsx scripts/validate-qa-deck.ts",
     "qa:seed": "tsx scripts/seed-qa-firestore.ts",
     "qa:bugs": "tsx scripts/read-bug-reports.ts",
+    "qa:decisions": "tsx scripts/read-founder-decisions.ts",
     "prod:preflight": "tsx scripts/prod-preflight.ts",
     "prod:purge-qa": "tsx scripts/purge-prod-qa.ts",
     "prepare": "husky"

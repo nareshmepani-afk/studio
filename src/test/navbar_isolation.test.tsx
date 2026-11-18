@@ -28,9 +28,10 @@ vi.mock('@/hooks/useLanguage', () => ({
 }));
 
 // Mock useAuth
+let mockAuthUser: any = null;
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
-    user: null,
+    user: mockAuthUser,
     loading: false,
     logout: vi.fn(),
   }),
@@ -39,6 +40,7 @@ vi.mock('@/hooks/useAuth', () => ({
 describe('Navbar Route Isolation & Admin Masking', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthUser = null;
   });
 
   describe('Administrative Route Suppression', () => {
@@ -96,6 +98,27 @@ describe('Navbar Route Isolation & Admin Masking', () => {
       mockUsePathname.mockReturnValue('/cinema/tv');
       const { container } = render(<Navbar />);
       expect(container.firstChild).toBeNull();
+    });
+
+    it('returns null on /staging-lock so the staging sandbox header does not clash with consumer Navbar', () => {
+      mockUsePathname.mockReturnValue('/staging-lock');
+      const { container } = render(<Navbar />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('keeps authenticated center nav links (Memory Studio, Memory Cinema) hidden below md (768px) to avoid mobile right-cluster collision', () => {
+      mockAuthUser = {
+        uid: 'u-mobile-nav-1',
+        email: 'founder@memoryweaver.studio',
+        role: 'Director',
+      };
+      mockUsePathname.mockReturnValue('/studio');
+      const { container } = render(<Navbar />);
+      const nav = container.querySelector('nav');
+      expect(nav).not.toBeNull();
+      expect(nav?.className).toContain('hidden');
+      expect(nav?.className).toContain('md:flex');
+      expect(nav?.className).toContain('min-w-0');
     });
   });
 
