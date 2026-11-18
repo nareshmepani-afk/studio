@@ -19,6 +19,10 @@ export interface BugReportRecord {
   environmentHost: string;
   planeIssueId: string | null;
   resolutionNotes: string;
+  fixedInCommitSha?: string | null;
+  cardId?: number | null;
+  source?: 'IN_APP_MODAL' | 'CHAT_TRIAGE' | string;
+  planeClosedAt?: number | null;
 }
 
 export function isValidBugReportStatus(value: unknown): value is BugReportStatus {
@@ -28,4 +32,33 @@ export function isValidBugReportStatus(value: unknown): value is BugReportStatus
 export function generateBugReportId(now = Date.now()): string {
   const rand = Math.random().toString(36).slice(2, 8);
   return `bug_${now}_${rand}`;
+}
+
+export function sanitizeBugDeepLinkRoute(rawPath?: string | null): string {
+  const trimmed = (rawPath || '/').trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) {
+    return '/';
+  }
+  return trimmed;
+}
+
+export function formatPlaneBrowseUrl(
+  planeIssueId?: string | null,
+  workspaceSlug: string = 'memory-weaver-studio'
+): string | null {
+  const clean = (planeIssueId || '').trim().toUpperCase();
+  if (!/^MW-\d+$/.test(clean)) return null;
+  return `https://app.plane.so/${workspaceSlug}/browse/${clean}/`;
+}
+
+export function doesCommitShaMatchLive(
+  fixedSha?: string | null,
+  liveSha?: string | null
+): boolean {
+  const a = (fixedSha || '').trim().toLowerCase();
+  const b = (liveSha || '').trim().toLowerCase();
+  if (!a || !b) return false;
+  const minLen = Math.min(a.length, b.length, 7);
+  if (minLen < 6) return false;
+  return a.startsWith(b.slice(0, minLen)) || b.startsWith(a.slice(0, minLen));
 }

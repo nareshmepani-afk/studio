@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { resolvePublicAppUrl } from '@/config/environment';
 import { adminDb } from '@/lib/firebaseAdmin';
 import { requireAdminSession } from '@/lib/session';
-import { isValidBugReportStatus, type BugReportRecord } from '@/lib/bugReports';
+import {
+  generateBugReportId,
+  isValidBugReportStatus,
+  sanitizeBugDeepLinkRoute,
+  type BugReportRecord,
+} from '@/lib/bugReports';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +59,63 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export async function POST(req: Request) {
+  try {
+    const authResult = await requireAdminSession();
+    if (!authResult.authorized) {
+      return NextResponse.json({ success: false, error: authResult.error }, { status: authResult.status });
+    }
+    if (!adminDb) {
+      return NextResponse.json({ success: false, error: 'Database not initialised' }, { status: 503 });
+    }
+
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ success: false, error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const description = String(body.description || '').trim().slice(0, 4000);
+    if (!description) {
+      return NextResponse.json({ success: false, error: 'Description is required' }, { status: 400 });
+    }
+
+    const now = Date.now();
+    const reportId = body.reportId && VALID_ID_RE.test(String(body.reportId).trim())
+      ? String(body.reportId).trim()
+      : generateBugReportId(now);
+    const status = isValidBugReportStatus(body.status) ? body.status : 'OPEN';
+    const parsedCardId = Number(body.cardId);
+
+    const record: BugReportRecord = {
+      reportId,
+      traceId: String(body.traceId || `chat_${now}`).trim().slice(0, 120),
+      userId: String(body.userId || authResult.session.uid || 'founder').trim().slice(0, 120),
+      userEmail: String(body.userEmail || authResult.session.email || 'admin@memoryweaver.studio').trim().slice(0, 160),
+      path: sanitizeBugDeepLinkRoute(body.path),
+      appVersion: String(body.appVersion || 'v1.1.0-beta').trim().slice(0, 64),
+      userAgent: String(body.userAgent || 'Chat Triage CLI').trim().slice(0, 240),
+      description,
+      status,
+      createdAt: now,
+      createdAtIso: new Date(now).toISOString(),
+      updatedAt: now,
+      updatedBy: authResult.session.email || 'admin@memoryweaver.studio',
+      environmentHost: String(body.environmentHost || resolvePublicAppUrl()).trim().slice(0, 160),
+      planeIssueId: body.planeIssueId ? String(body.planeIssueId).trim().slice(0, 64) : null,
+      resolutionNotes: String(body.resolutionNotes || '').trim().slice(0, 2000),
+      fixedInCommitSha: body.fixedInCommitSha ? String(body.fixedInCommitSha).trim().slice(0, 64) : null,
+      cardId: Number.isInteger(parsedCardId) && parsedCardId > 0 ? parsedCardId : null,
+      source: String(body.source || 'CHAT_TRIAGE').trim().slice(0, 40),
+    };
+
+    await adminDb.collection(COLLECTION).doc(reportId).set(record, { merge: true });
+    return NextResponse.json({ success: true, report: record }, { status: 201 });
+  } catch (err: any) {
+    console.error('[POST /api/admin/bugs] Error:', err);
+    return NextResponse.json({ success: false, error: err?.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: Request) {
   try {
     const authResult = await requireAdminSession();
@@ -92,6 +155,23 @@ export async function PATCH(req: Request) {
 
     if ('resolutionNotes' in body && body.resolutionNotes !== undefined) {
       updates.resolutionNotes = String(body.resolutionNotes).trim().slice(0, 2000);
+    }
+
+    if ('fixedInCommitSha' in body && body.fixedInCommitSha !== undefined) {
+      const shaVal = body.fixedInCommitSha === null ? null : String(body.fixedInCommitSha).trim().slice(0, 64);
+      updates.fixedInCommitSha = shaVal || null;
+    }
+
+    if ('cardId' in body && body.cardId !== undefined) {
+      if (body.cardId === null || body.cardId === '') {
+        updates.cardId = null;
+      } else {
+        const parsedCardId = Number(body.cardId);
+        if (!Number.isInteger(parsedCardId) || parsedCardId <= 0) {
+          return NextResponse.json({ success: false, error: 'Invalid cardId' }, { status: 400 });
+        }
+        updates.cardId = parsedCardId;
+      }
     }
 
     await adminDb.collection(COLLECTION).doc(reportId).set(updates, { merge: true });
