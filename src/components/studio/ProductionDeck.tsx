@@ -706,32 +706,43 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const pendingNextActRef = useRef<boolean>(false);
     const pendingElevationUpdateRef = useRef<any>(null);
 
+    const hasPersistedVaultMobileRecord = Boolean(
+        vaultSceneMemory &&
+        typeof vaultSceneMemory.id === 'string' &&
+        !vaultSceneMemory.id.startsWith('memoir_') &&
+        (
+            vaultSceneMemory.editingAuthority === 'fireside_flexible' ||
+            vaultSceneMemory.originSurface === 'fireside_mobile' ||
+            vaultSceneMemory.surfaceOrigin === 'fireside_mobile' ||
+            (Array.isArray(vaultSceneMemory.takes) && vaultSceneMemory.takes.some((t: any) => t?.source === 'fireside_mobile'))
+        )
+    );
+
+    const hasGenuineMobileOrigin = Boolean(
+        memoryData?.originSurface === 'fireside_mobile' ||
+        memoryData?.surfaceOrigin === 'fireside_mobile' ||
+        (Array.isArray(memoryData?.takes) && memoryData.takes.some((t: any) => t?.source === 'fireside_mobile')) ||
+        hasPersistedVaultMobileRecord
+    );
+
     const effectiveEditingAuthority: EditingAuthority = useMemo(() => {
         if (isElevatedLocally) return 'desktop_locked';
         if (memoryData?.editingAuthority === 'desktop_locked' || vaultSceneMemory?.editingAuthority === 'desktop_locked') {
             return 'desktop_locked';
         }
-        if (memoryData?.editingAuthority === 'fireside_flexible' || vaultSceneMemory?.editingAuthority === 'fireside_flexible') {
+        // Only treat a scene as fireside_flexible on Desktop Soundstage when it has genuine Fireside Mobile provenance
+        if (hasGenuineMobileOrigin && (memoryData?.editingAuthority === 'fireside_flexible' || hasPersistedVaultMobileRecord || resolveEditingAuthority(memoryData) === 'fireside_flexible')) {
             return 'fireside_flexible';
         }
-        return resolveEditingAuthority(memoryData || vaultSceneMemory);
-    }, [isElevatedLocally, memoryData, vaultSceneMemory]);
-
-    const isMobileFlexibleOrigin = Boolean(
-        memoryData?.editingAuthority === 'fireside_flexible' ||
-        vaultSceneMemory?.editingAuthority === 'fireside_flexible' ||
-        memoryData?.originSurface === 'fireside_mobile' ||
-        memoryData?.surfaceOrigin === 'fireside_mobile' ||
-        vaultSceneMemory?.originSurface === 'fireside_mobile' ||
-        vaultSceneMemory?.surfaceOrigin === 'fireside_mobile' ||
-        (Array.isArray(memoryData?.takes) && memoryData.takes.some((t: any) => t?.source === 'fireside_mobile')) ||
-        (Array.isArray(vaultSceneMemory?.takes) && vaultSceneMemory.takes.some((t: any) => t?.source === 'fireside_mobile'))
-    );
+        // Default Desktop Soundstage authoring to desktop_locked so unlabelled Desktop drafts never masquerade as Mobile recordings
+        return 'desktop_locked';
+    }, [isElevatedLocally, memoryData, vaultSceneMemory, hasGenuineMobileOrigin, hasPersistedVaultMobileRecord]);
 
     const isFiresideFlexible =
         !isElevatedLocally &&
         !isRehearsalFlight &&
         !isDemoMode &&
+        hasGenuineMobileOrigin &&
         effectiveEditingAuthority === 'fireside_flexible';
 
     const handleUpdate = useCallback((updatedData: MemoryData) => {
@@ -1382,32 +1393,34 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         // Truthful Status Badge Guard (MW-271): While ceremony/review is active, force '(Draft Pre-Flight)'
                         const isEffectivelyCompleted = isActCompleted && !isReviewing;
 
-                        // Pre-Flight Acts: Act I (Scriptorium) & Act II (The Weave) prior to recorded performance
-                        const isPreFlightAct = (currentStage === 0 || currentStage === 1) && !milestones.hasRecordedMedia && !isPublished;
-
-                        // Soft-coded operational posture: clearly shows '✈️ Pre-Flight Rehearsal' across all 5 Acts
-                        // during Flight Simulator mode, '✈️ Pre-Flight' on Acts I & II for standard drafts,
-                        // and status indicators once recorded/mastered/published.
+                        // Soft-coded operational posture: reserve '✈️ Pre-Flight Rehearsal' strictly for Flight Simulator mode
+                        // so regular chapters never display a distracting 'Pre-Flight' pill that resembles an active toggle.
                         const badgeLabel = isPublished
-                            ? '✓ (Published)'
+                            ? '✓ Published'
                             : isMasteredReel
-                            ? '🌟 (Mastered)'
+                            ? '🌟 Mastered'
                             : isRehearsalFlight && currentStage === 2
-                            ? '🚀 First Flight: Rehearsal Soundstage • Prompter Ready'
+                            ? '🚀 First Flight: Rehearsal Soundstage'
                             : isRehearsalFlight
                             ? '✈️ Pre-Flight Rehearsal'
-                            : isPreFlightAct
-                            ? '✈️ Pre-Flight'
                             : null;
+
+                        const badgeTooltip = isPublished
+                            ? 'Published Memoir — Live in your Memory Cinema and shared heirloom reels.'
+                            : isMasteredReel
+                            ? 'Mastered Reel — Finalised 2.39:1 widescreen production ready for cinema playback.'
+                            : isRehearsalFlight
+                            ? 'Practice Sandbox — Rehearse scripting, AI weaving, and teleprompter recording without affecting your memoir vault.'
+                            : '';
 
                         const isPositiveStatus = isPublished || isMasteredReel;
 
                         return (
                             <header className="w-full min-w-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3 md:pr-16 lg:pr-72 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
 
-                                {/* Left Cluster: Back Navigation, Act Context & Mode Posture Badge */}
-                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
-                                  <TooltipProvider delayDuration={200}>
+                                {/* Left Cluster: Back Navigation, Act Context & Mode Posture Tag */}
+                                <TooltipProvider delayDuration={200}>
+                                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <button
@@ -1433,56 +1446,93 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                         Secure draft to cloud &amp; return to saved memories
                                       </TooltipContent>
                                     </Tooltip>
-                                  </TooltipProvider>
 
-                                  {/* Soft-coded Pre-Flight Mode Status Indicator on same row as MY LIFE JOURNEY */}
-                                  {badgeLabel && (
-                                      <span
-                                          className={cn(
-                                              "inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide border shadow-sm transition-all whitespace-nowrap select-none shrink-0 min-h-[32px] xl:min-h-[36px]",
-                                              isPositiveStatus
-                                                  ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-                                                  : "bg-amber-500/15 border-amber-500/35 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.15)]"
-                                          )}
-                                      >
-                                          {badgeLabel}
-                                      </span>
-                                  )}
+                                    {/* Passive Status Metadata Tag (Recessed non-button styling + Hover Tooltip) */}
+                                    {badgeLabel && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span
+                                                tabIndex={0}
+                                                title={badgeTooltip}
+                                                data-testid="production-status-tag"
+                                                className={cn(
+                                                    "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-medium tracking-wide border shadow-none transition-colors whitespace-nowrap select-none cursor-default shrink-0",
+                                                    isPositiveStatus
+                                                        ? "bg-emerald-500/[0.06] border-emerald-500/20 text-emerald-300/80"
+                                                        : "bg-white/[0.04] border-white/10 text-white/60"
+                                                )}
+                                            >
+                                                {badgeLabel}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="bottom" className="bg-slate-900 border border-white/15 text-slate-200 text-xs px-3 py-1.5 rounded-lg shadow-xl max-w-xs z-[100]">
+                                            {badgeTooltip}
+                                          </TooltipContent>
+                                        </Tooltip>
+                                    )}
 
-                                  {/* MW-88-T2: Studio Elevation Ratchet — Cross-Surface Editing Authority Chrome */}
-                                  {!isRehearsalFlight && !isDemoMode && (
-                                      isFiresideFlexible ? (
-                                          <>
-                                              <span
-                                                  data-testid="mobile-flexible-badge"
-                                                  data-hotspot-id="HS_STUDIO_MOBILE_FLEXIBLE_BADGE"
-                                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-teal-500/15 border border-teal-500/40 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)] whitespace-nowrap select-none shrink-0 min-h-[32px] xl:min-h-[36px]"
-                                              >
-                                                  📱 Mobile Recording • Flexible
-                                              </span>
-                                              <button
-                                                  type="button"
-                                                  data-testid="elevate-studio-master-btn"
-                                                  data-hotspot-id="HS_STUDIO_ELEVATE_MASTER_BTN"
-                                                  onClick={() => {
-                                                      pendingNextActRef.current = false;
-                                                      setIsElevationModalOpen(true);
-                                                  }}
-                                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.2)] transition-all whitespace-nowrap cursor-pointer shrink-0 min-h-[32px] xl:min-h-[36px]"
-                                              >
-                                                  ✨ Elevate to Studio Master &rarr;
-                                              </button>
-                                          </>
-                                      ) : (
-                                          <span
-                                              data-testid="desktop-studio-master-badge"
-                                              className="inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/15 border border-amber-400/40 text-amber-200 shadow-[0_0_10px_rgba(245,158,11,0.15)] whitespace-nowrap select-none shrink-0 min-h-[32px] xl:min-h-[36px]"
-                                          >
-                                              🔒 Studio Master
-                                          </span>
-                                      )
-                                  )}
-                                </div>
+                                    {/* MW-88-T2: Studio Elevation Ratchet — Cross-Surface Editing Authority Chrome */}
+                                    {!isRehearsalFlight && !isDemoMode && (
+                                        isFiresideFlexible ? (
+                                            <>
+                                                <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                    <span
+                                                        tabIndex={0}
+                                                        title="Originated on Fireside Mobile — Currently in flexible mobile-capture status."
+                                                        data-testid="mobile-flexible-badge"
+                                                        data-hotspot-id="HS_STUDIO_MOBILE_FLEXIBLE_BADGE"
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-medium tracking-wide bg-white/[0.04] border border-white/10 text-teal-200/75 shadow-none whitespace-nowrap select-none cursor-default shrink-0"
+                                                    >
+                                                        📱 Mobile Recording &bull; Flexible
+                                                    </span>
+                                                  </TooltipTrigger>
+                                                  <TooltipContent side="bottom" className="bg-slate-900 border border-teal-500/30 text-teal-200 text-xs px-3 py-1.5 rounded-lg shadow-xl max-w-xs z-[100]">
+                                                    Originated on Fireside Mobile — Currently in flexible mobile-capture status.
+                                                  </TooltipContent>
+                                                </Tooltip>
+
+                                                <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        title="Promote this mobile recording to a 5-Act Desktop Studio Master with AI weaving and directorial polish."
+                                                        data-testid="elevate-studio-master-btn"
+                                                        data-hotspot-id="HS_STUDIO_ELEVATE_MASTER_BTN"
+                                                        onClick={() => {
+                                                            pendingNextActRef.current = false;
+                                                            setIsElevationModalOpen(true);
+                                                        }}
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-xl text-[10px] sm:text-xs font-mono font-bold tracking-wide bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.2)] transition-all whitespace-nowrap cursor-pointer shrink-0 min-h-[32px] xl:min-h-[36px]"
+                                                    >
+                                                        ✨ Elevate to Studio Master &rarr;
+                                                    </button>
+                                                  </TooltipTrigger>
+                                                  <TooltipContent side="bottom" className="bg-slate-900 border border-amber-500/30 text-amber-200 text-xs px-3 py-1.5 rounded-lg shadow-xl max-w-xs z-[100]">
+                                                    Promote this mobile recording to a 5-Act Desktop Studio Master with AI weaving and directorial polish.
+                                                  </TooltipContent>
+                                                </Tooltip>
+                                            </>
+                                        ) : (
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <span
+                                                    tabIndex={0}
+                                                    title="Studio Master Mode — Authoring directly on the Desktop Soundstage with full 5-Act directorial controls and cross-device sync."
+                                                    data-testid="desktop-studio-master-badge"
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-medium tracking-wide bg-white/[0.04] border border-white/10 text-white/60 shadow-none whitespace-nowrap select-none cursor-default shrink-0"
+                                                >
+                                                    🔒 Studio Master
+                                                </span>
+                                              </TooltipTrigger>
+                                              <TooltipContent side="bottom" className="bg-slate-900 border border-white/15 text-slate-200 text-xs px-3 py-1.5 rounded-lg shadow-xl max-w-xs z-[100]">
+                                                Studio Master Mode — Authoring directly on the Desktop Soundstage with full 5-Act directorial controls and cross-device sync.
+                                              </TooltipContent>
+                                            </Tooltip>
+                                        )
+                                    )}
+                                  </div>
+                                </TooltipProvider>
 
                                 {/* Right Cluster: Hardware Privacy Shield & Studio Utilities */}
                                 <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 min-w-0 ml-auto">
