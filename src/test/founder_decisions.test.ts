@@ -232,4 +232,50 @@ describe('Founder Decision Queue (/api/admin/decisions, Form & CLI)', () => {
     expect(out).toContain('approve_now:');
     expect(out).toContain('Notes: Go ahead');
   });
+
+  it('renders prominent error banner when fetch fails with 403 Forbidden and offers retry', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        success: false,
+        error: 'Forbidden: MFA-verified admin claim required. Please re-authenticate via /admin/login',
+      }),
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    const { FounderDecisionForm } = await import('@/components/admin/FounderDecisionForm');
+
+    render(React.createElement(FounderDecisionForm));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('FOUNDER_DECISIONS_ERROR_BANNER')).toBeInTheDocument();
+      expect(screen.getByText(/MFA-verified admin claim required/i)).toBeInTheDocument();
+    });
+
+    vi.unstubAllGlobals();
+  });
+
+  it('supports re-seeding cutover decisions via POST { action: "seed" }', async () => {
+    const memDb = createDecisionsFirestore();
+    const requireAdminMock = vi.fn().mockResolvedValue({
+      authorized: true,
+      session: { email: 'naresh@memoryweaver.studio', isAdmin: true, mfaVerified: true },
+    });
+
+    vi.doMock('@/lib/firebaseAdmin', () => ({ adminDb: memDb }));
+    vi.doMock('@/lib/session', () => ({ requireAdminSession: requireAdminMock }));
+
+    const routeMod = await import('@/app/api/admin/decisions/route');
+    const req = {
+      json: async () => ({ action: 'seed' }),
+    } as any;
+
+    const res = await routeMod.POST(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.decisions.length).toBe(4);
+    expect(body.counts.total).toBe(4);
+  });
 });

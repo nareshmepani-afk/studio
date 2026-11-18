@@ -24,27 +24,50 @@ function computeCounts(decisions: FounderDecisionRecord[]) {
   };
 }
 
-async function ensureAndLoadDecisions(): Promise<FounderDecisionRecord[]> {
-  if (!adminDb) return [];
-  const col = adminDb.collection(FOUNDER_DECISIONS_COLLECTION);
+async function ensureAndLoadDecisions(forceSeed: boolean = false): Promise<FounderDecisionRecord[]> {
   const now = Date.now();
+  const defaultList = DEFAULT_FOUNDER_DECISION_SEEDS.map((s) => buildSeededDecisionRecord(s, now));
+
+  if (!adminDb) return defaultList;
+  const col = adminDb.collection(FOUNDER_DECISIONS_COLLECTION);
 
   for (const seed of DEFAULT_FOUNDER_DECISION_SEEDS) {
-    const ref = col.doc(seed.id);
-    const snap = await ref.get();
-    if (!snap.exists) {
-      await ref.set(buildSeededDecisionRecord(seed, now), { merge: true });
+    try {
+      const ref = col.doc(seed.id);
+      const snap = await ref.get();
+      if (!snap.exists || forceSeed) {
+        await ref.set(buildSeededDecisionRecord(seed, now), { merge: true });
+      }
+    } catch (seedErr) {
+      console.warn(`[decisions/route] Seed error for ${seed.id}:`, seedErr);
     }
   }
 
-  const snap = await col.orderBy('order', 'asc').limit(100).get();
-  const list: FounderDecisionRecord[] = snap.docs.map((d) => ({
-    ...(d.data() as FounderDecisionRecord),
-    id: d.id,
-  }));
+  try {
+    const snap = await col.orderBy('order', 'asc').limit(100).get();
+    const list: FounderDecisionRecord[] = snap.docs.map((d) => ({
+      ...(d.data() as FounderDecisionRecord),
+      id: d.id,
+    }));
 
-  list.sort((a, b) => Number(a.order || 999) - Number(b.order || 999));
-  return list;
+    list.sort((a, b) => Number(a.order || 999) - Number(b.order || 999));
+    if (list.length > 0) return list;
+  } catch (orderErr) {
+    console.warn('[decisions/route] Query orderBy failed, falling back to simple scan:', orderErr);
+    try {
+      const snap = await col.limit(100).get();
+      const list: FounderDecisionRecord[] = snap.docs.map((d) => ({
+        ...(d.data() as FounderDecisionRecord),
+        id: d.id,
+      }));
+      list.sort((a, b) => Number(a.order || 999) - Number(b.order || 999));
+      if (list.length > 0) return list;
+    } catch (scanErr) {
+      console.error('[decisions/route] Simple scan failed:', scanErr);
+    }
+  }
+
+  return defaultList;
 }
 
 export async function GET() {
@@ -176,7 +199,7 @@ export async function POST(req: NextRequest) {
     const decisions =
       updates.length > 0
         ? await persistDecisionUpdates(updates, adminEmail)
-        : await ensureAndLoadDecisions();
+        : await ensureAndLoadDecisions(body?.action === 'seed');
 
     return NextResponse.json(
       { success: true, decisions, counts: computeCounts(decisions) },

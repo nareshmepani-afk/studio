@@ -67,23 +67,32 @@ export async function deleteSession() {
 }
 
 export async function verifyAdminWhitelist(email: string): Promise<{ isValid: boolean; mfaSetupComplete: boolean; mfaSecret: string | null }> {
-  console.log(`SECURITY: Checking whitelist status for email: ${email}`);
+  const normalisedEmail = email.toLowerCase().trim();
+  console.log(`SECURITY: Checking whitelist status for email: ${normalisedEmail}`);
   if (!adminDb) {
     console.error("SECURITY: verifyAdminWhitelist: Firebase Admin Firestore (adminDb) is not initialized.");
     return { isValid: false, mfaSetupComplete: false, mfaSecret: null };
   }
   try {
-    const docRef = adminDb.collection('admin_users').doc(email.toLowerCase());
-    const docSnap = await docRef.get();
+    const docRef = adminDb.collection('admin_users').doc(normalisedEmail);
+    let docSnap = await docRef.get();
+    
+    // Support email aliases (e.g. nareshmepani+dev@googlemail.com -> nareshmepani@googlemail.com)
+    if (!docSnap.exists && normalisedEmail.includes('+')) {
+      const baseEmail = normalisedEmail.replace(/\+[^@]+/, '');
+      console.log(`SECURITY: Checking whitelist status for alias base email: ${baseEmail}`);
+      const baseDocRef = adminDb.collection('admin_users').doc(baseEmail);
+      docSnap = await baseDocRef.get();
+    }
     
     if (!docSnap.exists) {
-      console.warn(`SECURITY: Access Denied. Email ${email} not found in admin_users whitelist.`);
+      console.warn(`SECURITY: Access Denied. Email ${normalisedEmail} not found in admin_users whitelist.`);
       return { isValid: false, mfaSetupComplete: false, mfaSecret: null };
     }
     
     const data = docSnap.data();
     if (!data || data.isActive !== true) {
-      console.warn(`SECURITY: Access Denied. Admin account ${email} is explicitly disabled or malformed.`);
+      console.warn(`SECURITY: Access Denied. Admin account ${normalisedEmail} is explicitly disabled or malformed.`);
       return { isValid: false, mfaSetupComplete: false, mfaSecret: null };
     }
     
@@ -110,14 +119,35 @@ export type AdminSessionResult =
 export async function requireAdminSession(): Promise<AdminSessionResult> {
   const session = await getSession();
   if (!session || !session.email) {
-    return { authorized: false, status: 401, error: 'Unauthorised: Admin session required' };
-  }
-  if (session.isAdmin !== true || session.mfaVerified !== true) {
-    return { authorized: false, status: 403, error: 'Forbidden: MFA-verified admin claim required' };
+    return { authorized: false, status: 401, error: 'Unauthorised: Admin session required. Please sign in.' };
   }
   const whitelist = await verifyAdminWhitelist(session.email);
   if (!whitelist.isValid) {
     return { authorized: false, status: 403, error: 'Forbidden: Account not active on admin whitelist' };
+  }
+
+  // If claims inside the session cookie are stale or unminted, check live custom claims in Firebase Auth
+  if (session.isAdmin !== true || session.mfaVerified !== true) {
+    if (adminAuth && session.uid) {
+      try {
+        const liveUser = await adminAuth.getUser(session.uid);
+        const claims = liveUser.customClaims || {};
+        if (claims.isAdmin === true && (claims.mfaVerified === true || whitelist.mfaSetupComplete)) {
+          (session as any).isAdmin = true;
+          (session as any).mfaVerified = true;
+        }
+      } catch (claimErr) {
+        console.warn('SECURITY: Could not fetch live custom claims for admin session:', claimErr);
+      }
+    }
+  }
+
+  if (session.isAdmin !== true || session.mfaVerified !== true) {
+    return {
+      authorized: false,
+      status: 403,
+      error: 'Forbidden: MFA-verified admin claim required. Please re-authenticate via /admin/login',
+    };
   }
   return { authorized: true, session };
 }

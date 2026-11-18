@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   CheckCircle2,
   ClipboardCheck,
   Clock,
@@ -49,6 +50,8 @@ export function FounderDecisionForm() {
   const [counts, setCounts] = useState({ total: 0, decided: 0, pending: 0, deferred: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [reseeding, setReseeding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const hydrateDrafts = (list: FounderDecisionRecord[]) => {
@@ -66,31 +69,73 @@ export function FounderDecisionForm() {
 
   const fetchDecisions = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch('/api/admin/decisions', { cache: 'no-store' });
-      const data = await res.json();
+      const res = await fetch('/api/admin/decisions', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to load founder decisions');
+        throw new Error(data.error || `Failed to load founder decisions (HTTP ${res.status})`);
       }
-      const loaded: FounderDecisionRecord[] = data.decisions || [];
+      const loaded: FounderDecisionRecord[] = Array.isArray(data.decisions) ? data.decisions : [];
       setDecisions(loaded);
       setCounts(
         data.counts || {
           total: loaded.length,
-          decided: 0,
-          pending: loaded.length,
-          deferred: 0,
+          decided: loaded.filter((d) => d.status === 'DECIDED').length,
+          pending: loaded.filter((d) => d.status === 'PENDING').length,
+          deferred: loaded.filter((d) => d.status === 'DEFERRED_TO_PLANE').length,
         }
       );
       hydrateDrafts(loaded);
     } catch (err: any) {
+      const msg = err?.message || 'Check your administrator session and try again.';
+      setError(msg);
       toast.error('Unable to Load Founder Decisions', {
-        description: err?.message || 'Check your administrator session and try again.',
+        description: msg,
       });
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleReseed = async () => {
+    setReseeding(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/decisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ action: 'seed' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to re-seed decisions');
+      }
+      const loaded: FounderDecisionRecord[] = Array.isArray(data.decisions) ? data.decisions : [];
+      setDecisions(loaded);
+      setCounts(
+        data.counts || {
+          total: loaded.length,
+          decided: loaded.filter((d) => d.status === 'DECIDED').length,
+          pending: loaded.filter((d) => d.status === 'PENDING').length,
+          deferred: loaded.filter((d) => d.status === 'DEFERRED_TO_PLANE').length,
+        }
+      );
+      hydrateDrafts(loaded);
+      toast.success('Cutover Decisions Initialised', {
+        description: `Loaded ${loaded.length} decision cards into queue.`,
+      });
+    } catch (err: any) {
+      setError(err?.message || 'Failed to re-seed decisions');
+      toast.error('Reseed Failed', { description: err?.message });
+    } finally {
+      setReseeding(false);
+    }
+  };
 
   useEffect(() => {
     fetchDecisions();
@@ -201,12 +246,93 @@ export function FounderDecisionForm() {
         </div>
       </div>
 
-      {/* Decision Cards */}
-      {loading && decisions.length === 0 ? (
+      {/* Error Banner */}
+      {error && (
+        <div
+          data-testid="FOUNDER_DECISIONS_ERROR_BANNER"
+          className="rounded-2xl border border-rose-500/40 bg-rose-950/30 p-6 space-y-3"
+        >
+          <div className="flex items-center gap-3 text-rose-400">
+            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+            <h4 className="text-sm font-bold uppercase tracking-wider">
+              Unable to Load Founder Decisions
+            </h4>
+          </div>
+          <p className="text-xs text-rose-200/90 leading-relaxed font-mono">
+            {error}
+          </p>
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <Button
+              type="button"
+              onClick={fetchDecisions}
+              disabled={loading}
+              size="sm"
+              className="bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+              Retry Handshake
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleReseed}
+              disabled={reseeding || loading}
+              size="sm"
+              className="border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 text-xs"
+            >
+              {reseeding ? 'Re-seeding...' : 'Force Re-seed Cards'}
+            </Button>
+            {(error.includes('Unauthorised') ||
+              error.includes('Forbidden') ||
+              error.includes('Admin') ||
+              error.includes('401') ||
+              error.includes('403')) && (
+              <a
+                href="/admin/login"
+                className="inline-flex items-center text-xs font-semibold text-rose-300 hover:text-white underline underline-offset-4 ml-auto"
+              >
+                Re-authenticate via /admin/login ↗
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Loading Skeleton */}
+      {loading && decisions.length === 0 && !error && (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-10 text-center text-xs text-slate-400">
+          <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-3 text-amber-400" />
           Loading pre-seeded cutover decisions...
         </div>
-      ) : (
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && decisions.length === 0 && (
+        <div
+          data-testid="FOUNDER_DECISIONS_EMPTY_STATE"
+          className="rounded-2xl border border-slate-800 bg-slate-900/40 p-10 text-center space-y-4"
+        >
+          <ClipboardCheck className="h-8 w-8 text-amber-400/60 mx-auto" />
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-slate-200">Cutover Decisions Queue Empty</p>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              No cutover decision records currently exist in Firestore. Click below to seed the 4 default production cutover decision cards.
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={handleReseed}
+            disabled={reseeding}
+            size="sm"
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs"
+          >
+            {reseeding ? 'Seeding Decisions...' : 'Seed 4 Cutover Decisions'}
+          </Button>
+        </div>
+      )}
+
+      {/* Decision Cards */}
+      {!loading && decisions.length > 0 && (
         <div className="space-y-5">
           {decisions.map((card) => {
             const draft = drafts[card.id] || {
