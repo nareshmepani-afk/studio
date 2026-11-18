@@ -278,4 +278,27 @@ describe('Founder Decision Queue (/api/admin/decisions, Form & CLI)', () => {
     expect(body.decisions.length).toBe(4);
     expect(body.counts.total).toBe(4);
   });
+
+  it('formats deferred founder decision for Plane issue creation and auto-syncs via --sync-plane', async () => {
+    const { formatFounderDecisionForPlane } = await import('../../scripts/read-founder-decisions');
+    const d = {
+      ...DEFAULT_FOUNDER_DECISION_SEEDS[3], // MW-405
+      status: 'DEFERRED_TO_PLANE' as const,
+      deferredToPlane: true,
+      selectedOptionId: 'rotate_after_walkthrough',
+      notes: 'Deferred to Plane sprint backlog.',
+      createdAt: 1000,
+      updatedAt: 2000,
+      updatedAtIso: '2026-11-18T12:00:00.000Z',
+      decidedBy: 'founder@memoryweaver.studio',
+    };
+
+    const formatted = formatFounderDecisionForPlane(d);
+    expect(formatted.title).toBe('[DEFERRED DECISION] MW-405 — Schedule Plane.so API Key Rotation');
+    expect(formatted.description).toContain('**Decision ID:** mw-405-plane-token-rotation');
+    expect(formatted.description).toContain('**Status:** DEFERRED_TO_PLANE');
+    expect(formatted.description).toContain('**Founder Notes:** Deferred to Plane sprint backlog.');
+    expect(formatted.description).toContain('### Available Options');
+    expect(formatted.description).toContain('rotate_after_walkthrough');
+  });
 });

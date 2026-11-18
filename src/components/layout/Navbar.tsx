@@ -287,15 +287,15 @@ export function Navbar() {
             </nav>
           )}
 
-          <div className="flex items-center ml-auto space-x-1.5 sm:space-x-3 shrink-0 min-w-0">
+          <div className="flex items-center ml-auto space-x-1 sm:space-x-2.5 shrink-0 min-w-0">
             <StudioUpgradeBadge />
             {isStudio && <OpticsPrivacyShield compact className="shrink-0 max-xl:[&>span]:hidden" />}
             {isStudioWorkspace && (
-              <div data-hotspot-id="HS_NAV_LANGUAGE_TOGGLE">
+              <div data-hotspot-id="HS_NAV_LANGUAGE_TOGGLE" className="shrink-0">
                 <LanguageToggle />
               </div>
             )}
-            <div data-hotspot-id="HS_NAV_THEME_TOGGLE">
+            <div data-hotspot-id="HS_NAV_THEME_TOGGLE" className="shrink-0">
               <ThemeToggle />
             </div>
             <ReportIssueTrigger variant="icon-pill" label="Issue" className="hidden md:inline-flex shrink-0" />
@@ -410,11 +410,11 @@ export function Navbar() {
                 <SheetTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="h-8 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 text-xs font-semibold shadow-sm shadow-amber-500/10 active:scale-95 transition-all" 
+                    className="h-8 px-2 sm:px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 sm:gap-1.5 text-xs font-semibold shadow-sm shadow-amber-500/10 active:scale-95 transition-all shrink-0" 
                     aria-label="Open Navigation Menu"
                   >
                     <Menu className="h-4 w-4 text-amber-400 shrink-0" />
-                    <span className="text-xs font-medium">Menu</span>
+                    <span className="text-xs font-medium hidden sm:inline">Menu</span>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-4/5 max-w-sm bg-[#0A0A0A] border-l border-amber-500/20 text-white p-6 overflow-y-auto custom-scrollbar flex flex-col justify-between">

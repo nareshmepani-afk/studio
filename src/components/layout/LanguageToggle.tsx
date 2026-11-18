@@ -31,11 +31,11 @@ export function LanguageToggle() {
               <Button 
                 variant="ghost" 
                 size="default" 
-                className="w-auto h-8 px-3 flex items-center gap-2 border border-white/5 bg-white/5 hover:bg-white/10 active:scale-95 transition-all rounded-full"
+                className="w-8 sm:w-auto h-8 px-0 sm:px-3 flex items-center justify-center sm:justify-start gap-0 sm:gap-2 border border-white/5 bg-white/5 hover:bg-white/10 active:scale-95 transition-all rounded-full shrink-0"
                 aria-label={`Current language mode: ${currentLabel}`}
               >
-                <Languages className="h-3.5 w-3.5 text-primary" />
-                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">
+                <Languages className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 hidden sm:inline">
                   {mode === 'dual' ? 'Hybrid' : mode.toUpperCase()}
                 </span>
               </Button>

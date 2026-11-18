@@ -166,5 +166,34 @@ describe('Navbar Route Isolation & Admin Masking', () => {
       render(<Navbar />);
       expect(screen.getByLabelText(/Current language mode/i)).toBeInTheDocument();
     });
+
+    it('hides inline text labels on mobile below sm (640px) for Menu and LanguageToggle on /studio', () => {
+      mockAuthUser = {
+        uid: 'u-390px-mobile-1',
+        email: 'director@memoryweaver.studio',
+        role: 'Director',
+      };
+      mockUsePathname.mockReturnValue('/studio');
+      const { container } = render(<Navbar />);
+
+      // Menu button label hides below sm:
+      const menuBtn = screen.getByLabelText('Open Navigation Menu');
+      expect(menuBtn).toBeInTheDocument();
+      const menuLabel = menuBtn.querySelector('span');
+      expect(menuLabel?.className).toContain('hidden');
+      expect(menuLabel?.className).toContain('sm:inline');
+
+      // LanguageToggle label hides below sm:
+      const langToggle = screen.getByLabelText(/Current language mode/i);
+      expect(langToggle).toBeInTheDocument();
+      const langLabel = langToggle.querySelector('span');
+      expect(langLabel?.className).toContain('hidden');
+      expect(langLabel?.className).toContain('sm:inline');
+
+      // Right action cluster has responsive mobile spacing:
+      const rightCluster = container.querySelector('.ml-auto');
+      expect(rightCluster?.className).toContain('space-x-1');
+      expect(rightCluster?.className).toContain('sm:space-x-2.5');
+    });
   });
 });
