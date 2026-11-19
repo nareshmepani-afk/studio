@@ -151,9 +151,11 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Never Leave Work Hanging**: Every escalation MUST include: (1) what was attempted, (2) why it failed, (3) exactly what the user needs to check, and (4) what the next step is once the answer is known.
 # 26. Model Triage & Token Economy Architecture
 - **Multi-Model Tier-1 & Agile Entry Points**:
-  - **Claude Opus 4.6 (Thinking)**: Primary Strategic Director, Deep Architecture & Systemic Planner, High-Reasoning Pair Programming Lead.
-  - **Claude Sonnet 4.6 (Thinking)**: Agile Strategic Architect, Code Reviewer, Gatekeeper for Protected Components (Rule 22.2), and Fast-Paced Execution Lead.
-  - **Gemini 3.8 Flash (High Thinking)**: High-Speed Strategic Co-Pilot, Rapid Architectural Reasoning, Lightning-Fast Diagnostics, Real-Time Mobile & Responsive Layout Execution Lead, and Token-Efficient Iterative Workhorse.
+  - **Claude Opus 5.5**: Primary Strategic Director, Deep Architecture & Systemic Planner, High-Reasoning Pair Programming Lead.
+  - **Claude Sonnet 5.5**: Agile Strategic Architect, Code Reviewer, Gatekeeper for Protected Components (Rule 22.2), and Fast-Paced Execution Lead.
+  - **Gemini 4 Hydrogen / Gemini 4 Argon / Gemini 4 Neon**: High-Speed Strategic Co-Pilots, Rapid Architectural Reasoning, Lightning-Fast Diagnostics, Real-Time Mobile & Responsive Layout Execution Leads (**Gemini 4 Neon** and **Gemini 4 Hydrogen** also support **`Operational Mode: [Extra]`** / `XHigh` reasoning depth alongside **`[Use Fast]`** and **`[Use Planning]`**; **Gemini 4 Carbon** is **Unavailable**).
+  - **Orchestrator (Neon) / Orchestrator (Argon)**: Coordinated Multi-Agent & Parallel Workflow Orchestrators.
+  - **Gemini 3.8 Flash** & **GPT-OSS 120B (Medium)**: Token-Efficient Iterative Workhorses for rapid UI tweaks, verification, and cross-checks (legacy `Gemini 3.7 Flash` is retired).
   - **Core Duty of Tier-1 / Strategic Leads**: Understand user requirements, formulate airtight architecture/implementation plans, make strategic decisions, review final diffs, and orchestrate subagent workflows.
 - **Mandatory Subagent Dispatch Matrix**:
   - **Research & Discovery (`Model: 'flash'`)**: High-speed codebase search, file scanning, context gathering, and summarization via Gemini Flash. Never dump hundreds of lines of raw code into the primary context window; subagents must return concise $\le$ 200-token summaries.
@@ -569,8 +571,8 @@ When authoring or amending ANY test card (`#card-N`) or sub-item (`Item N.M`) in
 # 21. Model Selection Advisory & Prompt Router Protocol
 - **Mandatory Pre-Gate Callout**: On EVERY single user message without exception, the agent's very first line of output MUST include the exact pre-gate model validation statement:
   `🎯 The model selected for your question should be: [emoji] [CURRENT_ACTIVE_MODEL_NAME] — [Reason]`.
-- **Automatic Metadata Model Detection**: The agent automatically inspects active session metadata and runtime context on every turn to detect the currently selected model (`Gemini 3.8 Flash (High)`, `Gemini 3.7 Flash (High)`, `Gemini 3.7 Flash (Low)`, `Gemini 3.7 Pro`, `Claude Sonnet (Thinking)`, `Claude Opus (Thinking)`) without requiring manual user notification.
-- **Automatic High-Tier Reasoning Escalation**: Whenever executing multi-file refactoring, network/edge diagnostics, structural layout changes, or test suite verifications, the agent MUST automatically route and execute the underlying technical work using **Gemini 3.8 Flash (High)** / **Gemini 3.7 Flash (High)** / **Claude Sonnet** tier reasoning to guarantee zero regressions.
+- **Automatic Metadata Model Detection**: The agent automatically inspects active session metadata and runtime context on every turn to detect the currently selected model (`Claude Opus 5.5`, `Claude Sonnet 5.5`, `Gemini 4 Hydrogen`, `Gemini 4 Argon`, `Gemini 4 Neon`, `Orchestrator (Neon)`, `Orchestrator (Argon)`, `Gemini 3.8 Flash`, `GPT-OSS 120B (Medium)`) without requiring manual user notification (`Gemini 4 Carbon` is Unavailable; `Gemini 3.7 Flash` is retired).
+- **Automatic High-Tier Reasoning Escalation**: Whenever executing multi-file refactoring, network/edge diagnostics, structural layout changes, or test suite verifications, the agent MUST automatically route and execute the underlying technical work using **Gemini 4 Hydrogen** / **Gemini 4 Neon** (including **`Operational Mode: [Extra]`** / `XHigh`), **Gemini 4 Argon**, **Gemini 3.8 Flash (High)**, **Claude Sonnet 5.5**, **Orchestrator (Neon)**, or **Orchestrator (Argon)** tier reasoning to guarantee zero regressions.
 - **Hard Code-Edit Lockout**: If the task tier is higher than the current active model tier (e.g. Current is Low, Task is Medium/High/Premium), the agent is **STRICTLY FORBIDDEN** from invoking ANY code-modification tools (`replace_file_content`, `multi_replace_file_content`, `write_to_file`, `run_command` git commit) unless automatic subagent escalation is enabled.
 - **Execute or Route**: If the current model matches or exceeds the required task tier, execute directly.
 - **Ask if Ambiguous**: If the task is underspecified, ask the user for clarification BEFORE routing or executing.
@@ -582,18 +584,18 @@ When authoring or amending ANY test card (`#card-N`) or sub-item (`Item N.M`) in
 > **Origin**: Codified after MW-163 incident (2026-08-15) in which Gemini Flash High violated Rule 7 by collapsing three separate export buttons (Print PDF, Download, Share & QR) into one, passing a Vitest suite that had insufficiently specific assertions.
 
 ## Core Principle
-**Claude Opus (Thinking) is the default first gate.** Every user question lands on Opus first. Opus either executes directly (Architect/Ultra tasks) or writes a precise, ready-to-paste prompt for the optimal downstream model. This ensures the routing decision itself receives the deepest reasoning.
+**Claude Opus 5.5 is the default first gate.** Every user question lands on Opus first. Opus either executes directly (Architect/Ultra tasks) or writes a precise, ready-to-paste prompt for the optimal downstream model. This ensures the routing decision itself receives the deepest reasoning.
 
 ## 22.1 The Four Roles
 
 | Role | Model | Responsibilities |
 |---|---|---|
-| 🏛️ **Triage & Architect** (Default) | Claude Opus (Thinking) | **First gate for ALL questions.** Analyses, classifies tier, either executes directly or writes a ready-to-paste prompt for the optimal downstream model. Handles systemic root-cause analysis, pre-execution brainstorming, architectural decisions, writing / amending rules in `.agents/`. |
-| 🔰 **Gatekeeper** | Claude Sonnet (Thinking) | Day-to-day production execution. Issues final `git commit` on Protected Components. Executes Premium-tier bug fixes, multi-file refactors, and post-delegation diff audits. |
-| ⚙️ **Executor & Agile Lead** | Gemini 3.8 Flash (High / Thinking) / Gemini 3.7 Flash (High) | Executes bounded, clearly scoped tasks, rapid responsive UI fixes, and test suites with explicit success criteria from a Delegation Brief. May commit on non-Protected files only. |
-| 🔍 **Reader** | Gemini Flash (Low) | Research, file reading, grep searches, status checks, `tsc` / `vitest` output reading. Zero code writes. |
+| 🏛️ **Triage & Architect** (Default) | Claude Opus 5.5 | **First gate for ALL questions.** Analyses, classifies tier, either executes directly or writes a ready-to-paste prompt for the optimal downstream model. Handles systemic root-cause analysis, pre-execution brainstorming, architectural decisions, writing / amending rules in `.agents/`. |
+| 🔰 **Gatekeeper** | Claude Sonnet 5.5 | Day-to-day production execution. Issues final `git commit` on Protected Components. Executes Premium-tier bug fixes, multi-file refactors, and post-delegation diff audits. |
+| ⚙️ **Executor & Agile Lead** | Gemini 4 Hydrogen / Gemini 4 Neon (supports `Operational Mode: [Extra]` alongside `Use Fast` and `Use Planning`) / Gemini 4 Argon / Gemini 3.8 Flash (High) / Orchestrator (Neon) / Orchestrator (Argon) / GPT-OSS 120B (Medium) | Executes bounded, clearly scoped tasks, rapid responsive UI fixes, and test suites with explicit success criteria from a Delegation Brief (`Extra` mode enables deeper multi-component reasoning on `Gemini 4 Hydrogen` & `Gemini 4 Neon`). May commit on non-Protected files only. (`Gemini 4 Carbon` is Unavailable.) |
+| 🔍 **Reader** | Gemini 3.8 Flash (Low) | Research, file reading, grep searches, status checks, `tsc` / `vitest` output reading. Zero code writes. |
 
-> 📌 **Version Policy**: Rules reference model *families*, not version numbers (e.g. `Claude Sonnet (Thinking)`, not `Claude Sonnet 4.6`). This keeps the ruleset evergreen as model versions update.
+> 📌 **Version Policy**: Rules track the active Antigravity selector hierarchy (`Claude Opus 5.5`, `Claude Sonnet 5.5`, `Gemini 4 Hydrogen`, `Gemini 4 Argon`, `Gemini 4 Neon`, `Orchestrator (Neon)`, `Orchestrator (Argon)`, `Gemini 3.8 Flash`, `GPT-OSS 120B (Medium)`). Legacy `Gemini 3.7 Flash` and `Claude 4.6` are retired; `Gemini 4 Carbon` is Unavailable.
 
 ## 22.2 Protected Component Registry
 
@@ -1074,8 +1076,8 @@ The agent MUST execute the following sequence upon staging rollout verification:
 In long conversations with multiple tool calls, file views, and checkpoints, the entire message trajectory (100,000–200,000+ tokens) is processed on **every single user prompt** (even 1-word commands like `Continue` or `PASS`). This causes rapid token consumption if expensive reasoning models are used for repetitive iterative loops.
 
 ## 28.2 Token-Saving Protocol & Model Allocation
-- **Iterative Execution & Verification Workhorse**: Default to **Gemini 3.8 Flash (High)** or **Gemini Flash (Medium)** for continuous debugging, test execution, UI tweaks, subagent execution (`flash_executor`), and active testing cycles to maximize speed and token efficiency.
-- **Architectural & Complex Reasoning Reserve**: Reserve **Claude Opus / Sonnet (Thinking)** for initial system design, major multi-module refactoring, or intractable state bugs where deep reasoning is strictly required.
+- **Iterative Execution & Verification Workhorse**: Default to **Gemini 3.8 Flash**, **Gemini 4 Neon**, **Gemini 4 Argon**, **Gemini 4 Hydrogen**, or **GPT-OSS 120B (Medium)** (and **Orchestrator (Neon)** / **Orchestrator (Argon)** for multi-agent flows) for continuous debugging, test execution, UI tweaks, subagent execution (`flash_executor`), and active testing cycles to maximize speed and token efficiency (`Gemini 4 Carbon` is Unavailable; `Gemini 3.7 Flash` is retired).
+- **Architectural & Complex Reasoning Reserve**: Reserve **Claude Opus 5.5 / Claude Sonnet 5.5** (or **Gemini 4 Hydrogen** / **Gemini 4 Neon** in **`Operational Mode: [Extra]`**) for initial system design, major multi-module refactoring, or intractable state bugs where deep reasoning is strictly required.
 - **Mandatory Subagent Offload**: All mechanical code execution and broad file research MUST use Flash-tier subagents (`flash` / `flash_executor`).
 
 ## 28.3 Proactive Rollover Trigger
@@ -1625,7 +1627,7 @@ To permanently eliminate run-on lines and markdown collisions when multiple rece
 - Instead of launching a multi-file search or build, the agent MUST immediately output a concise **3-Bullet Decision Lock Card**:
   1. 🎯 **Real Goal Identified**: 1-sentence root architectural objective vs. surface symptom.
   2. 📦 **Proposed Micro-Compartment ($\le 2$ Files)**: Strictly capped at 1–2 files max with complete `C:\Users\home\studio\...` file paths and line ranges.
-  3. 🔒 **Explicit Verification Choices (`[A / B]`)**: 2–3 binary trade-off questions confirming state isolation mode, edge-case guards, and **Local Vitest (`npx.cmd vitest run <exact-test-path>`) vs. Staging Push**, plus explicit `Model` and `[Use Planning]` vs. `[Use Fast]` operational mode advice for quick confirmation (e.g. `"1A, 2B, Go"`).
+  3. 🔒 **Explicit Verification Choices (`[A / B]`)**: 2–3 binary trade-off questions confirming state isolation mode, edge-case guards, and **Local Vitest (`npx.cmd vitest run <exact-test-path>`) vs. Staging Push**, plus explicit `Model` and `[Use Planning]` vs. `[Use Fast]` vs. `[Extra]` (for `Gemini 4 Neon` / `Gemini 4 Hydrogen`) operational mode advice for quick confirmation (e.g. `"1A, 2B, Go"`).
 
 ## 61.2 Micro-Compartment Bias (Option 2A)
 - All bug fixes and iterative adjustments default to verifying 1–2 files locally via a single targeted Vitest file (`npx.cmd vitest run <exact-test-path>`) in `[Use Fast]` mode before triggering any 5-minute Cloud Build or `git push`.

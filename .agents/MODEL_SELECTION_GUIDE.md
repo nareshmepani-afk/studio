@@ -11,7 +11,7 @@ User asks a question
         │
         ▼
 ┌─────────────────────────────────────┐
-│  Claude Opus (Thinking) — DEFAULT   │
+│     Claude Opus 5.5 — DEFAULT       │
 │  STEP 1: Analyse & classify tier    │
 │  STEP 2: Route or execute directly  │
 └──────────┬──────────────────────────┘
@@ -20,9 +20,11 @@ User asks a question
      │     │             │              │
      ▼     ▼             ▼              ▼
   ULTRA  PREMIUM      HIGH           LOW
-  Opus   Sonnet       Flash(High)    Flash(Low)
-  direct prompt→      prompt→        prompt→
-  exec   switch       switch         switch
+Opus 5.5 Sonnet 5.5  Gemini 4 /     3.8 Flash
+  direct  (or G4      3.8 (High)     (Low)
+  exec    [Extra])    prompt→        prompt→
+          prompt→     switch         switch
+          switch
 ```
 
 ---
@@ -85,22 +87,22 @@ If the task is ambiguous or underspecified, ask the user for clarification BEFOR
 
 | Tier | Model | Role |
 |---|---|---|
-| 💚 Low | Gemini Flash (Low) | 🔍 Reader only — no code writes |
-| 💛 Medium | Gemini Flash (Low / Medium) | ⚙️ Executor — non-Protected files only. Must run Rule 26 Self-Healing Loop. |
-| 🟠 High | Gemini 3.8 Flash (High / Thinking) / Gemini 3.7 Flash (High) | ⚙️ Executor & Agile Lead — with Delegation Brief (Rule 22.5) + Rule 26 Self-Healing Loop |
-| 🔴 Premium | **Claude Sonnet (Thinking)** | 🔰 **Gatekeeper** — Protected Components, final commits, diff audits. Runs Rule 26.3 Gatekeeper Integration Step before push. |
-| 🟣 Ultra | **Claude Opus (Thinking)** ← DEFAULT | 🏛️ **Triage & Architect** — First gate for ALL questions. Executes directly or writes ready-to-paste prompts. |
+| 💚 Low | Gemini 3.8 Flash (Low) | 🔍 Reader only — no code writes |
+| 💛 Medium | Gemini 3.8 Flash / Gemini 4 Neon / GPT-OSS 120B (Medium) | ⚙️ Executor — non-Protected files only. Must run Rule 26 Self-Healing Loop. |
+| 🟠 High | Gemini 4 Hydrogen / Gemini 4 Neon (`Operational Mode: [Extra]`) / Gemini 4 Argon / Gemini 3.8 Flash (High) / Orchestrator (Neon) / Orchestrator (Argon) | ⚙️ Executor & Agile Lead — with Delegation Brief (Rule 22.5) + Rule 26 Self-Healing Loop (`Gemini 4 Neon` and `Gemini 4 Hydrogen` support `Operational Mode: [Extra]` / `XHigh` alongside `Use Fast` and `Use Planning`; `Gemini 4 Carbon` is Unavailable) |
+| 🔴 Premium | **Claude Sonnet 5.5** (plus **Gemini 4 Hydrogen** / **Gemini 4 Neon** in `Operational Mode: [Extra]` for cross-component debugging) | 🔰 **Gatekeeper** — Protected Components (`Claude Sonnet 5.5` commits), final audits. Runs Rule 26.3 Gatekeeper Integration Step before push. |
+| 🟣 Ultra | **Claude Opus 5.5** ← DEFAULT | 🏛️ **Triage & Architect** — First gate for ALL questions. Executes directly or writes ready-to-paste prompts. |
 
 > ⚠️ **MW-163 Lesson**: Gemini Flash (High) is capable but lacks the deep Rule 7 awareness needed for Protected Components. Always use a Delegation Brief (Rule 22.5) when offloading to Flash. Flash may never autonomously edit `SoloStage.tsx`, `studio_fixes.test.tsx`, `autobiographyExporter.ts`, or any `.agents/` file.
 
 > 🔄 **Rule 26 Compliance (Mandatory for Tier-3 Executors)**: All Gemini Flash executors (Medium + High) MUST run the Automated Self-Healing & Verification Loop (Rule 26) before returning output to the Tier-2 Gatekeeper. This means: (1) Run `tsc --noEmit` + targeted `vitest` + `git diff --stat` after every diff application, (2) Self-heal up to 3 iterations on compile/test failures, (3) Return a standardised Self-Healing Report (§26.4), (4) ESCALATE immediately if Protected Components, test files, or UI elements would need modification during retries.
 
-> 📌 **Version Policy**: Rules reference model *families*, not version numbers (e.g. `Claude Sonnet (Thinking)`, not `Claude Sonnet 4.6`). This keeps rules evergreen as versions update.
+> 📌 **Version Policy**: Rules track the active Antigravity selector hierarchy (`Claude Opus 5.5`, `Claude Sonnet 5.5`, `Gemini 4 Hydrogen`, `Gemini 4 Argon`, `Gemini 4 Neon`, `Orchestrator (Neon)`, `Orchestrator (Argon)`, `Gemini 3.8 Flash`, `GPT-OSS 120B (Medium)`). Legacy `Gemini 3.7 Flash` and `Claude 4.6` are retired; `Gemini 4 Carbon` is Unavailable.
 
 ---
 
 ## Automatic Model Detection Capability
-- **Zero-Manual-Notification Mode**: The agent automatically inspects the active session metadata and runtime context on every turn to detect the currently selected model (`Gemini 3.8 Flash (High)`, `Gemini 3.7 Flash (High)`, `Gemini 3.7 Flash (Low)`, `Claude Sonnet (Thinking)`, `Claude Opus (Thinking)`) without requiring the user to manually announce model switches.
+- **Zero-Manual-Notification Mode**: The agent automatically inspects the active session metadata and runtime context on every turn to detect the currently selected model (`Claude Opus 5.5`, `Claude Sonnet 5.5`, `Gemini 4 Hydrogen`, `Gemini 4 Argon`, `Gemini 4 Neon`, `Orchestrator (Neon)`, `Orchestrator (Argon)`, `Gemini 3.8 Flash`, `GPT-OSS 120B (Medium)`) and operational mode (`Use Fast`, `Use Planning`, plus `Extra` / `XHigh` supported alongside them on `Gemini 4 Neon` and `Gemini 4 Hydrogen`) without requiring the user to manually announce switches (`Gemini 4 Carbon` is Unavailable; `Gemini 3.7 Flash` is retired).
 - **Dynamic Pre-Gate Echo**: The pre-gate statement dynamically resolves to the exact active model detected from session metadata.
 
 ---
@@ -182,18 +184,18 @@ The primary user is the **Creative Director** (Rule 25). All models adopt the **
 
 ## Examples
 
-### Example 1: User on Opus asks "Is the build live?"
+### Example 1: User on Opus 5.5 asks "Is the build live?"
 ```
 This is a 💚 Low task. I'll answer directly:
 [checks build status]
-📊 Model Advisory: 💚 Gemini Flash (Low) for your next status check.
+📊 Model Advisory: 💚 Gemini 3.8 Flash (Low) for your next status check.
 ```
 
-### Example 2: User on Flash (Low) asks "Why did the proceed button disappear?"
+### Example 2: User on Gemini 3.8 Flash (Low) asks "Why did the proceed button disappear?"
 ```
 🔀 Model Route Advisory
-Current Model: Gemini Flash (Low)
-Recommended Model: 🔴 Claude Sonnet (Thinking)
+Current Model: Gemini 3.8 Flash (Low)
+Recommended Model: 🔴 Claude Sonnet 5.5 (or Gemini 4 Hydrogen / Gemini 4 Neon with Operational Mode: [Extra])
 Reason: Cross-component state debugging across ProductionDeck, ProductionControlBar,
 and MemoryForm requires deep reasoning and multi-file analysis.
 
@@ -205,11 +207,11 @@ and MemoryForm requires deep reasoning and multi-file analysis.
 > [full optimised prompt]
 ```
 
-### Example 3: User on Sonnet (Thinking) asks "BRAINSTORM a new feature"
+### Example 3: User on Claude Sonnet 5.5 asks "BRAINSTORM a new feature"
 ```
 🔀 Model Route Advisory
-Current Model: Claude Sonnet (Thinking)
-Recommended Model: 🟣 Claude Opus (Thinking)
+Current Model: Claude Sonnet 5.5
+Recommended Model: 🟣 Claude Opus 5.5
 Reason: Creative architectural brainstorming benefits from Opus's deeper reasoning
 and is ideal before committing to any code changes.
 
@@ -222,6 +224,6 @@ and is ideal before committing to any code changes.
 ## Token Economy & Context Window Inflation Shield (Rule 28)
 
 1. **Context Window Dynamics**: In extended conversations (multiple checkpoints, large files), every turn resends 150k–200k+ tokens. Using expensive reasoning tiers for repetitive `PASS` / `Continue` loops burns tokens rapidly.
-2. **Workhorse Tier**: Use **Gemini 3.8 Flash (High)** / **Gemini 3.7 Flash (High / Medium)** as the primary engine for high-iteration debugging, test runs, UI polish, and ticket closure.
+2. **Workhorse Tier**: Use **Gemini 4 Hydrogen**, **Gemini 4 Argon**, **Gemini 4 Neon**, **Gemini 3.8 Flash**, or **GPT-OSS 120B (Medium)** (and **Orchestrator (Neon)** / **Orchestrator (Argon)** for coordinated flows) as the primary engines for high-iteration debugging, test runs, UI polish, and ticket closure (`Gemini 4 Carbon` is Unavailable; `Gemini 3.7 Flash` is retired).
 3. **Rollover Trigger**: Once a sprint reaches ~10 tickets or is truncated by checkpoints, cut a **Sprint Handoff Brief** and initiate a fresh conversation.
 
