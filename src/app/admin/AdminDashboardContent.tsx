@@ -23,7 +23,8 @@ import { MissionControlConsole } from '@/components/admin/MissionControlConsole'
 import { BugTriageConsole } from '@/components/admin/BugTriageConsole';
 import { PrelaunchAccessConsole } from '@/components/admin/PrelaunchAccessConsole';
 import { FounderDecisionForm } from '@/components/admin/FounderDecisionForm';
-import { Bug, Lock, ClipboardCheck } from 'lucide-react';
+import { UserDirectoryConsole } from '@/components/admin/UserDirectoryConsole';
+import { Bug, Lock, ClipboardCheck, UserCog } from 'lucide-react';
 import { getBackendEnvironmentDetails } from './actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -33,7 +34,7 @@ import Link from 'next/link';
 export default function AdminDashboardContent() {
   const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>('devops');
+  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'users' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function AdminDashboardContent() {
       // Rehydrate active suite from URL search params (?suite=email, ?suite=vouchers, or ?tab=access)
       const urlParams = new URLSearchParams(window.location.search);
       const suiteParam = urlParams.get('suite') || urlParams.get('tab');
-      if (suiteParam && ['devops', 'business', 'access', 'email', 'knowledge', 'vouchers', 'mission', 'bugs', 'prelaunch', 'decisions'].includes(suiteParam)) {
+      if (suiteParam && ['devops', 'business', 'users', 'access', 'email', 'knowledge', 'vouchers', 'mission', 'bugs', 'prelaunch', 'decisions'].includes(suiteParam)) {
         setActiveSuite(suiteParam as any);
       } else if (urlParams.get('traceId') || urlParams.get('reportId') || urlParams.get('userId')) {
         setActiveSuite('bugs');
@@ -186,6 +187,18 @@ export default function AdminDashboardContent() {
               >
                 <TrendingUp className="h-4 w-4" />
                 Business & Analytics
+              </button>
+
+              <button
+                onClick={() => setActiveSuite('users')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
+                  activeSuite === 'users' 
+                    ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300' 
+                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                }`}
+              >
+                <UserCog className="h-4 w-4 text-emerald-400" />
+                Users / CRM
               </button>
 
               <button
@@ -345,6 +358,7 @@ export default function AdminDashboardContent() {
                 <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
                   {activeSuite === 'devops' && 'DevOps & Operations'}
                   {activeSuite === 'business' && 'Business Analytics'}
+                  {activeSuite === 'users' && 'Users & Customer Directory (CRM)'}
                   {activeSuite === 'access' && 'Customer Support & Access'}
                   {activeSuite === 'email' && 'Email Operations & Live Dispatcher'}
                   {activeSuite === 'vouchers' && 'Heirloom Voucher Minting'}
@@ -357,6 +371,7 @@ export default function AdminDashboardContent() {
                 <p className="text-slate-400 text-sm leading-relaxed">
                   {activeSuite === 'devops' && 'Monitor resilience memory structures, local IndexedDB states, WebRTC signaling integrity, and routing traces.'}
                   {activeSuite === 'business' && 'View subscription tier tracking, user adoption quotas, and API analytics telemetry.'}
+                  {activeSuite === 'users' && 'Inspect all registered Firebase Auth accounts alongside Firestore memory counts, filter Customers vs Test/Aliases, export CSVs, and safely disable or purge non-admin accounts.'}
                   {activeSuite === 'access' && 'Manage client authentication tokens, inspect permission passes, and execute administrative bypasses.'}
                   {activeSuite === 'email' && 'Dispatch 1-click test emails across all 4 production templates, inspect live Resend API delivery receipts with SPF/DKIM validation, and audit Obsidian-Gold HTML rendering.'}
                   {activeSuite === 'vouchers' && 'Mint complimentary founder passes, test vouchers, and custom vanity codes with 1-click unboxing test links.'}
@@ -373,6 +388,7 @@ export default function AdminDashboardContent() {
             <div>
               {activeSuite === 'devops' && <DevOpsConsole />}
               {activeSuite === 'business' && <BusinessConsole />}
+              {activeSuite === 'users' && <UserDirectoryConsole />}
               {activeSuite === 'access' && <AccessConsole />}
               {activeSuite === 'email' && <EmailOperationsConsole />}
               {activeSuite === 'vouchers' && <VoucherMintingConsole />}
