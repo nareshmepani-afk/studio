@@ -253,14 +253,14 @@ export function StudioDashboard({
                     className="flex-1 sm:flex-none border-dashed border-amber-500/30 text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-500 transition-all font-bold tracking-tight"
                   >
                     {isCleaning ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                    <span className="hidden sm:inline">{isCleaning ? 'Optimizing...' : 'Optimize Studio'}</span>
-                    <span className="inline sm:hidden">{isCleaning ? '...' : 'Optimize'}</span>
+                    <span className="hidden sm:inline">{isCleaning ? 'Optimising...' : 'Optimise Studio'}</span>
+                    <span className="inline sm:hidden">{isCleaning ? '...' : 'Optimise'}</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">
                   <div className="flex gap-2">
                     <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                    <p>Optimize your workspace by removing empty draft shells and migrating legacy memories.</p>
+                    <p>Optimise your workspace by removing empty draft shells and migrating legacy memories.</p>
                   </div>
                 </TooltipContent>
               </Tooltip>

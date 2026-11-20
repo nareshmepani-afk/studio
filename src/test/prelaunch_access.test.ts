@@ -477,6 +477,7 @@ describe('Unified Pre-Launch Access Engine, Auth Gate & Admin CRUD', () => {
     const getJson = await getRes.json();
     expect(getRes.status).toBe(200);
     expect(getJson.mode).toBe('RESTRICTED');
+    expect(typeof getJson.isProduction).toBe('boolean');
     expect(getJson.counts).toEqual({ total: 2, testers: 1, waitlist: 1 });
   });
 });

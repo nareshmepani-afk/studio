@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isProductionProject, resolveProjectId } from '@/config/environment';
 import { adminDb } from '@/lib/firebaseAdmin';
 import { requireAdminSession } from '@/lib/session';
 import {
@@ -91,6 +92,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
+        isProduction: isProductionProject(resolveProjectId()),
         mode: modeInfo.mode,
         defaultMode: modeInfo.defaultMode,
         isExplicit: modeInfo.isExplicit,

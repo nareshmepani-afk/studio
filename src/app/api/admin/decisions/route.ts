@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isProductionProject, resolveProjectId } from '@/config/environment';
 import { adminDb } from '@/lib/firebaseAdmin';
 import { requireAdminSession } from '@/lib/session';
 import {
@@ -83,6 +84,19 @@ export async function GET() {
       return NextResponse.json(
         { success: false, error: 'Database not initialised' },
         { status: 503 }
+      );
+    }
+
+    // Never auto-seed staging cutover decision cards into production Firestore (prevents split approvals).
+    if (isProductionProject(resolveProjectId())) {
+      return NextResponse.json(
+        {
+          success: true,
+          isProduction: true,
+          decisions: [],
+          counts: { total: 0, decided: 0, deferred: 0, pending: 0 },
+        },
+        { headers: NO_STORE_HEADERS }
       );
     }
 
@@ -179,6 +193,15 @@ export async function POST(req: NextRequest) {
         { status: 503 }
       );
     }
+    if (isProductionProject(resolveProjectId())) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Founder cutover decisions are managed exclusively on the Staging Control Plane (dev.memoryweaver.studio).',
+        },
+        { status: 403, headers: NO_STORE_HEADERS }
+      );
+    }
 
     const body = await req.json();
     const adminEmail = authResult.session.email || 'founder-admin';
@@ -227,6 +250,15 @@ export async function PATCH(req: Request) {
       return NextResponse.json(
         { success: false, error: 'Database not initialised' },
         { status: 503 }
+      );
+    }
+    if (isProductionProject(resolveProjectId())) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Founder cutover decisions are managed exclusively on the Staging Control Plane (dev.memoryweaver.studio).',
+        },
+        { status: 403, headers: NO_STORE_HEADERS }
       );
     }
 

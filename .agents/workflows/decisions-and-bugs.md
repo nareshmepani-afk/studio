@@ -30,3 +30,12 @@ npm.cmd run qa:bugs -- --mark-fixed --report-id="bug_..." --sha="<7-char-sha>" -
 
 ### Step 4: Summary & Status Handshake
 Report DECIDED / PENDING / DEFERRED counts, newly minted or auto-closed Plane ticket keys (`MW-XXX`), and direct `/admin?suite=bugs` sign-off status.
+
+---
+
+### Dual-Track Sync Hard Rules (`dev` / Staging ↔ `master` / Production)
+1. **Strict Branch Roles**: `dev` = feature/batch staging (`memory-weaver-dev`); `master` = production only (`memory-weaver-8rk9t`).
+2. **P0/P1 Hotfix vs. P2/P3 Dev-First**: A fix applied to production (`master`) and not yet on `dev` is **ONLY** allowed via an isolated `hotfix/<MW-xxx>` branch off `origin/master` for **P0/P1** blockers (never `git stash` on dirty `dev`). Use `git worktree add ../studio-hotfix -b hotfix/<MW-xxx> origin/master`, bootstrap with `npm.cmd ci --prefer-offline` (plus `.env.local` if needed — no unsafe Windows junctions before `git worktree remove`), pass local `npm.cmd run build` + `prod:preflight` + full Vitest, restore incidental `tsconfig.tsbuildinfo` / `src/lib/qa/qaHtmlContent.ts` churn unless `qa_checklist_interactive.html` changed, and merge to `master`. **P2/P3** UX/polish items always go through `dev` first, verify on `dev.memoryweaver.studio`, then promote via `git merge --ff-only dev`.
+3. **Mandatory `master -> dev` Back-Merge**: After any `hotfix/*` verifies live on `https://memoryweaver.studio/api/version` (and before pushing new `dev` changes), ensure `dev` has a clean working tree (commit local WIP first), run `git checkout dev && git merge origin/master`, verify with **targeted Vitest + local `npm.cmd run build`** (restoring incidental `tsconfig.tsbuildinfo` / `qaHtmlContent.ts` churn), then `git push origin dev` (aware that both `master` and `dev` trigger ~5-min App Hosting builds).
+4. **Infra-Before-Push, Secret Rollout & Reverse Parity**: Deploy `firestore` rules/indexes, `storage` rules + CORS (via `@google-cloud/storage`), and `functions` **before** pushing `master`; trigger `apphosting:rollouts:create` (plus `grantaccess` for new secrets) after any Secret Manager secret update; sync infra fixes back to `memory-weaver-dev`; restore MCP `active_project` to `memory-weaver-dev`; keep working tree clean.
+5. **Environment Tagging & `qa:bugs` Scope**: Tag Plane tickets `[ENV: PROD]`, `[ENV: STAGING]`, or `[ENV: BOTH]`. Remember `npm.cmd run qa:bugs` is hard-locked to staging (`memory-weaver-dev`) as the Founder Sign-Off Queue, whereas `https://memoryweaver.studio/admin?suite=bugs` is the Production Intake Inbox.

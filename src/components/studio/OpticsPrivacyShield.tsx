@@ -101,7 +101,7 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
             {status === 'inactive' && (
               <>
                 <ShieldCheck className="w-4 h-4 text-zinc-400 shrink-0" />
-                <span className="tracking-widest font-bold">
+                <span className="tracking-widest font-bold whitespace-nowrap">
                   🛡️ Optics Inactive
                 </span>
               </>
@@ -113,8 +113,8 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
                 </div>
-                <span className="tracking-widest font-black text-amber-300">
-                  🔴 CAMERA LIVE • Sever Feed ✕
+                <span className="tracking-widest font-black text-amber-300 whitespace-nowrap">
+                  {compact ? '🔴 Live • Sever ✕' : '🔴 CAMERA LIVE • Sever Feed ✕'}
                 </span>
               </>
             )}
@@ -122,7 +122,7 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
             {isSevered && (
               <>
                 <Ban className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
-                <span className="tracking-widest font-black text-rose-300">
+                <span className="tracking-widest font-black text-rose-300 whitespace-nowrap">
                   {compact
                     ? '🚫 Severed • Re-Arm'
                     : isSoundstageRoute

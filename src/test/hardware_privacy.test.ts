@@ -329,4 +329,25 @@ describe('MW-89: Universal Hardware Privacy Shield & Stream Lifecycle Policy', (
     expect(contextContent).not.toContain('synchronization');
     expect(shieldContent).not.toContain('initialize');
   });
+
+  it('uses compact live label with whitespace-nowrap when compact prop is enabled (MW-415)', async () => {
+    mockUsePathname.mockReturnValue('/studio');
+    render(
+      React.createElement(
+        HardwarePrivacyProvider,
+        null,
+        React.createElement(OpticsPrivacyShield, { compact: true })
+      )
+    );
+
+    const shieldBtn = screen.getByTestId('optics-privacy-shield-btn');
+    await act(async () => {
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    });
+
+    expect(shieldBtn).toHaveAttribute('data-status', 'live');
+    expect(shieldBtn.textContent).toContain('Live • Sever ✕');
+    expect(shieldBtn.textContent).not.toContain('CAMERA LIVE • Sever Feed ✕');
+    expect(shieldBtn.innerHTML).toContain('whitespace-nowrap');
+  });
 });

@@ -115,7 +115,7 @@ export function Navbar() {
   return (
     <TooltipProvider delayDuration={300}>
       <header className="sticky top-0 z-[100] w-full transition-all duration-300 ease-in-out border-b bg-background/40 backdrop-blur-md border-white/5 shadow-2xl group/nav">
-        <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-8 flex h-16 items-center justify-between gap-2 sm:gap-4 min-w-0">
+        <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto w-full px-3 sm:px-4 lg:px-6 flex h-16 items-center justify-between gap-2 sm:gap-4 min-w-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href={isAuthenticated ? "/studio" : "/"} data-hotspot-id="HS_NAV_LOGO" className="mr-2 sm:mr-4 lg:mr-6 flex items-center space-x-1.5 sm:space-x-2 shrink-0" aria-label="Memory Weaver Homepage">
@@ -129,7 +129,7 @@ export function Navbar() {
           </Tooltip>
           
           {(isAuthenticated || isGuestDirectorView) ? (
-            <nav className="hidden md:flex flex-1 items-center space-x-2 md:space-x-3 lg:space-x-4 xl:space-x-6 overflow-hidden min-w-0">
+            <nav className="hidden md:flex flex-1 items-center space-x-2 md:space-x-3 lg:space-x-4 xl:space-x-4 overflow-hidden min-w-0">
               {isGuestDirectorView ? (
                 // Focused Guest Director View
                  <Tooltip>
@@ -159,11 +159,11 @@ export function Navbar() {
                           })}
                           className={`${navLinkClass} opacity-30 cursor-pointer grayscale group-hover:grayscale-0 transition-all`}
                         >
-                           <Clapperboard className="mr-1.5 h-4 w-4 shrink-0" strokeWidth={2.5} /> Memory Studio 
+                           <Clapperboard className="mr-1.5 h-4 w-4 shrink-0" strokeWidth={2.5} /> <span className="hidden lg:inline">Memory&nbsp;</span>Studio 
                         </div>
                       ) : (
                         <Link href="/studio" data-hotspot-id="HS_NAV_MEMORY_STUDIO" className={`${navLinkClass} ${(pathname === '/studio' || pathname?.startsWith('/add-memory')) ? activeNavLinkClass : ''}`}> 
-                          <Clapperboard className="mr-1.5 h-4 w-4 shrink-0" strokeWidth={2.5} /> Memory Studio 
+                          <Clapperboard className="mr-1.5 h-4 w-4 shrink-0" strokeWidth={2.5} /> <span className="hidden lg:inline">Memory&nbsp;</span>Studio 
                         </Link>
                       )}
                     </TooltipTrigger>
@@ -183,7 +183,7 @@ export function Navbar() {
                         }}
                         className={`${navLinkClass} ${pathname === '/cinema' ? activeNavLinkClass : ''}`}
                       >
-                        <Film className="mr-1.5 h-4 w-4 text-primary shrink-0" strokeWidth={2.5} /> Memory Cinema
+                        <Film className="mr-1.5 h-4 w-4 text-primary shrink-0" strokeWidth={2.5} /> <span className="hidden lg:inline">Memory&nbsp;</span>Cinema
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
@@ -229,7 +229,7 @@ export function Navbar() {
                   </div>
 
                   {/* Widescreen Secondary Links (≥ 1536px) */}
-                  <div className="hidden 2xl:flex items-center space-x-3 xl:space-x-5 pl-2 border-l border-white/10 shrink-0">
+                  <div className="hidden 2xl:flex items-center space-x-3 2xl:space-x-3.5 pl-2 border-l border-white/10 shrink-0">
                     <Link
                       href="/how-it-works"
                       className={`${navLinkClass} ${pathname === '/how-it-works' ? activeNavLinkClass : ''}`}
@@ -298,7 +298,7 @@ export function Navbar() {
             <div data-hotspot-id="HS_NAV_THEME_TOGGLE" className="shrink-0">
               <ThemeToggle />
             </div>
-            <ReportIssueTrigger variant="icon-pill" label="Issue" className="hidden md:inline-flex shrink-0" />
+            <ReportIssueTrigger variant="icon-pill" label="Issue" className="hidden lg:inline-flex shrink-0" />
             {isGuestDirectorView ? (
               <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-full whitespace-nowrap">
                 Guest Remote

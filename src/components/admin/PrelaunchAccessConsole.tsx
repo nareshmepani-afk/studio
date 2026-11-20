@@ -50,7 +50,14 @@ const SOURCE_LABELS: Record<string, { label: string; tone: string }> = {
   },
 };
 
-export function PrelaunchAccessConsole() {
+interface PrelaunchAccessConsoleProps {
+  isProduction?: boolean;
+}
+
+export function PrelaunchAccessConsole({ isProduction: isProductionProp }: PrelaunchAccessConsoleProps = {}) {
+  const [isProductionEnv, setIsProductionEnv] = useState<boolean | null>(
+    typeof isProductionProp === 'boolean' ? isProductionProp : null
+  );
   const [mode, setMode] = useState<PrelaunchMode>('PUBLIC');
   const [defaultMode, setDefaultMode] = useState<PrelaunchMode>('PUBLIC');
   const [isExplicit, setIsExplicit] = useState(false);
@@ -111,6 +118,9 @@ export function PrelaunchAccessConsole() {
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to load pre-launch roster');
       }
+      if (typeof data.isProduction === 'boolean') {
+        setIsProductionEnv(data.isProduction);
+      }
       setMode(data.mode);
       setDefaultMode(data.defaultMode);
       setIsExplicit(Boolean(data.isExplicit));
@@ -126,9 +136,20 @@ export function PrelaunchAccessConsole() {
   }, []);
 
   useEffect(() => {
+    if (typeof isProductionProp === 'boolean') {
+      setIsProductionEnv(isProductionProp);
+    }
+  }, [isProductionProp]);
+
+  useEffect(() => {
     fetchRoster();
-    fetchStagingVault();
-  }, [fetchRoster, fetchStagingVault]);
+  }, [fetchRoster]);
+
+  useEffect(() => {
+    if (isProductionEnv === false) {
+      fetchStagingVault();
+    }
+  }, [isProductionEnv, fetchStagingVault]);
 
   const handleCopyStagingPasscode = async () => {
     try {
@@ -385,7 +406,8 @@ export function PrelaunchAccessConsole() {
 
   return (
     <div className="space-y-6">
-      {/* Staging Perimeter Vault (/staging-lock Passcode & Magic Link Builder) */}
+      {/* Staging Perimeter Vault (/staging-lock Passcode & Magic Link Builder — Staging Only) */}
+      {isProductionEnv === false && (
       <div
         data-testid="ADMIN_STAGING_PERIMETER_VAULT"
         className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-slate-900/90 via-slate-900/75 to-amber-950/20 p-5"
@@ -525,6 +547,7 @@ export function PrelaunchAccessConsole() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Master Gate Mode Controller */}
       <div

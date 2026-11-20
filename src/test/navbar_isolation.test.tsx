@@ -194,6 +194,16 @@ describe('Navbar Route Isolation & Admin Masking', () => {
       const rightCluster = container.querySelector('.ml-auto');
       expect(rightCluster?.className).toContain('space-x-1');
       expect(rightCluster?.className).toContain('sm:space-x-2.5');
+
+      // MW-415 Option 4+ widescreen expansion + tablet clearance invariants:
+      const headerInner = container.querySelector('header > div');
+      expect(headerInner?.className).toContain('max-w-7xl');
+      expect(headerInner?.className).toContain('2xl:max-w-screen-2xl');
+      expect(headerInner?.className).toContain('lg:px-6');
+
+      const issueBtn = screen.getByTestId('HS_REPORT_ISSUE_BTN');
+      expect(issueBtn.className).toContain('hidden');
+      expect(issueBtn.className).toContain('lg:inline-flex');
     });
   });
 });

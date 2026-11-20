@@ -23,8 +23,11 @@ import { MissionControlConsole } from '@/components/admin/MissionControlConsole'
 import { BugTriageConsole } from '@/components/admin/BugTriageConsole';
 import { PrelaunchAccessConsole } from '@/components/admin/PrelaunchAccessConsole';
 import { FounderDecisionForm } from '@/components/admin/FounderDecisionForm';
+import { FounderInboxConsole } from '@/components/admin/FounderInboxConsole';
 import { UserDirectoryConsole } from '@/components/admin/UserDirectoryConsole';
-import { Bug, Lock, ClipboardCheck, UserCog } from 'lucide-react';
+import { Bug, Lock, ClipboardCheck, UserCog, Inbox, ExternalLink } from 'lucide-react';
+import { STAGING_APP_URL } from '@/config/environment';
+import type { InboxBadgeCounts } from '@/lib/releaseControls';
 import { getBackendEnvironmentDetails } from './actions';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
@@ -34,8 +37,23 @@ import Link from 'next/link';
 export default function AdminDashboardContent() {
   const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'users' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>('devops');
+  const [activeSuite, setActiveSuite] = useState<'releases' | 'devops' | 'business' | 'users' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
+  const [inboxBadges, setInboxBadges] = useState<InboxBadgeCounts | null>(null);
+
+  const isLiveProduction = Boolean(
+    envInfo && (envInfo.envContext === 'LIVE-PRODUCTION' || envInfo.projectId === 'memory-weaver-8rk9t')
+  );
+
+  const selectSuite = (suite: typeof activeSuite) => {
+    setActiveSuite(suite);
+    if (typeof window !== 'undefined') {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('suite', suite);
+      nextUrl.searchParams.delete('tab');
+      window.history.replaceState(null, '', `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -58,10 +76,12 @@ export default function AdminDashboardContent() {
       // Rehydrate active suite from URL search params (?suite=email, ?suite=vouchers, or ?tab=access)
       const urlParams = new URLSearchParams(window.location.search);
       const suiteParam = urlParams.get('suite') || urlParams.get('tab');
-      if (suiteParam && ['devops', 'business', 'users', 'access', 'email', 'knowledge', 'vouchers', 'mission', 'bugs', 'prelaunch', 'decisions'].includes(suiteParam)) {
+      if (suiteParam && ['releases', 'devops', 'business', 'users', 'access', 'email', 'knowledge', 'vouchers', 'mission', 'bugs', 'prelaunch', 'decisions'].includes(suiteParam)) {
         setActiveSuite(suiteParam as any);
       } else if (urlParams.get('traceId') || urlParams.get('reportId') || urlParams.get('userId')) {
         setActiveSuite('bugs');
+      } else if (activeEnv !== 'LIVE-PRODUCTION') {
+        setActiveSuite('releases');
       }
     }
 
@@ -83,6 +103,30 @@ export default function AdminDashboardContent() {
         });
       });
   }, []);
+
+  useEffect(() => {
+    if (!envInfo || isLiveProduction) return;
+    let cancelled = false;
+    const loadBadges = async () => {
+      try {
+        const res = await fetch('/api/admin/controls', { cache: 'no-store', credentials: 'same-origin' });
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        if (!cancelled && data?.success && data.badges) {
+          setInboxBadges(data.badges);
+        }
+      } catch {
+        // Non-fatal sidebar badge refresh
+      }
+    };
+    loadBadges();
+    const onUpdated = () => loadBadges();
+    window.addEventListener('admin-inbox-updated', onUpdated);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('admin-inbox-updated', onUpdated);
+    };
+  }, [envInfo, isLiveProduction]);
 
   const handleLogout = async () => {
     try {
@@ -164,9 +208,39 @@ export default function AdminDashboardContent() {
           <aside className="space-y-6">
             <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 space-y-2">
               <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 block px-3 mb-2">Admin Suites</span>
-              
+
+              {!isLiveProduction && (
+                <button
+                  onClick={() => selectSuite('releases')}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition duration-200 ${
+                    activeSuite === 'releases'
+                      ? 'bg-rose-500/20 border border-rose-500/40 text-rose-200'
+                      : 'border border-transparent text-slate-300 hover:bg-slate-800/50 hover:text-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Inbox className="h-4 w-4 text-rose-400" />
+                    <span>🚦 Founder Inbox</span>
+                  </span>
+                  {inboxBadges && (inboxBadges.red > 0 || inboxBadges.amber > 0 || inboxBadges.readySignOff > 0) && (
+                    <span className="flex items-center gap-1 shrink-0">
+                      {inboxBadges.red > 0 && (
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-rose-500/25 text-rose-200 border border-rose-500/50">
+                          🔴 {inboxBadges.red}
+                        </span>
+                      )}
+                      {(inboxBadges.amber + inboxBadges.readySignOff) > 0 && (
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-500/25 text-amber-200 border border-amber-500/50">
+                          🟠 {inboxBadges.amber + inboxBadges.readySignOff}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </button>
+              )}
+
               <button
-                onClick={() => setActiveSuite('devops')}
+                onClick={() => selectSuite('devops')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'devops' 
                     ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300' 
@@ -178,7 +252,7 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
-                onClick={() => setActiveSuite('business')}
+                onClick={() => selectSuite('business')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'business' 
                     ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300' 
@@ -190,7 +264,7 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
-                onClick={() => setActiveSuite('users')}
+                onClick={() => selectSuite('users')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'users' 
                     ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300' 
@@ -202,7 +276,7 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
-                onClick={() => setActiveSuite('access')}
+                onClick={() => selectSuite('access')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'access' 
                     ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300' 
@@ -214,7 +288,7 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
-                onClick={() => setActiveSuite('email')}
+                onClick={() => selectSuite('email')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'email' 
                     ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
@@ -226,7 +300,7 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
-                onClick={() => setActiveSuite('vouchers')}
+                onClick={() => selectSuite('vouchers')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'vouchers' 
                     ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
@@ -238,7 +312,7 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
-                onClick={() => setActiveSuite('mission')}
+                onClick={() => selectSuite('mission')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'mission' 
                     ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
@@ -250,7 +324,7 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
-                onClick={() => setActiveSuite('knowledge')}
+                onClick={() => selectSuite('knowledge')}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md border transition-all ${
                   activeSuite === 'knowledge'
                     ? 'bg-purple-600/10 border-purple-500/30 text-purple-200'
@@ -264,7 +338,7 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
-                onClick={() => setActiveSuite('prelaunch')}
+                onClick={() => selectSuite('prelaunch')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'prelaunch'
                     ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
@@ -275,20 +349,22 @@ export default function AdminDashboardContent() {
                 <span>Pre-Launch Gate</span>
               </button>
 
-              <button
-                onClick={() => setActiveSuite('decisions')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'decisions'
-                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <ClipboardCheck className="h-4 w-4 text-amber-400" />
-                <span>Founder Decisions</span>
-              </button>
+              {!isLiveProduction && (
+                <button
+                  onClick={() => selectSuite('decisions')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
+                    activeSuite === 'decisions'
+                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                      : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                  }`}
+                >
+                  <ClipboardCheck className="h-4 w-4 text-amber-400" />
+                  <span>Founder Decisions</span>
+                </button>
+              )}
 
               <button
-                onClick={() => setActiveSuite('bugs')}
+                onClick={() => selectSuite('bugs')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
                   activeSuite === 'bugs'
                     ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
@@ -356,6 +432,7 @@ export default function AdminDashboardContent() {
               <div className="absolute top-0 right-0 -mt-10 -mr-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
               <div className="relative z-10 space-y-2 max-w-2xl">
                 <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                  {activeSuite === 'releases' && 'Founder Inbox & Release Controls'}
                   {activeSuite === 'devops' && 'DevOps & Operations'}
                   {activeSuite === 'business' && 'Business Analytics'}
                   {activeSuite === 'users' && 'Users & Customer Directory (CRM)'}
@@ -369,6 +446,7 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'bugs' && 'Bug Triage & Diagnostic Progression'}
                 </h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
+                  {activeSuite === 'releases' && 'Single Staging Control Plane for 🔴 RED blocking release gates, 🟠 AMBER low-drag approvals, and 1-click sign-offs — never lost in chat.'}
                   {activeSuite === 'devops' && 'Monitor resilience memory structures, local IndexedDB states, WebRTC signaling integrity, and routing traces.'}
                   {activeSuite === 'business' && 'View subscription tier tracking, user adoption quotas, and API analytics telemetry.'}
                   {activeSuite === 'users' && 'Inspect all registered Firebase Auth accounts alongside Firestore memory counts, filter Customers vs Test/Aliases, export CSVs, and safely disable or purge non-admin accounts.'}
@@ -386,6 +464,25 @@ export default function AdminDashboardContent() {
 
             {/* Sub-Console Router */}
             <div>
+              {activeSuite === 'releases' && (
+                isLiveProduction ? (
+                  <div className="rounded-2xl border border-amber-500/35 bg-slate-900/60 p-6 space-y-3">
+                    <h3 className="text-base font-bold text-white">Engineering Release Controls Live on Staging</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      To prevent split approvals between production and staging, all batch pushes, cutover gates, and Red/Amber release controls live strictly on the Staging Control Plane.
+                    </p>
+                    <a
+                      href={`${STAGING_APP_URL}/admin?suite=releases`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition"
+                    >
+                      Open Staging Founder Inbox
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                ) : (
+                  <FounderInboxConsole onNavigateSuite={(suite) => selectSuite(suite)} />
+                )
+              )}
               {activeSuite === 'devops' && <DevOpsConsole />}
               {activeSuite === 'business' && <BusinessConsole />}
               {activeSuite === 'users' && <UserDirectoryConsole />}
@@ -394,8 +491,34 @@ export default function AdminDashboardContent() {
               {activeSuite === 'vouchers' && <VoucherMintingConsole />}
               {activeSuite === 'mission' && <MissionControlConsole />}
               {activeSuite === 'knowledge' && <KnowledgeHub />}
-              {activeSuite === 'prelaunch' && <PrelaunchAccessConsole />}
-              {activeSuite === 'decisions' && <FounderDecisionForm />}
+              {activeSuite === 'prelaunch' && (
+                <PrelaunchAccessConsole
+                  isProduction={
+                    envInfo
+                      ? envInfo.envContext === 'LIVE-PRODUCTION' || envInfo.projectId === 'memory-weaver-8rk9t'
+                      : undefined
+                  }
+                />
+              )}
+              {activeSuite === 'decisions' && (
+                isLiveProduction ? (
+                  <div className="rounded-2xl border border-amber-500/35 bg-slate-900/60 p-6 space-y-3">
+                    <h3 className="text-base font-bold text-white">Cutover Decisions Live on Staging</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Founder cutover decisions are locked to the Staging Control Plane so production Firestore is never seeded with staging cutover records.
+                    </p>
+                    <a
+                      href={`${STAGING_APP_URL}/admin?suite=decisions`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition"
+                    >
+                      Open Staging Founder Decisions
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                ) : (
+                  <FounderDecisionForm />
+                )
+              )}
               {activeSuite === 'bugs' && <BugTriageConsole />}
             </div>
 
