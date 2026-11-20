@@ -63,26 +63,65 @@ describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
       if (url.includes('/api/version')) {
         return new Response(JSON.stringify({ commitSha: '73b4801' }), { status: 200 });
       }
+      if (url.includes('/api/admin/plane/issues/MW-411')) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            configured: true,
+            key: 'MW-411',
+            issue: {
+              id: 'issue-uuid-411',
+              key: 'MW-411',
+              sequenceId: 411,
+              projectId: 'ef45f4c8-ea7e-490d-8282-e959e484ae07',
+              name: 'Header tooltips fix',
+              descriptionText: 'Verified plain-text description.',
+              priority: 'medium',
+              stateId: 'st-1',
+              stateName: 'In Progress',
+              stateGroup: 'started',
+              createdAt: '2026-11-18T16:00:00Z',
+              updatedAt: '2026-11-18T16:10:00Z',
+            },
+            comments: [],
+            states: [{ id: 'st-1', name: 'In Progress', group: 'started' }],
+          }),
+          { status: 200 }
+        );
+      }
       if (url.includes('/api/admin/bugs') && (!init?.method || init.method === 'GET')) {
         return new Response(JSON.stringify({ success: true, reports: [fixedReport] }), { status: 200 });
       }
       if (url.includes('/api/admin/bugs') && init?.method === 'PATCH') {
         const body = JSON.parse(String(init.body || '{}'));
-        return new Response(JSON.stringify({ success: true, ...body }), { status: 200 });
+        return new Response(
+          JSON.stringify({ success: true, ...body, planeSync: { attempted: true, ok: true, issueKey: 'MW-411' } }),
+          { status: 200 }
+        );
       }
       return new Response(JSON.stringify({}), { status: 404 });
     });
     global.fetch = fetchMock as any;
 
-    const { getByTestId, queryByTestId } = render(React.createElement(BugTriageConsole));
+    const { container, getByTestId, queryByTestId } = render(React.createElement(BugTriageConsole));
 
     await waitFor(() => {
       expect(getByTestId('READY_FOR_FOUNDER_SIGNOFF_SECTION')).toBeDefined();
     });
 
     expect(getByTestId('LIVE_STAGING_SHA_BADGE').textContent).toContain('73b4801');
-    const planeLink = getByTestId('signoff-plane-link-bug_1795020000_abc123') as HTMLAnchorElement;
-    expect(planeLink.getAttribute('href')).toBe('https://app.plane.so/memory-weaver-studio/browse/MW-411/');
+
+    // Zero outbound app.plane.so links; clicking MW-411 opens in-app PlaneTicketDrawer
+    expect(container.querySelectorAll('a[href*="app.plane.so"]')).toHaveLength(0);
+    const planeBtn = getByTestId('signoff-plane-link-bug_1795020000_abc123');
+    expect(planeBtn.tagName).toBe('BUTTON');
+    fireEvent.click(planeBtn);
+
+    await waitFor(() => {
+      expect(getByTestId('PLANE_TICKET_DRAWER')).toBeDefined();
+      expect(getByTestId('PLANE_DRAWER_TITLE').textContent).toContain('Header tooltips fix');
+    });
+    fireEvent.click(getByTestId('PLANE_DRAWER_CLOSE'));
 
     const shaBadge = getByTestId('signoff-sha-badge-bug_1795020000_abc123');
     expect(shaBadge.textContent).toContain('Live Fix: 73b4801');

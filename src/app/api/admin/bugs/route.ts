@@ -8,6 +8,12 @@ import {
   sanitizeBugDeepLinkRoute,
   type BugReportRecord,
 } from '@/lib/bugReports';
+import {
+  addPlaneIssueComment,
+  loadPlaneEnv,
+  updatePlaneIssueState,
+} from '@/lib/planeClient';
+import { normalisePlaneIssueKey, type PlaneSyncResult } from '@/lib/planeTypes';
 
 export const dynamic = 'force-dynamic';
 
@@ -174,8 +180,61 @@ export async function PATCH(req: Request) {
       }
     }
 
-    await adminDb.collection(COLLECTION).doc(reportId).set(updates, { merge: true });
-    return NextResponse.json({ success: true, reportId, ...updates });
+    const docRef = adminDb.collection(COLLECTION).doc(reportId);
+    let planeSync: PlaneSyncResult = { attempted: false, ok: false, action: 'SKIPPED' };
+
+    if (updates.status === 'VERIFIED') {
+      const planeCfg = loadPlaneEnv({ allowDotEnvLocal: false });
+      if (!planeCfg) {
+        planeSync = {
+          attempted: false,
+          ok: false,
+          configured: false,
+          action: 'SKIPPED',
+          reason: 'PLANE_API_KEY not bound on server runtime.',
+        };
+      } else {
+        let candidatePlaneId: string | null =
+          typeof updates.planeIssueId === 'string' ? updates.planeIssueId : null;
+        if (!candidatePlaneId && typeof (docRef as any).get === 'function') {
+          const existingSnap = await docRef.get().catch(() => null);
+          const existingData = existingSnap?.exists ? (existingSnap.data() as Partial<BugReportRecord>) : null;
+          candidatePlaneId = existingData?.planeIssueId || null;
+        }
+        const normalisedKey = normalisePlaneIssueKey(candidatePlaneId);
+        if (normalisedKey) {
+          try {
+            const actor = authResult.session.email || 'admin@memoryweaver.studio';
+            const updatedIssue = await updatePlaneIssueState(planeCfg, normalisedKey, 'done');
+            await addPlaneIssueComment(
+              planeCfg,
+              updatedIssue.issueId,
+              `[Founder Sign-Off VERIFIED • ${actor}] Bug report ${reportId} verified via Admin Hub.`
+            ).catch(() => null);
+            updates.planeClosedAt = Date.now();
+            planeSync = {
+              attempted: true,
+              ok: true,
+              configured: true,
+              action: 'CLOSED',
+              issueKey: normalisedKey,
+            };
+          } catch (planeErr: any) {
+            planeSync = {
+              attempted: true,
+              ok: false,
+              configured: true,
+              action: 'SKIPPED',
+              issueKey: normalisedKey,
+              reason: planeErr?.message || 'Plane auto-close failed.',
+            };
+          }
+        }
+      }
+    }
+
+    await docRef.set(updates, { merge: true });
+    return NextResponse.json({ success: true, reportId, ...updates, planeSync });
   } catch (err: any) {
     console.error('[PATCH /api/admin/bugs] Error:', err);
     return NextResponse.json({ success: false, error: err?.message || 'Internal server error' }, { status: 500 });

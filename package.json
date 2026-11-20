@@ -27,6 +27,7 @@
     "qa:bugs": "tsx scripts/read-bug-reports.ts",
     "qa:decisions": "tsx scripts/read-founder-decisions.ts",
     "qa:controls": "tsx scripts/read-release-controls.ts",
+    "qa:smoke": "tsx scripts/qa-smoke.ts",
     "prod:preflight": "tsx scripts/prod-preflight.ts",
     "prod:purge-qa": "tsx scripts/purge-prod-qa.ts",
     "prepare": "husky"

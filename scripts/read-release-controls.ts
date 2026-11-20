@@ -17,7 +17,7 @@ import {
   type ThreeZoneRadarInput,
 } from '../src/lib/releaseControls';
 
-function probeVersionShaNativeHttps(url: string, timeoutMs = 3000): Promise<string | null> {
+function probeVersionShaNativeHttps(url: string, timeoutMs = 12000): Promise<string | null> {
   return new Promise((resolve) => {
     const req = https.get(url, (res) => {
       let body = '';
@@ -80,8 +80,8 @@ export async function collectThreeZoneRadar(skipFetch = false): Promise<ThreeZon
   const prodOnlyCount = prodOnlyRaw ? Number.parseInt(prodOnlyRaw, 10) || 0 : 0;
 
   const [liveStagingSha, liveProdSha] = await Promise.all([
-    probeVersionShaNativeHttps(`${STAGING_APP_URL}/api/version`, 3000),
-    probeVersionShaNativeHttps(`${PRODUCTION_APP_URL}/api/version`, 3000),
+    probeVersionShaNativeHttps(`${STAGING_APP_URL}/api/version`, 12000),
+    probeVersionShaNativeHttps(`${PRODUCTION_APP_URL}/api/version`, 12000),
   ]);
 
   return {

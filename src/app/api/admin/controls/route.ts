@@ -3,11 +3,14 @@ import { isProductionProject, PRODUCTION_APP_URL, resolveProjectId } from '@/con
 import { adminDb } from '@/lib/firebaseAdmin';
 import { requireAdminSession } from '@/lib/session';
 import {
+  ALLOWED_TIER_3_GATE_CATEGORIES,
   buildSeededReleaseControl,
   computeInboxBadgeCounts,
   DEFAULT_RELEASE_CONTROL_SEEDS,
   evaluateEnvironmentParity,
   evaluateReleaseControlTransition,
+  formatReleaseControlForPlane,
+  isValidTier3GateCategory,
   RELEASE_CONTROLS_COLLECTION,
   sortReleaseControls,
   type EnvironmentParityReport,
@@ -17,6 +20,13 @@ import {
   type ReleaseControlSeverity,
   type ReleaseControlEnvTag,
 } from '@/lib/releaseControls';
+import {
+  addPlaneIssueComment,
+  createPlaneIssue,
+  loadPlaneEnv,
+  updatePlaneIssueState,
+} from '@/lib/planeClient';
+import { normalisePlaneIssueKey, type PlaneSyncResult } from '@/lib/planeTypes';
 import {
   FOUNDER_DECISIONS_COLLECTION,
   type FounderDecisionRecord,
@@ -138,7 +148,8 @@ async function probeProductionParity(): Promise<EnvironmentParityReport> {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2500);
+  // 6000ms accommodates idle Cloud Run cold-start latency (~3.5-4.5s) on production
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
 
   try {
     const res = await fetch(`${PRODUCTION_APP_URL}/api/version`, {
@@ -276,6 +287,18 @@ export async function POST(req: Request) {
       );
     }
 
+    const gateTier = typeof body.gateTier === 'string' ? body.gateTier.trim() : '';
+    const gateCategory = body.gateCategory;
+    if (gateTier !== 'TIER_3_FOUNDER' || !isValidTier3GateCategory(gateCategory)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Founder Inbox only accepts TIER_3_FOUNDER gates with an allowlisted gateCategory (${ALLOWED_TIER_3_GATE_CATEGORIES.join(' | ')}). Tier-1 engineering tasks must auto-execute without creating a Founder gate.`,
+        },
+        { status: 400, headers: NO_STORE_HEADERS }
+      );
+    }
+
     const now = Date.now();
     const record = buildSeededReleaseControl(
       {
@@ -286,6 +309,8 @@ export async function POST(req: Request) {
         severity,
         knockOnImpact,
         envTag,
+        gateTier: 'TIER_3_FOUNDER',
+        gateCategory,
         ticketRefs: Array.isArray(body.ticketRefs)
           ? body.ticketRefs.map((t: unknown) => String(t).trim()).filter(Boolean)
           : [],
@@ -371,13 +396,120 @@ export async function PATCH(req: Request) {
       );
     }
 
-    await ref.set(transition.next, { merge: false });
+    let finalControl: ReleaseControlRecord = transition.next;
+    await ref.set(finalControl, { merge: false });
+
+    // Fail-soft Plane.so API sync (never blocks or reverts the Firestore transition)
+    let planeSync: PlaneSyncResult = { attempted: false, ok: false, action: 'SKIPPED' };
+    if (action === 'DEFER_TO_PLANE' || action === 'MARK_EXECUTED') {
+      const planeCfg = loadPlaneEnv({ allowDotEnvLocal: false });
+      if (!planeCfg) {
+        planeSync = {
+          attempted: false,
+          ok: false,
+          configured: false,
+          action: 'SKIPPED',
+          reason: 'PLANE_API_KEY not bound on server runtime.',
+        };
+      } else if (action === 'DEFER_TO_PLANE') {
+        try {
+          if (!existing.planeDeferredRef) {
+            const { title, description } = formatReleaseControlForPlane(finalControl);
+            const createdKey = await createPlaneIssue(planeCfg, title, description);
+            finalControl = { ...finalControl, planeDeferredRef: createdKey };
+            await ref.set({ planeDeferredRef: createdKey }, { merge: true });
+            planeSync = {
+              attempted: true,
+              ok: true,
+              configured: true,
+              action: 'CREATED',
+              issueKey: createdKey,
+            };
+          } else {
+            await addPlaneIssueComment(
+              planeCfg,
+              existing.planeDeferredRef,
+              `[Release Control Re-Deferred • ${actor}] ${finalControl.title}${finalControl.notes ? ` — Note: ${finalControl.notes}` : ''}`
+            );
+            planeSync = {
+              attempted: true,
+              ok: true,
+              configured: true,
+              action: 'COMMENTED',
+              issueKey: existing.planeDeferredRef,
+            };
+          }
+        } catch (planeErr: any) {
+          planeSync = {
+            attempted: true,
+            ok: false,
+            configured: true,
+            action: 'SKIPPED',
+            reason: planeErr?.message || 'Plane deferral sync failed.',
+          };
+        }
+      } else if (action === 'MARK_EXECUTED') {
+        try {
+          const validKeys = Array.from(
+            new Set(
+              (finalControl.ticketRefs || [])
+                .map((r) => normalisePlaneIssueKey(r))
+                .filter((k): k is string => Boolean(k))
+            )
+          );
+          if (validKeys.length > 0) {
+            const allControlsSnap = await adminDb.collection(RELEASE_CONTROLS_COLLECTION).limit(100).get();
+            const otherActiveControls: ReleaseControlRecord[] = allControlsSnap.docs
+              .map((d) => ({ ...(d.data() as ReleaseControlRecord), id: d.id }))
+              .filter((c) => c.id !== id && c.status !== 'EXECUTED');
+
+            const forceClose = body.closeLinkedTickets === true;
+            let closedAny = false;
+            for (const key of validKeys) {
+              const shaSuffix = finalControl.executedCommitSha
+                ? ` (SHA ${finalControl.executedCommitSha})`
+                : '';
+              await addPlaneIssueComment(
+                planeCfg,
+                key,
+                `[Release Control EXECUTED • ${actor}] ${finalControl.id}${shaSuffix}: ${finalControl.title}`
+              ).catch(() => null);
+
+              const stillSharedWithOtherActive = otherActiveControls.some((c) =>
+                (c.ticketRefs || []).some((refKey) => normalisePlaneIssueKey(refKey) === key)
+              );
+              if (forceClose || !stillSharedWithOtherActive) {
+                await updatePlaneIssueState(planeCfg, key, 'done');
+                closedAny = true;
+              }
+            }
+            planeSync = {
+              attempted: true,
+              ok: true,
+              configured: true,
+              action: closedAny ? 'CLOSED' : 'COMMENTED',
+              issueKey: validKeys[0],
+            };
+          }
+        } catch (planeErr: any) {
+          planeSync = {
+            attempted: true,
+            ok: false,
+            configured: true,
+            action: 'SKIPPED',
+            reason: planeErr?.message || 'Plane execution sync failed.',
+          };
+        }
+      }
+    }
+
     const payload = await loadAggregatedInbox();
 
     return NextResponse.json(
       {
         success: true,
-        control: transition.next,
+        control: finalControl,
+        planeSync,
         ...payload,
       },
       { headers: NO_STORE_HEADERS }

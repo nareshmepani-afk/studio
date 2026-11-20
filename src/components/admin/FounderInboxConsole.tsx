@@ -20,21 +20,26 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  evaluateEnvironmentParity,
   getReleaseControlTargetMeta,
   isControlActionable,
   type EnvironmentParityReport,
+  type EnvironmentVersionSnapshot,
   type InboxBadgeCounts,
   type ReleaseControlAction,
   type ReleaseControlRecord,
   type ReleaseControlStatus,
 } from '@/lib/releaseControls';
+import { PRODUCTION_APP_URL } from '@/config/environment';
 import type { FounderDecisionRecord } from '@/lib/founderDecisions';
 import {
   doesCommitShaMatchLive,
-  formatPlaneBrowseUrl,
   sanitizeBugDeepLinkRoute,
   type BugReportRecord,
 } from '@/lib/bugReports';
+import { normalisePlaneIssueKey } from '@/lib/planeTypes';
+import { AdminHealthBar } from './AdminHealthBar';
+import { PlaneTicketDrawer } from './PlaneTicketDrawer';
 
 interface ControlsApiResponse {
   success: boolean;
@@ -99,6 +104,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
   const [confirmDeferRedId, setConfirmDeferRedId] = useState<string | null>(null);
   const [showLedger, setShowLedger] = useState<boolean>(false);
+  const [activePlaneKey, setActivePlaneKey] = useState<string | null>(null);
 
   const notifySidebarBadges = () => {
     if (typeof window !== 'undefined') {
@@ -146,6 +152,36 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
           throw new Error(data.error || `HTTP ${controlsRes.status}`);
         }
         applyPayload(data);
+
+        // Client-side warm fallback: If the server-side probe timed out due to an idle Cloud Run cold start,
+        // warm and resolve parity directly in the browser (production /api/version permits cross-origin GETs)
+        if (data.parity && (!data.parity.prodSha || data.parity.status === 'UNAVAILABLE')) {
+          fetch(`${PRODUCTION_APP_URL}/api/version`, { cache: 'no-store' })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((prodData) => {
+              if (prodData?.commitSha) {
+                setParity((prev) => {
+                  const stagingSnapshot: EnvironmentVersionSnapshot = {
+                    commitSha: prev?.stagingSha || 'dev',
+                    commitTimestamp: prev?.stagingTimestamp || null,
+                    environment: 'staging',
+                    projectId: 'memory-weaver-dev',
+                    reachable: true,
+                  };
+                  const prodSnapshot: EnvironmentVersionSnapshot = {
+                    commitSha: String(prodData.commitSha),
+                    commitTimestamp: prodData.commitTimestamp ? String(prodData.commitTimestamp) : null,
+                    environment: prodData.environment ? String(prodData.environment) : 'production',
+                    projectId: prodData.projectId ? String(prodData.projectId) : null,
+                    buildTimestamp: prodData.buildTimestamp ? String(prodData.buildTimestamp) : null,
+                    reachable: true,
+                  };
+                  return evaluateEnvironmentParity(stagingSnapshot, prodSnapshot);
+                });
+              }
+            })
+            .catch(() => {});
+        }
       } catch (err: any) {
         const msg = err?.message || 'Unable to load Founder Inbox.';
         setError(msg);
@@ -209,7 +245,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
       notifySidebarBadges();
 
       const actionLabels: Record<ReleaseControlAction, string> = {
-        APPROVE: 'Approved — queued for npm run qa:controls',
+        APPROVE: 'Approved — queued for Antigravity execution',
         HOLD: control.severity === 'RED' ? 'Held — downstream block flagged' : 'Held quietly (low-drag)',
         DEFER_TO_PLANE:
           control.severity === 'RED'
@@ -283,32 +319,28 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
     }
   };
 
-  const planeWorkspaceSlug =
-    (process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG || '').trim() || 'memory-weaver-studio';
-
   const renderTicketRefControl = (rawRef: string, opts?: { compact?: boolean }) => {
     const cleanRef = (rawRef || '').trim();
     if (!cleanRef) return null;
-    const url = formatPlaneBrowseUrl(cleanRef, planeWorkspaceSlug);
-    const displayKey = cleanRef.toUpperCase();
+    const validKey = normalisePlaneIssueKey(cleanRef);
     const compact = Boolean(opts?.compact);
 
-    if (url) {
+    if (validKey) {
       return (
-        <a
+        <button
           key={cleanRef}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
+          type="button"
+          onClick={() => setActivePlaneKey(validKey)}
+          data-testid={`PLANE_TICKET_TRIGGER_${validKey}`}
           className={
             compact
-              ? 'inline-flex items-center gap-1 shrink-0 whitespace-nowrap text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-200 border border-indigo-400/45 hover:bg-indigo-500/30 transition'
-              : 'inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap text-xs font-mono font-bold px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-200 border border-indigo-400/45 hover:bg-indigo-500/30 transition'
+              ? 'inline-flex items-center gap-1 shrink-0 whitespace-nowrap text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-200 border border-indigo-400/45 hover:bg-indigo-500/30 transition cursor-pointer'
+              : 'inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap text-xs font-mono font-bold px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-200 border border-indigo-400/45 hover:bg-indigo-500/30 transition cursor-pointer'
           }
         >
-          <span>Open {displayKey}</span>
-          <ExternalLink className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
-        </a>
+          <Ticket className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+          <span>Inspect {validKey}</span>
+        </button>
       );
     }
 
@@ -405,6 +437,9 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
           <span className="text-[11px] opacity-85">{parity.note}</span>
         </div>
       )}
+
+      {/* Live Synthetic Health & Readiness Probe */}
+      <AdminHealthBar compact />
 
       {/* Persistent Held-Blocker Banner */}
       {heldBlockingCount > 0 && (
@@ -714,7 +749,6 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                   const isBusy = Boolean(busyIds[bug.reportId]);
                   const shaMatches = doesCommitShaMatchLive(bug.fixedInCommitSha, liveCommitSha);
                   const safeRoute = sanitizeBugDeepLinkRoute(bug.path);
-                  const planeUrl = bug.planeIssueId ? formatPlaneBrowseUrl(bug.planeIssueId) : null;
 
                   return (
                     <div
@@ -722,16 +756,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                       className="rounded-2xl border border-sky-500/35 bg-slate-900/60 p-4 space-y-3"
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        {bug.planeIssueId && planeUrl && (
-                          <a
-                            href={planeUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40"
-                          >
-                            {bug.planeIssueId} ↗
-                          </a>
-                        )}
+                        {bug.planeIssueId && renderTicketRefControl(bug.planeIssueId, { compact: true })}
                         {bug.fixedInCommitSha && (
                           <span
                             className={`inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
@@ -814,8 +839,9 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                       className="rounded-xl border border-indigo-500/30 bg-slate-900/50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                     >
                       <div className="space-y-1">
-                        <div className="text-xs font-bold text-white">
-                          [{d.ticketRef}] {d.title}
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-white">
+                          {d.ticketRef && renderTicketRefControl(d.ticketRef, { compact: true })}
+                          <span>{d.title}</span>
                         </div>
                         {recOption && (
                           <div className="text-[11px] text-slate-400">
@@ -942,6 +968,12 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
           )}
         </>
       )}
+
+      {/* In-App Headless Plane.so Ticket Drawer (zero external app.plane.so navigation) */}
+      <PlaneTicketDrawer
+        issueKey={activePlaneKey}
+        onClose={() => setActivePlaneKey(null)}
+      />
     </div>
   );
 }

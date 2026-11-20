@@ -19,6 +19,24 @@ export type ReleaseControlAction =
 
 export type ReleaseControlEnvTag = '[ENV: PROD]' | '[ENV: STAGING]' | '[ENV: BOTH]';
 
+export type ReleaseControlGateTier = 'TIER_3_FOUNDER' | 'LEGACY_ARCHIVED';
+
+export const ALLOWED_TIER_3_GATE_CATEGORIES = [
+  'MONEY_BILLING',
+  'DESTRUCTIVE_LIVE_DATA',
+  'EXTERNAL_CUSTOMER_LEGAL',
+  'NON_API_VENDOR_MFA',
+] as const;
+
+export type ReleaseControlGateCategory = (typeof ALLOWED_TIER_3_GATE_CATEGORIES)[number];
+
+export function isValidTier3GateCategory(value: unknown): value is ReleaseControlGateCategory {
+  return (
+    typeof value === 'string' &&
+    (ALLOWED_TIER_3_GATE_CATEGORIES as readonly string[]).includes(value)
+  );
+}
+
 export interface ReleaseControlAuditEntry {
   action: ReleaseControlAction;
   fromStatus: ReleaseControlStatus;
@@ -39,6 +57,9 @@ export interface ReleaseControlRecord {
   /** Required for RED gates: 1 plain-English line explaining the exact downstream knock-on effect. */
   knockOnImpact: string;
   envTag: ReleaseControlEnvTag;
+  /** Optional on persisted Firestore docs for backward compatibility; required on all seeds & POST creates. */
+  gateTier?: ReleaseControlGateTier;
+  gateCategory?: ReleaseControlGateCategory;
   ticketRefs: string[];
   status: ReleaseControlStatus;
   notes: string;
@@ -58,6 +79,8 @@ export interface ReleaseControlRecord {
 
 export type ReleaseControlSeed = Omit<
   ReleaseControlRecord,
+  | 'gateTier'
+  | 'gateCategory'
   | 'status'
   | 'notes'
   | 'acceptedKnockOnDelay'
@@ -72,36 +95,20 @@ export type ReleaseControlSeed = Omit<
   | 'updatedAt'
   | 'updatedAtIso'
   | 'auditTrail'
->;
+> & {
+  gateTier: 'TIER_3_FOUNDER';
+  gateCategory: ReleaseControlGateCategory;
+};
 
+/**
+ * Strictly TIER_3_FOUNDER irreversible business/money/legal/vendor-MFA gates only.
+ * Tier 1 engineering chores (bug fixes, smoke checks, infra deploys, key wiring) are
+ * executed autonomously via APIs & synthetic health probes and must never be seeded here.
+ */
 export const DEFAULT_RELEASE_CONTROL_SEEDS: ReleaseControlSeed[] = [
   {
-    id: 'ctrl-push-walkthrough-batch-dev',
-    order: 1,
-    title: 'Push Staged Local Walkthrough Batch to Staging (dev)',
-    summary:
-      'Commits and pushes the locally verified dev batch (MW-414 Admin Pre-Launch prod guard & ?suite= URL sync, MW-415 Option 4+ Navbar + OpticsPrivacyShield compact live label, UK "Optimise Studio" copy, 5 Dual-Track Hard Rules, and Founder Inbox Option B) to origin/dev.',
-    severity: 'RED',
-    knockOnImpact:
-      'Holding this delays deploying MW-414 & MW-415 to staging and blocks promoting the navbar/admin fixes to production.',
-    envTag: '[ENV: BOTH]',
-    ticketRefs: ['MW-414', 'MW-415'],
-  },
-  {
-    id: 'ctrl-prod-smoke-signoff',
-    order: 2,
-    title: 'Confirm Production Smoke Test All Clear (memoryweaver.studio)',
-    summary:
-      'Confirms remaining production smoke checks (Studio AI Weaver synthesis + Gift Voucher link & email delivery) are verified green on memoryweaver.studio.',
-    severity: 'RED',
-    knockOnImpact:
-      'Holding this keeps Final Step 4 paused so Stripe remains in Test Mode and live customer checkout stays locked.',
-    envTag: '[ENV: PROD]',
-    ticketRefs: ['MW-408'],
-  },
-  {
     id: 'ctrl-stripe-live-mode-switch',
-    order: 3,
+    order: 1,
     title: 'Approve Final Step 4: Switch Stripe to Live Mode & Trigger Rollout',
     summary:
       'Uploads live STRIPE_SECRET_KEY (sk_live_) and STRIPE_WEBHOOK_SECRET (whsec_) into memory-weaver-8rk9t Secret Manager, registers canonical https://memoryweaver.studio/api/webhooks/stripe (3 events), activates Billing Portal, and triggers a fresh master rollout.',
@@ -109,19 +116,9 @@ export const DEFAULT_RELEASE_CONTROL_SEEDS: ReleaseControlSeed[] = [
     knockOnImpact:
       'Holding this keeps paid Director Pass, Generational Vault, and Heirloom Gift checkout strictly in Stripe Test Mode.',
     envTag: '[ENV: PROD]',
+    gateTier: 'TIER_3_FOUNDER',
+    gateCategory: 'MONEY_BILLING',
     ticketRefs: ['MW-408'],
-  },
-  {
-    id: 'ctrl-rotate-plane-api-key',
-    order: 4,
-    title: 'Rotate PLANE_API_KEY & Close MW-405',
-    summary:
-      'Mints a fresh Plane.so workspace API key, updates local .env.local, verifies scripts/plane.js states, revokes the legacy key from git history, and marks MW-405 Done.',
-    severity: 'AMBER',
-    knockOnImpact:
-      'Safe to hold until immediately after launch cutover; does not block staging builds or customer traffic.',
-    envTag: '[ENV: STAGING]',
-    ticketRefs: ['MW-405'],
   },
 ];
 

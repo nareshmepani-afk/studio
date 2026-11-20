@@ -33,7 +33,7 @@ let cachedAccessToken: string | null = null;
 let cachedTokenExpiresAtMs = 0;
 const TOKEN_TTL_FALLBACK_MS = 45 * 60 * 1000; // 45 minutes safe cache window
 
-async function resolveServiceAccountAccessToken(): Promise<string | null> {
+export async function resolveServiceAccountAccessToken(): Promise<string | null> {
   if (!credentials) return null;
   const now = Date.now();
   if (cachedAccessToken && now < cachedTokenExpiresAtMs - 60_000) {

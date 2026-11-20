@@ -15,11 +15,12 @@ import { toast } from 'sonner';
 import {
   BUG_REPORT_STATUSES,
   doesCommitShaMatchLive,
-  formatPlaneBrowseUrl,
   sanitizeBugDeepLinkRoute,
   type BugReportRecord,
   type BugReportStatus,
 } from '@/lib/bugReports';
+import { normalisePlaneIssueKey } from '@/lib/planeTypes';
+import { PlaneTicketDrawer } from './PlaneTicketDrawer';
 
 const STATUS_STYLES: Record<BugReportStatus, string> = {
   OPEN: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
@@ -40,6 +41,7 @@ export function BugTriageConsole() {
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
   const [draftPlaneIds, setDraftPlaneIds] = useState<Record<string, string>>({});
   const [draftCommitShas, setDraftCommitShas] = useState<Record<string, string>>({});
+  const [activePlaneKey, setActivePlaneKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -117,8 +119,11 @@ export function BugTriageConsole() {
         prev.map((r) => (r.reportId === reportId ? { ...r, ...updates, updatedAt: Date.now() } : r))
       );
       if (updates.status === 'VERIFIED') {
+        const planeDescription = data?.planeSync?.ok
+          ? `Linked ticket ${data.planeSync.issueKey || ''} closed automatically via Plane API.`
+          : 'Verified and persisted in Firestore.';
         toast.success(`Signed Off ${reportId} as VERIFIED`, {
-          description: 'Run npm.cmd run qa:bugs -- --sync-plane to auto-close the linked Plane ticket.',
+          description: planeDescription,
         });
       } else if (updates.status === 'OPEN') {
         toast.warning(`Reopened ${reportId}`, {
@@ -180,7 +185,7 @@ export function BugTriageConsole() {
 
           <div className="space-y-3">
             {readyForSignOffReports.map((r) => {
-              const planeUrl = formatPlaneBrowseUrl(r.planeIssueId);
+              const planeKey = normalisePlaneIssueKey(r.planeIssueId);
               const exactRoute = sanitizeBugDeepLinkRoute(r.path);
               const shaLive = doesCommitShaMatchLive(r.fixedInCommitSha, liveCommitSha);
               return (
@@ -194,18 +199,16 @@ export function BugTriageConsole() {
                       <span className="font-mono text-xs font-bold text-sky-300">{r.reportId}</span>
 
                       {r.planeIssueId && (
-                        planeUrl ? (
-                          <a
-                            href={planeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        planeKey ? (
+                          <button
+                            type="button"
+                            onClick={() => setActivePlaneKey(planeKey)}
                             data-testid={`signoff-plane-link-${r.reportId}`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/15 border border-indigo-400/35 text-indigo-300 hover:bg-indigo-500/25 transition"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/15 border border-indigo-400/35 text-indigo-300 hover:bg-indigo-500/25 transition cursor-pointer"
                           >
                             <Ticket className="h-3 w-3" />
-                            <span>{r.planeIssueId}</span>
-                            <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
+                            <span>{planeKey}</span>
+                          </button>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/15 border border-indigo-400/35 text-indigo-300">
                             <Ticket className="h-3 w-3" />
@@ -356,7 +359,7 @@ export function BugTriageConsole() {
         <div className="space-y-4">
           {visibleReports.map((r) => {
             const matched = isHighlighted(r);
-            const planeUrl = formatPlaneBrowseUrl(r.planeIssueId);
+            const planeKey = normalisePlaneIssueKey(r.planeIssueId);
             const exactRoute = sanitizeBugDeepLinkRoute(r.path);
             const shaLive = doesCommitShaMatchLive(r.fixedInCommitSha, liveCommitSha);
             return (
@@ -376,17 +379,15 @@ export function BugTriageConsole() {
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${STATUS_STYLES[r.status] || STATUS_STYLES.OPEN}`}>
                         {r.status}
                       </span>
-                      {planeUrl && (
-                        <a
-                          href={planeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/15 border border-indigo-400/35 text-indigo-300 hover:bg-indigo-500/25"
+                      {planeKey && (
+                        <button
+                          type="button"
+                          onClick={() => setActivePlaneKey(planeKey)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/15 border border-indigo-400/35 text-indigo-300 hover:bg-indigo-500/25 transition cursor-pointer"
                         >
                           <Ticket className="h-3 w-3" />
-                          <span>{r.planeIssueId}</span>
-                          <ExternalLink className="h-2.5 w-2.5" />
-                        </a>
+                          <span>{planeKey}</span>
+                        </button>
                       )}
                       {r.fixedInCommitSha && (
                         <span
@@ -521,6 +522,12 @@ export function BugTriageConsole() {
           })}
         </div>
       )}
+
+      {/* In-App Headless Plane.so Ticket Drawer (zero external app.plane.so navigation) */}
+      <PlaneTicketDrawer
+        issueKey={activePlaneKey}
+        onClose={() => setActivePlaneKey(null)}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import {
+  ALLOWED_TIER_3_GATE_CATEGORIES,
   buildSeededReleaseControl,
   computeInboxBadgeCounts,
   DEFAULT_RELEASE_CONTROL_SEEDS,
@@ -12,8 +13,47 @@ import {
   formatReleaseControlForPlane,
   formatThreeZoneRadar,
   getReleaseControlTargetMeta,
+  isValidTier3GateCategory,
   sortReleaseControls,
+  type ReleaseControlSeed,
 } from '@/lib/releaseControls';
+import {
+  escapeHtmlForPlane,
+  normalisePlaneIssueKey,
+  stripHtmlToSafeText,
+  textToPlaneHtml,
+} from '@/lib/planeTypes';
+import {
+  classifyStripeKeyMode,
+  formatHealthProbeCliLines,
+  runHealthProbe,
+} from '@/lib/healthProbe';
+
+const SYNTHETIC_RED_SEED: ReleaseControlSeed = {
+  id: 'ctrl-test-red-gate',
+  order: 1,
+  title: 'Test RED Billing Gate',
+  summary: 'Synthetic RED Tier-3 test gate.',
+  severity: 'RED',
+  knockOnImpact: 'Holding blocks live checkout.',
+  envTag: '[ENV: PROD]',
+  gateTier: 'TIER_3_FOUNDER',
+  gateCategory: 'MONEY_BILLING',
+  ticketRefs: ['MW-408'],
+};
+
+const SYNTHETIC_AMBER_SEED: ReleaseControlSeed = {
+  id: 'ctrl-test-amber-mfa',
+  order: 2,
+  title: 'Test AMBER Vendor MFA Gate',
+  summary: 'Synthetic AMBER Tier-3 vendor MFA gate.',
+  severity: 'AMBER',
+  knockOnImpact: 'Safe to hold until post-cutover.',
+  envTag: '[ENV: STAGING]',
+  gateTier: 'TIER_3_FOUNDER',
+  gateCategory: 'NON_API_VENDOR_MFA',
+  ticketRefs: ['MW-405'],
+};
 
 function createMemoryDb() {
   const store = new Map<string, Map<string, any>>();
@@ -84,9 +124,24 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
     else process.env.GOOGLE_CLOUD_PROJECT = savedEnv.GOOGLE_CLOUD_PROJECT;
   });
 
+  it('prunes DEFAULT_RELEASE_CONTROL_SEEDS strictly to TIER_3_FOUNDER gates with allowlisted gateCategory', () => {
+    expect(DEFAULT_RELEASE_CONTROL_SEEDS.length).toBeGreaterThanOrEqual(1);
+    expect(DEFAULT_RELEASE_CONTROL_SEEDS.map((s) => s.id)).toEqual(['ctrl-stripe-live-mode-switch']);
+    for (const seed of DEFAULT_RELEASE_CONTROL_SEEDS) {
+      expect(seed.gateTier).toBe('TIER_3_FOUNDER');
+      expect(isValidTier3GateCategory(seed.gateCategory)).toBe(true);
+    }
+    expect(ALLOWED_TIER_3_GATE_CATEGORIES).toEqual([
+      'MONEY_BILLING',
+      'DESTRUCTIVE_LIVE_DATA',
+      'EXTERNAL_CUSTOMER_LEGAL',
+      'NON_API_VENDOR_MFA',
+    ]);
+  });
+
   it('enforces RED vs AMBER state transitions and 1A knock-on acknowledgement on RED defer', () => {
-    const redRecord = buildSeededReleaseControl(DEFAULT_RELEASE_CONTROL_SEEDS[0], 1000);
-    const amberRecord = buildSeededReleaseControl(DEFAULT_RELEASE_CONTROL_SEEDS[3], 1000);
+    const redRecord = buildSeededReleaseControl(SYNTHETIC_RED_SEED, 1000);
+    const amberRecord = buildSeededReleaseControl(SYNTHETIC_AMBER_SEED, 1000);
 
     // RED HOLD -> HELD_BLOCKING; AMBER HOLD -> HELD
     const redHold = evaluateReleaseControlTransition(redRecord, {
@@ -144,7 +199,7 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
   });
 
   it('rejects stale expectedUpdatedAt and terminal EXECUTED mutations with HTTP 409', () => {
-    const record = buildSeededReleaseControl(DEFAULT_RELEASE_CONTROL_SEEDS[0], 5000);
+    const record = buildSeededReleaseControl(SYNTHETIC_RED_SEED, 5000);
 
     // Stale tab timestamp rejected with 409
     const staleRes = evaluateReleaseControlTransition(record, {
@@ -174,7 +229,14 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
   });
 
   it('computes sorted inbox order and RED/AMBER/ReadySignOff badge counts accurately', () => {
-    const list = DEFAULT_RELEASE_CONTROL_SEEDS.map((s) => buildSeededReleaseControl(s, 1000));
+    const list = [
+      buildSeededReleaseControl(SYNTHETIC_AMBER_SEED, 1000),
+      buildSeededReleaseControl(SYNTHETIC_RED_SEED, 1000),
+      buildSeededReleaseControl(
+        { ...SYNTHETIC_RED_SEED, id: 'ctrl-test-red-2', order: 3 },
+        1000
+      ),
+    ];
     const sorted = sortReleaseControls(list);
     expect(sorted[0].severity).toBe('RED');
 
@@ -184,12 +246,12 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
       readyBugsCount: 2,
     });
     expect(badges).toEqual({
-      red: 3,
+      red: 2,
       amber: 2, // 1 AMBER control + 1 pending decision
       approvedAwaitingCli: 0,
       readySignOff: 2,
       pendingDecisions: 1,
-      totalActionable: 7,
+      totalActionable: 6,
     });
   });
 
@@ -420,60 +482,272 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
     expect(staging.scopeCue).toBeNull();
   });
 
-  it('FounderInboxConsole renders high-contrast [ENV: PROD] cue, deduplicated Open MW-408 link, safe span fallback, and clickable ledger links', async () => {
-    const originalSlug = process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG;
-    process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG = '   '; // Verify whitespace falls back cleanly to memory-weaver-studio
+  it('POST /api/admin/controls enforces TIER_3_FOUNDER + allowlisted gateCategory and PATCH guards duplicate deferrals & shared tickets', async () => {
+    const memDb = createMemoryDb();
+    vi.doMock('@/lib/firebaseAdmin', () => ({ adminDb: memDb }));
+    vi.doMock('@/lib/session', () => ({
+      requireAdminSession: vi.fn().mockResolvedValue({
+        authorized: true,
+        session: { email: 'nareshmepani@googlemail.com', isAdmin: true },
+      }),
+    }));
 
-    const prodCard = buildSeededReleaseControl(DEFAULT_RELEASE_CONTROL_SEEDS[2], 1000); // ctrl-stripe-live-mode-switch (MW-408, [ENV: PROD])
+    const createPlaneIssueMock = vi.fn().mockResolvedValue('MW-999');
+    const addPlaneCommentMock = vi.fn().mockResolvedValue({ id: 'c1', bodyText: 'ok', createdAt: null, updatedAt: null, actor: null });
+    const updatePlaneStateMock = vi.fn().mockResolvedValue({ issueId: 'u1', stateId: 's-done' });
+
+    vi.doMock('@/lib/planeClient', () => ({
+      loadPlaneEnv: vi.fn(() => ({
+        apiKey: 'plane_test_key',
+        workspaceSlug: 'memory-weaver-studio',
+        projectId: 'ef45f4c8-ea7e-490d-8282-e959e484ae07',
+      })),
+      createPlaneIssue: createPlaneIssueMock,
+      addPlaneIssueComment: addPlaneCommentMock,
+      updatePlaneIssueState: updatePlaneStateMock,
+    }));
+
+    const routeMod = await import('@/app/api/admin/controls/route');
+
+    // Reject missing gateTier / invalid gateCategory (400)
+    const badPost = await routeMod.POST(
+      new Request('https://dev.memoryweaver.studio/api/admin/controls', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: 'ctrl-tier1-noise',
+          title: 'Routine bug push',
+          knockOnImpact: 'None',
+          severity: 'AMBER',
+          gateTier: 'TIER_1_AUTO',
+          gateCategory: 'ROUTINE_BUG',
+        }),
+      })
+    );
+    expect(badPost.status).toBe(400);
+
+    // Accept valid TIER_3_FOUNDER + MONEY_BILLING (201) sharing MW-499 across two active controls
+    const okPost = await routeMod.POST(
+      new Request('https://dev.memoryweaver.studio/api/admin/controls', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: 'ctrl-shared-a',
+          title: 'Shared Gate A',
+          knockOnImpact: 'Blocks billing cutover.',
+          severity: 'RED',
+          envTag: '[ENV: PROD]',
+          gateTier: 'TIER_3_FOUNDER',
+          gateCategory: 'MONEY_BILLING',
+          ticketRefs: ['MW-499'],
+        }),
+      })
+    );
+    expect(okPost.status).toBe(201);
+
+    // Second active control sharing MW-499
+    await routeMod.POST(
+      new Request('https://dev.memoryweaver.studio/api/admin/controls', {
+        method: 'POST',
+        body: JSON.stringify({
+          id: 'ctrl-shared-b',
+          title: 'Shared Gate B',
+          knockOnImpact: 'Blocks billing cutover.',
+          severity: 'RED',
+          envTag: '[ENV: PROD]',
+          gateTier: 'TIER_3_FOUNDER',
+          gateCategory: 'MONEY_BILLING',
+          ticketRefs: ['MW-499'],
+        }),
+      })
+    );
+
+    // Mark ctrl-shared-a EXECUTED while ctrl-shared-b still references MW-499 -> comment ONLY, do NOT close MW-499!
+    const execA = await routeMod.PATCH(
+      new Request('https://dev.memoryweaver.studio/api/admin/controls', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'ctrl-shared-a', action: 'MARK_EXECUTED', executedCommitSha: 'ab5e6ba' }),
+      })
+    );
+    expect(execA.status).toBe(200);
+    expect(addPlaneCommentMock).toHaveBeenCalled();
+    expect(updatePlaneStateMock).not.toHaveBeenCalled();
+
+    // Defer ctrl-shared-b twice (with REOPEN in between) -> creates MW-999 once, comments on 2nd defer (no duplicate!)
+    const defer1 = await routeMod.PATCH(
+      new Request('https://dev.memoryweaver.studio/api/admin/controls', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          id: 'ctrl-shared-b',
+          action: 'DEFER_TO_PLANE',
+          acknowledgedKnockOn: true,
+        }),
+      })
+    );
+    const defer1Json = await defer1.json();
+    expect(defer1.status).toBe(200);
+    expect(defer1Json.control.planeDeferredRef).toBe('MW-999');
+    expect(createPlaneIssueMock).toHaveBeenCalledTimes(1);
+
+    await routeMod.PATCH(
+      new Request('https://dev.memoryweaver.studio/api/admin/controls', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'ctrl-shared-b', action: 'REOPEN' }),
+      })
+    );
+    const defer2 = await routeMod.PATCH(
+      new Request('https://dev.memoryweaver.studio/api/admin/controls', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          id: 'ctrl-shared-b',
+          action: 'DEFER_TO_PLANE',
+          acknowledgedKnockOn: true,
+        }),
+      })
+    );
+    expect(defer2.status).toBe(200);
+    expect(createPlaneIssueMock).toHaveBeenCalledTimes(1); // Never duplicated!
+
+    // Now mark ctrl-shared-b EXECUTED (last active holder of MW-499) -> auto-closes MW-499!
+    const execB = await routeMod.PATCH(
+      new Request('https://dev.memoryweaver.studio/api/admin/controls', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'ctrl-shared-b', action: 'MARK_EXECUTED', executedCommitSha: 'ab5e6ba' }),
+      })
+    );
+    expect(execB.status).toBe(200);
+    expect(updatePlaneStateMock).toHaveBeenCalledWith(expect.any(Object), 'MW-499', 'done');
+    vi.doUnmock('@/lib/planeClient');
+  });
+
+  it('FounderInboxConsole renders high-contrast [ENV: PROD] cue, zero outbound app.plane.so links, and opens in-app PlaneTicketDrawer with safe plain-text rendering', async () => {
+    const prodCard = buildSeededReleaseControl(DEFAULT_RELEASE_CONTROL_SEEDS[0], 1000); // ctrl-stripe-live-mode-switch (MW-408, [ENV: PROD])
     const amberCardWithInvalidRef = {
-      ...buildSeededReleaseControl(DEFAULT_RELEASE_CONTROL_SEEDS[3], 1000),
+      ...buildSeededReleaseControl(SYNTHETIC_AMBER_SEED, 1000),
       ticketRefs: ['MW-405', 'EXTERNAL-99'],
     };
     const deferredLedgerCard = {
-      ...buildSeededReleaseControl(DEFAULT_RELEASE_CONTROL_SEEDS[0], 1000),
+      ...buildSeededReleaseControl(SYNTHETIC_RED_SEED, 1000),
+      id: 'ctrl-ledger-deferred',
       status: 'DEFERRED_TO_PLANE' as const,
       planeDeferredRef: 'MW-419',
       ticketRefs: ['MW-414'],
     };
 
-    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
-      if (String(url).includes('/api/admin/controls')) {
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/admin/controls')) {
         return {
           ok: true,
           json: async () => ({
             success: true,
             controls: [prodCard, amberCardWithInvalidRef, deferredLedgerCard],
             pendingDecisions: [],
-            readyBugs: [],
+            readyBugs: [
+              {
+                reportId: 'bug_ready_1',
+                traceId: 'trc_1',
+                userId: 'u1',
+                userEmail: 'founder@example.com',
+                path: '/studio',
+                appVersion: 'v1.1.0-beta',
+                userAgent: 'Chrome',
+                description: 'Ready bug check',
+                status: 'FIXED_ON_DEV',
+                createdAt: 1000,
+                createdAtIso: '2026-11-20T10:00:00Z',
+                updatedAt: 1000,
+                environmentHost: 'https://dev.memoryweaver.studio',
+                planeIssueId: 'MW-415',
+                resolutionNotes: 'Fixed',
+                fixedInCommitSha: 'ab5e6ba',
+              },
+            ],
             badges: {
               red: 1,
               amber: 1,
               approvedAwaitingCli: 0,
-              readySignOff: 0,
+              readySignOff: 1,
               pendingDecisions: 0,
-              totalActionable: 2,
+              totalActionable: 3,
             },
             parity: evaluateEnvironmentParity(
-              { commitSha: '5a07a0d', commitTimestamp: '2026-11-20T14:33:14Z' },
+              { commitSha: 'ab5e6ba', commitTimestamp: '2026-11-20T14:33:14Z' },
               { commitSha: '8051219', commitTimestamp: '2026-11-19T20:34:45Z' }
             ),
           }),
         };
       }
+      if (urlStr.includes('/api/admin/health-probe')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            overall: 'OK',
+            mode: 'FAST',
+            environment: 'staging',
+            projectId: 'memory-weaver-dev',
+            checkedAtIso: '2026-11-20T18:00:00Z',
+            durationMs: 42,
+            checks: [
+              { id: 'firestore', label: 'Firestore', status: 'OK', detail: 'Connected' },
+              { id: 'plane', label: 'Plane.so API', status: 'UNCONFIGURED', detail: 'Pending secret' },
+            ],
+          }),
+        };
+      }
+      if (urlStr.includes('/api/admin/plane/issues/MW-408')) {
+        const isPatch = init?.method === 'PATCH';
+        const isPost = init?.method === 'POST';
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            configured: true,
+            key: 'MW-408',
+            issue: {
+              id: '6bb4b6e3-1513-4210-ae7e-5cc2f3703cd9',
+              key: 'MW-408',
+              sequenceId: 408,
+              projectId: 'ef45f4c8-ea7e-490d-8282-e959e484ae07',
+              name: 'OPS-CUTOVER: Prod cutover pre-flight',
+              descriptionText: 'Safe text with <script>alert("xss")</script> literal',
+              priority: 'high',
+              stateId: isPatch ? 'st-done' : 'st-backlog',
+              stateName: isPatch ? 'Done' : 'Backlog',
+              stateGroup: isPatch ? 'completed' : 'backlog',
+              createdAt: '2026-11-16T18:16:42Z',
+              updatedAt: '2026-11-20T18:23:42Z',
+            },
+            comments: isPost
+              ? [{ id: 'c-new', bodyText: 'Founder verified via API', createdAt: '2026-11-20T18:30:00Z', updatedAt: null, actor: 'Founder' }]
+              : [],
+            states: [
+              { id: 'st-backlog', name: 'Backlog', group: 'backlog' },
+              { id: 'st-done', name: 'Done', group: 'completed' },
+            ],
+          }),
+        };
+      }
       return {
         ok: true,
-        json: async () => ({ commitSha: '5a07a0d', environment: 'staging' }),
+        json: async () => ({ commitSha: 'ab5e6ba', environment: 'staging' }),
       };
     });
 
     vi.stubGlobal('fetch', fetchMock);
     try {
       const { FounderInboxConsole } = await import('@/components/admin/FounderInboxConsole');
-      render(React.createElement(FounderInboxConsole));
+      const { container } = render(React.createElement(FounderInboxConsole));
 
       await waitFor(() => {
         expect(screen.getByTestId('RELEASE_CONTROL_CARD_ctrl-stripe-live-mode-switch')).toBeInTheDocument();
       });
+
+      // Zero outbound app.plane.so links anywhere inside FounderInboxConsole!
+      const externalPlaneAnchors = Array.from(container.querySelectorAll('a[href*="app.plane.so"]'));
+      expect(externalPlaneAnchors).toHaveLength(0);
+
+      // Synthetic health bar mounts cleanly
+      expect(screen.getByTestId('ADMIN_HEALTH_BAR')).toBeInTheDocument();
 
       const prodEl = screen.getByTestId('RELEASE_CONTROL_CARD_ctrl-stripe-live-mode-switch');
       expect(within(prodEl).getByTestId('RELEASE_TARGET_BADGE_ctrl-stripe-live-mode-switch')).toHaveTextContent(
@@ -483,30 +757,197 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
         'Targets Live Production (memoryweaver.studio / memory-weaver-8rk9t)'
       );
 
-      // Deduplicated: exactly ONE Open MW-408 anchor and zero duplicate passive MW-408 spans
-      const mw408Links = within(prodEl).getAllByRole('link', { name: /Open MW-408/i });
-      expect(mw408Links).toHaveLength(1);
-      expect(mw408Links[0]).toHaveAttribute('href', 'https://app.plane.so/memory-weaver-studio/browse/MW-408/');
-      expect(mw408Links[0]).toHaveAttribute('target', '_blank');
-      expect(mw408Links[0]).toHaveAttribute('rel', 'noopener noreferrer');
-      expect(within(prodEl).queryAllByText('MW-408')).toHaveLength(0);
+      // Click Inspect MW-408 button -> opens in-app PlaneTicketDrawer (zero page navigation!)
+      const mw408Btn = within(prodEl).getByRole('button', { name: /Inspect MW-408/i });
+      fireEvent.click(mw408Btn);
 
-      // Invalid ref on AMBER card falls back to plain span (no broken anchor)
-      const amberEl = screen.getByTestId('RELEASE_CONTROL_CARD_ctrl-rotate-plane-api-key');
-      const mw405Link = within(amberEl).getByRole('link', { name: /Open MW-405/i });
-      expect(mw405Link).toHaveAttribute('href', 'https://app.plane.so/memory-weaver-studio/browse/MW-405/');
+      await waitFor(() => {
+        expect(screen.getByTestId('PLANE_TICKET_DRAWER')).toBeInTheDocument();
+        expect(screen.getByTestId('PLANE_DRAWER_TITLE')).toHaveTextContent('OPS-CUTOVER: Prod cutover pre-flight');
+      });
+
+      // Strict plain-text rendering: literal <script> text shown safely, zero <script> DOM elements!
+      expect(screen.getByTestId('PLANE_DRAWER_DESCRIPTION').textContent).toContain('<script>alert("xss")</script>');
+      expect(container.querySelectorAll('script')).toHaveLength(0);
+
+      // Click Mark Done via API -> sends PATCH /api/admin/plane/issues/MW-408
+      fireEvent.click(screen.getByTestId('PLANE_DRAWER_MARK_DONE'));
+      await waitFor(() => {
+        expect(screen.getByTestId('PLANE_DRAWER_STATE_BADGE')).toHaveTextContent('Done');
+      });
+
+      // Post Founder comment -> sends POST /api/admin/plane/issues/MW-408
+      fireEvent.change(screen.getByTestId('PLANE_DRAWER_COMMENT_INPUT'), {
+        target: { value: 'Founder verified via API' },
+      });
+      fireEvent.click(screen.getByTestId('PLANE_DRAWER_COMMENT_SUBMIT'));
+      await waitFor(() => {
+        expect(screen.getByTestId('PLANE_DRAWER_COMMENTS').textContent).toContain('Founder verified via API');
+      });
+
+      fireEvent.click(screen.getByTestId('PLANE_DRAWER_CLOSE'));
+
+      // Invalid ref on AMBER card still falls back to passive <span>
+      const amberEl = screen.getByTestId('RELEASE_CONTROL_CARD_ctrl-test-amber-mfa');
+      expect(within(amberEl).getByRole('button', { name: /Inspect MW-405/i })).toBeInTheDocument();
       const invalidSpan = within(amberEl).getByText('EXTERNAL-99');
       expect(invalidSpan.tagName).toBe('SPAN');
 
-      // Expand Ledger and verify clickable planeDeferredRef (MW-419)
+      // Expand Ledger and verify MW-419 is an in-app button (zero external <a>)
       fireEvent.click(screen.getByText(/Deferred & Executed Release Ledger/i));
-      const deferredLink = screen.getByRole('link', { name: /Open MW-419/i });
-      expect(deferredLink).toHaveAttribute('href', 'https://app.plane.so/memory-weaver-studio/browse/MW-419/');
-      expect(deferredLink).toHaveAttribute('rel', 'noopener noreferrer');
+      expect(screen.getByRole('button', { name: /Inspect MW-419/i })).toBeInTheDocument();
+      expect(container.querySelectorAll('a[href*="app.plane.so"]')).toHaveLength(0);
     } finally {
       vi.unstubAllGlobals();
-      if (originalSlug === undefined) delete process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG;
-      else process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG = originalSlug;
+    }
+  });
+
+  it('validates planeTypes helpers, /api/admin/plane/issues/[key] guards, and fail-soft unconfigured mode', async () => {
+    expect(normalisePlaneIssueKey('mw-408')).toBe('MW-408');
+    expect(normalisePlaneIssueKey('405')).toBe('MW-405');
+    expect(normalisePlaneIssueKey('../etc/passwd')).toBeNull();
+    expect(normalisePlaneIssueKey('MW-1234567')).toBeNull();
+    expect(escapeHtmlForPlane('<script>"&\'</script>')).toBe('&lt;script&gt;&quot;&amp;&#39;&lt;/script&gt;');
+    expect(textToPlaneHtml('Line 1\n<tag>')).toBe('<p>Line 1<br/>&lt;tag&gt;</p>');
+    expect(stripHtmlToSafeText('<p>Hello<br/>World &amp; Co</p>')).toBe('Hello\nWorld & Co');
+
+    vi.doMock('@/lib/session', () => ({
+      requireAdminSession: vi.fn().mockResolvedValue({
+        authorized: true,
+        session: { email: 'nareshmepani@googlemail.com', isAdmin: true },
+      }),
+    }));
+
+    const planeRoute = await import('@/app/api/admin/plane/issues/[key]/route');
+
+    // Invalid key -> 400
+    const badKeyRes = await planeRoute.GET(
+      new Request('https://dev.memoryweaver.studio/api/admin/plane/issues/bad') as any,
+      { params: Promise.resolve({ key: '../evil' }) }
+    );
+    expect(badKeyRes.status).toBe(400);
+
+    // Unset PLANE_API_KEY in Vitest -> fail-soft HTTP 200 { success: true, configured: false }
+    const unconfRes = await planeRoute.GET(
+      new Request('https://dev.memoryweaver.studio/api/admin/plane/issues/MW-408') as any,
+      { params: Promise.resolve({ key: 'MW-408' }) }
+    );
+    const unconfJson = await unconfRes.json();
+    expect(unconfRes.status).toBe(200);
+    expect(unconfJson).toMatchObject({ success: true, configured: false, key: 'MW-408' });
+
+    // Cross-site PATCH rejected with 403 by same-origin guard
+    const csrfBlocked = await planeRoute.PATCH(
+      new Request('https://dev.memoryweaver.studio/api/admin/plane/issues/MW-408', {
+        method: 'PATCH',
+        headers: { 'sec-fetch-site': 'cross-site', origin: 'https://evil.example' },
+        body: JSON.stringify({ state: 'done' }),
+      }) as any,
+      { params: Promise.resolve({ key: 'MW-408' }) }
+    );
+    expect(csrfBlocked.status).toBe(403);
+  });
+
+  it('runs pure dependency-injected runHealthProbe, enforces POST ?deep=1 cooldown + CSRF, and handles malformed checks safely in AdminHealthBar', async () => {
+    expect(classifyStripeKeyMode('sk_live_abc123', 'whsec_1234567890abcdef')).toEqual({
+      mode: 'LIVE',
+      webhookSecretConfigured: true,
+    });
+    expect(classifyStripeKeyMode('sk_test_abc123', '')).toEqual({
+      mode: 'TEST',
+      webhookSecretConfigured: false,
+    });
+    expect(classifyStripeKeyMode('sk_test_placeholder_key_for_build', null)).toEqual({
+      mode: 'PLACEHOLDER',
+      webhookSecretConfigured: false,
+    });
+
+    const report = await runHealthProbe({
+      projectId: 'memory-weaver-dev',
+      deep: false,
+      selfVersion: { commitSha: 'ab5e6ba', commitTimestamp: '2026-11-20T16:00:00Z', reachable: true },
+      probePeerVersion: async () => ({
+        commitSha: 'ab5e6ba',
+        commitTimestamp: '2026-11-20T16:00:00Z',
+        reachable: true,
+      }),
+      checkFirestore: async () => ({ ok: true, detail: 'Connected', latencyMs: 12 }),
+      checkStorage: async () => ({ ok: true, detail: 'Reachable', latencyMs: 15 }),
+      checkStripe: async () => ({ id: 'stripe', label: 'Stripe Billing', status: 'OK', detail: 'TEST mode' }),
+      checkPlane: async () => ({ id: 'plane', label: 'Plane.so API', status: 'OK', detail: 'Connected' }),
+      checkResend: async () => ({ id: 'resend', label: 'Resend Email', status: 'OK', detail: 'Configured' }),
+      checkAiWeaver: async () => ({ id: 'ai_weaver', label: 'AI Weaver (Genkit)', status: 'OK', detail: 'OAuth active' }),
+    });
+    expect(report.overall).toBe('OK');
+    expect(report.checks).toHaveLength(7);
+    expect(formatHealthProbeCliLines(report)[0]).toContain('Overall: OK');
+
+    // Route test: GET fast + POST ?deep=1 cooldown 429 + cross-site 403
+    vi.doMock('@/lib/session', () => ({
+      requireAdminSession: vi.fn().mockResolvedValue({
+        authorized: true,
+        session: { email: 'nareshmepani@googlemail.com', isAdmin: true },
+      }),
+    }));
+    vi.doMock('@/lib/firebaseAdmin', () => ({
+      adminDb: createMemoryDb(),
+      adminStorage: { bucket: () => ({ exists: async () => [true] }) },
+    }));
+    vi.doMock('@/ai/genkit', () => ({
+      resolveServiceAccountAccessToken: vi.fn().mockResolvedValue('mock-oauth-token'),
+      getAI: vi.fn().mockResolvedValue({
+        generate: vi.fn().mockResolvedValue({ text: 'OK' }),
+      }),
+    }));
+
+    const healthRoute = await import('@/app/api/admin/health-probe/route');
+    healthRoute.clearHealthProbeCooldownForTests();
+
+    const getHealth = await healthRoute.GET();
+    const getHealthJson = await getHealth.json();
+    expect(getHealth.status).toBe(200);
+    expect(getHealthJson.mode).toBe('FAST');
+    expect(Array.isArray(getHealthJson.checks)).toBe(true);
+
+    // Cross-origin POST blocked 403
+    const badDeep = await healthRoute.POST(
+      new Request('https://dev.memoryweaver.studio/api/admin/health-probe?deep=1', {
+        method: 'POST',
+        headers: { origin: 'https://evil.example' },
+        body: JSON.stringify({ deep: true }),
+      }) as any
+    );
+    expect(badDeep.status).toBe(403);
+
+    // First deep POST succeeds (200), immediate second hits 15s cooldown (429)
+    const deep1 = await healthRoute.POST(
+      new Request('https://dev.memoryweaver.studio/api/admin/health-probe?deep=1', {
+        method: 'POST',
+        body: JSON.stringify({ deep: true }),
+      }) as any
+    );
+    expect(deep1.status).toBe(200);
+    const deep2 = await healthRoute.POST(
+      new Request('https://dev.memoryweaver.studio/api/admin/health-probe?deep=1', {
+        method: 'POST',
+        body: JSON.stringify({ deep: true }),
+      }) as any
+    );
+    expect(deep2.status).toBe(429);
+
+    // AdminHealthBar safely degrades on malformed payload missing `checks` array
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, checks: null }) })
+    );
+    try {
+      const { AdminHealthBar } = await import('@/components/admin/AdminHealthBar');
+      const { queryByTestId } = render(React.createElement(AdminHealthBar, { compact: true }));
+      await waitFor(() => {
+        expect(queryByTestId('ADMIN_HEALTH_BAR')).toBeNull();
+      });
+    } finally {
+      vi.unstubAllGlobals();
     }
   });
 });
