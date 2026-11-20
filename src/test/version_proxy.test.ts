@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { APP_VERSION } from '@/config/version';
 
 describe('MW-9 & MW-10 Infrastructure Verification', () => {
@@ -29,7 +29,28 @@ describe('MW-9 & MW-10 Infrastructure Verification', () => {
   });
 
   describe('MW-118: Immutable Build Timestamp & Edge Version Parity', () => {
+    const savedEnv = {
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      GCLOUD_PROJECT: process.env.GCLOUD_PROJECT,
+      GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
+    };
+
+    beforeEach(() => {
+      delete process.env.GCLOUD_PROJECT;
+      delete process.env.GOOGLE_CLOUD_PROJECT;
+    });
+
+    afterEach(() => {
+      if (savedEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID === undefined) delete process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      else process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = savedEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      if (savedEnv.GCLOUD_PROJECT === undefined) delete process.env.GCLOUD_PROJECT;
+      else process.env.GCLOUD_PROJECT = savedEnv.GCLOUD_PROJECT;
+      if (savedEnv.GOOGLE_CLOUD_PROJECT === undefined) delete process.env.GOOGLE_CLOUD_PROJECT;
+      else process.env.GOOGLE_CLOUD_PROJECT = savedEnv.GOOGLE_CLOUD_PROJECT;
+    });
+
     it('returns an immutable buildTimestamp across consecutive requests to /api/version', async () => {
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'memory-weaver-dev';
       const versionRoute = await import('@/app/api/version/route');
       const res1 = await versionRoute.GET();
       const data1 = await res1.json();
@@ -44,6 +65,17 @@ describe('MW-9 & MW-10 Infrastructure Verification', () => {
       expect(typeof data1.buildTimestamp).toBe('string');
       // Invariant: buildTimestamp must NEVER change per-request
       expect(data1.buildTimestamp).toBe(data2.buildTimestamp);
+      expect(data1.environment).toBe('staging');
+      expect(data1.projectId).toBe('memory-weaver-dev');
+    });
+
+    it('reports production environment and memory-weaver-8rk9t projectId on production containers', async () => {
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'memory-weaver-8rk9t';
+      const versionRoute = await import('@/app/api/version/route');
+      const res = await versionRoute.GET();
+      const data = await res.json();
+      expect(data.environment).toBe('production');
+      expect(data.projectId).toBe('memory-weaver-8rk9t');
     });
   });
 });

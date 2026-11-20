@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Navbar } from '@/components/layout/Navbar';
 
@@ -38,9 +38,26 @@ vi.mock('@/hooks/useAuth', () => ({
 }));
 
 describe('Navbar Route Isolation & Admin Masking', () => {
+  const savedEnv = {
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    GCLOUD_PROJECT: process.env.GCLOUD_PROJECT,
+    GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthUser = null;
+    delete process.env.GCLOUD_PROJECT;
+    delete process.env.GOOGLE_CLOUD_PROJECT;
+  });
+
+  afterEach(() => {
+    if (savedEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID === undefined) delete process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    else process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = savedEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (savedEnv.GCLOUD_PROJECT === undefined) delete process.env.GCLOUD_PROJECT;
+    else process.env.GCLOUD_PROJECT = savedEnv.GCLOUD_PROJECT;
+    if (savedEnv.GOOGLE_CLOUD_PROJECT === undefined) delete process.env.GOOGLE_CLOUD_PROJECT;
+    else process.env.GOOGLE_CLOUD_PROJECT = savedEnv.GOOGLE_CLOUD_PROJECT;
   });
 
   describe('Administrative Route Suppression', () => {
@@ -204,6 +221,26 @@ describe('Navbar Route Isolation & Admin Masking', () => {
       const issueBtn = screen.getByTestId('HS_REPORT_ISSUE_BTN');
       expect(issueBtn.className).toContain('hidden');
       expect(issueBtn.className).toContain('lg:inline-flex');
+    });
+
+    it('renders 2px amber top hairline on staging without altering Memory Weaver brand text, and omits it on production', () => {
+      mockUsePathname.mockReturnValue('/studio');
+
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'memory-weaver-dev';
+      const stagingRender = render(<Navbar />);
+      const stagingHeader = stagingRender.container.querySelector('header');
+      expect(stagingHeader?.getAttribute('data-env')).toBe('staging');
+      expect(stagingHeader?.className).toContain('border-t-2');
+      expect(stagingHeader?.className).toContain('border-t-amber-500/80');
+      expect(screen.getByText('Memory Weaver')).toBeInTheDocument();
+      stagingRender.unmount();
+
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'memory-weaver-8rk9t';
+      const prodRender = render(<Navbar />);
+      const prodHeader = prodRender.container.querySelector('header');
+      expect(prodHeader?.getAttribute('data-env')).toBe('production');
+      expect(prodHeader?.className).not.toContain('border-t-amber-500/80');
+      expect(screen.getByText('Memory Weaver')).toBeInTheDocument();
     });
   });
 });

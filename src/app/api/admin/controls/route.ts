@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isProductionProject, resolveProjectId } from '@/config/environment';
+import { isProductionProject, PRODUCTION_APP_URL, resolveProjectId } from '@/config/environment';
 import { adminDb } from '@/lib/firebaseAdmin';
 import { requireAdminSession } from '@/lib/session';
 import {
   buildSeededReleaseControl,
   computeInboxBadgeCounts,
   DEFAULT_RELEASE_CONTROL_SEEDS,
+  evaluateEnvironmentParity,
   evaluateReleaseControlTransition,
   RELEASE_CONTROLS_COLLECTION,
   sortReleaseControls,
+  type EnvironmentParityReport,
+  type EnvironmentVersionSnapshot,
   type ReleaseControlAction,
   type ReleaseControlRecord,
   type ReleaseControlSeverity,
@@ -112,7 +115,65 @@ async function loadAggregatedInbox() {
   };
 }
 
-export async function GET(_req: NextRequest) {
+async function probeProductionParity(): Promise<EnvironmentParityReport> {
+  const stagingSnapshot: EnvironmentVersionSnapshot = {
+    commitSha:
+      process.env.NEXT_PUBLIC_COMMIT_SHA ||
+      process.env.NEXT_PUBLIC_GIT_SHA ||
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      process.env.BUILD_ID ||
+      'dev',
+    commitTimestamp: process.env.NEXT_PUBLIC_COMMIT_TIME || null,
+    environment: 'staging',
+    projectId: resolveProjectId(),
+    reachable: true,
+  };
+
+  if (process.env.VITEST) {
+    return evaluateEnvironmentParity(stagingSnapshot, {
+      commitSha: null,
+      commitTimestamp: null,
+      reachable: false,
+    });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+  try {
+    const res = await fetch(`${PRODUCTION_APP_URL}/api/version`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      return evaluateEnvironmentParity(stagingSnapshot, {
+        commitSha: null,
+        commitTimestamp: null,
+        reachable: false,
+      });
+    }
+    const data = await res.json().catch(() => null);
+    const prodSnapshot: EnvironmentVersionSnapshot = {
+      commitSha: data?.commitSha ? String(data.commitSha) : null,
+      commitTimestamp: data?.commitTimestamp ? String(data.commitTimestamp) : null,
+      environment: data?.environment ? String(data.environment) : 'production',
+      projectId: data?.projectId ? String(data.projectId) : null,
+      buildTimestamp: data?.buildTimestamp ? String(data.buildTimestamp) : null,
+      reachable: Boolean(data?.commitSha),
+    };
+    return evaluateEnvironmentParity(stagingSnapshot, prodSnapshot);
+  } catch {
+    return evaluateEnvironmentParity(stagingSnapshot, {
+      commitSha: null,
+      commitTimestamp: null,
+      reachable: false,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+export async function GET(req: NextRequest) {
   try {
     const authResult = await requireAdminSession();
     if (!authResult.authorized) {
@@ -132,12 +193,20 @@ export async function GET(_req: NextRequest) {
       );
     }
 
-    const payload = await loadAggregatedInbox();
+    const searchParams = (req.nextUrl ?? new URL(req.url)).searchParams;
+    const includeParity = searchParams.get('includeParity') === '1';
+
+    const [payload, parity] = await Promise.all([
+      loadAggregatedInbox(),
+      includeParity ? probeProductionParity() : Promise.resolve(undefined),
+    ]);
+
     return NextResponse.json(
       {
         success: true,
         environment: 'STAGING',
         ...payload,
+        ...(parity ? { parity } : {}),
       },
       { headers: NO_STORE_HEADERS }
     );

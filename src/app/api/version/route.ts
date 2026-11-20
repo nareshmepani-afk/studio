@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isProductionProject, isStagingProject, resolveProjectId } from '@/config/environment';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -30,6 +31,12 @@ export async function GET() {
   // Immutable build timestamp: baked at compile-time via next.config.ts env,
   // falling back to module initialization time. Never evaluates new Date() per-request.
   const buildTimestamp = process.env.NEXT_PUBLIC_BUILD_TIME || PROCESS_START_TIMESTAMP;
+  const projectId = resolveProjectId();
+  const environment: 'production' | 'staging' | 'local' = isProductionProject(projectId)
+    ? 'production'
+    : isStagingProject(projectId)
+    ? 'staging'
+    : 'local';
 
   return NextResponse.json(
     {
@@ -37,6 +44,8 @@ export async function GET() {
       commitSha,
       commitTimestamp,
       buildTimestamp,
+      environment,
+      projectId,
     },
     {
       headers: {

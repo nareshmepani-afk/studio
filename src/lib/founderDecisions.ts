@@ -177,7 +177,7 @@ export const DEFAULT_FOUNDER_DECISION_SEEDS: FounderDecisionSeed[] = [
     externalLinks: [
       {
         label: 'Open Plane Workspace API Tokens',
-        url: 'https://app.plane.so/memory-weaver/settings/api-tokens/',
+        url: 'https://app.plane.so/memory-weaver-studio/settings/api-tokens/',
       },
     ],
   },

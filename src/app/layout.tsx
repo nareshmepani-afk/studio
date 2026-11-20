@@ -7,48 +7,58 @@ import BuildIdLogger from "@/components/layout/BuildIdLogger";
 import { Toaster as SonnerToaster } from "@/components/ui/toaster";
 import { GoogleAnalytics } from "@/components/public/GoogleAnalytics";
 import { CookieConsentDock } from "@/components/public/CookieConsentDock";
+import { isStagingProject, resolveProjectId } from "@/config/environment";
 import "@/utils/version";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://memoryweaver.studio'),
-  title: {
-    default: "Memory Weaver — Spoken Memoir & Family Cinema Studio",
-    template: "%s | Memory Weaver",
-  },
-  description:
-    "Record, produce, and publish your family's spoken memoirs as cinematic experiences. A 5-Act documentary production suite with Smart TV streaming, QR poster distribution, and generational archival preservation.",
-  keywords: [
-    "oral history",
-    "family memoir",
-    "spoken autobiography",
-    "documentary production",
-    "video memoir",
-    "family cinema",
-    "voice recording",
-    "generational archive",
-    "Smart TV streaming",
-    "QR code poster",
-  ],
-  robots: { index: true, follow: true },
-  openGraph: {
-    title: "Memory Weaver — Spoken Memoir & Family Cinema Studio",
+export async function generateMetadata(): Promise<Metadata> {
+  const isStaging = isStagingProject(resolveProjectId());
+
+  return {
+    metadataBase: new URL('https://memoryweaver.studio'),
+    title: isStaging
+      ? {
+          default: "[STAGING] Memory Weaver — Spoken Memoir & Family Cinema Studio",
+          template: "[STAGING] %s | Memory Weaver",
+        }
+      : {
+          default: "Memory Weaver — Spoken Memoir & Family Cinema Studio",
+          template: "%s | Memory Weaver",
+        },
     description:
-      "Your voice. Your story. Published forever. A 5-Act production suite for preserving family stories across generations.",
-    siteName: "Memory Weaver",
-    locale: "en_GB",
-    type: "website",
-    url: "https://memoryweaver.studio",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Memory Weaver — Spoken Memoir & Family Cinema Studio",
-    description:
-      "Your voice. Your story. Published forever. A 5-Act production suite for preserving family stories across generations.",
-  },
-};
+      "Record, produce, and publish your family's spoken memoirs as cinematic experiences. A 5-Act documentary production suite with Smart TV streaming, QR poster distribution, and generational archival preservation.",
+    keywords: [
+      "oral history",
+      "family memoir",
+      "spoken autobiography",
+      "documentary production",
+      "video memoir",
+      "family cinema",
+      "voice recording",
+      "generational archive",
+      "Smart TV streaming",
+      "QR code poster",
+    ],
+    robots: isStaging ? { index: false, follow: false } : { index: true, follow: true },
+    openGraph: {
+      title: "Memory Weaver — Spoken Memoir & Family Cinema Studio",
+      description:
+        "Your voice. Your story. Published forever. A 5-Act production suite for preserving family stories across generations.",
+      siteName: "Memory Weaver",
+      locale: "en_GB",
+      type: "website",
+      url: "https://memoryweaver.studio",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Memory Weaver — Spoken Memoir & Family Cinema Studio",
+      description:
+        "Your voice. Your story. Published forever. A 5-Act production suite for preserving family stories across generations.",
+    },
+  };
+}
 
 const schemaOrgJsonLd = {
   "@context": "https://schema.org",

@@ -26,7 +26,7 @@ import { FounderDecisionForm } from '@/components/admin/FounderDecisionForm';
 import { FounderInboxConsole } from '@/components/admin/FounderInboxConsole';
 import { UserDirectoryConsole } from '@/components/admin/UserDirectoryConsole';
 import { Bug, Lock, ClipboardCheck, UserCog, Inbox, ExternalLink } from 'lucide-react';
-import { STAGING_APP_URL } from '@/config/environment';
+import { isProductionProject, STAGING_APP_URL } from '@/config/environment';
 import type { InboxBadgeCounts } from '@/lib/releaseControls';
 import { getBackendEnvironmentDetails } from './actions';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,13 +37,18 @@ import Link from 'next/link';
 export default function AdminDashboardContent() {
   const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
+  const clientProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || null;
+  const initialIsLiveProduction = isProductionProject(clientProjectId);
+
   const [activeSuite, setActiveSuite] = useState<'releases' | 'devops' | 'business' | 'users' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
   const [inboxBadges, setInboxBadges] = useState<InboxBadgeCounts | null>(null);
 
-  const isLiveProduction = Boolean(
-    envInfo && (envInfo.envContext === 'LIVE-PRODUCTION' || envInfo.projectId === 'memory-weaver-8rk9t')
-  );
+  // Seed strictly from NEXT_PUBLIC_FIREBASE_PROJECT_ID before getBackendEnvironmentDetails resolves
+  // (avoids 150ms staging-tab flash on LIVE-PRODUCTION with zero SSR/client hydration mismatch).
+  const isLiveProduction = envInfo
+    ? envInfo.envContext === 'LIVE-PRODUCTION' || isProductionProject(envInfo.projectId)
+    : initialIsLiveProduction;
 
   const selectSuite = (suite: typeof activeSuite) => {
     setActiveSuite(suite);
@@ -88,21 +93,36 @@ export default function AdminDashboardContent() {
     getBackendEnvironmentDetails()
       .then((res) => {
         if (res.success && res.projectId) {
+          const resolvedContext = (res.envContext as 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV') || activeEnv;
+          const fallbackLabel =
+            resolvedContext === 'LIVE-PRODUCTION'
+              ? 'LIVE PRODUCTION'
+              : resolvedContext === 'LOCAL-DEV'
+              ? 'LOCAL WORKSPACE'
+              : 'STAGING';
           setEnvInfo({
             projectId: res.projectId,
-            envContext: (res.envContext as any) || activeEnv,
-            label: res.label || activeEnv
+            envContext: resolvedContext,
+            label: res.label || fallbackLabel
           });
         }
       })
       .catch(() => {
+        const fallbackProjectId = clientProjectId || 'unknown';
+        const fallbackContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV' =
+          isProductionProject(fallbackProjectId) ? 'LIVE-PRODUCTION' : activeEnv;
         setEnvInfo({
-          projectId: 'memory-weaver-dev',
-          envContext: activeEnv,
-          label: activeEnv
+          projectId: fallbackProjectId,
+          envContext: fallbackContext,
+          label:
+            fallbackContext === 'LIVE-PRODUCTION'
+              ? 'LIVE PRODUCTION'
+              : fallbackContext === 'LOCAL-DEV'
+              ? 'LOCAL WORKSPACE'
+              : 'STAGING'
         });
       });
-  }, []);
+  }, [clientProjectId]);
 
   useEffect(() => {
     if (!envInfo || isLiveProduction) return;
@@ -158,7 +178,7 @@ export default function AdminDashboardContent() {
               <h1 id="admin-header-title" className="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
                 Memory Weaver Studio
               </h1>
-              <p className="text-xs text-indigo-400 font-medium tracking-wider uppercase">Command Center Admin Hub</p>
+              <p className="text-xs text-indigo-400 font-medium tracking-wider uppercase">Command Centre Admin Hub</p>
             </div>
           </div>
           
@@ -372,19 +392,21 @@ export default function AdminDashboardContent() {
                 }`}
               >
                 <Bug className="h-4 w-4 text-rose-400" />
-                <span>Bug Triage Queue</span>
+                <span>{isLiveProduction ? 'Customer Bug Inbox' : 'Founder Sign-Off Queue'}</span>
               </button>
 
-              <Link
-                href="/admin/qa"
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition duration-200"
-              >
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                  <span>QA Testing Suite</span>
-                </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">/admin/qa ↗</span>
-              </Link>
+              {!isLiveProduction && (
+                <Link
+                  href="/admin/qa"
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition duration-200"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <span>QA Testing Suite</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">/admin/qa ↗</span>
+                </Link>
+              )}
 
               <div className="pt-2 border-t border-slate-800/60 mt-2">
                 <button
@@ -417,7 +439,7 @@ export default function AdminDashboardContent() {
                     envInfo?.envContext === 'DEV-APP' ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'
                   }`} />
                   <span className="text-xs font-mono font-bold text-slate-300">
-                    {envInfo?.envContext || 'RESOLVING...'}
+                    {envInfo?.label || (isLiveProduction ? 'LIVE PRODUCTION' : 'RESOLVING...')}
                   </span>
                 </div>
               </div>
@@ -443,7 +465,7 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'knowledge' && 'Living Knowledge Hub'}
                   {activeSuite === 'prelaunch' && 'Pre-Launch Gate & Tester List'}
                   {activeSuite === 'decisions' && 'Founder Cutover Decision Form'}
-                  {activeSuite === 'bugs' && 'Bug Triage & Diagnostic Progression'}
+                  {activeSuite === 'bugs' && (isLiveProduction ? 'Production Customer Bug Inbox' : 'Staging Founder Sign-Off Queue')}
                 </h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   {activeSuite === 'releases' && 'Single Staging Control Plane for 🔴 RED blocking release gates, 🟠 AMBER low-drag approvals, and 1-click sign-offs — never lost in chat.'}
@@ -457,7 +479,9 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'knowledge' && 'Search, filter, and inspect compiled business rules, operational playbooks, subscription tier pricing, and lifecycle policies.'}
                   {activeSuite === 'prelaunch' && 'Control RESTRICTED vs PUBLIC access in 1 click, toggle Tester activation switches per visitor, and bulk-import testers from Google Sheets or CSV.'}
                   {activeSuite === 'decisions' && 'Confirm cutover decisions via pre-selected recommendations, add notes, or defer any item directly to Plane without back-and-forth chat questions.'}
-                  {activeSuite === 'bugs' && 'Inspect submitted patron & tester bug reports persisted from BugReportModal, trace session links, sync to Plane.so, and verify dev-to-production progression.'}
+                  {activeSuite === 'bugs' && (isLiveProduction
+                    ? 'Live customer bug intake inbox for memoryweaver.studio. Antigravity & Gemini triage reports to Plane.so, ship P2/P3 fixes via dev first (or P0/P1 hotfix/* with automatic master -> dev back-merge), and mark verified once live.'
+                    : 'Staging founder sign-off queue for dev.memoryweaver.studio. Verify FIXED_ON_DEV items live and sign off in 1 click to auto-close linked Plane.so tickets.')}
                 </p>
               </div>
             </section>
@@ -469,7 +493,8 @@ export default function AdminDashboardContent() {
                   <div className="rounded-2xl border border-amber-500/35 bg-slate-900/60 p-6 space-y-3">
                     <h3 className="text-base font-bold text-white">Engineering Release Controls Live on Staging</h3>
                     <p className="text-xs text-slate-400 leading-relaxed">
-                      To prevent split approvals between production and staging, all batch pushes, cutover gates, and Red/Amber release controls live strictly on the Staging Control Plane.
+                      To prevent split approvals between production and staging, all batch pushes, cutover gates, and Red/Amber release controls live strictly on the Staging Control Plane. Any control targeting live customers is clearly badged{' '}
+                      <span className="font-mono font-bold text-rose-300">[ENV: PROD] • memoryweaver.studio</span> before execution.
                     </p>
                     <a
                       href={`${STAGING_APP_URL}/admin?suite=releases`}

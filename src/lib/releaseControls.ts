@@ -370,3 +370,213 @@ export function formatReleaseControlForPlane(control: ReleaseControlRecord): {
 
   return { title, description: lines.join('\n') };
 }
+
+export interface EnvironmentVersionSnapshot {
+  commitSha: string | null;
+  commitTimestamp: string | null;
+  environment?: string | null;
+  projectId?: string | null;
+  buildTimestamp?: string | null;
+  reachable?: boolean;
+}
+
+export type EnvironmentParityStatus =
+  | 'IN_SYNC'
+  | 'STAGING_AHEAD'
+  | 'PROD_NEWER_CHECK_BACKMERGE'
+  | 'SHAS_DIFFER_NO_TIMESTAMP'
+  | 'UNAVAILABLE';
+
+export interface EnvironmentParityReport {
+  status: EnvironmentParityStatus;
+  label: string;
+  tone: 'emerald' | 'amber' | 'rose' | 'slate';
+  stagingSha: string | null;
+  prodSha: string | null;
+  stagingTimestamp: string | null;
+  prodTimestamp: string | null;
+  note: string;
+}
+
+export function normaliseShortSha(sha?: string | null): string | null {
+  if (!sha) return null;
+  const trimmed = String(sha).trim().toLowerCase();
+  if (!trimmed) return null;
+  return trimmed.slice(0, 7);
+}
+
+/**
+ * Pure staging-vs-production live build parity evaluator for FounderInboxConsole.
+ * Normalises SHAs to lowercase 7-character prefixes and refuses to guess direction
+ * when either commitTimestamp is null or unparseable.
+ */
+export function evaluateEnvironmentParity(
+  staging: EnvironmentVersionSnapshot | null | undefined,
+  prod: EnvironmentVersionSnapshot | null | undefined
+): EnvironmentParityReport {
+  const stagingSha = normaliseShortSha(staging?.commitSha);
+  const prodSha = normaliseShortSha(prod?.commitSha);
+  const stagingTimestamp = staging?.commitTimestamp || null;
+  const prodTimestamp = prod?.commitTimestamp || null;
+
+  if (!stagingSha || !prodSha || prod?.reachable === false || staging?.reachable === false) {
+    return {
+      status: 'UNAVAILABLE',
+      label: 'Live Parity Unavailable',
+      tone: 'slate',
+      stagingSha,
+      prodSha,
+      stagingTimestamp,
+      prodTimestamp,
+      note: 'Production version probe timed out or was skipped; Founder Inbox controls remain unaffected.',
+    };
+  }
+
+  if (stagingSha === prodSha) {
+    return {
+      status: 'IN_SYNC',
+      label: 'In Sync (Staging & Prod Match)',
+      tone: 'emerald',
+      stagingSha,
+      prodSha,
+      stagingTimestamp,
+      prodTimestamp,
+      note: 'Staging (dev) and Live Production (master) are serving the exact same build.',
+    };
+  }
+
+  const stagingMs = stagingTimestamp ? Date.parse(stagingTimestamp) : Number.NaN;
+  const prodMs = prodTimestamp ? Date.parse(prodTimestamp) : Number.NaN;
+
+  if (Number.isNaN(stagingMs) || Number.isNaN(prodMs)) {
+    return {
+      status: 'SHAS_DIFFER_NO_TIMESTAMP',
+      label: 'SHAs Differ (Timestamp Unavailable)',
+      tone: 'amber',
+      stagingSha,
+      prodSha,
+      stagingTimestamp,
+      prodTimestamp,
+      note: 'Live SHAs differ and commit timestamps are incomplete; Antigravity will verify exact git ancestry.',
+    };
+  }
+
+  if (prodMs > stagingMs) {
+    return {
+      status: 'PROD_NEWER_CHECK_BACKMERGE',
+      label: 'Prod Newer — Verify Back-Merge',
+      tone: 'rose',
+      stagingSha,
+      prodSha,
+      stagingTimestamp,
+      prodTimestamp,
+      note: 'Production appears newer than Staging. Fixes on master are not automatically on dev — Antigravity must complete the origin/master -> dev back-merge.',
+    };
+  }
+
+  return {
+    status: 'STAGING_AHEAD',
+    label: 'Staging Ahead of Prod',
+    tone: 'amber',
+    stagingSha,
+    prodSha,
+    stagingTimestamp,
+    prodTimestamp,
+    note: 'Staging has newer verified changes awaiting founder sign-off before promotion to Production.',
+  };
+}
+
+export interface ThreeZoneRadarInput {
+  localBranch: string;
+  dirtyCount: number;
+  unpushedDevCount: number;
+  originDevSha: string | null;
+  liveStagingSha: string | null;
+  originMasterSha: string | null;
+  liveProdSha: string | null;
+  stagingAheadCount: number;
+  prodOnlyCount: number;
+  refsFresh: boolean;
+}
+
+/**
+ * Formats the concise 4-line 3-Zone Environment Radar for scripts/read-release-controls.ts.
+ */
+export function formatThreeZoneRadar(input: ThreeZoneRadarInput): string[] {
+  const localState =
+    input.dirtyCount === 0 && input.unpushedDevCount === 0
+      ? 'clean (0 dirty, 0 unpushed)'
+      : `⚠️ ${input.dirtyCount} dirty, ${input.unpushedDevCount} unpushed ahead of origin/dev`;
+
+  const devRef = normaliseShortSha(input.originDevSha) || 'unknown';
+  const liveDev = normaliseShortSha(input.liveStagingSha) || 'unreachable';
+  const stagingMatch = liveDev !== 'unreachable' && devRef === liveDev ? '✅' : '⏳';
+
+  const masterRef = normaliseShortSha(input.originMasterSha) || 'unknown';
+  const liveProd = normaliseShortSha(input.liveProdSha) || 'unreachable';
+  const prodMatch = liveProd !== 'unreachable' && masterRef === liveProd ? '✅' : '⏳';
+
+  const refTag = input.refsFresh ? '' : ' (cached refs)';
+  let parityLine: string;
+  if (input.prodOnlyCount > 0) {
+    parityLine = `🚨 BACK-MERGE REQUIRED: ${input.prodOnlyCount} commit(s) on origin/master are NOT on origin/dev — Antigravity must merge origin/master -> dev before any new dev push${refTag}`;
+  } else if (input.stagingAheadCount > 0) {
+    parityLine = `🟠 Staging ahead of Prod by ${input.stagingAheadCount} commit(s) (0 prod-only hotfixes)${refTag}`;
+  } else {
+    parityLine = `✅ Staging (origin/dev) and Prod (origin/master) are in full git sync${refTag}`;
+  }
+
+  return [
+    `Zone 1 [LOCAL]  : branch=${input.localBranch} | ${localState}`,
+    `Zone 2 [STAGING]: origin/dev=${devRef} | live dev.memoryweaver.studio=${liveDev} ${stagingMatch}`,
+    `Zone 3 [PROD]   : origin/master=${masterRef} | live memoryweaver.studio=${liveProd} ${prodMatch}`,
+    `Parity          : ${parityLine}`,
+  ];
+}
+
+export interface ReleaseControlTargetMeta {
+  envTag: ReleaseControlEnvTag;
+  isProdTarget: boolean;
+  badgeLabel: string;
+  badgeClassName: string;
+  scopeCue: string | null;
+}
+
+/**
+ * Pure visual target metadata helper for FounderInboxConsole.
+ * Makes production-targeted actions unmistakable ([ENV: PROD] • memoryweaver.studio)
+ * while keeping bare hostnames (zero hardcoded https://dev... URLs).
+ */
+export function getReleaseControlTargetMeta(
+  envTag?: ReleaseControlEnvTag | string | null
+): ReleaseControlTargetMeta {
+  if (envTag === '[ENV: PROD]') {
+    return {
+      envTag: '[ENV: PROD]',
+      isProdTarget: true,
+      badgeLabel: '[ENV: PROD] • memoryweaver.studio',
+      badgeClassName:
+        'bg-rose-600 text-white border-rose-400 font-extrabold tracking-wide shadow-sm shadow-rose-500/30',
+      scopeCue:
+        'Targets Live Production (memoryweaver.studio / memory-weaver-8rk9t) — approved here on Staging Control Plane',
+    };
+  }
+
+  if (envTag === '[ENV: BOTH]') {
+    return {
+      envTag: '[ENV: BOTH]',
+      isProdTarget: false,
+      badgeLabel: '[ENV: BOTH] • dev -> master',
+      badgeClassName: 'bg-violet-500/20 text-violet-200 border-violet-400/45 font-bold',
+      scopeCue: null,
+    };
+  }
+
+  return {
+    envTag: '[ENV: STAGING]',
+    isProdTarget: false,
+    badgeLabel: '[ENV: STAGING] • dev.memoryweaver.studio',
+    badgeClassName: 'bg-amber-500/15 text-amber-200 border-amber-400/40 font-bold',
+    scopeCue: null,
+  };
+}

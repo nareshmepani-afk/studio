@@ -35,12 +35,16 @@ import { OpticsPrivacyShield } from './OpticsPrivacyShield';
 import { StudioUpgradeBadge } from './StudioUpgradeBadge';
 import { ReportIssueTrigger } from '@/components/feedback/ReportIssueTrigger';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isStagingProject } from '@/config/environment';
 
 export function Navbar() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  // Seed strictly from NEXT_PUBLIC_FIREBASE_PROJECT_ID (identical on SSR & client; zero hydration mismatch).
+  const isStagingEnv = isStagingProject(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || null);
 
   // Standalone popouts, full-screen production suites, and administrative portals should be distraction-free without consumer app Navbar
   if (
@@ -70,7 +74,7 @@ export function Navbar() {
 
   if (loading) {
     return (
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${isStagingEnv ? 'border-t-2 border-t-amber-500/80' : ''}`}>
         <div className="container flex h-16 items-center">
            <Link href="/" className="mr-6 flex items-center space-x-2" aria-label="Memory Weaver Homepage">
               <Film className="h-6 w-6 text-primary ml-2" /> 
@@ -114,7 +118,10 @@ export function Navbar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <header className="sticky top-0 z-[100] w-full transition-all duration-300 ease-in-out border-b bg-background/40 backdrop-blur-md border-white/5 shadow-2xl group/nav">
+      <header
+        data-env={isStagingEnv ? 'staging' : 'production'}
+        className={`sticky top-0 z-[100] w-full transition-all duration-300 ease-in-out border-b bg-background/40 backdrop-blur-md border-white/5 shadow-2xl group/nav ${isStagingEnv ? 'border-t-2 border-t-amber-500/80' : ''}`}
+      >
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto w-full px-3 sm:px-4 lg:px-6 flex h-16 items-center justify-between gap-2 sm:gap-4 min-w-0">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -124,7 +131,7 @@ export function Navbar() {
               </Link>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
-              Go to {isAuthenticated ? 'My Life Journey' : 'Homepage'}
+              {isStagingEnv ? 'STAGING ENVIRONMENT • ' : ''}Go to {isAuthenticated ? 'My Life Journey' : 'Homepage'}
             </TooltipContent>
           </Tooltip>
           

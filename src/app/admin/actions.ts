@@ -282,13 +282,17 @@ export async function getBackendEnvironmentDetails() {
                     '';
 
     let envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV' = 'DEV-APP';
+    let label = 'STAGING';
 
     if (isProductionProject(projectId)) {
       envContext = 'LIVE-PRODUCTION';
+      label = 'LIVE PRODUCTION';
     } else if (rawHost.includes('localhost') || rawHost.includes('127.0.0.1')) {
       envContext = 'LOCAL-DEV';
+      label = 'LOCAL WORKSPACE';
     } else {
       envContext = 'DEV-APP';
+      label = 'STAGING';
     }
 
     return {
@@ -296,7 +300,7 @@ export async function getBackendEnvironmentDetails() {
       projectId,
       envContext,
       host: rawHost,
-      label: envContext
+      label
     };
   } catch (error: any) {
     console.error('SECURITY: Failed to query backend environment ID:', error);

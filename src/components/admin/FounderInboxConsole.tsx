@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  getReleaseControlTargetMeta,
   isControlActionable,
+  type EnvironmentParityReport,
   type InboxBadgeCounts,
   type ReleaseControlAction,
   type ReleaseControlRecord,
@@ -40,6 +42,7 @@ interface ControlsApiResponse {
   pendingDecisions?: FounderDecisionRecord[];
   readyBugs?: BugReportRecord[];
   badges?: InboxBadgeCounts;
+  parity?: EnvironmentParityReport;
   error?: string;
 }
 
@@ -49,7 +52,7 @@ const STATUS_BADGE_MAP: Record<ReleaseControlStatus, { label: string; className:
     className: 'bg-amber-500/15 text-amber-300 border-amber-500/35',
   },
   APPROVED: {
-    label: 'Approved — Ready for CLI',
+    label: 'Approved — Handed to Antigravity',
     className: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
   },
   HELD: {
@@ -87,6 +90,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
     totalActionable: 0,
   });
   const [liveCommitSha, setLiveCommitSha] = useState<string>('');
+  const [parity, setParity] = useState<EnvironmentParityReport | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +112,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
     setPendingDecisions(Array.isArray(data.pendingDecisions) ? data.pendingDecisions : []);
     setReadyBugs(Array.isArray(data.readyBugs) ? data.readyBugs : []);
     if (data.badges) setBadges(data.badges);
+    if (data.parity) setParity(data.parity);
     setDraftNotes((prev) => {
       const merged = { ...prev };
       for (const c of nextControls) {
@@ -127,7 +132,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
 
       try {
         const [controlsRes, versionRes] = await Promise.all([
-          fetch('/api/admin/controls', { cache: 'no-store', credentials: 'same-origin' }),
+          fetch('/api/admin/controls?includeParity=1', { cache: 'no-store', credentials: 'same-origin' }),
           fetch('/api/version', { cache: 'no-store' }).catch(() => null),
         ]);
 
@@ -278,6 +283,45 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
     }
   };
 
+  const planeWorkspaceSlug =
+    (process.env.NEXT_PUBLIC_PLANE_WORKSPACE_SLUG || '').trim() || 'memory-weaver-studio';
+
+  const renderTicketRefControl = (rawRef: string, opts?: { compact?: boolean }) => {
+    const cleanRef = (rawRef || '').trim();
+    if (!cleanRef) return null;
+    const url = formatPlaneBrowseUrl(cleanRef, planeWorkspaceSlug);
+    const displayKey = cleanRef.toUpperCase();
+    const compact = Boolean(opts?.compact);
+
+    if (url) {
+      return (
+        <a
+          key={cleanRef}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={
+            compact
+              ? 'inline-flex items-center gap-1 shrink-0 whitespace-nowrap text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-200 border border-indigo-400/45 hover:bg-indigo-500/30 transition'
+              : 'inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap text-xs font-mono font-bold px-2.5 py-1 rounded-xl bg-indigo-500/20 text-indigo-200 border border-indigo-400/45 hover:bg-indigo-500/30 transition'
+          }
+        >
+          <span>Open {displayKey}</span>
+          <ExternalLink className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+        </a>
+      );
+    }
+
+    return (
+      <span
+        key={cleanRef}
+        className="inline-flex items-center shrink-0 whitespace-nowrap text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800/90 text-slate-300 border border-slate-700"
+      >
+        {cleanRef}
+      </span>
+    );
+  };
+
   const activeRedControls = controls.filter(
     (c) => c.severity === 'RED' && isControlActionable(c)
   );
@@ -313,13 +357,12 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
             </span>
             {badges.approvedAwaitingCli > 0 && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-300">
-                🚀 {badges.approvedAwaitingCli} Approved for CLI
+                🚀 {badges.approvedAwaitingCli} Approved — Handed to Antigravity
               </span>
             )}
           </div>
           <p className="text-xs text-slate-400">
-            Single Staging Control Plane for release approvals, batch pushes, and 1-click sign-offs. Read locally via{' '}
-            <code className="text-amber-300 font-mono">npm.cmd run qa:controls</code>.
+            Staging Control Plane — approve, hold, or defer decisions below. Antigravity &amp; Gemini own all git pushes, promotions, and mandatory production-to-dev back-merges automatically.
           </p>
         </div>
 
@@ -333,6 +376,35 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
           Refresh Inbox
         </button>
       </div>
+
+      {/* Live Staging vs Production Build Parity Strip */}
+      {parity && (
+        <div
+          data-testid="INBOX_ENVIRONMENT_PARITY_STRIP"
+          className={`rounded-xl border px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs ${
+            parity.tone === 'emerald'
+              ? 'border-emerald-500/35 bg-emerald-950/20 text-emerald-200'
+              : parity.tone === 'rose'
+              ? 'border-rose-500/50 bg-rose-950/30 text-rose-200'
+              : parity.tone === 'amber'
+              ? 'border-amber-500/35 bg-amber-950/20 text-amber-200'
+              : 'border-slate-700/70 bg-slate-900/50 text-slate-300'
+          }`}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 font-mono font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              <GitCommit className="h-3 w-3" />
+              Staging (dev): {parity.stagingSha || liveCommitSha.slice(0, 7) || 'unknown'}
+            </span>
+            <span className="inline-flex items-center gap-1 font-mono font-bold px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
+              <GitCommit className="h-3 w-3" />
+              Production (master): {parity.prodSha || 'unreachable'}
+            </span>
+            <span className="font-semibold">{parity.label}</span>
+          </div>
+          <span className="text-[11px] opacity-85">{parity.note}</span>
+        </div>
+      )}
 
       {/* Persistent Held-Blocker Banner */}
       {heldBlockingCount > 0 && (
@@ -381,6 +453,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
               <div className="space-y-3">
                 {activeRedControls.map((control) => {
                   const statusMeta = STATUS_BADGE_MAP[control.status];
+                  const targetMeta = getReleaseControlTargetMeta(control.envTag);
                   const isBusy = Boolean(busyIds[control.id]);
                   const isConfirmingDefer = confirmDeferRedId === control.id;
 
@@ -391,26 +464,41 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                       className="rounded-2xl border border-rose-500/45 bg-gradient-to-br from-rose-950/25 via-slate-900/90 to-slate-950/90 p-5 space-y-3.5 shadow-lg"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-1">
+                        <div className="space-y-1.5 min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
                               🔴 RED
                             </span>
+                            <span
+                              data-testid={`RELEASE_TARGET_BADGE_${control.id}`}
+                              className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${targetMeta.badgeClassName}`}
+                            >
+                              {targetMeta.isProdTarget && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                              )}
+                              {targetMeta.badgeLabel}
+                            </span>
                             <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}>
                               {statusMeta.label}
                             </span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                              {control.envTag}
-                            </span>
-                            {control.ticketRefs.map((ref) => (
-                              <span key={ref} className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                                {ref}
-                              </span>
-                            ))}
                           </div>
+                          {targetMeta.scopeCue && (
+                            <p
+                              data-testid={`RELEASE_TARGET_SCOPE_${control.id}`}
+                              className="text-[11px] font-medium text-rose-200/95 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2.5 py-1 inline-block"
+                            >
+                              🎯 {targetMeta.scopeCue}
+                            </p>
+                          )}
                           <h4 className="text-base font-bold text-white">{control.title}</h4>
                           <p className="text-xs text-slate-300 leading-relaxed">{control.summary}</p>
                         </div>
+
+                        {control.ticketRefs.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                            {control.ticketRefs.map((ref) => renderTicketRefControl(ref))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Mandatory 1-line Knock-On Impact Strip */}
@@ -511,6 +599,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
               <div className="space-y-3">
                 {activeAmberControls.map((control) => {
                   const statusMeta = STATUS_BADGE_MAP[control.status];
+                  const targetMeta = getReleaseControlTargetMeta(control.envTag);
                   const isBusy = Boolean(busyIds[control.id]);
                   return (
                     <div
@@ -518,26 +607,43 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                       data-testid={`RELEASE_CONTROL_CARD_${control.id}`}
                       className="rounded-2xl border border-amber-500/35 bg-slate-900/60 p-5 space-y-3"
                     >
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35">
-                            🟠 AMBER
-                          </span>
-                          <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}>
-                            {statusMeta.label}
-                          </span>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                            {control.envTag}
-                          </span>
-                          {control.ticketRefs.map((ref) => (
-                            <span key={ref} className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                              {ref}
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="space-y-1.5 min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35">
+                              🟠 AMBER
                             </span>
-                          ))}
+                            <span
+                              data-testid={`RELEASE_TARGET_BADGE_${control.id}`}
+                              className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${targetMeta.badgeClassName}`}
+                            >
+                              {targetMeta.isProdTarget && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                              )}
+                              {targetMeta.badgeLabel}
+                            </span>
+                            <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}>
+                              {statusMeta.label}
+                            </span>
+                          </div>
+                          {targetMeta.scopeCue && (
+                            <p
+                              data-testid={`RELEASE_TARGET_SCOPE_${control.id}`}
+                              className="text-[11px] font-medium text-rose-200/95 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2.5 py-1 inline-block"
+                            >
+                              🎯 {targetMeta.scopeCue}
+                            </p>
+                          )}
+                          <h4 className="text-sm font-bold text-white">{control.title}</h4>
+                          <p className="text-xs text-slate-400">{control.summary}</p>
+                          <p className="text-[11px] text-amber-200/80">{control.knockOnImpact}</p>
                         </div>
-                        <h4 className="text-sm font-bold text-white">{control.title}</h4>
-                        <p className="text-xs text-slate-400">{control.summary}</p>
-                        <p className="text-[11px] text-amber-200/80">{control.knockOnImpact}</p>
+
+                        {control.ticketRefs.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                            {control.ticketRefs.map((ref) => renderTicketRefControl(ref))}
+                          </div>
+                        )}
                       </div>
 
                       <input
@@ -599,7 +705,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                     onClick={() => onNavigateSuite('bugs')}
                     className="text-[11px] text-sky-300 hover:underline cursor-pointer"
                   >
-                    Open full Bug Triage Queue →
+                    Open full Founder Sign-Off Queue →
                   </button>
                 )}
               </div>
@@ -732,35 +838,44 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
             </section>
           )}
 
-          {/* 5. Approved Awaiting CLI Execution */}
+          {/* 5. Approved — Handed to Antigravity for Execution */}
           {approvedControls.length > 0 && (
             <section className="space-y-2.5">
               <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-400 px-1">
-                🚀 Approved — Queued for Local CLI Execution ({approvedControls.length})
+                🚀 Approved — Handed to Antigravity for Execution ({approvedControls.length})
               </h3>
               <div className="space-y-2">
                 {approvedControls.map((c) => {
                   const isBusy = Boolean(busyIds[c.id]);
+                  const targetMeta = getReleaseControlTargetMeta(c.envTag);
                   return (
                     <div
                       key={c.id}
-                      className="rounded-xl border border-emerald-500/35 bg-emerald-950/20 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                      className="rounded-xl border border-emerald-500/35 bg-emerald-950/20 px-4 py-3 flex flex-wrap items-start justify-between gap-3"
                     >
-                      <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-emerald-200">{c.title}</div>
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full border ${targetMeta.badgeClassName}`}>
+                            {targetMeta.badgeLabel}
+                          </span>
+                          <span className="text-xs font-bold text-emerald-200">{c.title}</span>
+                        </div>
                         <div className="text-[11px] text-slate-400">
-                          Approved by {c.updatedBy} · Run <code className="font-mono text-amber-300">npm.cmd run qa:controls</code> to execute
+                          Approved by {c.updatedBy} · Queued for Antigravity to execute and verify live
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        disabled={isBusy}
-                        onClick={() => handleControlAction(c, 'REOPEN')}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 text-[11px] cursor-pointer shrink-0"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        Revert to Pending
-                      </button>
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                        {c.ticketRefs.map((ref) => renderTicketRefControl(ref, { compact: true }))}
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => handleControlAction(c, 'REOPEN')}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 text-[11px] cursor-pointer shrink-0 whitespace-nowrap"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Revert to Pending
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -786,18 +901,23 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                 <div className="divide-y divide-slate-800/60 border-t border-slate-800/60">
                   {archivedControls.map((c) => {
                     const meta = STATUS_BADGE_MAP[c.status];
+                    const targetMeta = getReleaseControlTargetMeta(c.envTag);
+                    const ledgerTickets = Array.from(
+                      new Set([
+                        ...(c.planeDeferredRef ? [c.planeDeferredRef] : []),
+                        ...(c.ticketRefs || []),
+                      ])
+                    );
                     return (
-                      <div key={c.id} className="px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <div className="space-y-0.5">
+                      <div key={c.id} className="px-5 py-3 flex flex-wrap items-start justify-between gap-3 text-xs">
+                        <div className="space-y-1 min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${meta.className}`}>
                               {meta.label}
                             </span>
-                            {c.planeDeferredRef && (
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300">
-                                {c.planeDeferredRef}
-                              </span>
-                            )}
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${targetMeta.badgeClassName}`}>
+                              {targetMeta.badgeLabel}
+                            </span>
                             {c.executedCommitSha && (
                               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300">
                                 SHA {c.executedCommitSha}
@@ -807,9 +927,12 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                           </div>
                           {c.notes && <div className="text-[11px] text-slate-400">Note: {c.notes}</div>}
                         </div>
-                        <span className="text-[10px] font-mono text-slate-500">
-                          {c.updatedAtIso || ''}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          {ledgerTickets.map((ref) => renderTicketRefControl(ref, { compact: true }))}
+                          <span className="text-[10px] font-mono text-slate-500 whitespace-nowrap">
+                            {c.updatedAtIso || ''}
+                          </span>
+                        </div>
                       </div>
                     );
                   })}

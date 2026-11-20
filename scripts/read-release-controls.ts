@@ -1,16 +1,102 @@
+import { execFileSync } from 'child_process';
+import https from 'https';
 import { getStagingAdmin } from './lib/stagingAdmin';
 import { loadPlaneEnv, createPlaneIssue } from './lib/planeClient';
 import { readFounderDecisions } from './read-founder-decisions';
 import { readBugReports } from './read-bug-reports';
+import { PRODUCTION_APP_URL, STAGING_APP_URL } from '../src/config/environment';
 import {
   buildSeededReleaseControl,
   DEFAULT_RELEASE_CONTROL_SEEDS,
   evaluateReleaseControlTransition,
   formatReleaseControlForPlane,
+  formatThreeZoneRadar,
   RELEASE_CONTROLS_COLLECTION,
   sortReleaseControls,
   type ReleaseControlRecord,
+  type ThreeZoneRadarInput,
 } from '../src/lib/releaseControls';
+
+function probeVersionShaNativeHttps(url: string, timeoutMs = 3000): Promise<string | null> {
+  return new Promise((resolve) => {
+    const req = https.get(url, (res) => {
+      let body = '';
+      res.on('data', (chunk) => {
+        body += chunk;
+      });
+      res.on('end', () => {
+        if ((res.statusCode || 0) >= 200 && (res.statusCode || 0) < 300) {
+          try {
+            const parsed = JSON.parse(body);
+            resolve(parsed?.commitSha ? String(parsed.commitSha) : null);
+            return;
+          } catch {
+            // Fall through to null
+          }
+        }
+        resolve(null);
+      });
+    });
+
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      resolve(null);
+    });
+    req.on('error', () => resolve(null));
+  });
+}
+
+function runGitSafe(args: string[], timeoutMs = 5000): string | null {
+  try {
+    return execFileSync('git', args, {
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+export async function collectThreeZoneRadar(skipFetch = false): Promise<ThreeZoneRadarInput> {
+  let refsFresh = false;
+  if (!skipFetch) {
+    refsFresh = runGitSafe(['fetch', '--quiet', 'origin'], 8000) !== null;
+  }
+
+  const localBranch = runGitSafe(['branch', '--show-current']) || 'unknown';
+  const porcelain = runGitSafe(['status', '--porcelain']);
+  const dirtyCount = porcelain ? porcelain.split(/\r?\n/).filter(Boolean).length : 0;
+  const unpushedRaw = runGitSafe(['rev-list', '--count', 'origin/dev..HEAD']);
+  const unpushedDevCount = unpushedRaw ? Number.parseInt(unpushedRaw, 10) || 0 : 0;
+
+  const originDevSha = runGitSafe(['rev-parse', '--short=7', 'origin/dev']);
+  const originMasterSha = runGitSafe(['rev-parse', '--short=7', 'origin/master']);
+
+  const stagingAheadRaw = runGitSafe(['rev-list', '--count', 'origin/master..origin/dev']);
+  const prodOnlyRaw = runGitSafe(['rev-list', '--count', 'origin/dev..origin/master']);
+  const stagingAheadCount = stagingAheadRaw ? Number.parseInt(stagingAheadRaw, 10) || 0 : 0;
+  const prodOnlyCount = prodOnlyRaw ? Number.parseInt(prodOnlyRaw, 10) || 0 : 0;
+
+  const [liveStagingSha, liveProdSha] = await Promise.all([
+    probeVersionShaNativeHttps(`${STAGING_APP_URL}/api/version`, 3000),
+    probeVersionShaNativeHttps(`${PRODUCTION_APP_URL}/api/version`, 3000),
+  ]);
+
+  return {
+    localBranch,
+    dirtyCount,
+    unpushedDevCount,
+    originDevSha,
+    liveStagingSha,
+    originMasterSha,
+    liveProdSha,
+    stagingAheadCount,
+    prodOnlyCount,
+    refsFresh,
+  };
+}
 
 function readArgValue(argv: string[], key: string): string | null {
   const prefix = `--${key}=`;
@@ -27,6 +113,13 @@ export async function readReleaseControls(argv: string[] = process.argv.slice(2)
   const shouldSeed = argv.includes('--seed');
   const syncPlane = argv.includes('--sync-plane');
   const markExecuted = argv.includes('--mark-executed');
+  const skipFetch = argv.includes('--no-fetch');
+
+  const radar = await collectThreeZoneRadar(skipFetch);
+  console.log('\n🧭 3-ZONE ENVIRONMENT RADAR');
+  for (const line of formatThreeZoneRadar(radar)) {
+    console.log(line);
+  }
 
   // Fails closed on production (memory-weaver-8rk9t): release controls are staging-only.
   const { adminDb } = getStagingAdmin();
