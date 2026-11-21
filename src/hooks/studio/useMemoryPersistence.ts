@@ -41,6 +41,7 @@ interface PersistenceProps {
   activeVision?: 'soul' | 'sensory' | 'cinematic' | string;
   activeVisionLabel?: string;
   productionTakes?: any[];
+  reviewDrafts?: any[];
   previousDraftState?: string;
 }
 
@@ -262,6 +263,7 @@ export function useMemoryPersistence({
           return (s.activeVisionLabel || '') !== (currentData?.activeVisionLabel || '');
         })(),
         productionTakes: JSON.stringify(s.productionTakes || []) !== JSON.stringify(currentData?.productionTakes || []),
+        reviewDrafts: overrides?.reviewDrafts !== undefined && JSON.stringify(overrides.reviewDrafts) !== JSON.stringify((currentData as any)?.reviewDrafts || []),
         previousDraftState: (s.previousDraftState || '') !== (currentData?.previousDraftState || ''),
         isReviewing: (s.isReviewing ?? false) !== (currentData?.isReviewing ?? false)
       };
@@ -335,6 +337,7 @@ export function useMemoryPersistence({
           activeVision: s.activeVision || currentData?.activeVision || undefined,
           activeVisionLabel: s.activeVisionLabel || currentData?.activeVisionLabel || undefined,
           productionTakes: s.productionTakes || currentData?.productionTakes || undefined,
+          ...(overrides?.reviewDrafts !== undefined ? { reviewDrafts: overrides.reviewDrafts } : {}),
           previousDraftState: s.previousDraftState !== undefined ? s.previousDraftState : (currentData?.previousDraftState || undefined),
           isReviewing: s.isReviewing ?? false,
           status: ((s as any).status || currentData?.status || 'draft') as 'draft' | 'pre-release' | 'published' | 'completed' // MW-186: Preserve existing status during flush

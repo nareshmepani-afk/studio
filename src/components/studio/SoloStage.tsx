@@ -264,6 +264,7 @@ export default function SoloStage({
   const userId = data?.userId || user?.uid;
   const { 
     isReviewing, 
+    reviewDrafts,
     isProductionLocked, 
     selectedTake, 
     fontSize, 
@@ -308,16 +309,18 @@ export default function SoloStage({
     }
   }, []);
 
-  // Safety guard: If selectedTake is null/empty but the user has saved prose or description in data, initialize it.
+  // Safety guard: If selectedTake is null/empty and NOT actively reviewing fresh SelectionDeck cards,
+  // initialize selectedTake from saved prose/description. Guarding with !isReviewing protects MW-120
+  // SyncLock so ProductionControlBar doesn't prematurely satisfy hasSelectedTreatment during re-weave review.
   useEffect(() => {
-    if ((data?.prose || data?.description) && !selectedTake) {
+    if (!isReviewing && (data?.prose || data?.description) && !selectedTake) {
       const fallbackText = data.prose || data.description;
       console.log("[SoloStage] Auto-syncing selectedTake fallback from data:", fallbackText.substring(0, 40) + "...");
       if (typeof globalActions?.setSelectedTake === 'function') {
         globalActions.setSelectedTake(fallbackText);
       }
     }
-  }, [data?.prose, data?.description, selectedTake, globalActions]);
+  }, [isReviewing, data?.prose, data?.description, selectedTake, globalActions]);
 
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -3134,13 +3137,22 @@ export default function SoloStage({
     </div>
   );
 
-  const renderWeave = () => (
+  const renderWeave = () => {
+    const hasPendingSelectionDrafts = Boolean(
+      (Array.isArray(reviewDrafts) && reviewDrafts.length > 0) ||
+      (Array.isArray((data as any)?.reviewDrafts) && (data as any).reviewDrafts.length > 0)
+    );
+    const showCinemaMonitor = Boolean(
+      data?.structuredScript && isReviewing && !hasPendingSelectionDrafts
+    );
+
+    return (
     <div className={cn(
       "w-full min-w-0 max-w-full xl:max-w-screen-2xl mx-auto pb-8 transition-all duration-1000",
-      data?.structuredScript ? "h-[calc(100vh-180px)]" : ""
+      showCinemaMonitor ? "h-[calc(100vh-180px)]" : ""
     )}>
-      {/* PERSISTENCE MANTLE: Keep MemoryForm mounted for flush stability */}
-      <div className={cn("w-full h-full", (data?.structuredScript && isReviewing) ? "hidden" : "block")}>
+      {/* PERSISTENCE MANTLE: Keep MemoryForm mounted for flush stability; never hide SelectionDeck when fresh drafts await selection */}
+      <div className={cn("w-full h-full", showCinemaMonitor ? "hidden" : "block")}>
         <MemoryForm ref={formRef} 
           data={data} 
           update={shieldedUpdate} 
@@ -3160,7 +3172,7 @@ export default function SoloStage({
         />
       </div>
 
-      {data?.structuredScript && isReviewing && (
+      {showCinemaMonitor && data?.structuredScript && (
         <CinemaMonitor 
           structuredScript={data.structuredScript} 
           onActivity={onActivity}
@@ -3176,7 +3188,8 @@ export default function SoloStage({
         />
       )}
     </div>
-  );
+    );
+  };
   const renderRecording = () => (
     <div className={cn("w-full min-h-full flex flex-col items-center justify-start my-auto relative pb-2 transition-colors duration-1000", (isTableReadActive || captureModality === 'raw') ? "bg-[#030303]" : "")}>
        <div 

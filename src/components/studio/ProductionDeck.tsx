@@ -318,7 +318,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         const urlStage = searchParams.get('stage');
         const isExplicitAct1 = urlAct === '1' || urlStage === '0';
         const isFirstFlightAct1 = currentStage === 0 && (memoryData.id === 'first_flight_rehearsal' || (memoryData as any).isFlightSimulator);
-        const isLocked = (isExplicitAct1 || isFirstFlightAct1)
+        const isLocked = (isExplicitAct1 || isFirstFlightAct1 || isReviewing)
             ? false
             : !!(memoryData.isProductionLocked || currentStage >= 1);
         console.log("[ProductionDeck:SyncLock] Syncing production lock. memoryData:", {
@@ -1007,6 +1007,15 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 };
                 
                 const completeDrafts = [originalVision, ...visionsWithSummary];
+                // Clear prior selection before entering SelectionDeck so ProductionControlBar requires an explicit
+                // choice among the fresh visions, while keeping prior data.structuredScript non-destructively intact
+                // in Firestore in case the narrator backs out before sealing a new vision.
+                if (typeof setSelectedTake === 'function') {
+                    setSelectedTake(null);
+                }
+                if (typeof setSelectedVision === 'function') {
+                    setSelectedVision(null, null);
+                }
                 setReviewDrafts(completeDrafts);
                 console.log("[ProductionDeck] Setting isReviewing to true. Entering SelectionDeck...");
                 setIsReviewing(true);
@@ -1023,7 +1032,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     master: visions.find((v: any) => v.visionType === 'The Memory Weave' || v.visionType?.includes('Memory'))?.cleanScript || ''
                 };
                 // Universal Stage Synchronisation (MW-271): Advance stage to Act II: The Weave in lockstep with the ceremony
-                setIsProductionLocked(true);
+                // Keep isProductionLocked false until the narrator explicitly selects & seals a vision card in SelectionDeck.
+                setIsProductionLocked(false);
                 setStage(1);
                 await handleUpdate({
                     productionStage: 1,
@@ -1031,7 +1041,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     reviewDrafts: completeDrafts,
                     aiTakes: newAiTakes,
                     isReviewing: true,
-                    isProductionLocked: true,
+                    isProductionLocked: false,
                     prose: rawText
                 });
 

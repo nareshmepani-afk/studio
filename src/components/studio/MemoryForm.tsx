@@ -1953,7 +1953,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                          activeVisionLabel: label,
                          isReviewing: false,
                          isProductionLocked: true,
-                         productionTakes: reviewDrafts || []
+                         reviewDrafts: [],
+                         productionTakes: (reviewDrafts && reviewDrafts.length > 0) ? reviewDrafts : ((data as any)?.productionTakes || [])
                        });
 
                       if (result && !result.success) {
@@ -3032,10 +3033,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                     onBackToEditor={async () => {
                       setIsReviewingSensory(false);
                       globalActions.setIsReviewing(false);
+                      setGlobalLocked(false);
                       setProductionStage?.(0);
                       globalActions.setStage(0);
                       await flush({
                         isReviewing: false,
+                        isProductionLocked: false,
                         productionStage: 0
                       });
                     }}
@@ -3053,10 +3056,18 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       // Rule 14: Story Hook Fallback & Text Preservation Hierarchy
                       // Synchronise description to match prose so placeholders never survive
                       setDescription(text || '');
+                      setProse(text || '');
                       if (structured) {
                         setStructuredScript(structured);
                       }
                       setGlobalLocked(true);
+                      const preservedTakes =
+                        (reviewDrafts && reviewDrafts.length > 0)
+                          ? reviewDrafts
+                          : ((data as any)?.reviewDrafts && (data as any).reviewDrafts.length > 0)
+                            ? (data as any).reviewDrafts
+                            : ((data as any)?.productionTakes || []);
+                      globalActions.setReviewDrafts([]);
 
                       await flush({
                         prose: text,
@@ -3066,7 +3077,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         activeVision: type,
                         activeVisionLabel: label,
                         isReviewing: false,
-                        isProductionLocked: true
+                        isProductionLocked: true,
+                        reviewDrafts: [],
+                        productionTakes: preservedTakes
                       });
                       
                       toast.success("Sensory Weave Sealed", {
@@ -3693,15 +3706,39 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                          "master";
 
             // Sync with global state so navigation knows about the selection
+            const structuredAct2 = {
+              cleanScript: text,
+              stageDirections: selectedDraftForPreview.stageDirections || [],
+              beatSheet: selectedDraftForPreview.beatSheet || [],
+              generatedSoundtrackUrl: selectedDraftForPreview.generatedSoundtrackUrl,
+              preFlightBrief: selectedDraftForPreview.preFlightBrief
+            };
+            const preservedTakesAct2 =
+              (reviewDrafts && reviewDrafts.length > 0)
+                ? reviewDrafts
+                : ((data as any)?.reviewDrafts && (data as any).reviewDrafts.length > 0)
+                  ? (data as any).reviewDrafts
+                  : ((data as any)?.productionTakes || []);
+
+            setDescription(text || '');
+            setProse(text || '');
+            setStructuredScript(structuredAct2);
+            setGlobalLocked(true);
             globalActions.setSelectedVision(type as any, label);
             globalActions.setSelectedTake(text || '');
+            globalActions.setReviewDrafts([]);
             
             await flush({
               prose: text,
+              description: text,
+              structuredScript: structuredAct2,
               scriptBlocks: blocks,
               activeVision: type,
               activeVisionLabel: label,
-              isReviewing: false
+              isReviewing: false,
+              isProductionLocked: true,
+              reviewDrafts: [],
+              productionTakes: preservedTakesAct2
             });
             
             toast.success("Sensory Weave Sealed", {
@@ -3751,7 +3788,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
              activeVisionLabel: selectedDraftForPreview.visionType,
              isReviewing: false,
              isProductionLocked: true,
-             productionTakes: reviewDrafts || []
+             reviewDrafts: [],
+             productionTakes: (reviewDrafts && reviewDrafts.length > 0) ? reviewDrafts : ((data as any)?.productionTakes || [])
            });
 
           if (result && !result.success) {
@@ -3764,6 +3802,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           // Only upon successful persistence, transition global states and advance UI stage
           globalActions.setSelectedVision(type as any, selectedDraftForPreview.visionType);
           globalActions.setIsReviewing(false);
+          globalActions.setReviewDrafts([]);
           setSelectedDraftForPreview(null);
           setProductionStage?.(1);
         }

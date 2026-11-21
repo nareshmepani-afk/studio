@@ -3139,6 +3139,92 @@ describe('🔒 Global Forbidden-Pattern Anti-Regression Scanner', () => {
       expect(content).toContain("? '✈️ Pre-Flight Rehearsal'");
       expect(content).toContain('{badgeLabel && (');
     });
+
+    it('ANTI-REGRESSION P1 RE-WEAVE (ey96djU6qR1BrDGnvZwp): keeps SelectionDeck visible over stale CinemaMonitor non-destructively during active review and clears reviewDrafts on seal', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+
+      const soloStageContent = fs.readFileSync(
+        path.resolve(process.cwd(), 'src/components/studio/SoloStage.tsx'),
+        'utf-8'
+      );
+      const productionDeckContent = fs.readFileSync(
+        path.resolve(process.cwd(), 'src/components/studio/ProductionDeck.tsx'),
+        'utf-8'
+      );
+      const memoryFormContent = fs.readFileSync(
+        path.resolve(process.cwd(), 'src/components/studio/MemoryForm.tsx'),
+        'utf-8'
+      );
+
+      // 1. SoloStage guards CinemaMonitor behind !hasPendingSelectionDrafts and guards selectedTake auto-sync behind !isReviewing
+      expect(soloStageContent).toContain('hasPendingSelectionDrafts');
+      expect(soloStageContent).toContain('data?.structuredScript && isReviewing && !hasPendingSelectionDrafts');
+      expect(soloStageContent).toContain('if (!isReviewing && (data?.prose || data?.description) && !selectedTake)');
+
+      // 2. ProductionDeck keeps SyncLock unlocked during review, clears prior selection on synthesis, and never wipes structuredScript destructively
+      expect(productionDeckContent).toContain('isExplicitAct1 || isFirstFlightAct1 || isReviewing');
+      expect(productionDeckContent).toContain('setSelectedTake(null)');
+      expect(productionDeckContent).toContain('setSelectedVision(null, null)');
+      expect(productionDeckContent).toContain('isProductionLocked: false,');
+      expect(productionDeckContent).not.toContain('structuredScript: null');
+
+      // 3. MemoryForm clears reviewDrafts: [] while preserving productionTakes on seal and unlocks on back-out
+      expect(memoryFormContent).toContain('reviewDrafts: [],');
+      expect(memoryFormContent).toContain('globalActions.setReviewDrafts([]);');
+
+      // 4. Deterministic state-machine verification for re-weave -> back-out -> seal lifecycle
+      const computeShowCinemaMonitor = (params: {
+        hasStructuredScript: boolean;
+        isReviewing: boolean;
+        stateDrafts: any[];
+        dataDrafts: any[];
+      }) => {
+        const hasPendingSelectionDrafts = Boolean(
+          (Array.isArray(params.stateDrafts) && params.stateDrafts.length > 0) ||
+          (Array.isArray(params.dataDrafts) && params.dataDrafts.length > 0)
+        );
+        return Boolean(params.hasStructuredScript && params.isReviewing && !hasPendingSelectionDrafts);
+      };
+
+      const freshMadhaparDrafts = [
+        { visionType: 'Original Polished', cleanScript: 'Village of Madhapar, Kutch (Kutchi & Gujarati)' },
+        { visionType: 'The Soul-Print', cleanScript: 'Fresh Soul-Print in Madhapar' },
+        { visionType: 'The Atmospheric Weave', cleanScript: 'Fresh Atmospheric Weave in Madhapar' },
+        { visionType: 'The Flow', cleanScript: 'Fresh Flow in Madhapar' },
+        { visionType: 'The Memory Weave', cleanScript: 'Fresh Memory Weave in Madhapar' },
+      ];
+
+      // During re-weave of existing memory with stale structuredScript ("Madhapur"): SelectionDeck MUST stay visible!
+      expect(
+        computeShowCinemaMonitor({
+          hasStructuredScript: true,
+          isReviewing: true,
+          stateDrafts: freshMadhaparDrafts,
+          dataDrafts: freshMadhaparDrafts,
+        })
+      ).toBe(false);
+
+      // Even if local state is empty after reload, persisted data.reviewDrafts still keeps SelectionDeck visible
+      expect(
+        computeShowCinemaMonitor({
+          hasStructuredScript: true,
+          isReviewing: true,
+          stateDrafts: [],
+          dataDrafts: freshMadhaparDrafts,
+        })
+      ).toBe(false);
+
+      // After sealing a card (reviewDrafts cleared to []), legacy CinemaMonitor path still works if isReviewing is opened with no pending drafts
+      expect(
+        computeShowCinemaMonitor({
+          hasStructuredScript: true,
+          isReviewing: true,
+          stateDrafts: [],
+          dataDrafts: [],
+        })
+      ).toBe(true);
+    });
   });
 });
 
