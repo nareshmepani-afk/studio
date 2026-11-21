@@ -9,8 +9,10 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Copy,
   ExternalLink,
   GitCommit,
+  MessageSquare,
   PauseCircle,
   RefreshCw,
   Rocket,
@@ -20,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  deriveControlChecklistSteps,
   evaluateEnvironmentParity,
   getReleaseControlTargetMeta,
   isControlActionable,
@@ -103,6 +106,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
   const [busyIds, setBusyIds] = useState<Record<string, boolean>>({});
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
   const [confirmDeferRedId, setConfirmDeferRedId] = useState<string | null>(null);
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [showLedger, setShowLedger] = useState<boolean>(false);
   const [activePlaneKey, setActivePlaneKey] = useState<string | null>(null);
 
@@ -354,6 +358,273 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
     );
   };
 
+  const handleCopyGate = async (control: ReleaseControlRecord) => {
+    const steps = deriveControlChecklistSteps(control);
+    const md = [
+      `### [${control.severity}] ${control.envTag} ${control.title}`,
+      `- **Control ID:** \`${control.id}\``,
+      `- **Status:** ${control.status}`,
+      ...(control.gateCategory ? [`- **Category:** ${control.gateCategory}`] : []),
+      `- **Knock-On Impact:** ${control.knockOnImpact}`,
+      ...(control.ticketRefs.length > 0 ? [`- **Tickets:** ${control.ticketRefs.join(', ')}`] : []),
+      '',
+      ...steps.map((s) => `- [ ] ${s}`),
+    ].join('\n');
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(md);
+      }
+      toast.success('Copied Gate Summary (Markdown)', { description: control.id });
+    } catch {
+      toast.error('Clipboard Copy Blocked');
+    }
+  };
+
+  /**
+   * Unified /admin/qa-inspired card grammar shared by RED and AMBER release controls:
+   * 1) Header bar (severity + target pill + status | in-app ticket drawer + Copy Gate)
+   * 2) Single dark monospace metadata inset (scope cue, category, knock-on impact)
+   * 3) Scannable checklist bullets
+   * 4) Horizontal high-contrast verdict bar (APPROVE | HOLD | DEFER TO PLANE | Reset) + wired 1A RED confirmation
+   * 5) Collapsed-by-default founder note drawer
+   */
+  const renderControlCard = (control: ReleaseControlRecord) => {
+    const statusMeta = STATUS_BADGE_MAP[control.status];
+    const targetMeta = getReleaseControlTargetMeta(control.envTag);
+    const isBusy = Boolean(busyIds[control.id]);
+    const isRed = control.severity === 'RED';
+    const isConfirmingDefer = isRed && confirmDeferRedId === control.id;
+    const checklistSteps = deriveControlChecklistSteps(control);
+    const noteText = draftNotes[control.id] ?? '';
+    const isNoteOpen = Boolean(expandedNotes[control.id] || noteText.trim().length > 0);
+
+    return (
+      <div
+        key={control.id}
+        data-testid={`RELEASE_CONTROL_CARD_${control.id}`}
+        className={`rounded-2xl border p-5 space-y-4 shadow-lg ${
+          isRed
+            ? 'border-rose-500/45 bg-gradient-to-br from-rose-950/20 via-slate-900/90 to-slate-950/95'
+            : 'border-amber-500/35 bg-slate-900/75'
+        }`}
+      >
+        {/* Zone 1: Card Header Bar */}
+        <div className="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-slate-800/80">
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                  isRed
+                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/35'
+                }`}
+              >
+                {isRed ? '🔴 RED' : '🟠 AMBER'}
+              </span>
+              <span
+                data-testid={`RELEASE_TARGET_BADGE_${control.id}`}
+                className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${targetMeta.badgeClassName}`}
+              >
+                {targetMeta.isProdTarget && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                )}
+                {targetMeta.badgeLabel}
+              </span>
+              <span
+                className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}
+              >
+                {statusMeta.label}
+              </span>
+            </div>
+            <h4 className="text-base font-bold text-white leading-snug">{control.title}</h4>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            {control.ticketRefs.map((ref) => renderTicketRefControl(ref))}
+            <button
+              type="button"
+              onClick={() => handleCopyGate(control)}
+              data-testid={`COPY_GATE_${control.id}`}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-mono font-semibold border border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:border-slate-500 transition cursor-pointer"
+            >
+              <Copy className="h-3 w-3" />
+              Copy Gate
+            </button>
+          </div>
+        </div>
+
+        {/* Zone 2: Single Monospace Metadata Inset (mirrors /admin/qa Governance box) */}
+        <div className="rounded-xl border border-slate-800/90 bg-slate-950/85 px-4 py-3 font-mono text-[11px] space-y-1.5 text-slate-300">
+          {targetMeta.scopeCue && (
+            <div data-testid={`RELEASE_TARGET_SCOPE_${control.id}`} className="text-rose-300 font-semibold">
+              <span className="text-slate-500 uppercase mr-1.5">Scope:</span>
+              {targetMeta.scopeCue}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-400">
+            <span>
+              <span className="text-slate-500 uppercase mr-1">Gate ID:</span>
+              <span className="text-sky-300">{control.id}</span>
+            </span>
+            {control.gateCategory && (
+              <span>
+                <span className="text-slate-500 uppercase mr-1">Category:</span>
+                <span className="text-amber-300">{control.gateCategory}</span>
+              </span>
+            )}
+          </div>
+          <div className={isRed ? 'text-rose-200/95' : 'text-amber-200/90'}>
+            <span className="text-slate-500 uppercase mr-1.5">Knock-On:</span>
+            {control.knockOnImpact}
+          </div>
+        </div>
+
+        {/* Zone 3: Scannable Execution Checklist Bullets */}
+        {checklistSteps.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+              Execution &amp; Verification Scope
+            </div>
+            <ul
+              data-testid={`CONTROL_CHECKLIST_${control.id}`}
+              className="space-y-1.5 text-xs text-slate-200"
+            >
+              {checklistSteps.map((step, idx) => (
+                <li key={`${control.id}-step-${idx}`} className="flex items-start gap-2 leading-relaxed">
+                  <span className="text-indigo-400 font-mono shrink-0 mt-0.5">☐</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Zone 4: Horizontal /admin/qa-Style Verdict Action Bar */}
+        <div className="rounded-xl border border-slate-800/90 bg-slate-950/60 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400">
+            Gate Verdict:
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => handleControlAction(control, 'APPROVE')}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition cursor-pointer"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              APPROVE
+            </button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => handleControlAction(control, 'HOLD')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide border border-rose-500/45 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 disabled:opacity-50 transition cursor-pointer"
+            >
+              <PauseCircle className="h-3.5 w-3.5" />
+              HOLD
+            </button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => handleControlAction(control, 'DEFER_TO_PLANE', false)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide border border-amber-500/45 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 disabled:opacity-50 transition cursor-pointer"
+            >
+              <Ticket className="h-3.5 w-3.5" />
+              DEFER TO PLANE
+            </button>
+            <button
+              type="button"
+              disabled={isBusy || control.status === 'PENDING'}
+              onClick={() => handleControlAction(control, 'REOPEN')}
+              title="Reset gate back to Awaiting Founder"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-mono border border-slate-700 bg-slate-900/70 text-slate-300 hover:bg-slate-800 disabled:opacity-40 transition cursor-pointer"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Reset
+            </button>
+          </div>
+        </div>
+
+        {/* Wired 1A Knock-On Confirmation Drawer for Deferring RED Gate */}
+        {isConfirmingDefer && (
+          <div
+            data-testid={`CONFIRM_RED_DEFER_${control.id}`}
+            className="rounded-xl border border-amber-500/50 bg-amber-950/35 p-3.5 space-y-2.5 text-xs"
+          >
+            <div className="text-amber-200 font-semibold">
+              Confirm Deferring RED Blocker to Plane.so (<code className="font-mono text-amber-300">[DEFERRED-BLOCKER]</code>)
+            </div>
+            <p className="text-amber-100/80">
+              Deferring this gate explicitly accepts the knock-on delay: <em>{control.knockOnImpact}</em>
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => handleControlAction(control, 'DEFER_TO_PLANE', true)}
+                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer disabled:opacity-50"
+              >
+                Accept Knock-On &amp; Defer to Plane
+              </button>
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => setConfirmDeferRedId(null)}
+                className="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Zone 5: Collapsed-by-Default Founder Note Drawer */}
+        <div className="pt-0.5">
+          {!isNoteOpen ? (
+            <button
+              type="button"
+              data-testid={`TOGGLE_NOTE_${control.id}`}
+              onClick={() => setExpandedNotes((prev) => ({ ...prev, [control.id]: true }))}
+              className="inline-flex items-center gap-1.5 text-[11px] font-mono text-slate-400 hover:text-slate-200 transition cursor-pointer"
+            >
+              <MessageSquare className="h-3 w-3" />
+              <span>+ Add Founder Note (optional audit ledger note)</span>
+            </button>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor={`note-${control.id}`}
+                  className="text-[10px] font-mono uppercase tracking-wider text-slate-400"
+                >
+                  Founder Note (saved to audit ledger)
+                </label>
+                {noteText.trim().length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedNotes((prev) => ({ ...prev, [control.id]: false }))}
+                    className="text-[10px] font-mono text-slate-500 hover:text-slate-300 cursor-pointer"
+                  >
+                    Hide note
+                  </button>
+                )}
+              </div>
+              <input
+                id={`note-${control.id}`}
+                type="text"
+                lang="en-GB"
+                value={noteText}
+                onChange={(e) => setDraftNotes((prev) => ({ ...prev, [control.id]: e.target.value }))}
+                placeholder="Optional founder note (saved to audit ledger)..."
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const activeRedControls = controls.filter(
     (c) => c.severity === 'RED' && isControlActionable(c)
   );
@@ -486,140 +757,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                 🔴 RED Gatekeeper — Blocking / Knock-On Drag ({activeRedControls.length})
               </h3>
               <div className="space-y-3">
-                {activeRedControls.map((control) => {
-                  const statusMeta = STATUS_BADGE_MAP[control.status];
-                  const targetMeta = getReleaseControlTargetMeta(control.envTag);
-                  const isBusy = Boolean(busyIds[control.id]);
-                  const isConfirmingDefer = confirmDeferRedId === control.id;
-
-                  return (
-                    <div
-                      key={control.id}
-                      data-testid={`RELEASE_CONTROL_CARD_${control.id}`}
-                      className="rounded-2xl border border-rose-500/45 bg-gradient-to-br from-rose-950/25 via-slate-900/90 to-slate-950/90 p-5 space-y-3.5 shadow-lg"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-1.5 min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                              🔴 RED
-                            </span>
-                            <span
-                              data-testid={`RELEASE_TARGET_BADGE_${control.id}`}
-                              className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${targetMeta.badgeClassName}`}
-                            >
-                              {targetMeta.isProdTarget && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                              )}
-                              {targetMeta.badgeLabel}
-                            </span>
-                            <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}>
-                              {statusMeta.label}
-                            </span>
-                          </div>
-                          {targetMeta.scopeCue && (
-                            <p
-                              data-testid={`RELEASE_TARGET_SCOPE_${control.id}`}
-                              className="text-[11px] font-medium text-rose-200/95 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2.5 py-1 inline-block"
-                            >
-                              🎯 {targetMeta.scopeCue}
-                            </p>
-                          )}
-                          <h4 className="text-base font-bold text-white">{control.title}</h4>
-                          <p className="text-xs text-slate-300 leading-relaxed">{control.summary}</p>
-                        </div>
-
-                        {control.ticketRefs.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                            {control.ticketRefs.map((ref) => renderTicketRefControl(ref))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Mandatory 1-line Knock-On Impact Strip */}
-                      <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs text-rose-200 flex items-start gap-2">
-                        <AlertTriangle className="h-3.5 w-3.5 text-rose-400 shrink-0 mt-0.5" />
-                        <span>
-                          <strong className="text-rose-300">Knock-on impact:</strong> {control.knockOnImpact}
-                        </span>
-                      </div>
-
-                      {/* Optional Founder Note */}
-                      <input
-                        type="text"
-                        lang="en-GB"
-                        value={draftNotes[control.id] ?? ''}
-                        onChange={(e) => setDraftNotes((prev) => ({ ...prev, [control.id]: e.target.value }))}
-                        placeholder="Optional founder note (saved to audit ledger)..."
-                        className="w-full px-3 py-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-rose-500/50"
-                      />
-
-                      {/* Action Buttons */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => handleControlAction(control, 'APPROVE')}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition cursor-pointer"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => handleControlAction(control, 'HOLD')}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-rose-500/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 disabled:opacity-50 transition cursor-pointer"
-                        >
-                          <PauseCircle className="h-3.5 w-3.5" />
-                          Hold (Pause Downstream)
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => handleControlAction(control, 'DEFER_TO_PLANE', false)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-slate-700 bg-slate-800/70 text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition cursor-pointer"
-                        >
-                          <Ticket className="h-3.5 w-3.5" />
-                          Defer to Ticket
-                        </button>
-                      </div>
-
-                      {/* 1A Knock-On Confirmation Gate for Deferring RED Item */}
-                      {isConfirmingDefer && (
-                        <div
-                          data-testid={`CONFIRM_RED_DEFER_${control.id}`}
-                          className="rounded-xl border border-amber-500/50 bg-amber-950/35 p-3.5 space-y-2.5 text-xs"
-                        >
-                          <div className="text-amber-200 font-semibold">
-                            Confirm Deferring RED Blocker to Plane.so (<code className="font-mono text-amber-300">[DEFERRED-BLOCKER]</code>)
-                          </div>
-                          <p className="text-amber-100/80">
-                            Deferring this gate explicitly accepts the knock-on delay: <em>{control.knockOnImpact}</em>
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              disabled={isBusy}
-                              onClick={() => handleControlAction(control, 'DEFER_TO_PLANE', true)}
-                              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer disabled:opacity-50"
-                            >
-                              Accept Knock-On &amp; Defer to Plane
-                            </button>
-                            <button
-                              type="button"
-                              disabled={isBusy}
-                              onClick={() => setConfirmDeferRedId(null)}
-                              className="px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {activeRedControls.map((control) => renderControlCard(control))}
               </div>
             </section>
           )}
@@ -632,96 +770,7 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                 🟠 AMBER Gatekeeper — Safe to Hold or Defer ({activeAmberControls.length})
               </h3>
               <div className="space-y-3">
-                {activeAmberControls.map((control) => {
-                  const statusMeta = STATUS_BADGE_MAP[control.status];
-                  const targetMeta = getReleaseControlTargetMeta(control.envTag);
-                  const isBusy = Boolean(busyIds[control.id]);
-                  return (
-                    <div
-                      key={control.id}
-                      data-testid={`RELEASE_CONTROL_CARD_${control.id}`}
-                      className="rounded-2xl border border-amber-500/35 bg-slate-900/60 p-5 space-y-3"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="space-y-1.5 min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/35">
-                              🟠 AMBER
-                            </span>
-                            <span
-                              data-testid={`RELEASE_TARGET_BADGE_${control.id}`}
-                              className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-0.5 rounded-full border ${targetMeta.badgeClassName}`}
-                            >
-                              {targetMeta.isProdTarget && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                              )}
-                              {targetMeta.badgeLabel}
-                            </span>
-                            <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full border ${statusMeta.className}`}>
-                              {statusMeta.label}
-                            </span>
-                          </div>
-                          {targetMeta.scopeCue && (
-                            <p
-                              data-testid={`RELEASE_TARGET_SCOPE_${control.id}`}
-                              className="text-[11px] font-medium text-rose-200/95 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2.5 py-1 inline-block"
-                            >
-                              🎯 {targetMeta.scopeCue}
-                            </p>
-                          )}
-                          <h4 className="text-sm font-bold text-white">{control.title}</h4>
-                          <p className="text-xs text-slate-400">{control.summary}</p>
-                          <p className="text-[11px] text-amber-200/80">{control.knockOnImpact}</p>
-                        </div>
-
-                        {control.ticketRefs.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                            {control.ticketRefs.map((ref) => renderTicketRefControl(ref))}
-                          </div>
-                        )}
-                      </div>
-
-                      <input
-                        type="text"
-                        lang="en-GB"
-                        value={draftNotes[control.id] ?? ''}
-                        onChange={(e) => setDraftNotes((prev) => ({ ...prev, [control.id]: e.target.value }))}
-                        placeholder="Optional founder note..."
-                        className="w-full px-3 py-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-amber-500/50"
-                      />
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => handleControlAction(control, 'APPROVE')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition cursor-pointer"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => handleControlAction(control, 'HOLD')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-800 disabled:opacity-50 transition cursor-pointer"
-                        >
-                          <PauseCircle className="h-3.5 w-3.5" />
-                          Hold
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isBusy}
-                          onClick={() => handleControlAction(control, 'DEFER_TO_PLANE', false)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-indigo-500/40 bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25 disabled:opacity-50 transition cursor-pointer"
-                        >
-                          <Ticket className="h-3.5 w-3.5" />
-                          Defer to Ticket
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                {activeAmberControls.map((control) => renderControlCard(control))}
               </div>
             </section>
           )}

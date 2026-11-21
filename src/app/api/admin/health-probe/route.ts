@@ -180,10 +180,10 @@ async function executeHealthProbe(deep: boolean) {
         return {
           id: 'plane',
           label: 'Plane.so API',
-          status: 'UNCONFIGURED',
-          detail: 'PLANE_API_KEY not bound on server runtime (Phase 2 secret rollout pending)',
+          status: isProd ? 'UNCONFIGURED' : 'INFO',
+          detail: 'PLANE_API_KEY pending Phase 2 Secret Manager binding (expected in Phase 1)',
           latencyMs: Date.now() - started,
-          meta: { configured: false },
+          meta: { configured: false, expectedPhase1: true },
         };
       }
       const states = await listPlaneStates(cfg, {

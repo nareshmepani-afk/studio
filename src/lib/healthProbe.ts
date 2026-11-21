@@ -15,7 +15,7 @@ import {
   type EnvironmentVersionSnapshot,
 } from '@/lib/releaseControls';
 
-export type HealthCheckStatus = 'OK' | 'WARN' | 'FAIL' | 'UNCONFIGURED';
+export type HealthCheckStatus = 'OK' | 'INFO' | 'WARN' | 'FAIL' | 'UNCONFIGURED';
 
 export type HealthCheckId =
   | 'build_parity'
@@ -49,6 +49,9 @@ export interface HealthProbeReport {
   projectId: string | null;
   checkedAtIso: string;
   durationMs: number;
+  corePassedCount: number;
+  coreTotalCount: number;
+  infoCount: number;
   parity: EnvironmentParityReport;
   checks: HealthCheckItem[];
 }
@@ -92,10 +95,39 @@ export function classifyStripeKeyMode(
   return { mode: 'PLACEHOLDER', webhookSecretConfigured };
 }
 
+/**
+ * Computes overall health status:
+ * - Any FAIL -> FAIL
+ * - Any WARN -> WARN
+ * - Calm INFO and expected UNCONFIGURED staging notices never poison a passing OK verdict.
+ */
 export function computeOverallHealthStatus(checks: HealthCheckItem[]): 'OK' | 'WARN' | 'FAIL' {
   if (checks.some((c) => c.status === 'FAIL')) return 'FAIL';
-  if (checks.some((c) => c.status === 'WARN' || c.status === 'UNCONFIGURED')) return 'WARN';
+  if (checks.some((c) => c.status === 'WARN')) return 'WARN';
   return 'OK';
+}
+
+export function computeCoreHealthCounts(checks: HealthCheckItem[]): {
+  corePassedCount: number;
+  coreTotalCount: number;
+  infoCount: number;
+} {
+  let corePassedCount = 0;
+  let coreTotalCount = 0;
+  let infoCount = 0;
+
+  for (const check of checks) {
+    if (check.status === 'INFO' || check.status === 'UNCONFIGURED') {
+      infoCount += 1;
+      continue;
+    }
+    coreTotalCount += 1;
+    if (check.status === 'OK') {
+      corePassedCount += 1;
+    }
+  }
+
+  return { corePassedCount, coreTotalCount, infoCount };
 }
 
 export function resolvePeerVersionUrl(projectId: string | null): {
@@ -186,15 +218,20 @@ export async function runHealthProbe(adapters: HealthProbeAdapters): Promise<Hea
   const prodSnap = isProd ? adapters.selfVersion : peerSnapshot;
   const parity = evaluateEnvironmentParity(stagingSnap, prodSnap);
 
+  // STAGING_AHEAD is the normal everyday state of staging prior to master promotion -> calm INFO (never poisons PASS!)
+  const parityStatus: HealthCheckStatus =
+    parity.status === 'IN_SYNC'
+      ? 'OK'
+      : parity.status === 'PROD_NEWER_CHECK_BACKMERGE'
+      ? 'FAIL'
+      : parity.status === 'STAGING_AHEAD' && environment === 'staging'
+      ? 'INFO'
+      : 'WARN';
+
   const parityCheck: HealthCheckItem = {
     id: 'build_parity',
     label: 'Build Parity',
-    status:
-      parity.status === 'IN_SYNC'
-        ? 'OK'
-        : parity.status === 'PROD_NEWER_CHECK_BACKMERGE'
-        ? 'FAIL'
-        : 'WARN',
+    status: parityStatus,
     detail: `${parity.label} (staging=${parity.stagingSha || '?'}, prod=${parity.prodSha || 'unreachable'})`,
     meta: {
       parityStatus: parity.status,
@@ -213,6 +250,8 @@ export async function runHealthProbe(adapters: HealthProbeAdapters): Promise<Hea
     aiCheck,
   ];
 
+  const { corePassedCount, coreTotalCount, infoCount } = computeCoreHealthCounts(checks);
+
   return {
     overall: computeOverallHealthStatus(checks),
     mode: adapters.deep ? 'DEEP' : 'FAST',
@@ -220,6 +259,9 @@ export async function runHealthProbe(adapters: HealthProbeAdapters): Promise<Hea
     projectId: adapters.projectId,
     checkedAtIso: new Date().toISOString(),
     durationMs: Date.now() - startedAt,
+    corePassedCount,
+    coreTotalCount,
+    infoCount,
     parity,
     checks,
   };
@@ -227,14 +269,51 @@ export async function runHealthProbe(adapters: HealthProbeAdapters): Promise<Hea
 
 export function formatHealthProbeCliLines(report: HealthProbeReport): string[] {
   const iconFor = (s: HealthCheckStatus | 'OK' | 'WARN' | 'FAIL') =>
-    s === 'OK' ? '✅' : s === 'FAIL' ? '❌' : s === 'UNCONFIGURED' ? '⚙️' : '🟠';
+    s === 'OK' ? '✅' : s === 'FAIL' ? '❌' : s === 'INFO' ? 'ℹ️' : s === 'UNCONFIGURED' ? '⚙️' : '🟠';
 
   const lines: string[] = [
-    `${iconFor(report.overall)} SYNTHETIC HEALTH PROBE [${report.mode}] — ${report.environment.toUpperCase()} (${report.projectId || 'unknown'}) | Overall: ${report.overall} (${report.durationMs}ms)`,
+    `${iconFor(report.overall)} SYNTHETIC HEALTH PROBE [${report.mode}] — ${report.environment.toUpperCase()} (${report.projectId || 'unknown'}) | Overall: ${report.overall} (${report.corePassedCount}/${report.coreTotalCount} core OK, ${report.infoCount} info, ${report.durationMs}ms)`,
   ];
   for (const check of report.checks) {
     const ms = typeof check.latencyMs === 'number' ? ` (${check.latencyMs}ms)` : '';
     lines.push(`  ${iconFor(check.status)} ${check.label.padEnd(20)}: [${check.status}] ${check.detail}${ms}`);
   }
   return lines;
+}
+
+/**
+ * Formats a concise plain-Markdown proof receipt suitable for pasting into chat or a Plane comment.
+ */
+export function formatHealthProbeMarkdownReceipt(report: HealthProbeReport): string {
+  const verdict =
+    report.overall === 'OK'
+      ? `✅ PASS — ${report.corePassedCount}/${report.coreTotalCount} Core Systems Healthy`
+      : report.overall === 'FAIL'
+      ? `❌ FAIL — Action Required (${report.corePassedCount}/${report.coreTotalCount} Core Passed)`
+      : `⚠️ WARN — Review Needed (${report.corePassedCount}/${report.coreTotalCount} Core Passed)`;
+
+  const headerLines = [
+    `### Synthetic Health Receipt (${report.mode})`,
+    `- **Verdict:** ${verdict}${report.infoCount > 0 ? ` · ${report.infoCount} expected notice(s)` : ''}`,
+    `- **Environment:** ${report.environment.toUpperCase()} (\`${report.projectId || 'unknown'}\`)`,
+    `- **Checked At:** ${report.checkedAtIso} (${report.durationMs}ms)`,
+    '',
+  ];
+
+  const checkLines = report.checks.map((c) => {
+    const badge =
+      c.status === 'OK'
+        ? '✅ PASS'
+        : c.status === 'FAIL'
+        ? '❌ FAIL'
+        : c.status === 'INFO'
+        ? 'ℹ️ INFO'
+        : c.status === 'UNCONFIGURED'
+        ? 'ℹ️ UNCONFIGURED'
+        : '⚠️ WARN';
+    const ms = typeof c.latencyMs === 'number' ? ` (${c.latencyMs}ms)` : '';
+    return `- **${c.label}:** ${badge} — ${c.detail}${ms}`;
+  });
+
+  return [...headerLines, ...checkLines].join('\n');
 }

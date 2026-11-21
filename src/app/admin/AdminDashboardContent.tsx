@@ -25,7 +25,7 @@ import { PrelaunchAccessConsole } from '@/components/admin/PrelaunchAccessConsol
 import { FounderDecisionForm } from '@/components/admin/FounderDecisionForm';
 import { FounderInboxConsole } from '@/components/admin/FounderInboxConsole';
 import { UserDirectoryConsole } from '@/components/admin/UserDirectoryConsole';
-import { Bug, Lock, ClipboardCheck, UserCog, Inbox, ExternalLink } from 'lucide-react';
+import { Bug, Lock, ClipboardCheck, UserCog, Inbox, ExternalLink, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { isProductionProject, STAGING_APP_URL } from '@/config/environment';
 import type { InboxBadgeCounts } from '@/lib/releaseControls';
 import { getBackendEnvironmentDetails } from './actions';
@@ -43,6 +43,32 @@ export default function AdminDashboardContent() {
   const [activeSuite, setActiveSuite] = useState<'releases' | 'devops' | 'business' | 'users' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
   const [inboxBadges, setInboxBadges] = useState<InboxBadgeCounts | null>(null);
+  // SSR-safe Focus Mode toggle (always false on initial render; hydrates preference inside useEffect)
+  const [sidebarHidden, setSidebarHidden] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage.getItem('mw_admin_focus_mode') === '1') {
+        setSidebarHidden(true);
+      }
+    } catch {
+      // Non-fatal storage guard
+    }
+  }, []);
+
+  const toggleFocusMode = () => {
+    setSidebarHidden((prev) => {
+      const next = !prev;
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('mw_admin_focus_mode', next ? '1' : '0');
+        }
+      } catch {
+        // Non-fatal storage guard
+      }
+      return next;
+    });
+  };
 
   // Seed strictly from NEXT_PUBLIC_FIREBASE_PROJECT_ID before getBackendEnvironmentDetails resolves
   // (avoids 150ms staging-tab flash on LIVE-PRODUCTION with zero SSR/client hydration mismatch).
@@ -167,45 +193,59 @@ export default function AdminDashboardContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500/30">
-      {/* Top Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Shield className="h-5 w-5 text-white animate-pulse" />
+      {/* Top Header (opaque bg avoids stacked backdrop-blur GPU compositing on Windows DWM) */}
+      <header className="border-b border-slate-800/80 bg-slate-900/95 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+              <Shield className="h-5 w-5 text-white" />
             </div>
-            <div>
-              <h1 id="admin-header-title" className="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            <div className="min-w-0">
+              <h1 id="admin-header-title" className="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent truncate">
                 Memory Weaver Studio
               </h1>
-              <p className="text-xs text-indigo-400 font-medium tracking-wider uppercase">Command Centre Admin Hub</p>
+              <p className="text-xs text-indigo-400 font-medium tracking-wider uppercase truncate">Command Centre Admin Hub</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap justify-end">
+            <button
+              type="button"
+              onClick={toggleFocusMode}
+              data-testid="ADMIN_FOCUS_MODE_TOGGLE"
+              title={sidebarHidden ? 'Show Admin Suites Sidebar' : 'Focus Mode — Hide Sidebar for Split-Screen'}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-mono font-medium transition cursor-pointer ${
+                sidebarHidden
+                  ? 'border-indigo-500/50 bg-indigo-500/20 text-indigo-200 hover:bg-indigo-500/30'
+                  : 'border-slate-800 bg-slate-900/80 text-slate-300 hover:border-indigo-500/40 hover:text-white'
+              }`}
+            >
+              {sidebarHidden ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+              <span>{sidebarHidden ? 'Show Suites' : 'Focus Mode'}</span>
+            </button>
             {envInfo ? (
-              <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border transition-all duration-300 ${
+              <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
                 envInfo.envContext === 'LIVE-PRODUCTION' 
-                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 animate-pulse' 
+                  ? 'bg-rose-500/15 border-rose-500/35 text-rose-300' 
                   : envInfo.envContext === 'DEV-APP'
-                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                  : 'bg-sky-500/10 border-sky-500/20 text-sky-400 font-mono'
+                  ? 'bg-amber-500/10 border-amber-500/25 text-amber-400'
+                  : 'bg-sky-500/10 border-sky-500/25 text-sky-400 font-mono'
               }`}>
                 {envInfo.envContext === 'LIVE-PRODUCTION' ? (
-                  <span className="h-2 w-2 rounded-full bg-rose-500 inline-block animate-ping" />
+                  <span className="h-2 w-2 rounded-full bg-rose-500 ring-2 ring-rose-500/40 inline-block" />
                 ) : (
                   <Server className="h-3.5 w-3.5" />
                 )}
                 {envInfo.label} ({envInfo.projectId})
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border bg-slate-900 border-slate-800 text-slate-500 animate-pulse">
-                <span className="h-2 w-2 rounded-full bg-slate-700 animate-pulse" />
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border bg-slate-900 border-slate-800 text-slate-500">
+                <span className="h-2 w-2 rounded-full bg-slate-700" />
                 EVALUATING ENVIRONMENT...
               </span>
             )}
-            <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-emerald-400/35" />
               SYSTEM SECURE
             </span>
             <button
@@ -222,10 +262,11 @@ export default function AdminDashboardContent() {
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className={`grid grid-cols-1 gap-8 ${sidebarHidden ? '' : 'lg:grid-cols-4'}`}>
           
-          {/* Left Sidebar */}
-          <aside className="space-y-6">
+          {/* Left Sidebar (hidden cleanly when Focus Mode is active) */}
+          {!sidebarHidden && (
+          <aside className="space-y-6" data-testid="ADMIN_SUITES_SIDEBAR">
             <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 space-y-2">
               <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 block px-3 mb-2">Admin Suites</span>
 
@@ -435,8 +476,8 @@ export default function AdminDashboardContent() {
                 <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 block">Routing Scope</span>
                 <div className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full ${
-                    envInfo?.envContext === 'LIVE-PRODUCTION' ? 'bg-rose-500 animate-ping' :
-                    envInfo?.envContext === 'DEV-APP' ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'
+                    envInfo?.envContext === 'LIVE-PRODUCTION' ? 'bg-rose-500 ring-2 ring-rose-500/40' :
+                    envInfo?.envContext === 'DEV-APP' ? 'bg-amber-500 ring-2 ring-amber-500/35' : 'bg-sky-500'
                   }`} />
                   <span className="text-xs font-mono font-bold text-slate-300">
                     {envInfo?.label || (isLiveProduction ? 'LIVE PRODUCTION' : 'RESOLVING...')}
@@ -445,13 +486,13 @@ export default function AdminDashboardContent() {
               </div>
             </div>
           </aside>
+          )}
 
           {/* Right Main Content Panel */}
-          <main className="lg:col-span-3 space-y-8">
+          <main className={`space-y-8 ${sidebarHidden ? 'max-w-5xl mx-auto w-full' : 'lg:col-span-3'}`}>
             
             {/* Banner Section */}
             <section className="relative overflow-hidden rounded-2xl border border-indigo-500/20 bg-gradient-to-b from-indigo-950/20 to-slate-900/60 p-8 shadow-2xl">
-              <div className="absolute top-0 right-0 -mt-10 -mr-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
               <div className="relative z-10 space-y-2 max-w-2xl">
                 <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
                   {activeSuite === 'releases' && 'Founder Inbox & Release Controls'}

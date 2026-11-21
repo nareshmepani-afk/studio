@@ -53,6 +53,8 @@ export interface ReleaseControlRecord {
   order: number;
   title: string;
   summary: string;
+  /** Optional structured scannable verification/execution steps rendered as checklist bullets. */
+  checklistSteps?: string[];
   severity: ReleaseControlSeverity;
   /** Required for RED gates: 1 plain-English line explaining the exact downstream knock-on effect. */
   knockOnImpact: string;
@@ -112,6 +114,11 @@ export const DEFAULT_RELEASE_CONTROL_SEEDS: ReleaseControlSeed[] = [
     title: 'Approve Final Step 4: Switch Stripe to Live Mode & Trigger Rollout',
     summary:
       'Uploads live STRIPE_SECRET_KEY (sk_live_) and STRIPE_WEBHOOK_SECRET (whsec_) into memory-weaver-8rk9t Secret Manager, registers canonical https://memoryweaver.studio/api/webhooks/stripe (3 events), activates Billing Portal, and triggers a fresh master rollout.',
+    checklistSteps: [
+      'Upload live STRIPE_SECRET_KEY (sk_live_) and STRIPE_WEBHOOK_SECRET (whsec_) into memory-weaver-8rk9t Secret Manager',
+      'Register canonical https://memoryweaver.studio/api/webhooks/stripe webhook (3 billing/gift events)',
+      'Activate Stripe Customer Billing Portal and trigger a fresh master App Hosting rollout',
+    ],
     severity: 'RED',
     knockOnImpact:
       'Holding this keeps paid Director Pass, Generational Vault, and Heirloom Gift checkout strictly in Stripe Test Mode.',
@@ -121,6 +128,38 @@ export const DEFAULT_RELEASE_CONTROL_SEEDS: ReleaseControlSeed[] = [
     ticketRefs: ['MW-408'],
   },
 ];
+
+/**
+ * Derives crisp scannable checklist bullets for any release control card, including
+ * legacy Firestore documents that only stored a prose `summary` string.
+ */
+export function deriveControlChecklistSteps(
+  control: Pick<ReleaseControlRecord, 'summary' | 'checklistSteps'>
+): string[] {
+  if (Array.isArray(control.checklistSteps) && control.checklistSteps.length > 0) {
+    return control.checklistSteps.map((s) => String(s).trim()).filter(Boolean);
+  }
+  const raw = (control.summary || '').trim();
+  if (!raw) return [];
+
+  // Split semicolon/newline lists first, otherwise break multi-clause prose cleanly on ", and " / ", "
+  const lineSplit = raw
+    .split(/\r?\n|;\s*/)
+    .map((s) => s.trim().replace(/^[-•☐]\s*/, ''))
+    .filter(Boolean);
+  if (lineSplit.length > 1) return lineSplit;
+
+  const clauseSplit = raw
+    .replace(/\.$/, '')
+    .split(/,\s+(?:and\s+)?/i)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 18);
+  if (clauseSplit.length >= 2 && clauseSplit.length <= 5) {
+    return clauseSplit.map((s) => s.charAt(0).toUpperCase() + s.slice(1));
+  }
+
+  return [raw];
+}
 
 export function buildSeededReleaseControl(
   seed: ReleaseControlSeed,

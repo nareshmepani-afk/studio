@@ -8,6 +8,7 @@ import {
   buildSeededReleaseControl,
   computeInboxBadgeCounts,
   DEFAULT_RELEASE_CONTROL_SEEDS,
+  deriveControlChecklistSteps,
   evaluateEnvironmentParity,
   evaluateReleaseControlTransition,
   formatReleaseControlForPlane,
@@ -26,6 +27,7 @@ import {
 import {
   classifyStripeKeyMode,
   formatHealthProbeCliLines,
+  formatHealthProbeMarkdownReceipt,
   runHealthProbe,
 } from '@/lib/healthProbe';
 
@@ -946,6 +948,83 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
       await waitFor(() => {
         expect(queryByTestId('ADMIN_HEALTH_BAR')).toBeNull();
       });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('classifies STAGING_AHEAD + Phase-1 unbound Plane as calm INFO (overall OK), auto-expands Deep Smoke Receipt in compact mode, and derives scannable checklist bullets', async () => {
+    const infoReport = await runHealthProbe({
+      projectId: 'memory-weaver-dev',
+      deep: true,
+      selfVersion: { commitSha: '7371f89', commitTimestamp: '2026-11-20T22:26:21Z', reachable: true },
+      probePeerVersion: async () => ({
+        commitSha: '8051219',
+        commitTimestamp: '2026-11-19T20:34:45Z',
+        reachable: true,
+      }),
+      checkFirestore: async () => ({ ok: true, detail: 'Connected (memory-weaver-dev)', latencyMs: 18 }),
+      checkStorage: async () => ({ ok: true, detail: 'Bucket reachable', latencyMs: 22 }),
+      checkStripe: async () => ({ id: 'stripe', label: 'Stripe Billing', status: 'OK', detail: 'TEST mode · webhook enabled' }),
+      checkPlane: async () => ({ id: 'plane', label: 'Plane.so API', status: 'INFO', detail: 'PLANE_API_KEY pending Phase 2' }),
+      checkResend: async () => ({ id: 'resend', label: 'Resend Email', status: 'OK', detail: 'Domain verified (memoryweaver.studio)' }),
+      checkAiWeaver: async () => ({ id: 'ai_weaver', label: 'AI Weaver (Genkit)', status: 'OK', detail: 'Live 5-token Genkit ping succeeded ("OK")' }),
+    });
+
+    expect(infoReport.overall).toBe('OK');
+    expect(infoReport.corePassedCount).toBe(5);
+    expect(infoReport.coreTotalCount).toBe(5);
+    expect(infoReport.infoCount).toBe(2);
+    expect(infoReport.checks.find((c) => c.id === 'build_parity')?.status).toBe('INFO');
+    const mdReceipt = formatHealthProbeMarkdownReceipt(infoReport);
+    expect(mdReceipt).toContain('✅ PASS — 5/5 Core Systems Healthy');
+    expect(mdReceipt).toContain('Live 5-token Genkit ping succeeded');
+
+    // Checklist derivation handles both explicit checklistSteps and legacy prose summary
+    expect(deriveControlChecklistSteps(DEFAULT_RELEASE_CONTROL_SEEDS[0]).length).toBe(3);
+    const legacySteps = deriveControlChecklistSteps({
+      summary: 'Upload live keys to Secret Manager, register canonical webhook endpoint, and trigger a fresh master rollout.',
+    });
+    expect(legacySteps.length).toBe(3);
+
+    // Compact AdminHealthBar starts collapsed on fast GET, then auto-expands ADMIN_HEALTH_RECEIPT on Run Deep Smoke Test
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      const isDeep = String(url).includes('deep=1') || init?.method === 'POST';
+      return {
+        ok: true,
+        json: async () => ({
+          success: true,
+          ...infoReport,
+          mode: isDeep ? 'DEEP' : 'FAST',
+        }),
+      };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const { AdminHealthBar } = await import('@/components/admin/AdminHealthBar');
+      render(React.createElement(AdminHealthBar, { compact: true }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('ADMIN_HEALTH_VERDICT')).toHaveTextContent(
+          '✅ PASS — 5/5 Core Systems Healthy'
+        );
+      });
+      // Collapsed by default in compact mode
+      expect(screen.queryByTestId('ADMIN_HEALTH_RECEIPT')).toBeNull();
+
+      // Clicking Run Deep Smoke Test auto-expands receipt with full proof lines + Collapse/Copy controls
+      fireEvent.click(screen.getByTestId('ADMIN_HEALTH_DEEP_BTN'));
+      await waitFor(() => {
+        expect(screen.getByTestId('ADMIN_HEALTH_RECEIPT')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('ADMIN_HEALTH_RECEIPT')).toHaveTextContent(
+        'Live 5-token Genkit ping succeeded'
+      );
+      expect(screen.getByTestId('ADMIN_HEALTH_COPY_BTN')).toBeInTheDocument();
+
+      // Clicking Collapse collapses the receipt cleanly
+      fireEvent.click(screen.getByTestId('ADMIN_HEALTH_TOGGLE_RECEIPT_BTN'));
+      expect(screen.queryByTestId('ADMIN_HEALTH_RECEIPT')).toBeNull();
     } finally {
       vi.unstubAllGlobals();
     }
