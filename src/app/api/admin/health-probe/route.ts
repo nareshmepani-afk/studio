@@ -12,7 +12,9 @@ import {
   classifyStripeKeyMode,
   runHealthProbe,
   type HealthCheckItem,
+  type LatestDeepSmokeSnapshot,
 } from '@/lib/healthProbe';
+import { buildGenkitConfig } from '@/ai/models';
 import { listPlaneStates, loadPlaneEnv } from '@/lib/planeClient';
 import type { EnvironmentVersionSnapshot } from '@/lib/releaseControls';
 
@@ -297,23 +299,86 @@ async function executeHealthProbe(deep: boolean) {
         };
       }
 
-      const aiInstance = await genkitMod.getAI();
+      const [aiInstance, modelsServerMod] = await Promise.all([
+        genkitMod.getAI(),
+        import('@/ai/models.server').catch(() => null),
+      ]);
+      const activeModel = modelsServerMod
+        ? await modelsServerMod.getActiveModel('genkit')
+        : 'googleai/gemini-3.8-flash';
       const response = await aiInstance.generate({
         prompt: 'Reply strictly with OK',
-        config: { maxOutputTokens: 5, temperature: 0 },
+        model: activeModel,
+        config: buildGenkitConfig(activeModel, { maxOutputTokens: 64, temperature: 0 }),
       });
       const text = (response?.text || '').trim();
+      const finishReason = (response as any)?.finishReason || 'unknown';
       return {
         id: 'ai_weaver',
         label: 'AI Weaver (Genkit)',
         status: text.length > 0 ? 'OK' : 'WARN',
         detail: text
-          ? `Live 5-token Genkit ping succeeded ("${text.slice(0, 20)}")`
-          : 'Genkit responded with empty text',
+          ? `Live Genkit ping succeeded on ${activeModel} ("${text.slice(0, 20)}")`
+          : `Genkit responded with empty text (model=${activeModel}, finishReason=${finishReason})`,
         latencyMs: Date.now() - started,
+        meta: { activeModel, finishReason },
       };
     },
   });
+}
+
+const LATEST_DEEP_SMOKE_COLLECTION = 'system_health';
+const LATEST_DEEP_SMOKE_DOC_ID = 'latest_deep_smoke';
+
+function resolveCurrentShortSha(): string | null {
+  const raw =
+    process.env.NEXT_PUBLIC_COMMIT_SHA ||
+    process.env.NEXT_PUBLIC_GIT_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.BUILD_ID ||
+    '';
+  const clean = raw.trim().toLowerCase();
+  return clean ? clean.slice(0, 7) : null;
+}
+
+async function readLatestDeepSmokeSnapshot(
+  currentSha: string | null
+): Promise<LatestDeepSmokeSnapshot | null> {
+  try {
+    if (!adminDb) return null;
+    const docRef = adminDb.collection(LATEST_DEEP_SMOKE_COLLECTION).doc(LATEST_DEEP_SMOKE_DOC_ID);
+    if (typeof (docRef as any).get !== 'function') return null;
+    const snap = await docRef.get();
+    if (!snap?.exists) return null;
+    const data = snap.data() as Partial<LatestDeepSmokeSnapshot> | undefined;
+    if (!data?.checkedAtIso) return null;
+    const storedSha = (data.commitSha || '').trim().toLowerCase().slice(0, 7) || null;
+    return {
+      commitSha: storedSha,
+      checkedAtIso: String(data.checkedAtIso),
+      overall: data.overall === 'FAIL' || data.overall === 'WARN' ? data.overall : 'OK',
+      corePassedCount: Number(data.corePassedCount) || 0,
+      coreTotalCount: Number(data.coreTotalCount) || 0,
+      durationMs: Number(data.durationMs) || 0,
+      triggeredBy: data.triggeredBy ? String(data.triggeredBy) : null,
+      matchesCurrentBuild: Boolean(currentSha && storedSha && storedSha === currentSha),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function writeLatestDeepSmokeSnapshot(
+  snapshot: LatestDeepSmokeSnapshot
+): Promise<void> {
+  try {
+    if (!adminDb) return;
+    const docRef = adminDb.collection(LATEST_DEEP_SMOKE_COLLECTION).doc(LATEST_DEEP_SMOKE_DOC_ID);
+    if (typeof (docRef as any).set !== 'function') return;
+    await docRef.set(snapshot, { merge: true });
+  } catch {
+    // Fail-soft: persistence hiccup must never fail health probe
+  }
 }
 
 export async function GET() {
@@ -326,8 +391,15 @@ export async function GET() {
       );
     }
 
-    const report = await executeHealthProbe(false);
-    return NextResponse.json({ success: true, ...report }, { headers: NO_STORE_HEADERS });
+    const currentSha = resolveCurrentShortSha();
+    const [report, latestDeepSmoke] = await Promise.all([
+      executeHealthProbe(false),
+      readLatestDeepSmokeSnapshot(currentSha),
+    ]);
+    return NextResponse.json(
+      { success: true, ...report, latestDeepSmoke },
+      { headers: NO_STORE_HEADERS }
+    );
   } catch (err: any) {
     console.error('[GET /api/admin/health-probe] Error:', err);
     return NextResponse.json(
@@ -380,7 +452,28 @@ export async function POST(req: NextRequest) {
     }
 
     const report = await executeHealthProbe(deep);
-    return NextResponse.json({ success: true, ...report }, { headers: NO_STORE_HEADERS });
+    const currentSha = resolveCurrentShortSha();
+    let latestDeepSmoke: LatestDeepSmokeSnapshot | null = null;
+    if (deep) {
+      latestDeepSmoke = {
+        commitSha: currentSha,
+        checkedAtIso: report.checkedAtIso,
+        overall: report.overall,
+        corePassedCount: report.corePassedCount,
+        coreTotalCount: report.coreTotalCount,
+        durationMs: report.durationMs,
+        triggeredBy: authResult.session?.email || 'admin',
+        matchesCurrentBuild: Boolean(currentSha),
+      };
+      await writeLatestDeepSmokeSnapshot(latestDeepSmoke);
+    } else {
+      latestDeepSmoke = await readLatestDeepSmokeSnapshot(currentSha);
+    }
+
+    return NextResponse.json(
+      { success: true, ...report, latestDeepSmoke },
+      { headers: NO_STORE_HEADERS }
+    );
   } catch (err: any) {
     console.error('[POST /api/admin/health-probe] Error:', err);
     return NextResponse.json(

@@ -2,7 +2,7 @@
 
 import { getAI } from '@/ai/genkit';
 import { getActiveModel } from '@/ai/models.server';
-import { GENKIT_MODELS } from '@/ai/models';
+import { GENKIT_MODELS, buildGenkitConfig } from '@/ai/models';
 import { z } from 'genkit';
 import pRetry from 'p-retry';
 import { VertexAI } from '@google-cloud/vertexai';
@@ -55,25 +55,6 @@ function sanitizeProse(text: string): string {
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
   }
   return cleaned;
-}
-
-/**
- * Builds an optimal Genkit generationConfig for the target Gemini model.
- * - Non-lite Flash models (gemini-3.8-flash, gemini-flash-latest) attach thinkingConfig: { thinkingBudget: 0 }
- *   to avoid burning 570+ internal thinking tokens and 8s+ latency.
- * - Flash-Lite models (gemini-3.5-flash-lite, gemini-flash-lite-latest) MUST NOT receive thinkingConfig
- *   because Google's API rejects thinkingConfig on -lite models with HTTP 400 INVALID_ARGUMENT.
- */
-function buildGenkitConfig(modelName: string, extraConfig: Record<string, any> = {}): Record<string, any> {
-  const isLite = (modelName || '').toLowerCase().includes('lite');
-  if (isLite) {
-    const { thinkingConfig: _omit, ...rest } = extraConfig;
-    return rest;
-  }
-  return {
-    thinkingConfig: { thinkingBudget: 0 },
-    ...extraConfig,
-  };
 }
 
 function extractRetryErrorMessage(err: any): string {

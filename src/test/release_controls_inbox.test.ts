@@ -26,10 +26,12 @@ import {
 } from '@/lib/planeTypes';
 import {
   classifyStripeKeyMode,
+  evaluateDeepSmokeFreshness,
   formatHealthProbeCliLines,
   formatHealthProbeMarkdownReceipt,
   runHealthProbe,
 } from '@/lib/healthProbe';
+import { buildGenkitConfig } from '@/ai/models';
 
 const SYNTHETIC_RED_SEED: ReleaseControlSeed = {
   id: 'ctrl-test-red-gate',
@@ -1027,6 +1029,295 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
       expect(screen.queryByTestId('ADMIN_HEALTH_RECEIPT')).toBeNull();
     } finally {
       vi.unstubAllGlobals();
+    }
+  });
+
+  it('buildGenkitConfig sets thinkingBudget: 0 on non-lite Flash and strips thinkingConfig on -lite models', () => {
+    const flashCfg = buildGenkitConfig('googleai/gemini-3.8-flash', {
+      maxOutputTokens: 64,
+      temperature: 0,
+    });
+    expect(flashCfg).toEqual({
+      maxOutputTokens: 64,
+      temperature: 0,
+      thinkingConfig: { thinkingBudget: 0 },
+    });
+
+    const liteCfg = buildGenkitConfig('googleai/gemini-3.5-flash-lite', {
+      maxOutputTokens: 64,
+      temperature: 0,
+    });
+    expect(liteCfg).toEqual({
+      maxOutputTokens: 64,
+      temperature: 0,
+    });
+    expect('thinkingConfig' in liteCfg).toBe(false);
+  });
+
+  it('evaluates deep-smoke SHA freshness, persists system_health/latest_deep_smoke on POST ?deep=1, and reads it on GET', async () => {
+    const fresh = evaluateDeepSmokeFreshness(
+      {
+        commitSha: 'f6327e7',
+        checkedAtIso: '2026-11-21T12:15:00.000Z',
+        overall: 'OK',
+        corePassedCount: 5,
+        coreTotalCount: 5,
+        durationMs: 1420,
+      },
+      'f6327e70abc'
+    );
+    expect(fresh.isFreshForBuild).toBe(true);
+    expect(fresh.highlightButton).toBe(false);
+    expect(fresh.label).toContain('Build f6327e7 Deep-Verified');
+
+    const stale = evaluateDeepSmokeFreshness(
+      {
+        commitSha: 'f6327e7',
+        checkedAtIso: '2026-11-21T12:15:00.000Z',
+        overall: 'OK',
+        corePassedCount: 5,
+        coreTotalCount: 5,
+        durationMs: 1420,
+      },
+      'a1b2c3d'
+    );
+    expect(stale.isFreshForBuild).toBe(false);
+    expect(stale.highlightButton).toBe(true);
+    expect(stale.label).toContain('New build a1b2c3d not deep-tested yet');
+
+    const memDb = createMemoryDb();
+    const generateSpy = vi.fn().mockResolvedValue({ text: 'OK', finishReason: 'stop' });
+    const prevServiceAccount = process.env.SERVICE_ACCOUNT_JSON;
+    process.env.SERVICE_ACCOUNT_JSON = '{"type":"service_account","project_id":"memory-weaver-dev"}';
+
+    try {
+      vi.doMock('@/lib/session', () => ({
+        requireAdminSession: vi.fn().mockResolvedValue({
+          authorized: true,
+          session: { email: 'nareshmepani@googlemail.com', isAdmin: true },
+        }),
+      }));
+      vi.doMock('@/lib/firebaseAdmin', () => ({
+        adminDb: memDb,
+        adminStorage: { bucket: () => ({ exists: async () => [true] }) },
+      }));
+      vi.doMock('@/ai/genkit', () => ({
+        resolveServiceAccountAccessToken: vi.fn().mockResolvedValue('mock-oauth-token'),
+        getAI: vi.fn().mockResolvedValue({ generate: generateSpy }),
+      }));
+      vi.doMock('@/ai/models.server', () => ({
+        getActiveModel: vi.fn().mockResolvedValue('googleai/gemini-3.8-flash'),
+      }));
+
+      const healthRoute = await import('@/app/api/admin/health-probe/route');
+      healthRoute.clearHealthProbeCooldownForTests();
+
+      const postRes = await healthRoute.POST(
+        new Request('https://dev.memoryweaver.studio/api/admin/health-probe?deep=1', {
+          method: 'POST',
+          body: JSON.stringify({ deep: true }),
+        }) as any
+      );
+      const postJson = await postRes.json();
+      expect(postRes.status).toBe(200);
+      expect(postJson.latestDeepSmoke).toBeDefined();
+      expect(generateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: 'googleai/gemini-3.8-flash',
+          config: expect.objectContaining({
+            maxOutputTokens: 64,
+            temperature: 0,
+            thinkingConfig: { thinkingBudget: 0 },
+          }),
+        })
+      );
+
+      // Persisted in Firestore system_health/latest_deep_smoke and surfaced on subsequent GET
+      expect(memDb._store.get('system_health')?.has('latest_deep_smoke')).toBe(true);
+      const getRes = await healthRoute.GET();
+      const getJson = await getRes.json();
+      expect(getRes.status).toBe(200);
+      expect(getJson.latestDeepSmoke).toMatchObject({
+        overall: postJson.overall,
+        coreTotalCount: postJson.coreTotalCount,
+      });
+    } finally {
+      if (prevServiceAccount === undefined) delete process.env.SERVICE_ACCOUNT_JSON;
+      else process.env.SERVICE_ACCOUNT_JSON = prevServiceAccount;
+      vi.doUnmock('@/ai/models.server');
+      vi.doUnmock('@/ai/genkit');
+    }
+  });
+
+  it('FounderInboxConsole hides 0-count AMBER pill and handles clickable jump-scroll pills safely in jsdom', async () => {
+    const prodCard = buildSeededReleaseControl(DEFAULT_RELEASE_CONTROL_SEEDS[0], 1000);
+    const fetchMock = vi.fn().mockImplementation(async (url: string) => {
+      const urlStr = String(url);
+      if (urlStr.includes('/api/admin/controls')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            controls: [prodCard],
+            pendingDecisions: [],
+            readyBugs: [
+              {
+                reportId: 'bug_jump_1',
+                traceId: 'trc_jump',
+                userId: 'u1',
+                userEmail: 'founder@example.com',
+                path: '/studio',
+                appVersion: 'v1.1.0-beta',
+                userAgent: 'Chrome',
+                description: 'Jump target fix',
+                status: 'FIXED_ON_DEV',
+                createdAt: 1000,
+                createdAtIso: '2026-11-21T10:00:00Z',
+                updatedAt: 1000,
+                environmentHost: 'https://dev.memoryweaver.studio',
+                planeIssueId: 'MW-415',
+                resolutionNotes: 'Fixed cleanly',
+                fixedInCommitSha: 'f6327e7',
+              },
+            ],
+            badges: {
+              red: 1,
+              amber: 0,
+              approvedAwaitingCli: 0,
+              readySignOff: 1,
+              pendingDecisions: 0,
+              totalActionable: 2,
+            },
+          }),
+        };
+      }
+      if (urlStr.includes('/api/admin/health-probe')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            overall: 'OK',
+            mode: 'FAST',
+            environment: 'staging',
+            projectId: 'memory-weaver-dev',
+            checkedAtIso: '2026-11-21T12:00:00Z',
+            durationMs: 30,
+            parity: evaluateEnvironmentParity(
+              { commitSha: 'f6327e7', commitTimestamp: '2026-11-21T11:50:00Z' },
+              { commitSha: '8051219', commitTimestamp: '2026-11-19T20:34:45Z' }
+            ),
+            latestDeepSmoke: {
+              commitSha: 'f6327e7',
+              checkedAtIso: '2026-11-21T12:00:00Z',
+              overall: 'OK',
+              corePassedCount: 5,
+              coreTotalCount: 5,
+              durationMs: 1200,
+            },
+            checks: [{ id: 'firestore', label: 'Firestore', status: 'OK', detail: 'Connected' }],
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({ commitSha: 'f6327e7', environment: 'staging' }) };
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const { FounderInboxConsole } = await import('@/components/admin/FounderInboxConsole');
+      render(React.createElement(FounderInboxConsole));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('INBOX_JUMP_RED')).toBeInTheDocument();
+        expect(screen.getByTestId('INBOX_JUMP_BUGS')).toBeInTheDocument();
+      });
+
+      // 0 Low-Drag (AMBER) pill is cleanly hidden when amber === 0
+      expect(screen.queryByTestId('INBOX_JUMP_AMBER')).toBeNull();
+      // Freshness indicator shows deep-verified status for matching build
+      expect(screen.getByTestId('ADMIN_HEALTH_DEEP_FRESHNESS')).toHaveTextContent(
+        'Build f6327e7 Deep-Verified'
+      );
+
+      // Clicking jump pill works safely in jsdom even without native scrollIntoView
+      expect(() => fireEvent.click(screen.getByTestId('INBOX_JUMP_BUGS'))).not.toThrow();
+      expect(document.getElementById('inbox-section-bugs')).not.toBeNull();
+      expect(document.getElementById('inbox-section-bugs')?.className).toContain('scroll-mt-24');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('FounderDryRunConsole uses strictly relative routes, persists verdicts to localStorage, and logs snags to /api/admin/bugs', async () => {
+    window.localStorage.clear();
+    const fetchMock = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/api/version')) {
+        return { ok: true, json: async () => ({ commitSha: 'f6327e701234' }) };
+      }
+      if (String(url).includes('/api/admin/bugs') && init?.method === 'POST') {
+        return {
+          ok: true,
+          json: async () => ({ success: true, report: { reportId: 'bug_dryrun_42' } }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const {
+        FounderDryRunConsole,
+        DRY_RUN_STORAGE_KEY,
+        FOUNDER_DRY_RUN_STEPS,
+        formatDryRunChatPrompt,
+      } = await import('@/components/admin/FounderDryRunConsole');
+
+      const { container } = render(React.createElement(FounderDryRunConsole, { readyBugsCount: 2 }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('FOUNDER_DRY_RUN_CONSOLE')).toBeInTheDocument();
+      });
+
+      // Strictly relative launch routes (/studio, /studio/fireside, /gift) — zero hardcoded staging hosts
+      const launchLinks = FOUNDER_DRY_RUN_STEPS.map((s) =>
+        screen.getByTestId(`DRY_RUN_LAUNCH_${s.id}`).getAttribute('href')
+      );
+      expect(launchLinks).toEqual(['/studio', '/studio/fireside', '/gift']);
+      expect(container.innerHTML).not.toContain('dev.memoryweaver.studio');
+
+      // Mark SoundStage PASS -> persists to localStorage
+      fireEvent.click(screen.getByTestId('DRY_RUN_PASS_soundstage-e2e'));
+      expect(screen.getByTestId('DRY_RUN_STATUS_soundstage-e2e')).toHaveTextContent('PASS');
+      const storedAfterPass = JSON.parse(window.localStorage.getItem(DRY_RUN_STORAGE_KEY) || '{}');
+      expect(storedAfterPass.steps['soundstage-e2e'].status).toBe('PASS');
+
+      // Add Fireside note and click Log Snag to Bug Queue -> POST /api/admin/bugs
+      fireEvent.change(screen.getByTestId('DRY_RUN_NOTE_fireside-e2e'), {
+        target: { value: 'Waveform stutter on mobile viewport' },
+      });
+      fireEvent.click(screen.getByTestId('DRY_RUN_LOG_SNAG_fireside-e2e'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('DRY_RUN_STATUS_fireside-e2e')).toHaveTextContent('SNAG');
+      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/admin/bugs',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+
+      // Pure prompt formatter emits Markdown with route, SHA, and note
+      const prompt = formatDryRunChatPrompt({
+        step: FOUNDER_DRY_RUN_STEPS[1],
+        state: { status: 'SNAG', note: 'Waveform stutter', loggedReportId: 'bug_dryrun_42' },
+        commitSha: 'f6327e7',
+      });
+      expect(prompt).toContain('/studio/fireside');
+      expect(prompt).toContain('f6327e7');
+      expect(prompt).toContain('bug_dryrun_42');
+    } finally {
+      vi.unstubAllGlobals();
+      window.localStorage.clear();
     }
   });
 });

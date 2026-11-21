@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import {
   computeCoreHealthCounts,
   computeOverallHealthStatus,
+  evaluateDeepSmokeFreshness,
   formatHealthProbeMarkdownReceipt,
   type HealthCheckItem,
   type HealthCheckStatus,
@@ -127,6 +128,7 @@ export function AdminHealthBar({ compact = false }: AdminHealthBarProps) {
             : derivedCounts.coreTotalCount,
         infoCount:
           typeof data.infoCount === 'number' ? data.infoCount : derivedCounts.infoCount,
+        latestDeepSmoke: data.latestDeepSmoke ?? null,
         parity: data.parity as HealthProbeReport['parity'],
         checks: data.checks,
       };
@@ -179,6 +181,13 @@ export function AdminHealthBar({ compact = false }: AdminHealthBarProps) {
 
   const checks: HealthCheckItem[] = Array.isArray(report?.checks) ? report.checks : [];
   const overall = report?.overall || 'OK';
+  const currentSha =
+    report?.environment === 'production'
+      ? report?.parity?.prodSha
+      : report?.parity?.stagingSha;
+  const freshness = report
+    ? evaluateDeepSmokeFreshness(report.latestDeepSmoke, currentSha)
+    : null;
 
   if (!loading && !report && !error) {
     return null;
@@ -245,6 +254,14 @@ export function AdminHealthBar({ compact = false }: AdminHealthBarProps) {
                   · {report.infoCount} expected notice{report.infoCount === 1 ? '' : 's'}
                 </span>
               )}
+              {freshness && (
+                <span
+                  data-testid="ADMIN_HEALTH_DEEP_FRESHNESS"
+                  className={freshness.isFreshForBuild ? 'text-emerald-300/90' : 'text-slate-300/90'}
+                >
+                  · {freshness.label}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -295,8 +312,17 @@ export function AdminHealthBar({ compact = false }: AdminHealthBarProps) {
             type="button"
             disabled={loading || runningDeep}
             data-testid="ADMIN_HEALTH_DEEP_BTN"
+            title={
+              freshness?.isFreshForBuild
+                ? 'Current build already deep-verified — click only if you want a fresh live ping of Stripe, Resend & Genkit.'
+                : 'Optional live ping of Stripe, Resend & Genkit — run once after a new build or before promoting to Production.'
+            }
             onClick={() => runProbe(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition cursor-pointer disabled:opacity-50"
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition cursor-pointer disabled:opacity-50 ${
+              freshness?.highlightButton
+                ? 'border border-indigo-500/50 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/30'
+                : 'border border-slate-700 bg-slate-900/90 text-slate-200 hover:border-indigo-500/50 hover:text-white'
+            }`}
           >
             <Zap className="h-3 w-3" />
             {runningDeep ? 'Running Deep Smoke...' : 'Run Deep Smoke Test'}

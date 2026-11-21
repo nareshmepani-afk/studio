@@ -24,8 +24,9 @@ import { BugTriageConsole } from '@/components/admin/BugTriageConsole';
 import { PrelaunchAccessConsole } from '@/components/admin/PrelaunchAccessConsole';
 import { FounderDecisionForm } from '@/components/admin/FounderDecisionForm';
 import { FounderInboxConsole } from '@/components/admin/FounderInboxConsole';
+import { FounderDryRunConsole } from '@/components/admin/FounderDryRunConsole';
 import { UserDirectoryConsole } from '@/components/admin/UserDirectoryConsole';
-import { Bug, Lock, ClipboardCheck, UserCog, Inbox, ExternalLink, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Bug, Lock, ClipboardCheck, UserCog, Inbox, ExternalLink, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, Film } from 'lucide-react';
 import { isProductionProject, STAGING_APP_URL } from '@/config/environment';
 import type { InboxBadgeCounts } from '@/lib/releaseControls';
 import { getBackendEnvironmentDetails } from './actions';
@@ -40,11 +41,21 @@ export default function AdminDashboardContent() {
   const clientProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || null;
   const initialIsLiveProduction = isProductionProject(clientProjectId);
 
-  const [activeSuite, setActiveSuite] = useState<'releases' | 'devops' | 'business' | 'users' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>('devops');
+  const [activeSuite, setActiveSuite] = useState<'dryrun' | 'releases' | 'devops' | 'business' | 'users' | 'access' | 'email' | 'knowledge' | 'vouchers' | 'mission' | 'bugs' | 'prelaunch' | 'decisions'>(
+    initialIsLiveProduction ? 'devops' : 'releases'
+  );
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
   const [inboxBadges, setInboxBadges] = useState<InboxBadgeCounts | null>(null);
   // SSR-safe Focus Mode toggle (always false on initial render; hydrates preference inside useEffect)
   const [sidebarHidden, setSidebarHidden] = useState<boolean>(false);
+  // Engineering & Archive sidebar section collapsed by default; auto-expands when an engineering suite is active
+  const [engineeringExpanded, setEngineeringExpanded] = useState<boolean>(initialIsLiveProduction);
+
+  useEffect(() => {
+    if (['devops', 'mission', 'knowledge', 'decisions'].includes(activeSuite)) {
+      setEngineeringExpanded(true);
+    }
+  }, [activeSuite]);
 
   useEffect(() => {
     try {
@@ -107,7 +118,7 @@ export default function AdminDashboardContent() {
       // Rehydrate active suite from URL search params (?suite=email, ?suite=vouchers, or ?tab=access)
       const urlParams = new URLSearchParams(window.location.search);
       const suiteParam = urlParams.get('suite') || urlParams.get('tab');
-      if (suiteParam && ['releases', 'devops', 'business', 'users', 'access', 'email', 'knowledge', 'vouchers', 'mission', 'bugs', 'prelaunch', 'decisions'].includes(suiteParam)) {
+      if (suiteParam && ['dryrun', 'releases', 'devops', 'business', 'users', 'access', 'email', 'knowledge', 'vouchers', 'mission', 'bugs', 'prelaunch', 'decisions'].includes(suiteParam)) {
         setActiveSuite(suiteParam as any);
       } else if (urlParams.get('traceId') || urlParams.get('reportId') || urlParams.get('userId')) {
         setActiveSuite('bugs');
@@ -267,190 +278,298 @@ export default function AdminDashboardContent() {
           {/* Left Sidebar (hidden cleanly when Focus Mode is active) */}
           {!sidebarHidden && (
           <aside className="space-y-6" data-testid="ADMIN_SUITES_SIDEBAR">
-            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 space-y-2">
-              <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 block px-3 mb-2">Admin Suites</span>
-
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 space-y-4">
+              {/* Group 1: Launch & Testing (Staging-only — completely omitted on LIVE PRODUCTION) */}
               {!isLiveProduction && (
-                <button
-                  onClick={() => selectSuite('releases')}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition duration-200 ${
-                    activeSuite === 'releases'
-                      ? 'bg-rose-500/20 border border-rose-500/40 text-rose-200'
-                      : 'border border-transparent text-slate-300 hover:bg-slate-800/50 hover:text-white'
-                  }`}
-                >
-                  <span className="flex items-center gap-2.5">
-                    <Inbox className="h-4 w-4 text-rose-400" />
-                    <span>🚦 Founder Inbox</span>
+                <div className="space-y-1.5" data-testid="ADMIN_NAV_GROUP_LAUNCH">
+                  <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-indigo-400/90 block px-3">
+                    Launch &amp; Testing
                   </span>
-                  {inboxBadges && (inboxBadges.red > 0 || inboxBadges.amber > 0 || inboxBadges.readySignOff > 0) && (
-                    <span className="flex items-center gap-1 shrink-0">
-                      {inboxBadges.red > 0 && (
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-rose-500/25 text-rose-200 border border-rose-500/50">
-                          🔴 {inboxBadges.red}
-                        </span>
-                      )}
-                      {(inboxBadges.amber + inboxBadges.readySignOff) > 0 && (
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-500/25 text-amber-200 border border-amber-500/50">
-                          🟠 {inboxBadges.amber + inboxBadges.readySignOff}
-                        </span>
-                      )}
+
+                  <button
+                    type="button"
+                    data-testid="ADMIN_NAV_DRYRUN"
+                    onClick={() => selectSuite('dryrun')}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition duration-200 cursor-pointer ${
+                      activeSuite === 'dryrun'
+                        ? 'bg-indigo-500/20 border border-indigo-500/40 text-indigo-200'
+                        : 'border border-transparent text-slate-300 hover:bg-slate-800/50 hover:text-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Film className="h-4 w-4 text-indigo-400" />
+                      <span>🎬 Dry-Run Runway</span>
                     </span>
-                  )}
-                </button>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="ADMIN_NAV_RELEASES"
+                    onClick={() => selectSuite('releases')}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition duration-200 cursor-pointer ${
+                      activeSuite === 'releases'
+                        ? 'bg-rose-500/20 border border-rose-500/40 text-rose-200'
+                        : 'border border-transparent text-slate-300 hover:bg-slate-800/50 hover:text-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <Inbox className="h-4 w-4 text-rose-400 shrink-0" />
+                      <span className="truncate">🚦 Founder Inbox</span>
+                    </span>
+                    {inboxBadges && (inboxBadges.red > 0 || inboxBadges.amber > 0 || inboxBadges.readySignOff > 0) && (
+                      <span className="flex items-center gap-1 shrink-0" data-testid="ADMIN_NAV_INBOX_BADGES">
+                        {inboxBadges.red > 0 && (
+                          <span
+                            data-testid="ADMIN_NAV_BADGE_RED"
+                            title={`${inboxBadges.red} RED blocking gate${inboxBadges.red === 1 ? '' : 's'}`}
+                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-rose-500/25 text-rose-200 border border-rose-500/50"
+                          >
+                            🔴 {inboxBadges.red}
+                          </span>
+                        )}
+                        {inboxBadges.amber > 0 && (
+                          <span
+                            data-testid="ADMIN_NAV_BADGE_AMBER"
+                            title={`${inboxBadges.amber} AMBER low-drag gate${inboxBadges.amber === 1 ? '' : 's'}`}
+                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-amber-500/25 text-amber-200 border border-amber-500/50"
+                          >
+                            🟠 {inboxBadges.amber}
+                          </span>
+                        )}
+                        {inboxBadges.readySignOff > 0 && (
+                          <span
+                            data-testid="ADMIN_NAV_BADGE_SIGNOFF"
+                            title={`${inboxBadges.readySignOff} fix${inboxBadges.readySignOff === 1 ? '' : 'es'} ready for sign-off`}
+                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-sky-500/25 text-sky-200 border border-sky-500/50"
+                          >
+                            ✅ {inboxBadges.readySignOff}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="ADMIN_NAV_BUGS"
+                    onClick={() => selectSuite('bugs')}
+                    className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                      activeSuite === 'bugs'
+                        ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
+                        : 'border border-transparent text-slate-300 hover:bg-slate-800/40 hover:text-slate-100'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <Bug className="h-4 w-4 text-rose-400 shrink-0" />
+                      <span className="truncate">Founder Sign-Off Queue</span>
+                    </span>
+                    {inboxBadges && inboxBadges.readySignOff > 0 && (
+                      <span
+                        data-testid="ADMIN_NAV_BUGS_BADGE"
+                        className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-sky-500/25 text-sky-200 border border-sky-500/50 shrink-0"
+                      >
+                        {inboxBadges.readySignOff}
+                      </span>
+                    )}
+                  </button>
+
+                  <Link
+                    href="/admin/qa"
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition duration-200"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <span>QA Testing Suite</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">/admin/qa ↗</span>
+                  </Link>
+                </div>
               )}
 
-              <button
-                onClick={() => selectSuite('devops')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'devops' 
-                    ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300' 
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
+              {/* Group 2: Live Operations */}
+              <div
+                className={`space-y-1.5 ${!isLiveProduction ? 'pt-3 border-t border-slate-800/60' : ''}`}
+                data-testid="ADMIN_NAV_GROUP_LIVE_OPS"
               >
-                <Cpu className="h-4 w-4" />
-                DevOps & Operations
-              </button>
+                <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 block px-3">
+                  Live Operations
+                </span>
 
-              <button
-                onClick={() => selectSuite('business')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'business' 
-                    ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300' 
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <TrendingUp className="h-4 w-4" />
-                Business & Analytics
-              </button>
-
-              <button
-                onClick={() => selectSuite('users')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'users' 
-                    ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300' 
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <UserCog className="h-4 w-4 text-emerald-400" />
-                Users / CRM
-              </button>
-
-              <button
-                onClick={() => selectSuite('access')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'access' 
-                    ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300' 
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <Users className="h-4 w-4" />
-                Access & Support
-              </button>
-
-              <button
-                onClick={() => selectSuite('email')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'email' 
-                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <Mail className="h-4 w-4 text-amber-400" />
-                Email Operations
-              </button>
-
-              <button
-                onClick={() => selectSuite('vouchers')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'vouchers' 
-                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <Gift className="h-4 w-4 text-amber-400" />
-                Heirloom Vouchers
-              </button>
-
-              <button
-                onClick={() => selectSuite('mission')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'mission' 
-                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <Rocket className="h-4 w-4 text-amber-400" />
-                Mission Control
-              </button>
-
-              <button
-                onClick={() => selectSuite('knowledge')}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md border transition-all ${
-                  activeSuite === 'knowledge'
-                    ? 'bg-purple-600/10 border-purple-500/30 text-purple-200'
-                    : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                Knowledge Hub
-              </button>
-
-              <button
-                onClick={() => selectSuite('prelaunch')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'prelaunch'
-                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <Lock className="h-4 w-4 text-amber-400" />
-                <span>Pre-Launch Gate</span>
-              </button>
-
-              {!isLiveProduction && (
                 <button
-                  onClick={() => selectSuite('decisions')}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                    activeSuite === 'decisions'
+                  type="button"
+                  onClick={() => selectSuite('users')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                    activeSuite === 'users'
+                      ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                      : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                  }`}
+                >
+                  <UserCog className="h-4 w-4 text-emerald-400" />
+                  Users / CRM
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => selectSuite('vouchers')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                    activeSuite === 'vouchers'
                       ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
                       : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
                   }`}
                 >
-                  <ClipboardCheck className="h-4 w-4 text-amber-400" />
-                  <span>Founder Decisions</span>
+                  <Gift className="h-4 w-4 text-amber-400" />
+                  Heirloom Vouchers
                 </button>
-              )}
 
-              <button
-                onClick={() => selectSuite('bugs')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
-                  activeSuite === 'bugs'
-                    ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
-                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
-                }`}
-              >
-                <Bug className="h-4 w-4 text-rose-400" />
-                <span>{isLiveProduction ? 'Customer Bug Inbox' : 'Founder Sign-Off Queue'}</span>
-              </button>
-
-              {!isLiveProduction && (
-                <Link
-                  href="/admin/qa"
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition duration-200"
+                <button
+                  type="button"
+                  onClick={() => selectSuite('email')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                    activeSuite === 'email'
+                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                      : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                  }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                    <span>QA Testing Suite</span>
+                  <Mail className="h-4 w-4 text-amber-400" />
+                  Email Operations
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => selectSuite('prelaunch')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                    activeSuite === 'prelaunch'
+                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                      : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                  }`}
+                >
+                  <Lock className="h-4 w-4 text-amber-400" />
+                  <span>Pre-Launch Gate</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => selectSuite('business')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                    activeSuite === 'business'
+                      ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300'
+                      : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                  }`}
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Business &amp; Analytics
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => selectSuite('access')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                    activeSuite === 'access'
+                      ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300'
+                      : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  Access &amp; Support
+                </button>
+
+                {isLiveProduction && (
+                  <button
+                    type="button"
+                    data-testid="ADMIN_NAV_BUGS"
+                    onClick={() => selectSuite('bugs')}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                      activeSuite === 'bugs'
+                        ? 'bg-rose-500/20 border border-rose-500/40 text-rose-300'
+                        : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                    }`}
+                  >
+                    <Bug className="h-4 w-4 text-rose-400" />
+                    <span>Customer Bug Inbox</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Group 3: Engineering & Archive (collapsed by default unless active suite is inside) */}
+              <div className="pt-3 border-t border-slate-800/60 space-y-1.5" data-testid="ADMIN_NAV_GROUP_ENGINEERING">
+                <button
+                  type="button"
+                  data-testid="ADMIN_NAV_ENGINEERING_TOGGLE"
+                  onClick={() => setEngineeringExpanded((prev) => !prev)}
+                  className="w-full flex items-center justify-between px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                >
+                  <span>Engineering &amp; Archive</span>
+                  {engineeringExpanded ? (
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  )}
+                </button>
+
+                {engineeringExpanded && (
+                  <div className="space-y-1.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => selectSuite('devops')}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                        activeSuite === 'devops'
+                          ? 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300'
+                          : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                      }`}
+                    >
+                      <Cpu className="h-4 w-4" />
+                      DevOps &amp; Operations
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => selectSuite('mission')}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                        activeSuite === 'mission'
+                          ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                          : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                      }`}
+                    >
+                      <Rocket className="h-4 w-4 text-amber-400" />
+                      Mission Control
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => selectSuite('knowledge')}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md border transition-all cursor-pointer ${
+                        activeSuite === 'knowledge'
+                          ? 'bg-purple-600/10 border-purple-500/30 text-purple-200'
+                          : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      Knowledge Hub
+                    </button>
+
+                    {!isLiveProduction && (
+                      <button
+                        type="button"
+                        onClick={() => selectSuite('decisions')}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
+                          activeSuite === 'decisions'
+                            ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                            : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                        }`}
+                      >
+                        <ClipboardCheck className="h-4 w-4 text-amber-400" />
+                        <span>Founder Decisions</span>
+                      </button>
+                    )}
                   </div>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">/admin/qa ↗</span>
-                </Link>
-              )}
+                )}
+              </div>
 
               <div className="pt-2 border-t border-slate-800/60 mt-2">
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl border border-transparent text-slate-400 hover:bg-rose-500/10 hover:border-rose-500/20 hover:text-rose-400 transition-all cursor-pointer"
                 >
@@ -495,6 +614,7 @@ export default function AdminDashboardContent() {
             <section className="relative overflow-hidden rounded-2xl border border-indigo-500/20 bg-gradient-to-b from-indigo-950/20 to-slate-900/60 p-8 shadow-2xl">
               <div className="relative z-10 space-y-2 max-w-2xl">
                 <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                  {activeSuite === 'dryrun' && 'Founder Dry-Run Runway'}
                   {activeSuite === 'releases' && 'Founder Inbox & Release Controls'}
                   {activeSuite === 'devops' && 'DevOps & Operations'}
                   {activeSuite === 'business' && 'Business Analytics'}
@@ -509,6 +629,7 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'bugs' && (isLiveProduction ? 'Production Customer Bug Inbox' : 'Staging Founder Sign-Off Queue')}
                 </h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
+                  {activeSuite === 'dryrun' && 'Guided staging dry user run across SoundStage (Acts I–V), Fireside Booth, and Heirloom Gift checkout — mark PASS/SNAG and log any snag directly to Firestore.'}
                   {activeSuite === 'releases' && 'Single Staging Control Plane for 🔴 RED blocking release gates, 🟠 AMBER low-drag approvals, and 1-click sign-offs — never lost in chat.'}
                   {activeSuite === 'devops' && 'Monitor resilience memory structures, local IndexedDB states, WebRTC signaling integrity, and routing traces.'}
                   {activeSuite === 'business' && 'View subscription tier tracking, user adoption quotas, and API analytics telemetry.'}
@@ -529,6 +650,28 @@ export default function AdminDashboardContent() {
 
             {/* Sub-Console Router */}
             <div>
+              {activeSuite === 'dryrun' && (
+                isLiveProduction ? (
+                  <div className="rounded-2xl border border-amber-500/35 bg-slate-900/60 p-6 space-y-3">
+                    <h3 className="text-base font-bold text-white">Dry-Run Runway Lives on Staging</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Founder dry user runs execute exclusively against the Staging environment so test memories and test snags never touch live production customer data.
+                    </p>
+                    <a
+                      href={`${STAGING_APP_URL}/admin?suite=dryrun`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition"
+                    >
+                      Open Staging Dry-Run Runway
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                ) : (
+                  <FounderDryRunConsole
+                    readyBugsCount={inboxBadges?.readySignOff ?? 0}
+                    onNavigateSuite={(suite) => selectSuite(suite)}
+                  />
+                )
+              )}
               {activeSuite === 'releases' && (
                 isLiveProduction ? (
                   <div className="rounded-2xl border border-amber-500/35 bg-slate-900/60 p-6 space-y-3">

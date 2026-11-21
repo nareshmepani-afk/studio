@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertOctagon,
   AlertTriangle,
@@ -109,6 +109,32 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
   const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
   const [showLedger, setShowLedger] = useState<boolean>(false);
   const [activePlaneKey, setActivePlaneKey] = useState<string | null>(null);
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
+
+  const jumpToSection = useCallback((sectionId: string) => {
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById(sectionId);
+    if (!el) return;
+    if (typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setHighlightedSection(sectionId);
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current);
+    }
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlightedSection((prev) => (prev === sectionId ? null : prev));
+    }, 1800);
+  }, []);
 
   const notifySidebarBadges = () => {
     if (typeof window !== 'undefined') {
@@ -649,18 +675,56 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
       <div className="rounded-2xl border border-slate-800/80 bg-slate-900/50 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-rose-500/40 bg-rose-500/15 text-rose-300">
-              🔴 {badges.red} Blocking (RED)
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-amber-500/40 bg-amber-500/15 text-amber-300">
-              🟠 {badges.amber} Low-Drag (AMBER)
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-sky-500/40 bg-sky-500/15 text-sky-300">
-              ✅ {badges.readySignOff} Fixes to Sign Off
-            </span>
+            {badges.red > 0 && (
+              <button
+                type="button"
+                data-testid="INBOX_JUMP_RED"
+                onClick={() => jumpToSection('inbox-section-red')}
+                title="Jump to RED Blocking Release Controls"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-rose-500/40 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 transition cursor-pointer"
+              >
+                🔴 {badges.red} Blocking (RED)
+              </button>
+            )}
+            {badges.amber > 0 && (
+              <button
+                type="button"
+                data-testid="INBOX_JUMP_AMBER"
+                onClick={() => jumpToSection('inbox-section-amber')}
+                title="Jump to AMBER Low-Drag Release Controls"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 transition cursor-pointer"
+              >
+                🟠 {badges.amber} Low-Drag (AMBER)
+              </button>
+            )}
+            {badges.readySignOff > 0 && (
+              <button
+                type="button"
+                data-testid="INBOX_JUMP_BUGS"
+                onClick={() => jumpToSection('inbox-section-bugs')}
+                title="Jump to Ready for 1-Click Sign-Off"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-sky-500/40 bg-sky-500/15 text-sky-300 hover:bg-sky-500/25 transition cursor-pointer"
+              >
+                ✅ {badges.readySignOff} Fix{badges.readySignOff === 1 ? '' : 'es'} to Sign Off
+              </button>
+            )}
             {badges.approvedAwaitingCli > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-300">
+              <button
+                type="button"
+                data-testid="INBOX_JUMP_APPROVED"
+                onClick={() => jumpToSection('inbox-section-approved')}
+                title="Jump to Approved — Handed to Antigravity"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition cursor-pointer"
+              >
                 🚀 {badges.approvedAwaitingCli} Approved — Handed to Antigravity
+              </button>
+            )}
+            {badges.red === 0 && badges.amber === 0 && badges.readySignOff === 0 && badges.approvedAwaitingCli === 0 && (
+              <span
+                data-testid="INBOX_ALL_CLEAR_PILL"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-emerald-500/35 bg-emerald-500/15 text-emerald-300"
+              >
+                ✅ All Clear — 0 Items Waiting
               </span>
             )}
           </div>
@@ -751,7 +815,13 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
 
           {/* 1. RED Blocking Release Controls */}
           {activeRedControls.length > 0 && (
-            <section className="space-y-3" aria-label="RED Blocking Release Controls">
+            <section
+              id="inbox-section-red"
+              className={`space-y-3 scroll-mt-24 transition-shadow ${
+                highlightedSection === 'inbox-section-red' ? 'ring-2 ring-rose-400/60 rounded-2xl p-2 -m-2' : ''
+              }`}
+              aria-label="RED Blocking Release Controls"
+            >
               <h3 className="text-xs font-bold uppercase tracking-widest text-rose-400 flex items-center gap-2 px-1">
                 <AlertOctagon className="h-4 w-4" />
                 🔴 RED Gatekeeper — Blocking / Knock-On Drag ({activeRedControls.length})
@@ -764,7 +834,13 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
 
           {/* 2. AMBER Low-Drag Release Controls */}
           {activeAmberControls.length > 0 && (
-            <section className="space-y-3" aria-label="AMBER Low-Drag Release Controls">
+            <section
+              id="inbox-section-amber"
+              className={`space-y-3 scroll-mt-24 transition-shadow ${
+                highlightedSection === 'inbox-section-amber' ? 'ring-2 ring-amber-400/60 rounded-2xl p-2 -m-2' : ''
+              }`}
+              aria-label="AMBER Low-Drag Release Controls"
+            >
               <h3 className="text-xs font-bold uppercase tracking-widest text-amber-400 flex items-center gap-2 px-1">
                 <Clock className="h-4 w-4" />
                 🟠 AMBER Gatekeeper — Safe to Hold or Defer ({activeAmberControls.length})
@@ -777,7 +853,13 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
 
           {/* 3. Ready for 1-Click Sign-Off (FIXED_ON_DEV Bug Fixes) */}
           {readyBugs.length > 0 && (
-            <section className="space-y-3" aria-label="Fixes Ready for Founder Sign-Off">
+            <section
+              id="inbox-section-bugs"
+              className={`space-y-3 scroll-mt-24 transition-shadow ${
+                highlightedSection === 'inbox-section-bugs' ? 'ring-2 ring-sky-400/60 rounded-2xl p-2 -m-2' : ''
+              }`}
+              aria-label="Fixes Ready for Founder Sign-Off"
+            >
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-sky-400 flex items-center gap-2">
                   <Rocket className="h-4 w-4" />
@@ -915,7 +997,12 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
 
           {/* 5. Approved — Handed to Antigravity for Execution */}
           {approvedControls.length > 0 && (
-            <section className="space-y-2.5">
+            <section
+              id="inbox-section-approved"
+              className={`space-y-2.5 scroll-mt-24 transition-shadow ${
+                highlightedSection === 'inbox-section-approved' ? 'ring-2 ring-emerald-400/60 rounded-2xl p-2 -m-2' : ''
+              }`}
+            >
               <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-400 px-1">
                 🚀 Approved — Handed to Antigravity for Execution ({approvedControls.length})
               </h3>

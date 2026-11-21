@@ -42,6 +42,17 @@ export interface StripeModeClassification {
   webhookSecretConfigured: boolean;
 }
 
+export interface LatestDeepSmokeSnapshot {
+  commitSha: string | null;
+  checkedAtIso: string;
+  overall: 'OK' | 'WARN' | 'FAIL';
+  corePassedCount: number;
+  coreTotalCount: number;
+  durationMs: number;
+  triggeredBy?: string | null;
+  matchesCurrentBuild?: boolean;
+}
+
 export interface HealthProbeReport {
   overall: 'OK' | 'WARN' | 'FAIL';
   mode: 'FAST' | 'DEEP';
@@ -52,8 +63,57 @@ export interface HealthProbeReport {
   corePassedCount: number;
   coreTotalCount: number;
   infoCount: number;
+  latestDeepSmoke?: LatestDeepSmokeSnapshot | null;
   parity: EnvironmentParityReport;
   checks: HealthCheckItem[];
+}
+
+export function evaluateDeepSmokeFreshness(
+  latest: LatestDeepSmokeSnapshot | null | undefined,
+  currentCommitSha?: string | null
+): {
+  isFreshForBuild: boolean;
+  label: string;
+  highlightButton: boolean;
+} {
+  const normCurrent = (currentCommitSha || '').trim().toLowerCase().slice(0, 7);
+  const normLatest = (latest?.commitSha || '').trim().toLowerCase().slice(0, 7);
+
+  if (!latest || !normLatest) {
+    return {
+      isFreshForBuild: false,
+      label: normCurrent
+        ? `Build ${normCurrent} not yet deep-tested`
+        : 'No deep smoke test recorded yet',
+      highlightButton: true,
+    };
+  }
+
+  const matches = Boolean(normCurrent && normLatest === normCurrent);
+  const timeMatch = latest.checkedAtIso?.match(/T(\d{2}:\d{2})/);
+  const shortTime = timeMatch ? `${timeMatch[1]} UTC` : latest.checkedAtIso;
+
+  if (matches && latest.overall === 'OK') {
+    return {
+      isFreshForBuild: true,
+      label: `✅ Build ${normLatest} Deep-Verified (${shortTime})`,
+      highlightButton: false,
+    };
+  }
+
+  if (matches) {
+    return {
+      isFreshForBuild: false,
+      label: `Last deep check on ${normLatest}: ${latest.overall} (${shortTime})`,
+      highlightButton: true,
+    };
+  }
+
+  return {
+    isFreshForBuild: false,
+    label: `New build ${normCurrent || 'pending'} not deep-tested yet (last verified: ${normLatest})`,
+    highlightButton: true,
+  };
 }
 
 export interface HealthProbeAdapters {
