@@ -49,6 +49,10 @@ import { Memory, FusionManifest, PremiereMode } from '@/types';
 import { resolveMemoryMilestones } from '@/lib/curriculum/milestoneTruth';
 import CinemaPoster from '../memory/CinemaPoster';
 import { CinemaMonitor } from './CinemaMonitor';
+import {
+  resolvePreferredScriptTake,
+  resolveStudioActView,
+} from '@/lib/studioStageResolver';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useAuth } from '@/hooks/useAuth';
 import { sanitizeMemoryPayloadForStorage } from '@/lib/memoryPersistenceGuard';
@@ -310,17 +314,17 @@ export default function SoloStage({
   }, []);
 
   // Safety guard: If selectedTake is null/empty and NOT actively reviewing fresh SelectionDeck cards,
-  // initialize selectedTake from saved prose/description. Guarding with !isReviewing protects MW-120
+  // initialize selectedTake from saved prose/structuredScript/description. Guarding with !isReviewing protects MW-120
   // SyncLock so ProductionControlBar doesn't prematurely satisfy hasSelectedTreatment during re-weave review.
   useEffect(() => {
-    if (!isReviewing && (data?.prose || data?.description) && !selectedTake) {
-      const fallbackText = data.prose || data.description;
+    const fallbackText = resolvePreferredScriptTake(data);
+    if (!isReviewing && fallbackText && !selectedTake) {
       console.log("[SoloStage] Auto-syncing selectedTake fallback from data:", fallbackText.substring(0, 40) + "...");
       if (typeof globalActions?.setSelectedTake === 'function') {
         globalActions.setSelectedTake(fallbackText);
       }
     }
-  }, [isReviewing, data?.prose, data?.description, selectedTake, globalActions]);
+  }, [isReviewing, data?.prose, data?.structuredScript?.cleanScript, data?.description, selectedTake, globalActions]);
 
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -3138,12 +3142,19 @@ export default function SoloStage({
   );
 
   const renderWeave = () => {
-    const hasPendingSelectionDrafts = Boolean(
-      (Array.isArray(reviewDrafts) && reviewDrafts.length > 0) ||
-      (Array.isArray((data as any)?.reviewDrafts) && (data as any).reviewDrafts.length > 0)
-    );
+    const pendingDraftsCount =
+      (Array.isArray(reviewDrafts) && reviewDrafts.length > 0)
+        ? reviewDrafts.length
+        : (Array.isArray((data as any)?.reviewDrafts) ? (data as any).reviewDrafts.length : 0);
+    const hasPendingSelectionDrafts = pendingDraftsCount > 0;
+    const actView = resolveStudioActView({
+      currentStage: 1,
+      isReviewing,
+      pendingDraftsCount,
+      hasStructuredScript: Boolean(data?.structuredScript),
+    });
     const showCinemaMonitor = Boolean(
-      data?.structuredScript && isReviewing && !hasPendingSelectionDrafts
+      actView === 'ACT2_CINEMA_MONITOR' && data?.structuredScript && isReviewing && !hasPendingSelectionDrafts
     );
 
     return (

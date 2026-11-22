@@ -405,8 +405,17 @@ describe('🚀 MW-266: First Flight Micro-Onboarding & Zero-Contamination Shield
     // 2. SentenceWrapper guards handleCaretOrSelectionChange during mw:pulse-anchor
     expect(sentenceWrapperContent).toContain('if (isPulsingAnchorRef.current) return;');
 
-    // 3. ProductionDeck unlocks Act I on ?act=1 or first_flight_rehearsal at stage 0
-    expect(deckContent).toContain('const isFirstFlightAct1 = currentStage === 0 && (memoryData.id === \'first_flight_rehearsal\' || (memoryData as any).isFlightSimulator);');
+    // 3. ProductionDeck unlocks Act I on ?act=1 or first_flight_rehearsal at stage 0 via studioStageResolver SSOT
+    expect(deckContent).toContain('resolveSyncLockState');
+    expect(deckContent).toContain("memoryData.id === 'first_flight_rehearsal' || (memoryData as any).isFlightSimulator");
+    const { resolveSyncLockState } = await import('@/lib/studioStageResolver');
+    expect(
+      resolveSyncLockState({
+        currentStage: 0,
+        isFlightSimulator: true,
+        memoryIsProductionLocked: true,
+      }).isLocked
+    ).toBe(false);
 
     // 4. Golden Trio sensory detection yields Soundscape (1), Visual (1), Aroma (1) for both FIRST_FLIGHT_FIXTURE and AI Master Weave
     const { detectAnchors, filterDominantSensoryAnchors } = await import('@/hooks/studio/useDirectorInk');

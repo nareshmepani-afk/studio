@@ -3157,13 +3157,13 @@ describe('🔒 Global Forbidden-Pattern Anti-Regression Scanner', () => {
         'utf-8'
       );
 
-      // 1. SoloStage guards CinemaMonitor behind !hasPendingSelectionDrafts and guards selectedTake auto-sync behind !isReviewing
-      expect(soloStageContent).toContain('hasPendingSelectionDrafts');
-      expect(soloStageContent).toContain('data?.structuredScript && isReviewing && !hasPendingSelectionDrafts');
-      expect(soloStageContent).toContain('if (!isReviewing && (data?.prose || data?.description) && !selectedTake)');
+      // 1. SoloStage delegates to studioStageResolver and guards selectedTake auto-sync behind !isReviewing
+      expect(soloStageContent).toContain('resolveStudioActView');
+      expect(soloStageContent).toContain("actView === 'ACT2_CINEMA_MONITOR'");
+      expect(soloStageContent).toContain('if (!isReviewing && fallbackText && !selectedTake)');
 
-      // 2. ProductionDeck keeps SyncLock unlocked during review, clears prior selection on synthesis, and never wipes structuredScript destructively
-      expect(productionDeckContent).toContain('isExplicitAct1 || isFirstFlightAct1 || isReviewing');
+      // 2. ProductionDeck delegates SyncLock to resolveSyncLockState, clears prior selection on synthesis, and never wipes structuredScript destructively
+      expect(productionDeckContent).toContain('resolveSyncLockState');
       expect(productionDeckContent).toContain('setSelectedTake(null)');
       expect(productionDeckContent).toContain('setSelectedVision(null, null)');
       expect(productionDeckContent).toContain('isProductionLocked: false,');

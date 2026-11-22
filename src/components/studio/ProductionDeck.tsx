@@ -48,6 +48,11 @@ const SNAP_THRESHOLD = 20; // Magnetic snap range
 import localforage from 'localforage';
 import { resolveEditingAuthority, EditingAuthority } from '@/types/curriculum';
 import { useCurriculumVault } from '@/hooks/useCurriculumVault';
+import {
+    resolvePreferredScriptTake,
+    resolveSyncLockState,
+    stripStaleAct1QueryParams,
+} from '@/lib/studioStageResolver';
 
 // Define a placeholder for the memory data type
 type MemoryData = any;
@@ -265,7 +270,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         setIsProductionLocked(isLocked);
         if (isLocked) {
             if (typeof setSelectedTake === 'function') {
-                setSelectedTake(memoryData?.prose || memoryData?.description || null);
+                setSelectedTake(resolvePreferredScriptTake(memoryData));
             }
         } else {
             if (typeof setSelectedTake === 'function') {
@@ -310,17 +315,37 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         hasNavigatedBack,
     ]);
 
+    // Clean stale `?act=1` / `?stage=0` entry params once the narrator progresses past Act I
+    // so URL state stays truthful on reload without disturbing other query params (`mode`, `room`, `sessionId`, `?act=3`, etc.).
+    useEffect(() => {
+        if (typeof window === 'undefined' || !lastLoadedIdRef.current || currentStage < 1) return;
+        const cleanedPath = stripStaleAct1QueryParams(window.location.href, currentStage);
+        if (cleanedPath) {
+            try {
+                window.history.replaceState(window.history.state, '', cleanedPath);
+            } catch {
+                // Non-fatal history guard
+            }
+        }
+    }, [currentStage, memoryData?.id]);
+
     // Sync production lock state dynamically whenever it changes in memoryData,
     // bypassing the early-return ID-check guard of the main sync effect.
     useEffect(() => {
         if (!memoryData?.id) return;
         const urlAct = searchParams.get('act');
         const urlStage = searchParams.get('stage');
-        const isExplicitAct1 = urlAct === '1' || urlStage === '0';
-        const isFirstFlightAct1 = currentStage === 0 && (memoryData.id === 'first_flight_rehearsal' || (memoryData as any).isFlightSimulator);
-        const isLocked = (isExplicitAct1 || isFirstFlightAct1 || isReviewing)
-            ? false
-            : !!(memoryData.isProductionLocked || currentStage >= 1);
+        const isFlightSimulator = Boolean(
+            memoryData.id === 'first_flight_rehearsal' || (memoryData as any).isFlightSimulator
+        );
+        const { isLocked, takeAction } = resolveSyncLockState({
+            currentStage,
+            urlAct,
+            urlStage,
+            isFlightSimulator,
+            isReviewing,
+            memoryIsProductionLocked: Boolean(memoryData.isProductionLocked),
+        });
         console.log("[ProductionDeck:SyncLock] Syncing production lock. memoryData:", {
             id: memoryData.id,
             isProductionLocked: memoryData.isProductionLocked,
@@ -329,16 +354,17 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             proseLength: memoryData.prose?.length || 0,
             descriptionLength: memoryData.description?.length || 0,
             isLocked,
+            takeAction,
             isReviewing
         });
         setIsProductionLocked(isLocked);
-        if (isLocked && !isReviewing) {
+        if (takeAction === 'HYDRATE') {
             if (typeof setSelectedTake === 'function') {
-                const targetTake = memoryData.prose || memoryData.description || null;
+                const targetTake = resolvePreferredScriptTake(memoryData);
                 console.log("[ProductionDeck:SyncLock] Setting selectedTake to:", targetTake ? targetTake.substring(0, 60) + "..." : null);
                 setSelectedTake(targetTake);
             }
-        } else if (!isLocked) {
+        } else if (takeAction === 'CLEAR') {
             if (typeof setSelectedTake === 'function') {
                 console.log("[ProductionDeck:SyncLock] Clearing selectedTake (null)");
                 setSelectedTake(null);
@@ -350,6 +376,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         memoryData?.productionStage,
         memoryData?.prose,
         memoryData?.description,
+        memoryData?.structuredScript?.cleanScript,
         currentStage,
         searchParams,
         isReviewing,
