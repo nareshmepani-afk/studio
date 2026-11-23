@@ -109,7 +109,7 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
               title="Switch to the full 4-Act Desktop Theatrical Soundstage"
             >
               <Monitor className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>[ 🖥️ Desktop Soundstage ↗ ]</span>
+              <span>Desktop Soundstage ↗</span>
             </Link>
 
             <button
@@ -122,7 +122,7 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
               title="Launch 30-second rehearsal and microphone soundcheck without saving"
             >
               <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>[ 🎙️ 30s Soundcheck ]</span>
+              <span>30s Soundcheck</span>
               {warmupCompleted && (
                 <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
                   ✓ Ready
@@ -138,9 +138,9 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
             style={{ minHeight: 44 }}
             aria-expanded={false}
             aria-label="Expand Studio Orientation and Soundcheck Dock"
-            className="min-h-[44px] px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700/80 text-stone-300 hover:text-white text-xs font-mono font-bold inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+            className="min-h-[44px] px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700/80 text-stone-300 hover:text-white text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
           >
-            <span>[ + Expand ▾ ]</span>
+            <span>Expand</span>
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
         </div>

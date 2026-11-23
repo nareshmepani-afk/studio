@@ -62,6 +62,7 @@ export interface FiresideVideoRecorderProps {
   activeActStage?: 1 | 2 | 3 | 4;
   takeNumber?: number;
   hasExternalScriptBanner?: boolean;
+  isMasterProtected?: boolean;
   onMoodChange?: (mood: StoryMoodTag) => void;
   onRecordingComplete?: (videoBlob: Blob, durationSeconds: number) => void;
   onKeepRecording?: (videoBlob: Blob, durationSeconds: number) => void;
@@ -79,6 +80,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       activeActStage,
       takeNumber = 1,
       hasExternalScriptBanner = false,
+      isMasterProtected = false,
       onMoodChange,
       onRecordingComplete,
       onKeepRecording,
@@ -92,6 +94,8 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
     const liveVideoRef = useRef<HTMLVideoElement>(null);
     const nativeVideoInputRef = useRef<HTMLInputElement>(null);
     const [countdown, setCountdown] = useState<number | null>(null);
+    const [masterChallengeArmed, setMasterChallengeArmed] = useState(false);
+    const [showMasterChallengePrompt, setShowMasterChallengePrompt] = useState(false);
     const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const {
       status: hardwarePrivacyStatus,
@@ -157,11 +161,21 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       }
     }, [activeActStage, status, stream, releaseHardwareStream, cancelCountdown]);
 
+    useEffect(() => {
+      setMasterChallengeArmed(false);
+      setShowMasterChallengePrompt(false);
+    }, [promptSpark?.id, isMasterProtected]);
+
     // UI-only 3-2-1 breath countdown on the 88px Record button (keeps ref.current.startRecording instant for tests)
     const handleRecordTriggerClick = useCallback(async () => {
       if (status === 'recording' || status === 'paused') {
         cancelCountdown();
         await stopRecording();
+        return;
+      }
+
+      if (isMasterProtected && !masterChallengeArmed) {
+        setShowMasterChallengePrompt(true);
         return;
       }
 
@@ -187,7 +201,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
           setCountdown(remaining);
         }
       }, 1000);
-    }, [status, countdown, stream, enableCameraPreview, startRecording, stopRecording, cancelCountdown]);
+    }, [status, isMasterProtected, masterChallengeArmed, countdown, stream, enableCameraPreview, startRecording, stopRecording, cancelCountdown]);
 
     // Expose imperative API for parent container auto-scrolling and direct preview/recording trigger
     useImperativeHandle(
@@ -389,10 +403,18 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                     }}
                     style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
                     className="w-full px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-stone-950 font-bold text-sm sm:text-base shadow-lg shadow-emerald-950/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-                    aria-label="Keep this video memo"
+                    aria-label={
+                      isMasterProtected
+                        ? 'Save as alternate take keeping Master Reel untouched'
+                        : 'Keep this video memo'
+                    }
                   >
-                    <Check className="w-5 h-5 text-stone-950" />
-                    <span>Keep This Video Memo</span>
+                    <Check className="w-5 h-5 text-stone-950 shrink-0" />
+                    <span>
+                      {isMasterProtected
+                        ? 'Save as Alternate Take (Master Untouched)'
+                        : 'Keep This Video Memo'}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -558,6 +580,50 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
 
               {/* RECORDING CONTROLS CONTAINER */}
               <div className="w-full flex flex-col items-center space-y-4 pt-1">
+                {/* Master-Reel Protection Pre-Record Challenge (RC1.1) */}
+                {isMasterProtected && !isRecording && !isPaused && (
+                  <div
+                    data-testid="HS_FIRESIDE_VIDEO_MASTER_GUARD"
+                    role="region"
+                    aria-label="Master Reel protection notice"
+                    className={`w-full rounded-2xl px-4 py-3 border text-left transition-all ${
+                      masterChallengeArmed
+                        ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-100'
+                        : showMasterChallengePrompt
+                        ? 'bg-amber-950/85 border-amber-400 text-amber-100 shadow-lg shadow-amber-950/50'
+                        : 'bg-amber-950/55 border-amber-500/45 text-amber-100'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <ShieldCheck
+                        className={`w-4 h-4 shrink-0 mt-0.5 ${
+                          masterChallengeArmed ? 'text-emerald-400' : 'text-amber-400'
+                        }`}
+                      />
+                      <div className="flex-1 space-y-2">
+                        <p className="text-xs font-semibold leading-snug">
+                          {masterChallengeArmed
+                            ? 'Audition Take Mode Armed — Your published / Desktop Soundstage Master Reel stays untouched.'
+                            : 'Master Reel Protected — This scene already has a Desktop Soundstage / Published Master Reel. Fireside recordings save separately and never overwrite it.'}
+                        </p>
+                        {!masterChallengeArmed && (
+                          <button
+                            type="button"
+                            data-testid="HS_FIRESIDE_VIDEO_ARM_AUDITION_BTN"
+                            onClick={() => {
+                              setMasterChallengeArmed(true);
+                              setShowMasterChallengePrompt(false);
+                            }}
+                            className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs tracking-wide transition-all cursor-pointer active:scale-98 shadow-sm"
+                          >
+                            Record Separate Audition Take (Keeps Master Safe)
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Warning Banner for < 3s Short Recordings or Tab-Switch Pause */}
                 {errorMessage && (
                   <div

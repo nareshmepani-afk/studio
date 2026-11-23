@@ -14,9 +14,10 @@
  * an explicit environment badge (Dev Staging), and production stage context (Act II: Story Capture).
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { isProductionProject, isStagingProject, resolveProjectId } from '@/config/environment';
 import {
   Sparkles,
   ArrowLeft,
@@ -24,7 +25,6 @@ import {
   ShieldCheck,
   Smartphone,
   ExternalLink,
-  Mic,
   LogOut,
 } from 'lucide-react';
 
@@ -79,6 +79,11 @@ export function resolveHeaderActBadgeStyle(headerActBadge: string): string {
   return 'bg-sky-500/10 border-sky-500/30 text-sky-400';
 }
 
+export function isProductionHostname(hostname?: string | null): boolean {
+  const clean = (hostname || '').trim().toLowerCase();
+  return clean === 'memoryweaver.studio' || clean === 'www.memoryweaver.studio';
+}
+
 export function FiresideAuthHeader({
   className = '',
   activePartTitle,
@@ -90,6 +95,24 @@ export function FiresideAuthHeader({
   const userEmail = user?.email || (isAuthenticated ? 'Authenticated Storyteller' : null);
 
   const commitSha = process.env.NEXT_PUBLIC_COMMIT_SHA || '';
+  const projectId = resolveProjectId();
+  const [clientIsProdHost, setClientIsProdHost] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? isProductionHostname(window.location?.hostname) : false
+  );
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setClientIsProdHost(isProductionHostname(window.location?.hostname));
+    }
+  }, []);
+
+  // Strict fail-closed staging pill guard: NEVER render "Dev Staging" on production
+  // project (memory-weaver-8rk9t) or production hostnames (memoryweaver.studio / www.memoryweaver.studio).
+  const showStagingBadge =
+    !isProductionProject(projectId) &&
+    !clientIsProdHost &&
+    isStagingProject(projectId);
+
   const headerActBadge = resolveHeaderActBadge(activeStage, activeSceneMemory);
 
   return (
@@ -97,46 +120,57 @@ export function FiresideAuthHeader({
       className={`w-full border-b border-stone-800/80 bg-stone-950/90 backdrop-blur-md px-3 sm:px-6 py-2.5 sm:py-3 transition-colors ${className}`}
     >
       <div className="max-w-5xl mx-auto flex flex-col items-center justify-between gap-2 sm:gap-2.5">
-        {/* Row 1: Back to Desktop Stage & Studio Title & Staging Environment Badges */}
-        <div className="w-full flex items-center justify-between gap-2.5 sm:gap-3">
-          <Link
-            href="/studio"
-            data-testid="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
-            data-hotspot-id="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
-            title="Return to Production Board"
-            aria-label="Return to Production Board"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-amber-400" />
-            <span className="hidden sm:inline">Back to Production Board</span>
-            <span className="sm:hidden">Production Board</span>
-          </Link>
-
-          <div className="flex items-center gap-2 text-amber-400 flex-wrap justify-end">
-            <Sparkles className="w-4 h-4 animate-pulse text-amber-400 shrink-0" />
-            <span className="text-xs sm:text-sm font-serif font-semibold tracking-wide text-amber-300 truncate">
-              Fireside Studio
-            </span>
-
-            {/* Explicit Environment Badge with Commit SHA to Disambiguate and Confirm Latest Version */}
-            <span
-              className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold shrink-0"
-              title={`Deployment Environment: Dev Staging${commitSha ? ` (${commitSha.slice(0, 7)})` : ''}`}
+        {/* Row 1: Split into two balanced full-width rows on < sm; single row on sm+ */}
+        <div className="w-full flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          {/* Sub-row 1A: Back to Production Board + Fireside Studio Title (+ Staging Badge on staging only) */}
+          <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 min-w-0">
+            <Link
+              href="/studio"
+              data-testid="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
+              data-hotspot-id="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
+              title="Return to Production Board"
+              aria-label="Return to Production Board"
             >
-              Dev Staging{commitSha ? ` • ${commitSha.slice(0, 7)}` : ''}
-            </span>
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-amber-400" />
+              <span className="hidden sm:inline">Back to Production Board</span>
+              <span className="sm:hidden">Production Board</span>
+            </Link>
 
+            <div className="flex items-center gap-1.5 sm:gap-2 text-amber-400 min-w-0 flex-wrap justify-end">
+              <div className="inline-flex items-center gap-1.5 min-w-0">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse text-amber-400 shrink-0" />
+                <span className="text-xs sm:text-sm font-serif font-semibold tracking-wide text-amber-300 truncate">
+                  Fireside Studio
+                </span>
+              </div>
+
+              {/* Explicit Environment Badge — strictly gated to staging */}
+              {showStagingBadge && (
+                <span
+                  data-testid="HS_FIRESIDE_HEADER_STAGING_BADGE"
+                  className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold shrink-0"
+                  title={`Deployment Environment: Dev Staging${commitSha ? ` (${commitSha.slice(0, 7)})` : ''}`}
+                >
+                  Dev Staging{commitSha ? ` • ${commitSha.slice(0, 7)}` : ''}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Sub-row 1B: Production Act Context Badge + Hardware Optics Privacy Shield */}
+          <div className="w-full sm:w-auto flex flex-wrap items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
             {/* Dynamic Production Stage Context Badge Synchronised with Desktop Studio (MW-88-T8 / MW-88-T9 / MW-119) */}
             <span
               data-testid="HS_FIRESIDE_HEADER_ACT_BADGE"
-              className={`inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded-full font-semibold shrink-0 border ${resolveHeaderActBadgeStyle(headerActBadge)}`}
+              className={`inline-flex items-center gap-1 text-[10px] uppercase font-mono tracking-wider px-2 sm:px-2.5 py-0.5 rounded-full font-semibold shrink-0 border ${resolveHeaderActBadgeStyle(headerActBadge)}`}
               title={`Active Production Stage: ${headerActBadge}`}
             >
               {headerActBadge}
             </span>
 
             {/* Hardware Camera & Microphone Privacy Shield (MW-88-T9 Desktop Parity) */}
-            <OpticsPrivacyShield compact className="py-1 px-2.5 min-h-[36px] sm:min-h-[40px]" />
+            <OpticsPrivacyShield compact className="py-1 px-2 sm:px-2.5 min-h-[34px] sm:min-h-[40px]" />
 
             {/* Active Curriculum Part Badge if provided */}
             {activePartTitle && (

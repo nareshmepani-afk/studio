@@ -19,7 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
-import { useCurriculumVault, StoryMoodTag, isSceneCompleted, resolveEditingAuthority, EditingAuthority } from '@/hooks/useCurriculumVault';
+import { useCurriculumVault, StoryMoodTag, isSceneCompleted, isSceneMasterProtected, resolveEditingAuthority, EditingAuthority } from '@/hooks/useCurriculumVault';
 import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
 import {
   FiresideModeSwitch,
@@ -370,6 +370,7 @@ export default function FiresideStudioClient() {
   const activeSceneMemory = getSceneMemoryWithDefaults(effectiveSceneId);
   const activeMood = activeSceneMemory?.moodTag;
   const activeEditingAuthority: EditingAuthority = resolveEditingAuthority(activeSceneMemory);
+  const isActiveMasterProtected = isSceneMasterProtected(activeSceneMemory);
   const hasCompletedReel = isSceneCompleted(activeSceneMemory);
   const isCompleted = hasCompletedReel && !forceRecordMode && !isReviewingTake;
 
@@ -405,10 +406,10 @@ export default function FiresideStudioClient() {
         (mediaMode === 'video' ? cloudUrls?.videoUrl : cloudUrls?.audioUrl) ||
         cloudUrls?.videoUrl ||
         cloudUrls?.audioUrl;
-      if (cloudMediaUrl) {
-        const takeId = activeTakeIdRef.current || `take_${Date.now()}`;
+      if (cloudMediaUrl && activeTakeIdRef.current) {
+        const takeId = activeTakeIdRef.current;
         const takeNumber = activeTakeNumberRef.current || activeSceneMemory?.takes?.length || 1;
-        const isPref = takeIsPreferredRef.current;
+        const isPref = isActiveMasterProtected ? false : takeIsPreferredRef.current;
         await saveSceneTake(
           effectiveSceneId,
           {
@@ -789,18 +790,33 @@ export default function FiresideStudioClient() {
     }, 4500);
   };
 
-  const handleAudioRecordingComplete = async (audioBlob: Blob, durationSeconds: number) => {
-    setRecordedAudioBlob(audioBlob);
-    setRecordedAudioDuration(durationSeconds);
+  const handleAudioRecordingComplete = async (_audioBlob: Blob, durationSeconds: number) => {
+    // RC1.1 Master-Reel Safety: NEVER upload or mutate Firestore automatically on Stop.
+    // Stage locally for review; cloud persistence runs ONLY on explicit Keep tap.
     setIsReviewingTake(true);
     logEvent('FIRESIDE_AUDIO_RECORDING_COMPLETED', {
       durationSeconds,
       sceneId: effectiveSceneId,
     });
+    const mins = Math.floor(durationSeconds / 60);
+    const secs = durationSeconds % 60;
+    setNotification(
+      isActiveMasterProtected
+        ? `Audition voice take ready (${mins}m ${secs}s). Listen below and tap "Save as Alternate Take" to keep it.`
+        : `Voice recording ready (${mins}m ${secs}s). Listen below, then tap "Keep This Memoir" to save.`
+    );
+    setTimeout(() => {
+      setNotification(null);
+    }, 5000);
+  };
 
-    // Guardrail 2 (MW-106): If scene already completed/mastered, default new take to auxiliary audition mode
+  const handleKeepAudioRecording = async (audioBlob: Blob, durationSeconds: number) => {
+    setRecordedAudioBlob(audioBlob);
+    setRecordedAudioDuration(durationSeconds);
+
+    // Guardrail 2 (MW-106 / RC1.1): Protected Soundstage / published / completed masters are NEVER demoted by Fireside
     const isAlreadyCompleted = isSceneCompleted(activeSceneMemory);
-    const shouldBePreferred = !isAlreadyCompleted;
+    const shouldBePreferred = !isAlreadyCompleted && !isActiveMasterProtected;
     takeIsPreferredRef.current = shouldBePreferred;
 
     const isSameBlob = lastSavedBlobRef.current === audioBlob && !!activeTakeIdRef.current;
@@ -842,10 +858,11 @@ export default function FiresideStudioClient() {
       createdAt: new Date().toISOString(),
       label: `Take ${takeNumber} (${shouldBePreferred ? 'Fireside Voice' : 'Fireside Voice Audition'})`,
       isPreferred: shouldBePreferred,
+      status: shouldBePreferred ? 'master' : 'alternate',
       role: shouldBePreferred ? 'master_cut' : 'alternate',
     }, { photos });
 
-    setForceRecordMode(false);
+    handleKeepRecording();
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
     const photoCount = photos.length;
@@ -855,25 +872,40 @@ export default function FiresideStudioClient() {
     setNotification(
       shouldBePreferred
         ? `Memoir voice recording secured in vault (${mins}m ${secs}s)${photoSuffix}.`
-        : `Audition take recorded (${mins}m ${secs}s). Master Reel preserved in vault.`
+        : `Saved as alternate take (${mins}m ${secs}s). Your Master Reel stays untouched.`
     );
     setTimeout(() => {
       setNotification(null);
     }, 5000);
   };
 
-  const handleVideoRecordingComplete = async (videoBlob: Blob, durationSeconds: number) => {
-    setRecordedVideoBlob(videoBlob);
-    setRecordedVideoDuration(durationSeconds);
+  const handleVideoRecordingComplete = async (_videoBlob: Blob, durationSeconds: number) => {
+    // RC1.1 Master-Reel Safety: NEVER upload or mutate Firestore automatically on Stop.
+    // Stage locally for review; cloud persistence runs ONLY on explicit Keep tap.
     setIsReviewingTake(true);
     logEvent('FIRESIDE_VIDEO_RECORDING_COMPLETED', {
       durationSeconds,
       sceneId: effectiveSceneId,
     });
+    const mins = Math.floor(durationSeconds / 60);
+    const secs = durationSeconds % 60;
+    setNotification(
+      isActiveMasterProtected
+        ? `Audition video ready (${mins}m ${secs}s). Review below and tap "Save as Alternate Take" to keep it.`
+        : `Video memo ready (${mins}m ${secs}s). Review below, then tap "Keep This Video Memo" to save.`
+    );
+    setTimeout(() => {
+      setNotification(null);
+    }, 5000);
+  };
 
-    // Guardrail 2 (MW-106): If scene already completed/mastered, default new take to auxiliary audition mode
+  const handleKeepVideoRecording = async (videoBlob: Blob, durationSeconds: number) => {
+    setRecordedVideoBlob(videoBlob);
+    setRecordedVideoDuration(durationSeconds);
+
+    // Guardrail 2 (MW-106 / RC1.1): Protected Soundstage / published / completed masters are NEVER demoted by Fireside
     const isAlreadyCompleted = isSceneCompleted(activeSceneMemory);
-    const shouldBePreferred = !isAlreadyCompleted;
+    const shouldBePreferred = !isAlreadyCompleted && !isActiveMasterProtected;
     takeIsPreferredRef.current = shouldBePreferred;
 
     const isSameBlob = lastSavedBlobRef.current === videoBlob && !!activeTakeIdRef.current;
@@ -915,10 +947,11 @@ export default function FiresideStudioClient() {
       createdAt: new Date().toISOString(),
       label: `Take ${takeNumber} (${shouldBePreferred ? 'Fireside Video' : 'Fireside Audition Take'})`,
       isPreferred: shouldBePreferred,
+      status: shouldBePreferred ? 'master' : 'alternate',
       role: shouldBePreferred ? 'master_cut' : 'alternate',
     }, { photos });
 
-    setForceRecordMode(false);
+    handleKeepRecording();
     const mins = Math.floor(durationSeconds / 60);
     const secs = durationSeconds % 60;
     const photoCount = photos.length;
@@ -928,7 +961,7 @@ export default function FiresideStudioClient() {
     setNotification(
       shouldBePreferred
         ? `Video memo secured in vault (${mins}m ${secs}s)${photoSuffix}.`
-        : `Audition video recorded (${mins}m ${secs}s). Master Reel preserved in vault.`
+        : `Saved as alternate take (${mins}m ${secs}s). Your Master Reel stays untouched.`
     );
     setTimeout(() => {
       setNotification(null);
@@ -942,6 +975,26 @@ export default function FiresideStudioClient() {
       activeSceneMemory?.activeTakeId ||
       activeTakeIdRef.current ||
       undefined;
+
+    const targetTake = activeSceneMemory?.takes?.find((t) => t.id === targetTakeId);
+    const isProtectedMasterTake =
+      isActiveMasterProtected &&
+      (!targetTake ||
+        targetTake.isPreferred ||
+        targetTake.status === 'master' ||
+        targetTake.source === 'soundstage_desktop' ||
+        targetTake.source === 'desktop_soundstage');
+
+    if (isProtectedMasterTake) {
+      setIsLightboxOpen(false);
+      setNotification(
+        'Protected Soundstage / Published Master Reel cannot be discarded from Fireside mobile. Manage Master Reels in Desktop Studio.'
+      );
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      return;
+    }
 
     const remainingCount = Math.max(0, (activeSceneMemory?.takes?.length || 0) - 1);
     if (remainingCount === 0) {
@@ -969,6 +1022,7 @@ export default function FiresideStudioClient() {
   }, [
     preferredTake,
     activeSceneMemory,
+    isActiveMasterProtected,
     discardSceneTake,
     effectiveSceneId,
   ]);
@@ -1087,8 +1141,8 @@ export default function FiresideStudioClient() {
 
         {/* 2. Reassuring Vault Synchronisation HUD Strip */}
         <div className="w-full bg-stone-950/85 border-b border-stone-800/60 py-2 px-3 sm:px-6 backdrop-blur-md">
-          <div className="max-w-5xl mx-auto flex items-center justify-between text-xs gap-2">
-            <span className="text-stone-400 font-serif text-xs flex items-center gap-1.5 shrink-0">
+          <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between text-xs gap-x-2 gap-y-1.5">
+            <span className="hidden sm:flex text-stone-400 font-serif text-xs items-center gap-1.5 shrink-0">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               <span className="font-medium text-stone-300">Fireside Studio</span>
             </span>
@@ -1131,7 +1185,7 @@ export default function FiresideStudioClient() {
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span className="hidden sm:inline">Saved safely in vault ✓</span>
-                  <span className="sm:hidden">Saved in vault ✓</span>
+                  <span className="sm:hidden">Saved ✓</span>
                 </div>
               ) : isOffline ? (
                 <div
@@ -1140,7 +1194,7 @@ export default function FiresideStudioClient() {
                 >
                   <CloudOff className="w-3.5 h-3.5 text-stone-400" />
                   <span className="hidden sm:inline">Saved to phone (offline)</span>
-                  <span className="sm:hidden">Offline Vault</span>
+                  <span className="sm:hidden">Offline</span>
                 </div>
               ) : syncState === 'error' ? (
                 <button
@@ -1152,12 +1206,16 @@ export default function FiresideStudioClient() {
                 >
                   <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
                   <span className="hidden sm:inline">Saved on phone • Sync cloud ↺</span>
-                  <span className="sm:hidden">Sync cloud ↺</span>
+                  <span className="sm:hidden">Sync ↺</span>
                 </button>
               ) : (
-                <div className="flex items-center gap-1.5 text-xs text-stone-400 font-mono">
+                <div
+                  className="flex items-center gap-1.5 text-xs text-stone-400 font-mono shrink-0"
+                  title="Cloud vault connected"
+                >
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-stone-400">Vault Connected</span>
+                  <span className="hidden sm:inline text-stone-400">Vault Connected</span>
+                  <span className="sm:hidden text-stone-400">Vault</span>
                 </div>
               )}
             </div>
@@ -1325,10 +1383,11 @@ export default function FiresideStudioClient() {
                 activeMood={activeMood}
                 activeActStage={selectedActStage}
                 hasExternalScriptBanner={Boolean(activeSceneMemory?.prose || pinnedPrompterQuestion)}
+                isMasterProtected={isActiveMasterProtected}
                 takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
                 onMoodChange={handleMoodChange}
                 onRecordingComplete={handleVideoRecordingComplete}
-                onKeepRecording={handleKeepRecording}
+                onKeepRecording={handleKeepVideoRecording}
                 onReset={handleResetVideoRecording}
                 onRecordingChange={setIsFiresideRecording}
                 className="w-full"
@@ -1383,10 +1442,11 @@ export default function FiresideStudioClient() {
                   activeMood={activeMood}
                   activeActStage={selectedActStage}
                   photos={photos.length > 0 ? photos : activeSceneMemory?.photos || []}
+                  isMasterProtected={isActiveMasterProtected}
                   takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
                   onMoodChange={handleMoodChange}
                   onRecordingComplete={handleAudioRecordingComplete}
-                  onKeepRecording={handleKeepRecording}
+                  onKeepRecording={handleKeepAudioRecording}
                   onReset={handleResetAudioRecording}
                   onRecordingChange={setIsFiresideRecording}
                   className="w-full"

@@ -29,16 +29,24 @@ describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => 
     expect(desktopLink).toHaveTextContent(/Production Board/i);
   });
 
-  it('renders unambiguous "Dev Staging" environment badge to avoid confusion with production stages', () => {
-    render(<FiresideAuthHeader />);
+  it('renders unambiguous "Dev Staging" environment badge on staging project (memory-weaver-dev)', () => {
+    const originalProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'memory-weaver-dev';
+    try {
+      render(<FiresideAuthHeader />);
 
-    const devStagingBadge = screen.getByTitle(/Deployment Environment: Dev Staging/i);
-    expect(devStagingBadge).toBeInTheDocument();
-    expect(devStagingBadge).toHaveTextContent(/Dev Staging/i);
+      const devStagingBadge = screen.getByTitle(/Deployment Environment: Dev Staging/i);
+      expect(devStagingBadge).toBeInTheDocument();
+      expect(devStagingBadge).toHaveTextContent(/Dev Staging/i);
+    } finally {
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = originalProjectId;
+    }
   });
 
-  it('renders commit SHA in Dev Staging badge when NEXT_PUBLIC_COMMIT_SHA is present', () => {
+  it('renders commit SHA in Dev Staging badge when NEXT_PUBLIC_COMMIT_SHA is present on staging', () => {
     const originalSha = process.env.NEXT_PUBLIC_COMMIT_SHA;
+    const originalProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'memory-weaver-dev';
     process.env.NEXT_PUBLIC_COMMIT_SHA = 'acc26b20';
 
     try {
@@ -48,6 +56,20 @@ describe('MW-249: FiresideAuthHeader & Desktop Soundstage Ingress Suite', () => 
       expect(devStagingBadge).toHaveTextContent(/Dev Staging • acc26b2/i);
     } finally {
       process.env.NEXT_PUBLIC_COMMIT_SHA = originalSha;
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = originalProjectId;
+    }
+  });
+
+  it('P0 GUARD (RC1.1): never renders Dev Staging badge on production project (memory-weaver-8rk9t) or production hostname', () => {
+    const originalProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'memory-weaver-8rk9t';
+
+    try {
+      render(<FiresideAuthHeader />);
+      expect(screen.queryByTestId('HS_FIRESIDE_HEADER_STAGING_BADGE')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Dev Staging/i)).not.toBeInTheDocument();
+    } finally {
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = originalProjectId;
     }
   });
 

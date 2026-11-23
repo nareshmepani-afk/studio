@@ -918,6 +918,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
   const lastPropsId = useRef(data?.id || data?.promptId);
   const lastPromptId = useRef(data?.promptId);
+  const lastSyncedAgeRef = useRef<number | undefined>(
+    data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : data?.age
+  );
+  const lastSyncedScopeRef = useRef<any>(data?.timeframeScope);
+  const lastSyncedDurationQtyRef = useRef<number | undefined>(data?.durationQuantity);
+  const lastSyncedDurationUnitRef = useRef<any>(data?.durationUnit);
 
   // CRITICAL: Sync local state when external data changes (e.g. Mentor injection)
   useEffect(() => {
@@ -928,7 +934,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     // Navigation is when we move to a different prompt (different story).
     // Transition is when we are in the same prompt but just got an ID (assigned after first save).
     const isPromptChange = currentPromptId !== lastPromptId.current;
-    const isNavigation = isPromptChange; // Only reset if the actual prompt changed
+    const isDocIdSwitch = Boolean(
+      data?.id && lastPropsId.current && data.id !== lastPropsId.current && lastPropsId.current !== currentPromptId
+    );
+    const isNavigation = isPromptChange || isDocIdSwitch;
 
     if (isNavigation) {
       if (data?.title !== undefined) setTitle(data.title);
@@ -971,6 +980,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       } else {
         setNarratorAgeAtTimeLocal(0);
       }
+      lastSyncedAgeRef.current =
+        data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : data?.age;
+      lastSyncedScopeRef.current = data?.timeframeScope;
+      lastSyncedDurationQtyRef.current = data?.durationQuantity;
+      lastSyncedDurationUnitRef.current = data?.durationUnit;
       if (data?.scriptBlocks) setScriptBlocks(data.scriptBlocks);
       if (data?.chapterTitle !== undefined) setChapterTitle(data.chapterTitle);
       if (data?.posterStyle) setPosterStyle(data.posterStyle);
@@ -1029,14 +1043,28 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       setYear(String(data.year));
     }
 
-    if (data?.timeframeScope !== undefined && data.timeframeScope !== timeframeScope) setTimeframeScopeLocal(data.timeframeScope);
-    if (data?.durationQuantity !== undefined && data.durationQuantity !== durationQuantity) setDurationQuantityLocal(data.durationQuantity);
-    if (data?.durationUnit !== undefined && data.durationUnit !== durationUnit) setDurationUnitLocal(data.durationUnit);
-    if (data?.narratorAgeAtTime !== undefined && data.narratorAgeAtTime !== narratorAgeAtTime) {
-      console.log("[MemoryForm] Syncing age FROM prop:", data.narratorAgeAtTime, "CURRENT local:", narratorAgeAtTime);
-      setNarratorAgeAtTimeLocal(data.narratorAgeAtTime);
-    } else if (data?.age !== undefined && data.age !== narratorAgeAtTime) {
-      setNarratorAgeAtTimeLocal(data.age);
+    // RC1.1 Age/Scope Snap-Back Shield: only overwrite local edits when the external
+    // prop actually changed relative to the last synced value (never snap back to stale 5).
+    if (data?.timeframeScope !== undefined && data.timeframeScope !== lastSyncedScopeRef.current) {
+      lastSyncedScopeRef.current = data.timeframeScope;
+      if (data.timeframeScope !== timeframeScope) setTimeframeScopeLocal(data.timeframeScope);
+    }
+    if (data?.durationQuantity !== undefined && data.durationQuantity !== lastSyncedDurationQtyRef.current) {
+      lastSyncedDurationQtyRef.current = data.durationQuantity;
+      if (data.durationQuantity !== durationQuantity) setDurationQuantityLocal(data.durationQuantity);
+    }
+    if (data?.durationUnit !== undefined && data.durationUnit !== lastSyncedDurationUnitRef.current) {
+      lastSyncedDurationUnitRef.current = data.durationUnit;
+      if (data.durationUnit !== durationUnit) setDurationUnitLocal(data.durationUnit);
+    }
+    const incomingPropAge =
+      data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : data?.age;
+    if (incomingPropAge !== undefined && incomingPropAge !== lastSyncedAgeRef.current) {
+      lastSyncedAgeRef.current = incomingPropAge;
+      if (incomingPropAge !== narratorAgeAtTime) {
+        console.log("[MemoryForm] Syncing age FROM prop:", incomingPropAge, "CURRENT local:", narratorAgeAtTime);
+        setNarratorAgeAtTimeLocal(incomingPropAge);
+      }
     }
 
     if (data?.scriptBlocks && JSON.stringify(data.scriptBlocks) !== JSON.stringify(scriptBlocks)) {

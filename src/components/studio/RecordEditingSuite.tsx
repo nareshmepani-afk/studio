@@ -175,7 +175,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
     const updated = [...edl];
     const seg = updated[currentSegmentIndex];
     if (!seg) return;
-    const nextStart = Math.min(val, seg.endOffset - 0.5);
+    const nextStart = Math.max(0, Math.min(val, seg.endOffset - 0.5));
     seg.startOffset = nextStart;
     seg.duration = seg.endOffset - nextStart;
     setEdl(updated);
@@ -186,7 +186,11 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
     const updated = [...edl];
     const seg = updated[currentSegmentIndex];
     if (!seg) return;
-    const nextEnd = Math.max(val, seg.startOffset + 0.5);
+    const maxSourceEnd =
+      seg.sourceDuration && isFinite(seg.sourceDuration) && seg.sourceDuration > 0
+        ? seg.sourceDuration
+        : Math.max(seg.endOffset, seg.duration + seg.startOffset);
+    const nextEnd = Math.min(maxSourceEnd, Math.max(val, seg.startOffset + 0.5));
     seg.endOffset = nextEnd;
     seg.duration = nextEnd - seg.startOffset;
     setEdl(updated);
@@ -566,9 +570,12 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
 
           {/* Custom Scrubber Timeline */}
           <div className="space-y-2 shrink-0">
-            <div className="flex items-center justify-between text-[9px] font-mono text-white/40 uppercase tracking-widest">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[9px] font-mono text-white/40 uppercase tracking-widest">
               <span>Active Tracks: {edl.length}</span>
-              <span>Timeline Position: {Math.floor(cumulativeTime / 60)}:{(Math.floor(cumulativeTime) % 60).toString().padStart(2, '0')}</span>
+              <span data-testid="edl-stitched-total-duration" className="text-emerald-400 font-bold">
+                Final Stitched Cut: {totalDuration.toFixed(1)}s
+              </span>
+              <span>Timeline Position: {cumulativeTime.toFixed(1)}s</span>
             </div>
 
             <div
@@ -576,11 +583,11 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
               className="relative h-10 w-full bg-slate-950/80 border border-white/5 rounded-2xl overflow-hidden cursor-pointer flex gap-1 p-1 hover:border-white/10 transition-colors"
             >
               {edl.map((seg, idx) => {
-                const widthPercentage = (seg.duration / totalDuration) * 100;
+                const widthPercentage = totalDuration > 0 ? (seg.duration / totalDuration) * 100 : 100 / Math.max(1, edl.length);
                 return (
                   <div
                     key={seg.segmentId}
-                    className={`h-full relative rounded-lg border transition-all ${
+                    className={`h-full relative rounded-lg border transition-all overflow-hidden flex items-center justify-center ${
                       idx === currentSegmentIndex
                         ? 'bg-emerald-500/20 border-emerald-500/40 shadow-inner'
                         : 'bg-white/5 border-white/5 hover:bg-white/10'
@@ -594,6 +601,9 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
                       <div className="w-[2px] h-4 bg-white rounded-full" />
                       <div className="w-[2px] h-2 bg-white rounded-full" />
                     </div>
+                    <span className="relative z-10 text-[9px] font-mono font-bold text-white/80 px-1 truncate pointer-events-none">
+                      #{idx + 1} · {seg.duration.toFixed(1)}s
+                    </span>
                   </div>
                 );
               })}
@@ -666,7 +676,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
                   <div className="flex items-center justify-between text-[10px] text-white/50 uppercase tracking-widest border-b border-white/5 pb-2">
                     <span className="flex items-center gap-2 text-emerald-400">
                       <FileVideo className="w-3.5 h-3.5" />
-                      Segment {currentSegmentIndex + 1} Editor
+                      Segment {currentSegmentIndex + 1} Editor ({edl[currentSegmentIndex].duration.toFixed(1)}s)
                     </span>
                     <button
                       onClick={() => handleDeleteSegment(currentSegmentIndex)}
@@ -685,6 +695,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
                       </div>
                       <input
                         type="range"
+                        aria-label="Crop Start"
                         min="0"
                         max={edl[currentSegmentIndex].endOffset - 0.5}
                         step="0.1"
@@ -697,12 +708,32 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-[9px]">
                         <span className="text-white/40 uppercase">Crop End</span>
-                        <span className="text-emerald-400">{edl[currentSegmentIndex].endOffset.toFixed(1)}s</span>
+                        <span className="text-emerald-400">
+                          {edl[currentSegmentIndex].endOffset.toFixed(1)}s /{' '}
+                          {(
+                            edl[currentSegmentIndex].sourceDuration ??
+                            Math.max(
+                              edl[currentSegmentIndex].endOffset,
+                              edl[currentSegmentIndex].duration + edl[currentSegmentIndex].startOffset
+                            )
+                          ).toFixed(1)}s
+                        </span>
                       </div>
                       <input
                         type="range"
+                        aria-label="Crop End"
+                        data-testid="crop-end-slider"
                         min={edl[currentSegmentIndex].startOffset + 0.5}
-                        max={edl[currentSegmentIndex].duration + edl[currentSegmentIndex].startOffset} // segment physical length
+                        max={
+                          edl[currentSegmentIndex].sourceDuration &&
+                          isFinite(edl[currentSegmentIndex].sourceDuration) &&
+                          edl[currentSegmentIndex].sourceDuration > 0
+                            ? edl[currentSegmentIndex].sourceDuration
+                            : Math.max(
+                                edl[currentSegmentIndex].endOffset,
+                                edl[currentSegmentIndex].duration + edl[currentSegmentIndex].startOffset
+                              )
+                        }
                         step="0.1"
                         value={edl[currentSegmentIndex].endOffset}
                         onChange={(e) => handleCropEndChange(parseFloat(e.target.value))}

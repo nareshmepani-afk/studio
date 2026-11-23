@@ -60,6 +60,7 @@ export interface TactileVoiceRecorderProps {
   activeActStage?: 1 | 2 | 3 | 4;
   photos?: HeirloomPhotoAttachment[];
   takeNumber?: number;
+  isMasterProtected?: boolean;
   onMoodChange?: (mood: StoryMoodTag) => void;
   onRecordingComplete?: (audioBlob: Blob, durationSeconds: number) => void;
   onKeepRecording?: (audioBlob: Blob, durationSeconds: number) => void;
@@ -77,6 +78,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
       activeActStage,
       photos = [],
       takeNumber = 1,
+      isMasterProtected = false,
       onMoodChange,
       onRecordingComplete,
       onKeepRecording,
@@ -112,6 +114,21 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
 
   const containerRef = useRef<HTMLDivElement>(null);
   const nativeAudioInputRef = useRef<HTMLInputElement>(null);
+  const [masterChallengeArmed, setMasterChallengeArmed] = useState(false);
+  const [showMasterChallengePrompt, setShowMasterChallengePrompt] = useState(false);
+
+  useEffect(() => {
+    setMasterChallengeArmed(false);
+    setShowMasterChallengePrompt(false);
+  }, [promptSpark?.id, isMasterProtected]);
+
+  const handleVoiceRecordClick = useCallback(() => {
+    if (isMasterProtected && !masterChallengeArmed) {
+      setShowMasterChallengePrompt(true);
+      return;
+    }
+    void startRecording();
+  }, [isMasterProtected, masterChallengeArmed, startRecording]);
 
   // MW-88-T9: Auto-release microphone pipeline when switching away from Act III (Soundstage)
   useEffect(() => {
@@ -469,6 +486,50 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
             </div>
           )}
 
+          {/* Master-Reel Protection Pre-Record Challenge (RC1.1) */}
+          {isMasterProtected && status === 'idle' && (
+            <div
+              data-testid="HS_FIRESIDE_VOICE_MASTER_GUARD"
+              role="region"
+              aria-label="Master Reel protection notice"
+              className={`w-full mt-3 rounded-2xl px-4 py-3 border text-left transition-all ${
+                masterChallengeArmed
+                  ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-100'
+                  : showMasterChallengePrompt
+                  ? 'bg-amber-950/85 border-amber-400 text-amber-100 shadow-lg shadow-amber-950/50'
+                  : 'bg-amber-950/55 border-amber-500/45 text-amber-100'
+              }`}
+            >
+              <div className="flex items-start gap-2.5">
+                <ShieldCheck
+                  className={`w-4 h-4 shrink-0 mt-0.5 ${
+                    masterChallengeArmed ? 'text-emerald-400' : 'text-amber-400'
+                  }`}
+                />
+                <div className="flex-1 space-y-2">
+                  <p className="text-xs font-semibold leading-snug">
+                    {masterChallengeArmed
+                      ? 'Audition Take Mode Armed — Your published / Desktop Soundstage Master Reel stays untouched.'
+                      : 'Master Reel Protected — This scene already has a Desktop Soundstage / Published Master Reel. Voice memos save separately as alternate takes.'}
+                  </p>
+                  {!masterChallengeArmed && (
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_VOICE_ARM_AUDITION_BTN"
+                      onClick={() => {
+                        setMasterChallengeArmed(true);
+                        setShowMasterChallengePrompt(false);
+                      }}
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs tracking-wide transition-all cursor-pointer active:scale-98 shadow-sm"
+                    >
+                      Record Separate Audition Take (Keeps Master Safe)
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 4. Elder Tactile Controls Area (Rule 26: 88px Record / 56px Secondary) */}
           <div className="w-full mt-4 flex items-center justify-around gap-2">
             {/* Left Secondary Action: Discard / Reset */}
@@ -507,7 +568,7 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
               {status === 'idle' && (
                 <button
                   type="button"
-                  onClick={startRecording}
+                  onClick={handleVoiceRecordClick}
                   data-hotspot-id="HS_FIRESIDE_VOICE_RECORD_BTN"
                   className="w-[88px] h-[88px] min-w-[88px] min-h-[88px] rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 hover:from-amber-500 hover:to-amber-300 text-stone-950 font-bold flex flex-col items-center justify-center gap-1 shadow-[0_0_35px_rgba(245,158,11,0.4)] transition-all hover:scale-105 active:scale-95"
                   aria-label="Start recording spoken memory"
@@ -721,10 +782,18 @@ export const TactileVoiceRecorder = forwardRef<TactileVoiceRecorderRef, TactileV
                 }}
                 data-hotspot-id="HS_FIRESIDE_VOICE_KEEP_BTN"
                 className="w-full sm:w-auto flex-1 max-w-xs min-h-[56px] px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-950/40 transition-all active:scale-98"
-                aria-label="Keep this recording and proceed"
+                aria-label={
+                  isMasterProtected
+                    ? 'Save as alternate take keeping Master Reel untouched'
+                    : 'Keep this recording and proceed'
+                }
               >
-                <Check className="w-5 h-5 text-white" />
-                <span>Keep This Memoir ✓</span>
+                <Check className="w-5 h-5 text-white shrink-0" />
+                <span>
+                  {isMasterProtected
+                    ? 'Save as Alternate Take (Master Untouched)'
+                    : 'Keep This Memoir ✓'}
+                </span>
               </button>
             </div>
           )}

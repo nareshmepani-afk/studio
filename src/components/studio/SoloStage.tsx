@@ -1349,10 +1349,19 @@ export default function SoloStage({
   });
 
   const lastAttemptedBlobRef = useRef<Blob | null>(null);
+  const stitchedMasterUrlRef = useRef<string | null>(null);
 
   // Memoize recordedBlob URL safely to avoid browser memory leaks and duplicate URL instantiations
   useEffect(() => {
     if (!recordedBlob) {
+      if (stitchedMasterUrlRef.current) {
+        const pinnedUrl = stitchedMasterUrlRef.current;
+        if (data?.videoUrl === pinnedUrl) {
+          stitchedMasterUrlRef.current = null;
+        }
+        setReviewVideoUrl(pinnedUrl);
+        return;
+      }
       if (data?.videoUrl) {
         setReviewVideoUrl(data.videoUrl);
       } else {
@@ -1360,6 +1369,7 @@ export default function SoloStage({
       }
       return;
     }
+    stitchedMasterUrlRef.current = null;
     const url = URL.createObjectURL(recordedBlob);
     setReviewVideoUrl(url);
     return () => {
@@ -1686,11 +1696,26 @@ export default function SoloStage({
           console.warn("[SoloStage] Persistence Shield cache cleanup warning:", e);
         }
 
-        // Advance view / update stage
+        // RC1.1 P0 Post-Stitch Playback Fix: Pin the freshly stitched final.mp4 URL
+        // and purge stale in-memory raw recordedBlob/recordedSegments so Act IV plays
+        // the real stitched MP4 immediately without requiring a browser refresh.
+        stitchedMasterUrlRef.current = resultData.videoUrl;
+        lastAttemptedBlobRef.current = null;
+        clearRecording();
         setReviewTake(false);
+        setReviewVideoUrl(resultData.videoUrl);
+        setPreviewCurrentTime(0);
+        if (resultData.durationSeconds && isFinite(resultData.durationSeconds) && resultData.durationSeconds > 0) {
+          setVideoDuration(resultData.durationSeconds);
+          setTrimRange([0, resultData.durationSeconds]);
+        } else {
+          setVideoDuration(0);
+          setTrimRange([0, 100]);
+        }
         update({ 
           productionStage: 3, 
           isProductionLocked: true, 
+          status: 'cinematic-ready',
           videoUrl: resultData.videoUrl,
           ...(resultData.durationSeconds ? { videoDuration: resultData.durationSeconds } : {}),
         });

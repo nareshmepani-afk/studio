@@ -248,7 +248,7 @@ export function useMemoryPersistence({
           return nextStage !== (currentData?.productionStage ?? 0);
         })(),
         timeframeScope: s.timeframeScope !== (currentData?.timeframeScope || 'Year'),
-        narratorAgeAtTime: s.narratorAgeAtTime !== (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : 25),
+        narratorAgeAtTime: s.narratorAgeAtTime !== (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : (currentData?.age !== undefined ? currentData.age : 25)),
         durationQuantity: s.durationQuantity !== (currentData?.durationQuantity || 1),
         durationUnit: s.durationUnit !== (currentData?.durationUnit || 'years'),
         modality: (() => {
@@ -339,7 +339,22 @@ export function useMemoryPersistence({
               : undefined,
           prose: resolvedProse,
           timeframeScope: (s.timeframeScope || currentData?.timeframeScope) as TimeframeScope || undefined,
-          narratorAgeAtTime: s.narratorAgeAtTime !== undefined ? s.narratorAgeAtTime : (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : undefined),
+          narratorAgeAtTime:
+            s.narratorAgeAtTime !== undefined
+              ? s.narratorAgeAtTime
+              : currentData?.narratorAgeAtTime !== undefined
+              ? currentData.narratorAgeAtTime
+              : currentData?.age !== undefined
+              ? currentData.age
+              : undefined,
+          age:
+            s.narratorAgeAtTime !== undefined
+              ? s.narratorAgeAtTime
+              : currentData?.narratorAgeAtTime !== undefined
+              ? currentData.narratorAgeAtTime
+              : currentData?.age !== undefined
+              ? currentData.age
+              : undefined,
           durationQuantity: s.durationQuantity !== undefined ? s.durationQuantity : (currentData?.durationQuantity ?? undefined),
           durationUnit: (s.durationUnit || currentData?.durationUnit) as 'days' | 'months' | 'years' || undefined,
           modality: s.modality || currentData?.modality || undefined,

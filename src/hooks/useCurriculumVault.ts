@@ -33,6 +33,7 @@ import {
   ActIdentifier,
   StoryMoodTag,
   EditingAuthority,
+  OriginSurface,
   SurfaceOrigin,
   MemoirReel,
   resolveEditingAuthority,
@@ -51,6 +52,43 @@ export { resolveEditingAuthority, DEFAULT_MEMORY_LOCATION, DEFAULT_MEMORY_COUNTR
 export type { StoryMoodTag, EditingAuthority, SurfaceOrigin, MemoirReel, MemoirTakeStatus } from '@/types/curriculum';
 import { sanitizeMemoryPayloadForStorage } from '@/lib/memoryPersistenceGuard';
 import { getQaFixtureDocId, resolveQaSeedDefaultProse } from '@/lib/qa/qaFixtureSeeder';
+
+/**
+ * Returns true when a curriculum scene carries a protected Desktop Soundstage or
+ * published/mastered reel that mobile Fireside recordings must NEVER silently replace.
+ */
+export function isSceneMasterProtected(
+  memory?: Partial<UnifiedCurriculumMemory> | null
+): boolean {
+  if (!memory) return false;
+  const lifecycleStatus = String(memory.status || '').toLowerCase();
+  if (
+    lifecycleStatus === 'published' ||
+    lifecycleStatus === 'pre-release' ||
+    lifecycleStatus === 'cinematic-ready' ||
+    memory.editingAuthority === 'desktop_locked'
+  ) {
+    return true;
+  }
+  const takes = Array.isArray(memory.takes) ? memory.takes : [];
+  const activeMaster =
+    takes.find((t) => t.status === 'master') ||
+    takes.find((t) => t.isPreferred && t.status !== 'outtake' && t.status !== 'purged') ||
+    takes.find(
+      (t) =>
+        t.id === memory.activeTakeId &&
+        t.status !== 'outtake' &&
+        t.status !== 'purged'
+    );
+  if (
+    activeMaster &&
+    (activeMaster.source === 'soundstage_desktop' ||
+      activeMaster.source === 'desktop_soundstage')
+  ) {
+    return true;
+  }
+  return false;
+}
 
 export interface UseCurriculumVaultOptions {
   userId?: string | null;
@@ -94,6 +132,7 @@ export interface UseCurriculumVaultReturn {
       sensoryAnchors?: any;
       sensorySparks?: string[];
       editingAuthority?: EditingAuthority;
+      forceReplaceMaster?: boolean;
     }
   ) => Promise<void>;
   /** Discards a specific take (or active take) universally with Rule 14 prose preservation (MW-88-T5 / MW-88-T7) */
@@ -464,6 +503,7 @@ export function useCurriculumVault({
                       : computedActs.includes('act2') || activeTakes.length > 0
                       ? 'captured'
                       : 'ready_for_action'),
+              status: data.status,
               actsCompleted: computedActs,
               smartLandingTarget: computedActs.includes('act3')
                 ? 'act4'
@@ -472,6 +512,12 @@ export function useCurriculumVault({
                 : 'act2',
               takes,
               activeTakeId: data.activeTakeId || preferredTake?.id || '',
+              videoUrl:
+                data.videoUrl ||
+                (preferredTake?.mediaMode === 'video' ? preferredTake.mediaUrl || null : null),
+              audioUrl:
+                data.audioUrl ||
+                (preferredTake?.mediaMode === 'audio' ? preferredTake.mediaUrl || null : null),
               photos: Array.isArray(data.photos) ? data.photos : [],
               directorialPolish: data.directorialPolish || { ...DEFAULT_DIRECTORIAL_POLISH },
               bonusNotes: Array.isArray(data.bonusNotes) ? data.bonusNotes : [],
@@ -533,11 +579,26 @@ export function useCurriculumVault({
                 localPreferred.mediaUrl?.startsWith('blob:') &&
                 !normalized.takes.some((t) => t.id === localPreferred.id)
               ) {
-                normalized.takes = [
-                  ...normalized.takes.map((t) => ({ ...t, isPreferred: false })),
-                  localPreferred,
-                ];
-                normalized.activeTakeId = localPreferred.id;
+                const protectNormalizedMaster =
+                  isSceneMasterProtected(normalized) &&
+                  localPreferred.source === 'fireside_mobile';
+                if (protectNormalizedMaster) {
+                  normalized.takes = [
+                    ...normalized.takes,
+                    {
+                      ...localPreferred,
+                      isPreferred: false,
+                      status: 'alternate',
+                      role: 'alternate',
+                    },
+                  ];
+                } else {
+                  normalized.takes = [
+                    ...normalized.takes.map((t) => ({ ...t, isPreferred: false })),
+                    localPreferred,
+                  ];
+                  normalized.activeTakeId = localPreferred.id;
+                }
               }
               if (
                 (!normalized.photos || normalized.photos.length === 0) &&
@@ -811,6 +872,7 @@ export function useCurriculumVault({
         sensoryAnchors?: any;
         sensorySparks?: string[];
         editingAuthority?: EditingAuthority;
+        forceReplaceMaster?: boolean;
       }
     ): Promise<void> => {
       const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
@@ -837,11 +899,34 @@ export function useCurriculumVault({
         (t) => t.status !== 'outtake' && t.status !== 'purged'
       );
       const isFirstActiveTake = activeTakesBefore.length === 0;
-      const shouldBePreferred =
-        take.isPreferred !== undefined ? Boolean(take.isPreferred) : isFirstActiveTake;
+      const takeExists = existingTakes.some((t) => t.id === take.id);
+      const isUpgradingExistingActiveTake =
+        takeExists &&
+        (current.activeTakeId === take.id ||
+          existingTakes.some(
+            (t) =>
+              t.id === take.id &&
+              (t.isPreferred || t.status === 'master') &&
+              t.status !== 'outtake' &&
+              t.status !== 'purged'
+          ));
+      const hasProtectedMaster = isSceneMasterProtected(current);
+      const isFiresideDemotionBlocked =
+        take.source === 'fireside_mobile' &&
+        hasProtectedMaster &&
+        !options?.forceReplaceMaster &&
+        !isUpgradingExistingActiveTake;
 
-      const inferredStatus: MemoirTakeStatus =
-        take.status || (shouldBePreferred ? 'master' : 'alternate');
+      const rawShouldBePreferred =
+        take.isPreferred !== undefined ? Boolean(take.isPreferred) : isFirstActiveTake;
+      const shouldBePreferred = isFiresideDemotionBlocked ? false : rawShouldBePreferred;
+      const shouldMutateRootMedia = shouldBePreferred || isUpgradingExistingActiveTake;
+
+      const inferredStatus: MemoirTakeStatus = shouldBePreferred
+        ? 'master'
+        : take.status === 'outtake' || take.status === 'purged'
+        ? take.status
+        : 'alternate';
 
       const takeWithLabel: MemoirTake = {
         ...take,
@@ -854,7 +939,6 @@ export function useCurriculumVault({
         order: take.order ?? existingTakes.length + 1,
       };
 
-      const takeExists = existingTakes.some((t) => t.id === take.id);
       const updatedTakes: MemoirTake[] = takeExists
         ? existingTakes.map((t) => {
             if (t.id === take.id) return { ...t, ...takeWithLabel };
@@ -889,6 +973,33 @@ export function useCurriculumVault({
         options?.editingAuthority ||
         (current.editingAuthority === 'desktop_locked' ? 'desktop_locked' : 'fireside_flexible');
 
+      const existingLifecycleStatus = String(current.status || '').toLowerCase();
+      const hasProtectedLifecycleStatus =
+        existingLifecycleStatus === 'published' ||
+        existingLifecycleStatus === 'pre-release' ||
+        existingLifecycleStatus === 'cinematic-ready';
+      const resolvedLifecycleStatus = hasProtectedLifecycleStatus
+        ? current.status
+        : current.currentStatus === 'mastered'
+        ? 'pre-release'
+        : 'draft';
+
+      const resolvedProductionStage = Math.max(
+        typeof current.productionStage === 'number' ? current.productionStage : 0,
+        2,
+        mapActsCompletedToProductionStage(updatedActs)
+      );
+
+      const resolvedOriginSurface: OriginSurface =
+        !shouldMutateRootMedia && current.originSurface
+          ? current.originSurface
+          : hasProtectedMaster &&
+            (current.originSurface === 'soundstage_desktop' ||
+              current.originSurface === 'desktop_soundstage')
+          ? current.originSurface
+          : current.originSurface ||
+            (take.source === 'soundstage_desktop' ? 'soundstage_desktop' : 'fireside_mobile');
+
       const updatedMemory: UnifiedCurriculumMemory = {
         ...current,
         prose: mergedProse,
@@ -900,17 +1011,20 @@ export function useCurriculumVault({
         sensorySparks: options?.sensorySparks ?? current.sensorySparks,
         photos: mergedPhotos,
         takes: updatedTakes,
-        activeTakeId: shouldBePreferred ? take.id : current.activeTakeId || take.id,
+        activeTakeId: shouldMutateRootMedia ? take.id : current.activeTakeId || take.id,
         videoUrl:
-          take.mediaMode === 'video'
-            ? take.mediaUrl || (take as any).videoUrl || null
+          shouldMutateRootMedia && take.mediaMode === 'video'
+            ? take.mediaUrl || (take as any).videoUrl || current.videoUrl || null
             : current.videoUrl || null,
         audioUrl:
-          take.mediaMode === 'audio'
-            ? take.mediaUrl || (take as any).audioUrl || null
+          shouldMutateRootMedia && take.mediaMode === 'audio'
+            ? take.mediaUrl || (take as any).audioUrl || current.audioUrl || null
             : current.audioUrl || null,
         currentStatus: current.currentStatus === 'mastered' ? 'mastered' : 'captured',
+        status: resolvedLifecycleStatus,
+        productionStage: resolvedProductionStage,
         editingAuthority: resolvedAuthority,
+        originSurface: resolvedOriginSurface,
         surfaceOrigin: current.surfaceOrigin || 'fireside_mobile',
         actsCompleted: updatedActs,
         lastModified: nowIso,
@@ -968,18 +1082,16 @@ export function useCurriculumVault({
             prose: narrativeText,
             description: narrativeText,
             actsCompleted: updatedActs,
-            productionStage: Math.max(2, mapActsCompletedToProductionStage(updatedActs)),
+            productionStage: resolvedProductionStage,
             takes: updatedTakes,
-            activeTakeId: updatedMemory.activeTakeId,
-            duration: take.durationSeconds,
             photos: safePhotos,
             bonusNotes: memToPersist.bonusNotes || [],
             moodTag: memToPersist.moodTag || null,
-            originSurface: 'fireside_mobile',
+            originSurface: resolvedOriginSurface,
             surfaceOrigin: memToPersist.surfaceOrigin || 'fireside_mobile',
             editingAuthority: resolvedAuthority,
             currentStatus: memToPersist.currentStatus,
-            status: memToPersist.currentStatus === 'mastered' ? 'pre-release' : 'draft',
+            status: resolvedLifecycleStatus,
             createdAt: memToPersist.createdAt || nowIso,
             updatedAt: nowIso,
             lastModified: nowIso,
@@ -989,12 +1101,19 @@ export function useCurriculumVault({
             payload.imageUrl = primaryPhotoUrl;
           }
 
-          if (take.mediaUrl) {
-            if (take.mediaMode === 'video') {
-              payload.videoUrl = take.mediaUrl;
-            } else {
-              payload.audioUrl = take.mediaUrl;
+          if (shouldMutateRootMedia) {
+            payload.activeTakeId = updatedMemory.activeTakeId;
+            payload.preferredTakeId = updatedMemory.activeTakeId;
+            payload.duration = take.durationSeconds;
+            if (take.mediaUrl) {
+              if (take.mediaMode === 'video') {
+                payload.videoUrl = take.mediaUrl;
+              } else {
+                payload.audioUrl = take.mediaUrl;
+              }
             }
+          } else if (!current.activeTakeId && updatedMemory.activeTakeId) {
+            payload.activeTakeId = updatedMemory.activeTakeId;
           }
 
           const cleanPayload = sanitizeMemoryPayloadForStorage(payload);
@@ -1152,60 +1271,92 @@ export function useCurriculumVault({
           return t;
         });
 
-        const activeMaster =
-          reconciledTakes.find((t) => t.status === 'master') ||
-          reconciledTakes.find((t) => t.isPreferred && t.status !== 'outtake') ||
-          remainingActiveTakes[remainingActiveTakes.length - 1];
+        if (!wasMaster) {
+          // Discarding an alternate take MUST NOT touch root master videoUrl/audioUrl/activeTakeId/originSurface
+          updatedMemory = {
+            ...current,
+            takes: reconciledTakes,
+            lastEditedSurface: 'fireside_mobile',
+            updatedAt: nowEpoch,
+            lastModified: nowIso,
+            prose: current.prose,
+            title: current.title ?? current.sceneTitle,
+            originalHook: current.originalHook,
+            description: current.description ?? current.prose,
+            sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
+            bonusNotes: current.bonusNotes ?? [],
+            editingAuthority: current.editingAuthority || 'fireside_flexible',
+          };
 
-        const resolvedVideoUrl =
-          (activeMaster as any).videoUrl !== undefined
-            ? (activeMaster as any).videoUrl || null
-            : activeMaster.mediaMode === 'video'
-            ? activeMaster.mediaUrl || null
-            : null;
-        const resolvedAudioUrl =
-          (activeMaster as any).audioUrl !== undefined
-            ? (activeMaster as any).audioUrl || null
-            : activeMaster.mediaMode === 'audio'
-            ? activeMaster.mediaUrl || null
-            : null;
+          payload = {
+            takes: reconciledTakes,
+            lastEditedSurface: 'fireside_mobile',
+            updatedAt: nowEpoch,
+            lastModified: nowIso,
+            prose: current.prose,
+            title: current.title ?? current.sceneTitle,
+            originalHook: current.originalHook,
+            description: current.description ?? current.prose,
+            sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
+            bonusNotes: current.bonusNotes ?? [],
+            editingAuthority: current.editingAuthority || 'fireside_flexible',
+          };
+        } else {
+          const activeMaster =
+            reconciledTakes.find((t) => t.status === 'master') ||
+            reconciledTakes.find((t) => t.isPreferred && t.status !== 'outtake') ||
+            remainingActiveTakes[remainingActiveTakes.length - 1];
 
-        updatedMemory = {
-          ...current,
-          takes: reconciledTakes,
-          activeTakeId: activeMaster.id,
-          videoUrl: resolvedVideoUrl,
-          audioUrl: resolvedAudioUrl,
-          lastEditedSurface: 'fireside_mobile',
-          updatedAt: nowEpoch,
-          lastModified: nowIso,
-          prose: current.prose,
-          title: current.title ?? current.sceneTitle,
-          originalHook: current.originalHook,
-          description: current.description ?? current.prose,
-          sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
-          bonusNotes: current.bonusNotes ?? [],
-          editingAuthority: current.editingAuthority || 'fireside_flexible',
-        };
+          const resolvedVideoUrl =
+            (activeMaster as any).videoUrl !== undefined
+              ? (activeMaster as any).videoUrl || null
+              : activeMaster.mediaMode === 'video'
+              ? activeMaster.mediaUrl || null
+              : null;
+          const resolvedAudioUrl =
+            (activeMaster as any).audioUrl !== undefined
+              ? (activeMaster as any).audioUrl || null
+              : activeMaster.mediaMode === 'audio'
+              ? activeMaster.mediaUrl || null
+              : null;
 
-        payload = {
-          takes: reconciledTakes,
-          activeTakeId: activeMaster.id,
-          preferredTakeId: activeMaster.id,
-          videoUrl: resolvedVideoUrl,
-          audioUrl: resolvedAudioUrl,
-          duration: activeMaster.durationSeconds,
-          lastEditedSurface: 'fireside_mobile',
-          updatedAt: nowEpoch,
-          lastModified: nowIso,
-          prose: current.prose,
-          title: current.title ?? current.sceneTitle,
-          originalHook: current.originalHook,
-          description: current.description ?? current.prose,
-          sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
-          bonusNotes: current.bonusNotes ?? [],
-          editingAuthority: current.editingAuthority || 'fireside_flexible',
-        };
+          updatedMemory = {
+            ...current,
+            takes: reconciledTakes,
+            activeTakeId: activeMaster.id,
+            videoUrl: resolvedVideoUrl,
+            audioUrl: resolvedAudioUrl,
+            lastEditedSurface: 'fireside_mobile',
+            updatedAt: nowEpoch,
+            lastModified: nowIso,
+            prose: current.prose,
+            title: current.title ?? current.sceneTitle,
+            originalHook: current.originalHook,
+            description: current.description ?? current.prose,
+            sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
+            bonusNotes: current.bonusNotes ?? [],
+            editingAuthority: current.editingAuthority || 'fireside_flexible',
+          };
+
+          payload = {
+            takes: reconciledTakes,
+            activeTakeId: activeMaster.id,
+            preferredTakeId: activeMaster.id,
+            videoUrl: resolvedVideoUrl,
+            audioUrl: resolvedAudioUrl,
+            duration: activeMaster.durationSeconds,
+            lastEditedSurface: 'fireside_mobile',
+            updatedAt: nowEpoch,
+            lastModified: nowIso,
+            prose: current.prose,
+            title: current.title ?? current.sceneTitle,
+            originalHook: current.originalHook,
+            description: current.description ?? current.prose,
+            sensoryAnchors: current.sensoryAnchors ?? current.sensorySparks,
+            bonusNotes: current.bonusNotes ?? [],
+            editingAuthority: current.editingAuthority || 'fireside_flexible',
+          };
+        }
       }
 
       // Rule 12 Optimistic UI: 0ms synchronous state update before network resolution
