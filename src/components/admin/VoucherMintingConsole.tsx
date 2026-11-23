@@ -519,18 +519,19 @@ export function VoucherMintingConsole() {
             <span className="text-[11px] font-mono text-slate-400 block">
               Occasion Sparks (1-Click Presets):
             </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {OCCASION_SPARKS.map((preset) => (
                 <button
                   key={preset.id}
                   type="button"
+                  title={preset.label}
                   onClick={() => handleSelectSpark(preset)}
-                  className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/80 hover:border-amber-500/50 hover:bg-amber-500/5 text-left transition group cursor-pointer"
+                  className="p-2.5 rounded-xl border border-slate-800 bg-slate-950/80 hover:border-amber-500/50 hover:bg-amber-500/5 text-left transition group cursor-pointer flex items-center gap-2"
                 >
-                  <span className="text-lg block mb-1 group-hover:scale-110 transition duration-200">
+                  <span className="text-base shrink-0 group-hover:scale-110 transition duration-200">
                     {preset.icon}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-300 block truncate group-hover:text-amber-300">
+                  <span className="text-xs font-bold text-slate-300 leading-snug group-hover:text-amber-300">
                     {preset.label}
                   </span>
                 </button>
@@ -658,7 +659,7 @@ export function VoucherMintingConsole() {
                   ) : (
                     <>
                       <Sparkles className="w-3 h-3" />
-                      <span>✨ Polish with AI Muse</span>
+                      <span>Polish with AI Muse</span>
                     </>
                   )}
                 </button>

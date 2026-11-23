@@ -62,6 +62,9 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
   useEffect(() => {
     const formatted = segments.map((seg) => ({
       segmentId: seg.segmentId,
+      sourceId: seg.sourceId || seg.segmentId,
+      existingStoragePath: seg.existingStoragePath,
+      sourceDuration: seg.sourceDuration ?? seg.endOffset ?? seg.duration,
       blobUrl: seg.blobUrl,
       startOffset: seg.startOffset ?? 0,
       endOffset: seg.endOffset ?? seg.duration,
@@ -85,21 +88,51 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
     handleTimeUpdateB,
   } = useVideoSequencer({ edl });
 
-  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
-    const dur = e.currentTarget.duration;
-    if (dur && isFinite(dur) && dur > 0) {
-      setEdl((prev) => {
-        if (prev.length === 1 && (prev[0].duration === 60 || !prev[0].duration || prev[0].duration !== dur)) {
+  const applyResolvedDuration = (dur: number) => {
+    if (!dur || !isFinite(dur) || dur <= 0) return;
+    setEdl((prev) => {
+      if (prev.length === 1) {
+        const seg = prev[0];
+        const isUntrimmed = seg.startOffset === 0 && Math.abs((seg.endOffset ?? seg.duration) - seg.duration) < 0.05;
+        const needsUpdate = seg.duration === 60 || !seg.duration || !seg.sourceDuration || (isUntrimmed && Math.abs(seg.duration - dur) > 0.25);
+        if (needsUpdate) {
           const updated = [{
-            ...prev[0],
-            duration: dur,
-            endOffset: dur,
+            ...seg,
+            sourceDuration: dur,
+            duration: isUntrimmed ? dur : Math.min(seg.duration, dur),
+            endOffset: isUntrimmed ? dur : Math.min(seg.endOffset, dur),
           }];
           onUpdateSegments(updated);
           return updated;
         }
-        return prev;
-      });
+      }
+      return prev;
+    });
+  };
+
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const videoEl = e.currentTarget;
+    const dur = videoEl.duration;
+    if (dur && isFinite(dur) && dur > 0) {
+      applyResolvedDuration(dur);
+    } else if (dur === Infinity || Number.isNaN(dur)) {
+      // Chrome MediaRecorder WebM blobs often report Infinity duration until seeked past EOF
+      const onSeekResolve = () => {
+        videoEl.removeEventListener('timeupdate', onSeekResolve);
+        const resolved = videoEl.duration;
+        if (resolved && isFinite(resolved) && resolved > 0) {
+          applyResolvedDuration(resolved);
+        }
+        try {
+          videoEl.currentTime = edl[currentSegmentIndex]?.startOffset ?? 0;
+        } catch {}
+      };
+      videoEl.addEventListener('timeupdate', onSeekResolve, { once: true });
+      try {
+        videoEl.currentTime = 1e101;
+      } catch {
+        videoEl.removeEventListener('timeupdate', onSeekResolve);
+      }
     }
   };
 
@@ -178,9 +211,14 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
       return;
     }
 
+    const canonicalSourceId = activeSeg.sourceId || activeSeg.segmentId;
+    const immutableSourceDuration = activeSeg.sourceDuration ?? activeSeg.endOffset;
+
     const firstSegment: EDLTrackSegment = {
       ...activeSeg,
       segmentId: `${activeSeg.segmentId}_pt1`,
+      sourceId: canonicalSourceId,
+      sourceDuration: immutableSourceDuration,
       endOffset: relativePlayhead,
       duration: relativePlayhead - activeSeg.startOffset,
     };
@@ -188,6 +226,8 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
     const secondSegment: EDLTrackSegment = {
       ...activeSeg,
       segmentId: `${activeSeg.segmentId}_pt2`,
+      sourceId: canonicalSourceId,
+      sourceDuration: immutableSourceDuration,
       startOffset: relativePlayhead,
       duration: activeSeg.endOffset - relativePlayhead,
     };

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +28,7 @@ function CinemaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const memoryIdParam = searchParams.get('id');
+  const fromSurface = searchParams.get('from');
   const hostId = user?.uid || searchParams.get('hostId') || 'legacy_host_id';
   
   const { chapters, isLoading: isStudioLoading, stats } = useStudioData(hostId);
@@ -96,7 +98,7 @@ function CinemaContent() {
 
   // Build combined list with ownership flag
   const ownMemories = allMemories
-    .filter(m => m.status === 'published' || m.status === 'pre-release')
+    .filter(m => m.status === 'published' || m.status === 'pre-release' || (m.status as string) === 'cinematic-ready')
     .map(m => ({ ...m, _isOwner: true, _ownerName: '', _ownerEmail: '' }));
 
   const sharedWithOwnership = sharedMemories.map(m => ({
@@ -276,6 +278,18 @@ function CinemaContent() {
   return (
     <AuthenticatedPageWrapper>
       <div className='container mx-auto py-8 sm:py-12 px-3 sm:px-6 lg:px-12 max-w-7xl min-h-screen'>
+        {/* Safe static return affordance when arriving from Fireside Studio */}
+        {fromSurface === 'fireside' && (
+          <div className="mb-5">
+            <Link
+              href="/studio/fireside"
+              data-testid="CINEMA_BACK_TO_FIRESIDE_LINK"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/35 text-amber-300 hover:text-amber-200 text-xs font-mono font-bold uppercase tracking-wider transition-all"
+            >
+              <span>← Back to Fireside</span>
+            </Link>
+          </div>
+        )}
         
         {/* Top Controls when viewing a shared memory pass */}
         {publicMemory && (
@@ -385,7 +399,7 @@ function CinemaContent() {
                       Storyteller / Director
                     </span>
                     <p className="text-sm font-bold text-white tracking-wide">
-                      {publicMemory.credits?.director || publicMemory.credits?.starring || 'Naresh Mepani'}
+                      {publicMemory.credits?.director || publicMemory.credits?.starring || 'Family Storyteller'}
                     </p>
                   </div>
                 </div>
@@ -850,7 +864,7 @@ function CinemaContent() {
                       {saved.title}
                     </h4>
                     <p className="text-xs font-mono text-white/60">
-                      Storyteller: {saved.director || 'Naresh Mepani'}
+                      Storyteller: {saved.director || 'Family Storyteller'}
                     </p>
                   </div>
                 ))}

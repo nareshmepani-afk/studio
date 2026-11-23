@@ -53,6 +53,7 @@ import {
     resolveSyncLockState,
     stripStaleAct1QueryParams,
 } from '@/lib/studioStageResolver';
+import { enforceBritishEnglish } from '@/lib/dictionary/diasporaVoiceShield';
 
 // Define a placeholder for the memory data type
 type MemoryData = any;
@@ -90,13 +91,21 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const [upsellFeature, setUpsellFeature] = useState("recording new takes");
 
     const checkUnsavedTake = useCallback(() => {
+        if (!memoryData?.id && !memoryData?.promptId) {
+            setHasUnsavedTake(false);
+            return;
+        }
+        const expectedKeys = new Set<string>();
+        if (memoryData?.id) expectedKeys.add(`backup_take_${memoryData.id}`);
+        if (memoryData?.promptId) expectedKeys.add(`backup_take_${memoryData.promptId}`);
+
         localforage.keys()
             .then((keys) => {
-                const hasBackup = keys.some(k => k.startsWith('backup_take_'));
+                const hasBackup = keys.some((k) => expectedKeys.has(k));
                 setHasUnsavedTake(hasBackup);
             })
             .catch(() => {});
-    }, []);
+    }, [memoryData?.id, memoryData?.promptId]);
 
     useEffect(() => {
         checkUnsavedTake();
@@ -1017,8 +1026,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 // Map temporalSummary to each vision for consistent display in SelectionDeck if needed
                 const visionsWithSummary = visions.map(v => ({ ...v, temporalSummary }));
                 
-                // NEW: Add the Original Hook as a 4th option preserving full authentic prose
-                const fullOriginalScript = (latestDescription && latestDescription.trim().length > 0) ? latestDescription : (polishedOriginalHook || '');
+                // NEW: Add the Original Hook as Option 1 preserving full authentic prose with deterministic UK English (Rule 20)
+                const rawOriginalScript = (latestDescription && latestDescription.trim().length > 0) ? latestDescription : (polishedOriginalHook || '');
+                const fullOriginalScript = enforceBritishEnglish(rawOriginalScript);
                 const originalVision = {
                     visionType: 'Original Polished',
                     visionFocus: 'Your authentic voice, preserved and polished.',
@@ -1150,7 +1160,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     console.log("[ProductionDeck] Auto-anchoring poster before advancing to Act V Premiere:", candidatePoster);
                     // MW-186: Include status transition when entering Act V via poster auto-anchor (ONLY if media recorded)
                     const updatePayload: any = { posterImageUrl: candidatePoster, productionStage: next };
-                    if (next === 4 && memoryData?.status === 'draft' && resolveMemoryMilestones(memoryData).hasRecordedMedia) {
+                    if (
+                        next === 4 &&
+                        (memoryData?.status === 'draft' || memoryData?.status === 'cinematic-ready') &&
+                        resolveMemoryMilestones(memoryData).hasRecordedMedia
+                    ) {
                         updatePayload.status = 'pre-release';
                     }
                     handleUpdate(updatePayload);
@@ -1165,8 +1179,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if ((memoryData?.productionStage || 0) < next) {
                 handleUpdate({ productionStage: next });
             }
-            // MW-186: Auto-transition draft → pre-release when entering Act V (ONLY if media recorded)
-            if (next === 4 && memoryData?.status === 'draft' && resolveMemoryMilestones(memoryData).hasRecordedMedia) {
+            // MW-186: Auto-transition draft / cinematic-ready → pre-release when entering Act V (ONLY if media recorded)
+            if (
+                next === 4 &&
+                (memoryData?.status === 'draft' || memoryData?.status === 'cinematic-ready') &&
+                resolveMemoryMilestones(memoryData).hasRecordedMedia
+            ) {
                 handleUpdate({ status: 'pre-release' });
             }
         }
@@ -1765,7 +1783,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                 missingRequirements={missingRequirements}
                                 onNext={handleNextAct}
                                 onPrev={handlePrevAct}
-                                onRetake={() => setStage(1)}
+                                onRetake={() => setStage(2)}
                                 onPublish={handlePublish}
                                 charge={currentStage === 0 ? hotClarity : totalCharge}
                                 wordCount={wordCount}

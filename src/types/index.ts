@@ -80,7 +80,7 @@ export interface Memory {
   date: string;
   createdAt: string;
   updatedAt: string;
-  status?: 'draft' | 'pre-release' | 'published' | 'completed';
+  status?: 'draft' | 'cinematic-ready' | 'pre-release' | 'published' | 'completed';
   mediaAttachments?: MediaAttachment[];
   imageUrl?: string;
   isLegacy?: boolean;

@@ -126,4 +126,26 @@ describe('MW-187 / MW-190: Link + Claim & Access Governance Invariant Suite', ()
     });
   });
 
+  describe('5. Share & QR Portal Serialization & Hardcoded Attribution Hygiene (MW-421)', () => {
+    it('serializes Firestore Timestamps cleanly in getPublicMemoryAction and removes hardcoded founder fallbacks from Cinema views', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const actionsSrc = fs.readFileSync(path.resolve(__dirname, '../actions/memoryActions.ts'), 'utf-8');
+      const cinemaSrc = fs.readFileSync(path.resolve(__dirname, '../app/cinema/page.tsx'), 'utf-8');
+      const viewerSrc = fs.readFileSync(path.resolve(__dirname, '../components/memory/MemoryCinematicViewer.tsx'), 'utf-8');
+
+      // 1. Server action serialises Firestore Timestamps before returning to Next.js Client Components
+      expect(actionsSrc).toContain('function serializeFirestoreValue');
+      expect(actionsSrc).toContain('typeof value.toDate === \'function\'');
+      expect(actionsSrc).toContain('const memoryData = serializeFirestoreValue({');
+
+      // 2. Cinema gallery includes cinematic-ready memories alongside published & pre-release
+      expect(cinemaSrc).toContain("'cinematic-ready'");
+
+      // 3. Zero hardcoded founder name fallback in customer-facing Cinema views
+      expect(cinemaSrc).not.toContain("'Naresh Mepani'");
+      expect(viewerSrc).not.toContain("'Naresh Mepani'");
+    });
+  });
+
 });

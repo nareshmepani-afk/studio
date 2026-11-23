@@ -108,8 +108,8 @@ export function FiresideAuthHeader({
             aria-label="Return to Production Board"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-amber-400" />
-            <span className="hidden sm:inline">← Back to Production Board</span>
-            <span className="sm:hidden">← Production Board</span>
+            <span className="hidden sm:inline">Back to Production Board</span>
+            <span className="sm:hidden">Production Board</span>
           </Link>
 
           <div className="flex items-center gap-2 text-amber-400 flex-wrap justify-end">

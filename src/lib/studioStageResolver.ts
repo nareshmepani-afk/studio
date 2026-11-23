@@ -120,9 +120,21 @@ export function resolveSyncLockState(input: SyncLockInput): SyncLockResolution {
   };
 }
 
+const PLACEHOLDER_SCRIPT_PATTERNS = [
+  /^enter the core of your memory/i,
+  /^select a prompt to begin/i,
+  /^your birthplace,\s*family roots/i,
+];
+
+function isPlaceholderScriptText(text: string): boolean {
+  const trimmed = text.trim();
+  return PLACEHOLDER_SCRIPT_PATTERNS.some((re) => re.test(trimmed));
+}
+
 /**
  * Resolves the authoritative spoken script text for Act III Teleprompter hydration.
  * Priority: `prose` > `structuredScript.cleanScript` > `description`.
+ * Rejects static placeholder prompt copy so real user prose is never masked.
  */
 export function resolvePreferredScriptTake(
   memoryData?: {
@@ -138,7 +150,11 @@ export function resolvePreferredScriptTake(
     memoryData.description,
   ];
   for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+    if (
+      typeof candidate === 'string' &&
+      candidate.trim().length > 0 &&
+      !isPlaceholderScriptText(candidate)
+    ) {
       return candidate;
     }
   }

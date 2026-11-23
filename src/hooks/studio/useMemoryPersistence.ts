@@ -241,7 +241,12 @@ export function useMemoryPersistence({
         originalHook: (s.originalHook || '') !== (currentData?.originalHook || ''),
         scriptHistory: JSON.stringify(s.scriptHistory || []) !== JSON.stringify(currentData?.scriptHistory || []),
         isProductionLocked: (s.isProductionLocked ?? false) !== (currentData?.isProductionLocked ?? false),
-        productionStage: (s.productionStage ?? 0) !== (currentData?.productionStage ?? 0),
+        productionStage: (() => {
+          const nextStage = overrides?.productionStage !== undefined
+            ? overrides.productionStage
+            : Math.max(s.productionStage ?? 0, currentData?.productionStage ?? 0);
+          return nextStage !== (currentData?.productionStage ?? 0);
+        })(),
         timeframeScope: s.timeframeScope !== (currentData?.timeframeScope || 'Year'),
         narratorAgeAtTime: s.narratorAgeAtTime !== (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : 25),
         durationQuantity: s.durationQuantity !== (currentData?.durationQuantity || 1),
@@ -327,7 +332,11 @@ export function useMemoryPersistence({
           originalHook: s.originalHook || currentData?.originalHook || resolvedProse,
           scriptHistory: s.scriptHistory || currentData?.scriptHistory || undefined,
           isProductionLocked: s.isProductionLocked !== undefined ? s.isProductionLocked : (currentData?.isProductionLocked ?? undefined),
-          productionStage: s.productionStage !== undefined ? s.productionStage : (currentData?.productionStage ?? undefined),
+          productionStage: overrides?.productionStage !== undefined
+            ? overrides.productionStage
+            : (s.productionStage !== undefined || currentData?.productionStage !== undefined)
+              ? Math.max(s.productionStage ?? 0, currentData?.productionStage ?? 0)
+              : undefined,
           prose: resolvedProse,
           timeframeScope: (s.timeframeScope || currentData?.timeframeScope) as TimeframeScope || undefined,
           narratorAgeAtTime: s.narratorAgeAtTime !== undefined ? s.narratorAgeAtTime : (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : undefined),
@@ -340,7 +349,7 @@ export function useMemoryPersistence({
           ...(overrides?.reviewDrafts !== undefined ? { reviewDrafts: overrides.reviewDrafts } : {}),
           previousDraftState: s.previousDraftState !== undefined ? s.previousDraftState : (currentData?.previousDraftState || undefined),
           isReviewing: s.isReviewing ?? false,
-          status: ((s as any).status || currentData?.status || 'draft') as 'draft' | 'pre-release' | 'published' | 'completed' // MW-186: Preserve existing status during flush
+          status: ((s as any).status || currentData?.status || 'draft') as 'draft' | 'cinematic-ready' | 'pre-release' | 'published' | 'completed' // MW-186: Preserve existing status during flush
         };
 
         console.log("[useMemoryPersistence] Manual Flush Delta package ready:", {

@@ -63,7 +63,12 @@ export const StudioSelect = ({
   dataTestId,
 }: StudioSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const activeOptionRef = useRef<HTMLButtonElement>(null);
+
+  const isSearchable = items.length > 20;
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -71,9 +76,43 @@ export const StudioSelect = ({
         setIsOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery('');
+      return;
+    }
+    if (isSearchable) {
+      // Focus the quick-jump input cleanly without scrolling the outer page
+      searchInputRef.current?.focus({ preventScroll: true });
+    }
+    if (activeOptionRef.current && typeof activeOptionRef.current.scrollIntoView === 'function') {
+      activeOptionRef.current.scrollIntoView({ block: 'nearest' });
+    }
+  }, [isOpen, isSearchable]);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredItems = normalizedQuery
+    ? items.filter(
+        (i) =>
+          i.label.toLowerCase().includes(normalizedQuery) ||
+          i.value.toLowerCase().includes(normalizedQuery)
+      )
+    : items;
 
   const selectedItem = items.find(
     (i) =>
@@ -85,10 +124,16 @@ export const StudioSelect = ({
   );
 
   return (
-    <div className="relative" ref={containerRef} data-testid={dataTestId}>
+    <div
+      className={cn('relative', isOpen && 'z-[1060]')}
+      ref={containerRef}
+      data-testid={dataTestId}
+    >
       <button
         type="button"
         disabled={disabled}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'flex items-center gap-1.5 text-[12px] sm:text-[13px] font-black uppercase tracking-[0.25em] text-white hover:text-emerald-400 transition-all focus:outline-none min-w-[28px] justify-start cursor-pointer',
@@ -109,47 +154,86 @@ export const StudioSelect = ({
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            role="listbox"
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute top-full left-0 mt-3 z-[100] min-w-[120px] max-h-64 overflow-y-auto bg-slate-950/95 backdrop-blur-2xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/5 custom-scrollbar"
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="absolute top-full left-0 mt-2.5 z-[1060] min-w-[140px] max-h-64 overflow-y-auto bg-slate-950/95 backdrop-blur-2xl border border-emerald-500/25 rounded-xl shadow-[0_24px_60px_rgba(0,0,0,0.8)] ring-1 ring-white/10 custom-scrollbar pointer-events-auto"
           >
+            {isSearchable && (
+              <div className="sticky top-0 z-10 bg-slate-950/95 p-1.5 border-b border-white/10">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  inputMode="numeric"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && filteredItems.length > 0) {
+                      e.preventDefault();
+                      const exact =
+                        filteredItems.find((i) => i.value.toLowerCase() === normalizedQuery) ||
+                        filteredItems[0];
+                      onChange(exact.value);
+                      setIsOpen(false);
+                    }
+                  }}
+                  placeholder="Type year..."
+                  aria-label="Filter options"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/15 focus:border-emerald-400 text-xs font-mono text-white placeholder:text-slate-500 focus:outline-none"
+                />
+              </div>
+            )}
             <div className="p-1.5 space-y-0.5">
-              <button
-                type="button"
-                onClick={() => {
-                  onChange('none');
-                  setIsOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/30 hover:bg-white/5 hover:text-white/60 rounded-lg transition-all cursor-pointer"
-              >
-                {placeholder}
-              </button>
-              {items.map((item) => (
+              {!normalizedQuery && (
                 <button
-                  key={item.value}
                   type="button"
+                  role="option"
+                  aria-selected={value === 'none'}
                   onClick={() => {
-                    onChange(item.value);
+                    onChange('none');
                     setIsOpen(false);
                   }}
-                  className={cn(
-                    'w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-between group cursor-pointer',
-                    value === item.value
-                      ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 shadow-[inset_0_0_10px_rgba(16,185,129,0.1)]'
-                      : 'text-white/50 hover:bg-white/5 hover:text-white'
-                  )}
+                  className="w-full text-left px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:bg-emerald-500/15 hover:text-white rounded-lg transition-colors cursor-pointer"
                 >
-                  {item.label}
-                  {value === item.value && (
-                    <motion.div
-                      layoutId="active-dot"
-                      className="w-1 h-1 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
-                    />
-                  )}
+                  {placeholder}
                 </button>
-              ))}
+              )}
+              {filteredItems.length === 0 ? (
+                <div className="px-3 py-2 text-[11px] font-mono text-slate-500">No match</div>
+              ) : (
+                filteredItems.map((item) => {
+                  const isSelected = value === item.value;
+                  return (
+                    <button
+                      key={item.value}
+                      ref={isSelected ? activeOptionRef : undefined}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        onChange(item.value);
+                        setIsOpen(false);
+                      }}
+                      className={cn(
+                        'w-full text-left px-3 py-2 text-xs font-bold uppercase tracking-widest rounded-lg transition-colors flex items-center justify-between group cursor-pointer pointer-events-auto',
+                        isSelected
+                          ? 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/35 shadow-[inset_0_0_10px_rgba(16,185,129,0.12)]'
+                          : 'text-slate-200 hover:bg-emerald-500/20 hover:text-white'
+                      )}
+                    >
+                      {item.label}
+                      {isSelected && (
+                        <motion.div
+                          layoutId={`active-dot-${dataTestId || placeholder}`}
+                          className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+                        />
+                      )}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </motion.div>
         )}
@@ -206,8 +290,8 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
       className={cn(
         'w-full transition-all',
         isFireside
-          ? 'bg-stone-950/80 border border-stone-800/80 rounded-2xl p-3 sm:p-4 shadow-lg backdrop-blur-md'
-          : 'flex flex-wrap gap-x-8 xl:gap-x-16 gap-y-6 xl:gap-y-10 pl-2 relative z-[1010]',
+          ? 'relative z-[40] bg-stone-950/80 border border-stone-800/80 rounded-2xl p-3 sm:p-4 shadow-lg backdrop-blur-md'
+          : 'flex flex-wrap gap-x-8 xl:gap-x-16 gap-y-6 xl:gap-y-10 pl-2 relative z-[1040]',
         className
       )}
     >
@@ -346,7 +430,7 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-3 group/meta relative z-[1005] pointer-events-auto">
+          <div className="flex items-center gap-3 group/meta relative z-[1050] pointer-events-auto">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/meta:border-emerald-500/50 transition-all shrink-0">
               <Calendar className="w-4 h-4 text-emerald-400/70 group-hover/meta:text-emerald-400 transition-colors" />
             </div>

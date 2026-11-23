@@ -1,44 +1,46 @@
 import { NextResponse } from 'next/server';
 import { adminStorage } from '@/lib/firebase-admin';
-
-let corsConfigured = false;
+import { getSession } from '@/lib/session';
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession();
+    if (!session?.uid) {
+      return NextResponse.json(
+        { error: 'Unauthorised. Please sign in to request an upload session.' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { filePath, contentType, bucketName } = body;
 
-    if (!filePath || !contentType || !adminStorage) {
+    if (!filePath || typeof filePath !== 'string' || !contentType || !adminStorage) {
       return NextResponse.json(
-        { error: 'Missing parameters or storage not initialized.' },
+        { error: 'Missing parameters or storage not initialised.' },
         { status: 400 }
       );
     }
 
-    const bucket = bucketName ? adminStorage.bucket(bucketName) : adminStorage.bucket();
-
-    // Auto-configure CORS for the GCS bucket once per container lifecycle
-    if (!corsConfigured) {
-      try {
-        await bucket.setCorsConfiguration([
-          {
-            maxAgeSeconds: 3600,
-            method: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
-            origin: ['*'],
-            responseHeader: ['Content-Type', 'Range', 'Content-Range'],
-          }
-        ]);
-        corsConfigured = true;
-        console.log('[GCS:CORS] Configured CORS on bucket successfully.');
-      } catch (corsErr: any) {
-        console.error('[GCS:CORS] Failed to set CORS configuration:', corsErr.message);
-      }
+    const expectedPrefix = `users/${session.uid}/`;
+    if (
+      !filePath.startsWith(expectedPrefix) ||
+      filePath.includes('..') ||
+      filePath.includes('\\')
+    ) {
+      return NextResponse.json(
+        { error: 'Forbidden: storage path outside authenticated user boundary.' },
+        { status: 403 }
+      );
     }
 
+    const bucket = bucketName ? adminStorage.bucket(bucketName) : adminStorage.bucket();
     const file = bucket.file(filePath);
+    const origin = request.headers.get('origin') || undefined;
 
-    // Request the GCS Native Resumable Session URL
+    // Request GCS Native Resumable Session URL scoped to caller origin (never mutate bucket CORS at runtime)
     const [sessionUrl] = await file.createResumableUpload({
+      origin,
       metadata: { contentType },
     });
 

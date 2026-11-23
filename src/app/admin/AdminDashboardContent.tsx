@@ -314,7 +314,7 @@ export default function AdminDashboardContent() {
                   >
                     <span className="flex items-center gap-2.5 min-w-0">
                       <Inbox className="h-4 w-4 text-rose-400 shrink-0" />
-                      <span className="truncate">🚦 Founder Inbox</span>
+                      <span className="truncate">Founder Inbox</span>
                     </span>
                     {inboxBadges && (inboxBadges.red > 0 || inboxBadges.amber > 0 || inboxBadges.readySignOff > 0) && (
                       <span className="flex items-center gap-1 shrink-0" data-testid="ADMIN_NAV_INBOX_BADGES">

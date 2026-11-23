@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   isProtectedDiasporaTerm,
   checkUKOrthography,
+  enforceBritishEnglish,
   detectAIClichés,
   DIASPORA_LEXICON,
   UK_ORTHOGRAPHY_MAPPINGS,
@@ -110,6 +111,31 @@ describe('SPEC-MW-134 & Rule 20 / Rule 45: Diaspora Voice Shield & UK Orthograph
       const phrases = matches.map((m) => m.phrase.toLowerCase());
       expect(phrases.some((p) => p.includes('cut to'))).toBe(true);
       expect(phrases.some((p) => p.includes('wide shot'))).toBe(true);
+    });
+  });
+
+  describe('4. Deterministic UK English Enforcement & Prompt Hygiene (MW-420)', () => {
+    it('enforceBritishEnglish deterministically converts US spellings while preserving casing and diaspora heritage terms', () => {
+      expect(
+        enforceBritishEnglish('Innocence, childhood friendships, and the first spark of curiosity. The red color of the sun.')
+      ).toBe('Innocence, childhood friendships, and the first spark of curiosity. The red colour of the sun.');
+
+      expect(
+        enforceBritishEnglish('Favorite COLOR at the mandir with warm masala chai and gray skies.')
+      ).toBe('Favourite COLOUR at the mandir with warm masala chai and grey skies.');
+    });
+
+    it('guards aiWeaver.ts and ProductionDeck.tsx against US spelling leakage, hardcoded personal mantras, and age=0 infant hallucinations', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const aiWeaverSrc = fs.readFileSync(path.resolve(__dirname, '../actions/aiWeaver.ts'), 'utf-8');
+      const deckSrc = fs.readFileSync(path.resolve(__dirname, '../components/studio/ProductionDeck.tsx'), 'utf-8');
+
+      expect(aiWeaverSrc).toContain('enforceBritishEnglish');
+      expect(aiWeaverSrc).not.toContain('Learn, adapt, work hard, keep going.');
+      expect(aiWeaverSrc).toContain('narratorAgeAtTime > 0 && narratorAgeAtTime < 4');
+      expect(aiWeaverSrc).toContain('PROPER-NOUN & CULTURAL-FRAMING FIDELITY');
+      expect(deckSrc).toContain('enforceBritishEnglish(rawOriginalScript)');
     });
   });
 });

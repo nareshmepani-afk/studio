@@ -232,7 +232,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
         savedList.unshift({
           id: memory.id,
           title: memory.title,
-          director: memory.credits?.director || memory.credits?.starring || 'Naresh Mepani',
+          director: memory.credits?.director || memory.credits?.starring || 'Family Storyteller',
           posterImageUrl: memory.posterImageUrl || memory.imageUrl || '',
           savedAt: new Date().toISOString()
         });
@@ -569,7 +569,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 </h3>
 
                 <p className="text-xs text-amber-200/70 font-mono mb-8">
-                  Storyteller: {memory.credits?.director || memory.credits?.starring || 'Naresh Mepani'}
+                  Storyteller: {memory.credits?.director || memory.credits?.starring || 'Family Storyteller'}
                 </p>
 
                 <button
@@ -849,7 +849,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                           Storyteller / Director
                         </span>
                         <p className="text-xs font-bold text-white tracking-wide">
-                          {memory.credits?.director || memory.credits?.starring || 'Naresh Mepani'}
+                          {memory.credits?.director || memory.credits?.starring || 'Family Storyteller'}
                         </p>
                       </div>
                     </div>

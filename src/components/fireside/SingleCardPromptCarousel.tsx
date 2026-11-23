@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronDown,
@@ -1351,6 +1352,18 @@ export function SingleCardPromptCarousel({
                     Scene {activeSceneNumInPart} of {totalScenesInActivePart}
                   </span>
 
+                  {(currentSceneMemory?.status === 'published' || (currentSceneMemory as any)?.currentStatus === 'published') && (
+                    <>
+                      <span className="text-stone-600">•</span>
+                      <span
+                        data-testid="HS_FIRESIDE_BADGE_IN_CINEMA"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-mono font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                      >
+                        IN CINEMA
+                      </span>
+                    </>
+                  )}
+
                   {isCurrentSceneRecommended && !hasCurrentTake && !hasCurrentDraftProse && (
                     <>
                       <span className="text-stone-600">•</span>
@@ -1697,14 +1710,25 @@ export function SingleCardPromptCarousel({
                   <p className="text-xs text-emerald-200 leading-relaxed">
                     Screen your woven story and recorded performance in the 2.39:1 Fireside Screening Room.
                   </p>
-                  <button
-                    type="button"
-                    data-testid="HS_FIRESIDE_INPLACE_SCREENING_BTN"
-                    onClick={() => onOpenScreeningRoom?.()}
-                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs font-mono font-bold shrink-0 cursor-pointer transition-all shadow-md"
-                  >
-                    [ 🎞️ Watch Master Reel in Screening Room ▶ ]
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_INPLACE_SCREENING_BTN"
+                      onClick={() => onOpenScreeningRoom?.()}
+                      className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs font-mono font-bold shrink-0 cursor-pointer transition-all shadow-md"
+                    >
+                      [ 🎞️ Watch Master Reel in Screening Room ▶ ]
+                    </button>
+                    {currentSceneMemory?.id && (
+                      <Link
+                        href={`/cinema/tv?id=${encodeURIComponent(currentSceneMemory.id)}&from=fireside`}
+                        data-testid="HS_FIRESIDE_OPEN_IN_CINEMA_LINK"
+                        className="min-h-[44px] px-3 py-2 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-amber-400/40 text-amber-200 hover:text-amber-100 text-xs font-mono font-bold inline-flex items-center gap-1 transition-all"
+                      >
+                        <span>Open in Cinema ↗</span>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -2442,7 +2466,7 @@ export function SingleCardPromptCarousel({
         canPrev={currentIndex > 0}
         canNext={currentIndex < sparkDeck.length - 1}
         isEditing={isEditingScript}
-        mobileVariant="both"
+        mobileVariant="ribbon"
         includeDesktopSpine={false}
         className="w-full mt-3"
       />

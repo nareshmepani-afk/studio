@@ -16,7 +16,8 @@ import {
   PencilLine,
   Play,
   Clapperboard,
-  Sparkles
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { 
@@ -49,7 +50,7 @@ type PromptCardProps = {
   onToggleFlagPrompt: (promptId: string) => void;
   canAccess: boolean;
   memoryDescription?: string;
-  status?: 'draft' | 'pre-release' | 'published' | 'completed';
+  status?: 'draft' | 'cinematic-ready' | 'pre-release' | 'published' | 'completed';
   prompt?: Prompt;
   parentPrompt?: Prompt;
   isRecommended?: boolean;
@@ -141,9 +142,13 @@ export function PromptCard(props: PromptCardProps) {
     onToggleFlagPrompt(promptId);
   };
   
+  const isInCinema = Boolean(isCompleted && status === 'published' && memoryId);
+
   const cardClasses = cn(
     "transition-all duration-500 flex flex-col h-full relative group cursor-pointer overflow-hidden rounded-2xl border backdrop-blur-sm",
-    isCompleted 
+    isInCinema
+      ? 'bg-gradient-to-b from-emerald-950/30 via-neutral-950/60 to-amber-950/15 border-emerald-500/45 hover:border-amber-400/60 shadow-[0_0_28px_rgba(16,185,129,0.14)]'
+      : isCompleted 
       ? 'bg-primary/[0.03] border-primary/20 hover:border-primary/40 shadow-2xl shadow-primary/5' 
       : 'bg-white/[0.02] border-white/5 hover:border-white/20 hover:bg-white/[0.05]',
     isRecommended && !isCompleted && "border-emerald-500/40 ring-1 ring-emerald-500/20 bg-emerald-500/[0.03] shadow-[0_0_30px_rgba(16,185,129,0.1)]",
@@ -157,13 +162,20 @@ export function PromptCard(props: PromptCardProps) {
     !canAccess && 'text-white/20'
   );
 
+  const targetRouteId = (isCompleted && memoryId) ? memoryId : promptId;
+  const primaryHref = isInCinema
+    ? `/cinema/tv?id=${memoryId}`
+    : `/studio/production/${targetRouteId}${isCompleted ? '?act=1' : ''}`;
+
   const mainButton = (
     <Button
       size="sm"
-      variant={!canAccess ? "secondary" : isCompleted ? "outline" : "default"}
+      variant={!canAccess ? "secondary" : isInCinema ? "default" : isCompleted ? "outline" : "default"}
       className={cn(
         "rounded-full px-4 h-9 font-bold tracking-tight transform active:scale-95 transition-all relative z-10 pointer-events-none",
-        isCompleted && "border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary shadow-xl transition-all duration-300"
+        isInCinema
+          ? "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20"
+          : isCompleted && "border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary shadow-xl transition-all duration-300"
       )}
       disabled={props.isLoading}
     >
@@ -171,6 +183,10 @@ export function PromptCard(props: PromptCardProps) {
           <>
             <Lock className="mr-2 h-3.5 w-3.5" /> Upgrade
           </>
+      ) : isInCinema ? (
+        <>
+          <Film className="mr-1.5 h-3.5 w-3.5" /> Watch in Cinema <ExternalLink className="ml-1 h-3 w-3" />
+        </>
       ) : isCompleted ? (
         <>
           <Edit className="mr-2 h-3.5 w-3.5" /> Edit Scene
@@ -183,13 +199,16 @@ export function PromptCard(props: PromptCardProps) {
     </Button>
   );
 
-  const targetRouteId = (isCompleted && memoryId) ? memoryId : promptId;
-
   const cardContent = (
       <div className={cardClasses} data-hotspot-id={`HS_PROMPT_CARD_${promptId}`}>
+        {/* Top subtle emerald/gold glow bar for published Cinema scenes */}
+        {isInCinema && (
+          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-emerald-400/80 via-amber-300/90 to-emerald-400/80 pointer-events-none z-20" />
+        )}
+
         {/* The Link Overlay for Intercepting Routes */}
         <Link 
-          href={`/studio/production/${targetRouteId}${isCompleted ? '?act=1' : ''}`}
+          href={primaryHref}
           onClick={handleAction}
           className="absolute inset-0 z-0"
           prefetch={true}
@@ -212,22 +231,29 @@ export function PromptCard(props: PromptCardProps) {
               <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                 {isCompleted ? (
                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
-                          <CheckCircle className="h-2.5 w-2.5 mr-1" />
-                          Captured
-                      </div>
-                      {status === 'published' ? (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-green-500/20 text-green-500 border border-green-500/30 text-[9px] font-black uppercase tracking-widest">
-                          <Rocket className="w-2.5 h-2.5" /> Cinema
-                        </div>
-                      ) : status === 'pre-release' ? (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-violet-500/20 text-violet-400 border border-violet-500/30 text-[9px] font-black uppercase tracking-widest">
-                          <Film className="w-2.5 h-2.5" /> Pre-Release
+                      {isInCinema ? (
+                        <div
+                          data-testid={`prompt-card-in-cinema-badge-${promptId}`}
+                          className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 text-[9px] font-black uppercase tracking-widest shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                        >
+                          <Rocket className="w-2.5 h-2.5 text-amber-300" /> In Cinema
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30 text-[9px] font-black uppercase tracking-widest">
-                          <PencilLine className="w-2.5 h-2.5" /> Studio Draft
-                        </div>
+                        <>
+                          <div className="flex items-center bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">
+                              <CheckCircle className="h-2.5 w-2.5 mr-1" />
+                              Captured
+                          </div>
+                          {status === 'pre-release' || status === 'cinematic-ready' ? (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-violet-500/20 text-violet-400 border border-violet-500/30 text-[9px] font-black uppercase tracking-widest">
+                              <Film className="w-2.5 h-2.5" /> Pre-Release
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30 text-[9px] font-black uppercase tracking-widest">
+                              <PencilLine className="w-2.5 h-2.5" /> Studio Draft
+                            </div>
+                          )}
+                        </>
                       )}
                    </div>
                 ) : (
@@ -384,7 +410,19 @@ export function PromptCard(props: PromptCardProps) {
                   </TooltipProvider>
               </div>
 
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
+                  {isInCinema && canAccess && (
+                    <Link
+                      href={`/studio/production/${targetRouteId}?act=1`}
+                      onClick={(e) => e.stopPropagation()}
+                      data-testid={`prompt-card-edit-secondary-${promptId}`}
+                      className="relative z-20 pointer-events-auto inline-flex items-center gap-1 px-3 h-9 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 hover:border-amber-400/40 text-xs font-semibold text-white/75 hover:text-amber-200 transition-colors"
+                      title="Open in Studio to edit or re-record"
+                    >
+                      <Edit className="h-3 w-3" />
+                      <span>Edit</span>
+                    </Link>
+                  )}
                   {mainButton}
               </div>
             </footer>

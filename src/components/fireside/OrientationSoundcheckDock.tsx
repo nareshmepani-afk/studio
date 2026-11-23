@@ -167,7 +167,7 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
               aria-label="Minimise Studio Orientation and Soundcheck Dock"
               className="min-h-[44px] px-3 py-1 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-300 hover:text-white text-xs font-mono font-bold inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0"
             >
-              <span>[ — Minimise ▴ ]</span>
+              <span>Minimise</span>
               <ChevronUp className="w-3.5 h-3.5" />
             </button>
           </div>

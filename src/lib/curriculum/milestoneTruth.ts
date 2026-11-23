@@ -74,10 +74,10 @@ export function resolveMemoryMilestones(
 
   const hasRecordedMedia = Boolean(hasVideoUrl || hasAudioUrl || hasTakes);
 
-  // Act IV: The Cut exists if media has been recorded AND reached review status (pre-release or published)
+  // Act IV: The Cut exists if media has been recorded AND reached review status (cinematic-ready, pre-release, or published)
   const status = memory.status;
   const hasCompletedCut = Boolean(
-    hasRecordedMedia && (status === 'pre-release' || status === 'published')
+    hasRecordedMedia && (status === 'cinematic-ready' || status === 'pre-release' || status === 'published')
   );
 
   // Act V: Premiere is published if status is officially 'published'

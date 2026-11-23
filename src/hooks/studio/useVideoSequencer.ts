@@ -2,7 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 export interface EDLTrackSegment {
   segmentId: string;
+  sourceId?: string;          // Canonical underlying source blob ID (shared across splits)
+  existingStoragePath?: string; // Existing GCS path when re-editing an already-uploaded take
+  sourceDuration?: number;    // Immutable original source media duration (seconds)
   blobUrl: string;
+  blob?: Blob;
   startOffset: number; // Cut start relative to segment (seconds)
   endOffset: number;   // Cut end relative to segment (seconds)
   duration: number;    // Resulting active duration (seconds)

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PublicPageShell } from '@/components/public/PublicPageShell';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,15 @@ import {
   Check,
   Printer,
   Sparkles,
-  ArrowRight,
   Loader2,
   Share2,
   MessageCircle,
   MessageSquare,
   Send,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -30,49 +31,108 @@ function GiftConfirmationContent() {
 
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const [voucherData, setVoucherData] = useState<{
     code: string;
     tier: GiftTier;
     recipientName: string;
     giverName: string;
     giftMessage: string;
-  }>({
-    code: 'MW-VAULT-LIVE-PASS',
-    tier: 'generational_vault',
-    recipientName: 'Honoured Storyteller',
-    giverName: 'Family Producer',
-    giftMessage: 'A special heirloom gift to capture and preserve your memories.',
-  });
+  } | null>(null);
 
-  useEffect(() => {
+  const verifyCheckoutSession = useCallback(async () => {
     if (!sessionId) {
+      setVerificationError('No checkout session reference was found in the URL.');
       setLoading(false);
       return;
     }
 
-    // Verify session and retrieve real voucher code from backend
-    fetch(`/api/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setVoucherData({
-            code: data.voucherCode || 'MW-VAULT-LIVE-PASS',
-            tier: data.tier || 'generational_vault',
-            recipientName: data.recipientName || 'Honoured Storyteller',
-            giverName: data.giverName || 'Family Producer',
-            giftMessage: data.giftMessage || 'A special heirloom gift to capture and preserve your memories.',
-          });
-        }
-      })
-      .catch((err) => {
-        console.warn('Session verification fallback:', err);
-      })
-      .finally(() => {
-        setLoading(false);
+    setLoading(true);
+    setVerificationError(null);
+
+    try {
+      const res = await fetch(`/api/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.success || !data.verified || !data.voucherCode) {
+        setVoucherData(null);
+        setVerificationError(
+          data.error ||
+            'We are still finalising your heirloom voucher code with Stripe. Please tap Retry in a moment.'
+        );
+        return;
+      }
+
+      setVoucherData({
+        code: data.voucherCode,
+        tier: data.tier || 'generational_vault',
+        recipientName: data.recipientName || 'Honoured Storyteller',
+        giverName: data.giverName || 'Family Producer',
+        giftMessage:
+          data.giftMessage ||
+          'A special heirloom gift to capture and preserve your memories.',
       });
+    } catch (err) {
+      console.warn('Session verification error:', err);
+      setVoucherData(null);
+      setVerificationError(
+        'Could not reach the voucher verification server. Please check your connection and tap Retry.'
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [sessionId]);
 
+  useEffect(() => {
+    void verifyCheckoutSession();
+  }, [verifyCheckoutSession]);
+
+  if (loading) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-4">
+        <Loader2 className="w-10 h-10 animate-spin text-amber-400 mx-auto" />
+        <h1 className="text-2xl font-bold text-white">Minting Your Heirloom Voucher…</h1>
+        <p className="text-sm text-gray-400">
+          Confirming payment with Stripe and sealing your unique unboxing link.
+        </p>
+      </div>
+    );
+  }
+
+  if (!voucherData) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-6">
+        <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-white">Finalising Your Heirloom Pass</h1>
+          <p className="text-sm text-gray-300 leading-relaxed">
+            {verificationError || 'Your unique voucher code is not ready yet.'}
+          </p>
+        </div>
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            type="button"
+            onClick={() => void verifyCheckoutSession()}
+            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs flex items-center gap-2 cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Retry Verification</span>
+          </Button>
+          <Link
+            href="/studio"
+            className="px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700 font-bold text-xs"
+          >
+            Return to Studio
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const unboxingUrl = `${resolvePublicAppUrl()}/unboxing/${voucherData.code}`;
+  const pdfDownloadUrl = `/api/gift/pdf?code=${encodeURIComponent(voucherData.code)}`;
 
   const shareText = `Dear ${voucherData.recipientName},\n\nI have commissioned a special heirloom gift for you on Memory Weaver to record and preserve your life story for our family.\n\nOpen your wax-sealed unboxing ceremony here:\n${unboxingUrl}`;
 
@@ -231,13 +291,15 @@ function GiftConfirmationContent() {
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
 
-          <button
-            onClick={() => window.print()}
+          <a
+            href={pdfDownloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="w-full py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-amber-300 font-bold text-xs flex items-center justify-center gap-2 transition border border-gray-700 cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>Print Keepsake Card</span>
-          </button>
+            <span>Download / Print Keepsake Card (5&quot;×7&quot; PDF)</span>
+          </a>
         </div>
 
       </div>
@@ -245,7 +307,7 @@ function GiftConfirmationContent() {
       {/* FOOTER NAVIGATION */}
       <div className="text-center pt-2">
         <Link
-          href="/dashboard"
+          href="/studio"
           className="text-xs font-mono text-gray-400 hover:text-amber-400 transition"
         >
           ← Return to Studio Dashboard

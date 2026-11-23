@@ -256,5 +256,25 @@ describe('Milestone Truth Resolver (Unit & Boundary Shield)', () => {
       expect(isActMilestoneCompleted(3, milestones)).toBe(false); // Act IV: ⏳
       expect(isActMilestoneCompleted(4, milestones)).toBe(false); // Act V: ⏳
     });
+
+    it('recognises status === "cinematic-ready" with recorded media as Act IV completed (unlocking Act V Premiere rail)', () => {
+      const stitchedMemory: Partial<Memory> = {
+        id: 'stitched_mem_1',
+        prose: 'A genuine autobiographical recollection ready for screening and premiere.',
+        videoUrl: 'https://firebasestorage.googleapis.com/v0/b/test/o/final.mp4?alt=media&token=abc',
+        status: 'cinematic-ready',
+        productionStage: 3,
+      };
+      const milestones = resolveMemoryMilestones(stitchedMemory);
+      expect(milestones.hasRecordedMedia).toBe(true);
+      expect(milestones.hasCompletedCut).toBe(true);
+      expect(isActMilestoneCompleted(3, milestones)).toBe(true);
+      expect(milestones.isPublished).toBe(false);
+
+      // Without recorded media, cinematic-ready alone must NOT falsely complete Act IV
+      const noMedia = resolveMemoryMilestones({ status: 'cinematic-ready' });
+      expect(noMedia.hasRecordedMedia).toBe(false);
+      expect(noMedia.hasCompletedCut).toBe(false);
+    });
   });
 });

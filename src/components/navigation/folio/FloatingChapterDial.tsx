@@ -71,7 +71,7 @@ export function FloatingChapterDial({
             {partRoman}
           </span>
           <span className="text-stone-600 text-xs">•</span>
-          <span className="text-xs font-mono font-bold text-stone-200">
+          <span className="text-xs font-mono font-bold text-stone-200 whitespace-nowrap">
             Scene {displaySceneNum} of {totalScenes}
           </span>
         </div>

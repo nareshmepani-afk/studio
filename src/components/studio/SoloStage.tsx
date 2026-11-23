@@ -867,8 +867,9 @@ export default function SoloStage({
     hasMultipleCameras,
     activeInput,
     switchInput,
-    isWirelessLinked
-    , videoDevices = [], audioDevices = [], selectedVideoDeviceId = '', selectedAudioDeviceId = '', selectVideoDevice = () => {}, selectAudioDevice = () => {}, activeCameraLabel = 'STUDIO WEBCAM', activeMicLabel = 'DEFAULT MICROPHONE', activeResolutionLabel = '720P'
+    isWirelessLinked,
+    refreshDevices = async () => ({ video: [], audio: [] }),
+    videoDevices = [], audioDevices = [], selectedVideoDeviceId = '', selectedAudioDeviceId = '', selectVideoDevice = () => {}, selectAudioDevice = () => {}, activeCameraLabel = 'STUDIO WEBCAM', activeMicLabel = 'DEFAULT MICROPHONE', activeResolutionLabel = '720P'
   } = useCamera({ enabled: isCameraActive });
   const sanitizedVideoDevices = useMemo(() => sanitizeStudioHardwareDevices(videoDevices, 'videoinput'), [videoDevices]);
   const sanitizedAudioDevices = useMemo(() => sanitizeStudioHardwareDevices(audioDevices, 'audioinput'), [audioDevices]);
@@ -934,7 +935,7 @@ export default function SoloStage({
   const recoveredKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (productionStage > 2 || (recordedSegments && recordedSegments.length > 0)) {
+    if (isRetakingMode || productionStage > 2 || (recordedSegments && recordedSegments.length > 0)) {
       setShowRestorePrompt(false);
       return;
     }
@@ -989,32 +990,7 @@ export default function SoloStage({
           }
         }
 
-        // 2. Global Fallback: If no exact match, restore the most recent unsaved backup in IndexedDB
-        if (!matchedBlob && backupKeys.length > 0) {
-          console.log("[SoloStage] Resiliency Shield: No exact match found. Engaging global recovery fallback...");
-          // Grab the first available backup key
-          const bestKey = backupKeys[0];
-          try {
-            const item = await localforage.getItem<any>(bestKey);
-            if (item) {
-              let blob: Blob | null = null;
-              if (item instanceof Blob) {
-                blob = item;
-              } else if (item && typeof item === 'object' && item.blob) {
-                blob = item.blob;
-              }
-
-              if (blob && blob.size > 0) {
-                console.log(`[SoloStage] Resiliency Shield: Global fallback match SUCCESS! Key: "${bestKey}" (${blob.size} bytes)`);
-                matchedBlob = blob;
-                matchedKey = bestKey;
-              }
-            }
-          } catch (e) {
-            console.warn(`[SoloStage] Error retrieving global fallback key ${bestKey}:`, e);
-          }
-        }
-
+        // Strict per-memory isolation: never bleed another memory's IndexedDB backup into this scene.
         if (matchedBlob && matchedBlob.size > 0) {
           setCachedTakeBlob(matchedBlob);
           recoveredKeyRef.current = matchedKey;
@@ -1026,13 +1002,13 @@ export default function SoloStage({
             duration: 8000
           });
         } else {
-          console.log("[SoloStage] Resiliency Shield: Scan complete. No unsaved take found.");
+          console.log("[SoloStage] Resiliency Shield: Scan complete. No unsaved take found for this memory.");
         }
       })
       .catch((err) => {
         console.warn("[SoloStage] Resiliency Shield: Error listing IndexedDB keys:", err);
       });
-  }, [data?.id, data?.promptId, productionStage, recordedSegments?.length]);
+  }, [data?.id, data?.promptId, productionStage, recordedSegments?.length, isRetakingMode]);
 
   const handleRestoreTake = async () => {
     if (!cachedTakeBlob) return;
@@ -1550,98 +1526,116 @@ export default function SoloStage({
         }
       }
 
-      console.log("[SoloStage] Uploading segments sequentially to Storage...");
-      setStitchingStatus("Preparing segment uploads...");
-      // Upload each segment blob
-      for (let i = 0; i < edl.length; i++) {
-        const seg = edl[i];
-        const storagePath = `users/${userId || user?.uid}/memories/${activeMemoryId}/segments/${seg.segmentId}.webm`;
-        const storageRef = ref(storage, storagePath);
-        console.log(`[SoloStage] Uploading segment ${seg.segmentId} (${seg.blob.size} bytes)...`);
-        
-        let uploadSucceeded = false;
-        
+      const ownerUid = userId || user?.uid;
+      const expectedMemoryPrefix = `users/${ownerUid}/memories/${activeMemoryId}/`;
+
+      // Helper to resolve an existing Firebase Storage object path from a download URL
+      const extractExistingStoragePath = (url?: string): string | undefined => {
+        if (!url || !ownerUid || !activeMemoryId) return undefined;
         try {
-          // 1. Try to generate GCS Resumable Upload Session URL
-          const sessionResponse = await fetch('/api/storage/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              filePath: storagePath,
-              contentType: 'video/webm',
-              bucketName: storage.app.options.storageBucket
-            })
-          });
-          
-          if (sessionResponse.ok) {
-            const { sessionUrl } = await sessionResponse.json();
-            if (sessionUrl) {
-              console.log("[SoloStage] Using GCS Native Resumable Session URL for segment upload...");
-              await uploadFileInChunks(seg.blob, sessionUrl, 2 * 1024 * 1024, (progress) => {
-                setStitchingStatus(`Uploading take segment ${i + 1} of ${edl.length} (${progress.percentage}%)...`);
-              });
-              uploadSucceeded = true;
-            }
+          const match = url.match(/\/o\/([^?]+)/);
+          if (!match) return undefined;
+          const decoded = decodeURIComponent(match[1]);
+          if (decoded.startsWith(expectedMemoryPrefix) && !decoded.includes('..')) {
+            return decoded;
           }
-        } catch (resumableErr) {
-          console.warn("[SoloStage] GCS Resumable Chunk upload failed or unavailable. Falling back to direct upload...", resumableErr);
-        }
-        
-        // 2. Fallback to standard uploadBytesResumable if chunk upload failed or was skipped
-        if (!uploadSucceeded) {
-          console.log("[SoloStage] Performing standard direct payload upload fallback...");
-          const uploadTask = uploadBytesResumable(storageRef, seg.blob);
-          if (uploadTask && typeof (uploadTask as any).on === 'function') {
-            await new Promise<void>((resolve, reject) => {
-              (uploadTask as any).on('state_changed',
-                (snapshot: any) => {
-                  const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                  setStitchingStatus(`Uploading take segment ${i + 1} of ${edl.length} (${progress}%)...`);
-                },
-                (error: any) => reject(error),
-                () => resolve()
-              );
-            });
-          } else {
-            await uploadTask;
-          }
+        } catch {}
+        return undefined;
+      };
+
+      console.log("[SoloStage] Uploading unique source blobs directly via Firebase Storage SDK...");
+      setStitchingStatus("Preparing segment uploads...");
+
+      // Deduplicate uploads by sourceId (splitting 1 take into 3 cuts uploads the blob ONCE)
+      const uploadedSourceIds = new Set<string>();
+      const uniqueUploadSources: Array<{ sourceId: string; blob: Blob }> = [];
+
+      for (const seg of edl) {
+        const canonicalSourceId = seg.sourceId || seg.segmentId;
+        if (seg.blob && !uploadedSourceIds.has(canonicalSourceId)) {
+          uploadedSourceIds.add(canonicalSourceId);
+          uniqueUploadSources.push({ sourceId: canonicalSourceId, blob: seg.blob });
         }
       }
 
-      // Upload edl.json manifest
+      for (let i = 0; i < uniqueUploadSources.length; i++) {
+        const { sourceId, blob } = uniqueUploadSources[i];
+        const storagePath = `users/${ownerUid}/memories/${activeMemoryId}/segments/${sourceId}.webm`;
+        const storageRef = ref(storage, storagePath);
+        console.log(`[SoloStage] Uploading unique source ${sourceId} (${blob.size} bytes) via uploadBytesResumable...`);
+
+        const uploadTask = uploadBytesResumable(storageRef, blob, {
+          contentType: blob.type || 'video/webm',
+        });
+        if (uploadTask && typeof (uploadTask as any).on === 'function') {
+          await new Promise<void>((resolve, reject) => {
+            (uploadTask as any).on(
+              'state_changed',
+              (snapshot: any) => {
+                const progress = Math.round((snapshot.bytesTransferred / Math.max(1, snapshot.totalBytes)) * 100);
+                setStitchingStatus(
+                  uniqueUploadSources.length > 1
+                    ? `Uploading take ${i + 1} of ${uniqueUploadSources.length} (${progress}%)...`
+                    : `Uploading performance take (${progress}%)...`
+                );
+              },
+              (error: any) => reject(error),
+              () => resolve()
+            );
+          });
+        } else {
+          await uploadTask;
+        }
+      }
+
+      // Upload edl.json manifest (with deduplicated sourceId / existingStoragePath & immutable sourceDuration)
       setStitchingStatus("Persisting edit decision list manifest...");
-      const manifest = edl.map(seg => ({
-        segmentId: seg.segmentId,
-        startOffset: seg.startOffset,
-        endOffset: seg.endOffset,
-        duration: seg.duration
-      }));
+      const manifest = edl.map((seg) => {
+        const canonicalSourceId = seg.sourceId || seg.segmentId;
+        const existingPath =
+          !seg.blob
+            ? seg.existingStoragePath || extractExistingStoragePath(seg.blobUrl || reviewVideoUrl || data?.videoUrl)
+            : undefined;
+        return {
+          segmentId: seg.segmentId,
+          sourceId: canonicalSourceId,
+          ...(existingPath ? { existingStoragePath: existingPath } : {}),
+          startOffset: seg.startOffset,
+          endOffset: seg.endOffset,
+          duration: seg.duration,
+          ...(seg.sourceDuration ? { sourceDuration: seg.sourceDuration } : {}),
+        };
+      });
       const edlBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      const edlPath = `users/${userId || user?.uid}/memories/${activeMemoryId}/edl.json`;
+      const edlPath = `users/${ownerUid}/memories/${activeMemoryId}/edl.json`;
       const edlRef = ref(storage, edlPath);
       console.log("[SoloStage] Uploading EDL manifest...");
       await uploadBytesResumable(edlRef, edlBlob);
 
-      // Trigger Cloud Function
+      // Trigger Cloud Function (extended 5-minute callable timeout matching 300s FFmpeg backend)
       console.log("[SoloStage] Triggering Cloud Function stitchPerformanceReel...");
       const functionsInstance = getFunctions(app);
-      const stitchPerformanceReel = httpsCallable(functionsInstance, 'stitchPerformanceReel');
+      const stitchPerformanceReel = httpsCallable(functionsInstance, 'stitchPerformanceReel', {
+        timeout: 300000,
+      });
       
       toast.info("COMMENCING CINEMATIC STITCH...", {
-        description: "Your editing layout is locked. Aligning memory segments..."
+        description: "Your editing layout is locked. Compiling broadcast MP4 reel..."
       });
 
       const simulateError = typeof window !== 'undefined' && localStorage.getItem('dev_simulate_transcoder_error') === 'true';
       const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      let resultData: { success: boolean; videoUrl: string };
+      const isAudioOnlyTake = edl.length > 0 && edl.every((s) => Boolean(s.blob?.type?.startsWith('audio/')));
+      let resultData: { success: boolean; videoUrl: string; durationSeconds?: number };
 
       try {
-        setStitchingStatus("Running cloud transcoding alignment (FFmpeg)...");
+        setStitchingStatus("Compiling broadcast MP4 reel (FFmpeg)...");
         const res = await stitchPerformanceReel({ 
           memoryId: activeMemoryId,
+          isAudioOnly: isAudioOnlyTake,
           simulateError: simulateError
         });
-        resultData = res.data as { success: boolean; videoUrl: string };
+        resultData = res.data as { success: boolean; videoUrl: string; durationSeconds?: number };
       } catch (err: any) {
         if (isLocalhost) {
           console.warn("[SoloStage] Firebase Cloud Function failed/missing locally. Simulating transcode on localhost...", err);
@@ -1697,7 +1691,8 @@ export default function SoloStage({
         update({ 
           productionStage: 3, 
           isProductionLocked: true, 
-          videoUrl: resultData.videoUrl 
+          videoUrl: resultData.videoUrl,
+          ...(resultData.durationSeconds ? { videoDuration: resultData.durationSeconds } : {}),
         });
 
         // Trigger the AI Script Supervisor Analysis in the background
@@ -1735,6 +1730,8 @@ export default function SoloStage({
     console.log("[SoloStage] User discarded take. Cleaning up resources...");
     clearRecording();
     lastAttemptedBlobRef.current = null;
+    setShowRestorePrompt(false);
+    setCachedTakeBlob(null);
     setIsRetakingMode(true);
     setReviewTake(false);
     setIsCameraActive(true);
@@ -1748,6 +1745,7 @@ export default function SoloStage({
     }
     if (recoveredKeyRef.current) {
       localforage.removeItem(recoveredKeyRef.current).catch(() => {});
+      recoveredKeyRef.current = null;
     }
     if (data?.promptId) {
       localforage.removeItem(`backup_take_${data.promptId}`).catch(() => {});
@@ -2160,13 +2158,13 @@ export default function SoloStage({
   // NEW: Manage camera activation based on active Production Stage (Stage 1/Weave & Stage 2/Recording)
   // Mode 1 vs Mode 2 Camera Power Management: Keep camera unpowered during Master Reel Review
   useEffect(() => {
-    if (showRestorePrompt) {
+    if (showRestorePrompt && !isRetakingMode) {
       if (isCameraActive) {
         setIsCameraActive(false);
       }
       return;
     }
-    if (productionStage === 2 && hasExistingVideo) {
+    if (productionStage === 2 && hasExistingVideo && !isRetakingMode) {
       if (isCameraActive) {
         setIsCameraActive(false);
       }
@@ -2177,7 +2175,7 @@ export default function SoloStage({
     } else if (productionStage !== 1 && productionStage !== 2 && productionStage !== 3 && isCameraActive) {
       setIsCameraActive(false);
     }
-  }, [productionStage, isCameraActive, recordedBlob, showRestorePrompt, hasExistingVideo]);
+  }, [productionStage, isCameraActive, recordedBlob, showRestorePrompt, hasExistingVideo, isRetakingMode]);
 
   const handleReattemptAccess = useCallback(() => {
     setIsCameraActive(false);
@@ -2283,11 +2281,27 @@ export default function SoloStage({
     setIsPlaying(false);
     setIsReelTheaterOpen(false);
     setIsPosterLightboxOpen(false);
+    setShowRestorePrompt(false);
+    setCachedTakeBlob(null);
     clearRecording();
     lastAttemptedBlobRef.current = null;
     setReviewVideoUrl(null);
     setReviewTake(false);
     setIsRetakingMode(true);
+
+    // Clear stale IndexedDB backups for this memory so Retake never deadlocks on Restore Prompt
+    if (data?.id) {
+      localforage.removeItem(`backup_take_${data.id}`).catch(() => {});
+    }
+    if (data?.promptId) {
+      localforage.removeItem(`backup_take_${data.promptId}`).catch(() => {});
+    }
+    if (recoveredKeyRef.current) {
+      localforage.removeItem(recoveredKeyRef.current).catch(() => {});
+      recoveredKeyRef.current = null;
+    }
+    onClearBackup?.();
+
     if (productionStage === 3) {
       setProductionStage(2);
     }
@@ -2304,7 +2318,34 @@ export default function SoloStage({
       description: `Camera stream engaged. Ready for Take ${nextTakeNumber}. Previous takes safely preserved in history.`,
       icon: <RefreshCw className="w-4 h-4 text-sky-400" />
     });
-  }, [setProductionStage, clearRecording, unmuteOptics, selectionRoomTakes, productionStage]);
+  }, [setProductionStage, clearRecording, unmuteOptics, selectionRoomTakes, productionStage, data?.id, data?.promptId, onClearBackup]);
+
+  // Unified Camera, Lighting & Sound Check reopen handler (top hardware pill & both mic bars)
+  const canReopenTechScout = Boolean(
+    !isRecording && !isCountingIn && !isMuted && !isAlchemySaving && !reviewTake
+  );
+
+  const handleReopenTechScout = useCallback(() => {
+    if (!canReopenTechScout) return;
+    setIsTechScoutMinimised(false);
+    setIsOpticsMinimised(false);
+    setIsTheaterExpanded(false);
+    if (isTableReadActive) {
+      setIsTableReadActive(false);
+    }
+    if (isScrolling && typeof globalActions?.setScrolling === 'function') {
+      globalActions.setScrolling(false);
+    }
+    setTechAlignmentConfirmed(false);
+    void refreshDevices();
+  }, [
+    canReopenTechScout,
+    isTableReadActive,
+    setIsTableReadActive,
+    isScrolling,
+    globalActions,
+    refreshDevices,
+  ]);
 
   const handleSeekPreview = useCallback((seconds: number, autoPlay: boolean = true) => {
     setPreviewCurrentTime(seconds);
@@ -4305,12 +4346,12 @@ export default function SoloStage({
              animate={isTheaterExpanded ? {
                opacity: 1,
                scale: 1,
-               left: "24px",
-               top: "76px",
+               left: "12px",
+               top: "12px",
                x: 0,
                y: 0,
-               width: "calc(100vw - 48px)",
-               height: "calc(100vh - 176px)"
+               width: "calc(100% - 24px)",
+               height: "calc(100% - 24px)"
              } : isAlchemySaving || reviewTake || captureModality === 'raw' ? {
                opacity: 0,
                scale: 0.95,
@@ -4381,7 +4422,7 @@ export default function SoloStage({
              }}
              className={cn(
                "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col select-none relative",
-               isTheaterExpanded ? "fixed top-[76px] bottom-[100px] left-6 right-6 z-40 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-2xl transition-all duration-300 ease-in-out cursor-default p-8" : (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "px-8 pt-6 pb-8",
+               isTheaterExpanded ? "absolute inset-3 z-[60] rounded-2xl bg-slate-950/95 border border-slate-800 shadow-2xl transition-all duration-300 ease-in-out cursor-default p-6 sm:p-8" : (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "px-8 pt-6 pb-8",
                !isTheaterExpanded ? "cursor-grab active:cursor-grabbing" : "",
                (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
                isAlchemySaving || reviewTake || captureModality === 'raw' ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
@@ -4563,6 +4604,7 @@ export default function SoloStage({
                   hasRecordedTake={!!recordedBlob}
                   isAlchemySaving={isAlchemySaving}
                   isAlchemyComplete={isAlchemyComplete}
+                  onEditScript={() => setProductionStage(0)}
                 />
               </div>
             </div>
@@ -4712,15 +4754,19 @@ export default function SoloStage({
                       {(() => {
                         const inputLabel = `INPUT: ${activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : `${(cleanActiveCameraLabel || 'STUDIO WEBCAM').toUpperCase()} (${activeResolutionLabel || '720P'})`}`;
                         return (
-                          <div 
-                            className="flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md h-[30px] max-w-[280px] sm:max-w-[420px]"
-                            title={inputLabel}
+                          <button
+                            type="button"
+                            onClick={handleReopenTechScout}
+                            disabled={!canReopenTechScout}
+                            data-testid="HS_STAGE_REOPEN_TECH_SCOUT_PILL"
+                            className="flex items-center gap-2 px-4 py-1.5 bg-black/60 hover:bg-emerald-950/70 border border-white/10 hover:border-emerald-500/40 rounded-full text-[9px] font-black uppercase tracking-widest text-white/75 hover:text-emerald-200 backdrop-blur-md h-[30px] max-w-[280px] sm:max-w-[420px] pointer-events-auto cursor-pointer disabled:cursor-default disabled:hover:bg-black/60 disabled:hover:border-white/10 transition-colors"
+                            title={canReopenTechScout ? `${inputLabel} — Click to reopen Camera, Lighting & Sound Check` : inputLabel}
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                             <span className="truncate">
                               {inputLabel}
                             </span>
-                          </div>
+                          </button>
                         );
                       })()}
 
@@ -5024,8 +5070,15 @@ export default function SoloStage({
              {techAlignmentConfirmed && !isMuted && (
                 <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
                    {captureModality === 'raw' ? (
-                     /* Bottom-Left: Elegant visual microphone level meter bar */
-                     <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
+                     /* Bottom-Left: Interactive visual microphone level meter bar (reopens Tech Scout when idle) */
+                     <button
+                       type="button"
+                       onClick={handleReopenTechScout}
+                       disabled={!canReopenTechScout}
+                       data-testid="HS_STAGE_RAW_MIC_METER_BTN"
+                       title={canReopenTechScout ? 'Click to open Camera, Lighting & Sound Check' : 'Live microphone input level'}
+                       className="flex items-center gap-4 bg-black/40 hover:bg-emerald-950/50 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 hover:border-emerald-500/40 pointer-events-auto cursor-pointer disabled:cursor-default disabled:hover:bg-black/40 disabled:hover:border-white/10 transition-colors"
+                     >
                        <Volume2 className={cn("w-4 h-4 transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")} />
                        <div className="flex items-end gap-[2px] h-6 w-32 px-1">
                          {waveform.slice(0, 24).map((value, i) => (
@@ -5043,7 +5096,7 @@ export default function SoloStage({
                          ))}
                        </div>
                        <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
-                     </div>
+                     </button>
                    ) : (
                      isTableReadActive ? (
                        <div className={cn(
@@ -5182,7 +5235,14 @@ export default function SoloStage({
                      <div className="w-[180px]" /> /* Spacer to balance the mic visualizer width on the left */
                    ) : (
                      <div className="flex items-center gap-4">
-                       <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
+                       <button
+                         type="button"
+                         onClick={handleReopenTechScout}
+                         disabled={!canReopenTechScout}
+                         data-testid="HS_STAGE_SCRIPTED_MIC_METER_BTN"
+                         title={canReopenTechScout ? 'Click to open Camera, Lighting & Sound Check' : 'Live microphone input level'}
+                         className="flex items-center gap-4 bg-black/40 hover:bg-emerald-950/50 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 hover:border-emerald-500/40 pointer-events-auto cursor-pointer disabled:cursor-default disabled:hover:bg-black/40 disabled:hover:border-white/10 transition-colors"
+                       >
                          <Volume2 className={cn("w-4 h-4 transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")} />
                          <div className="flex items-end gap-[2px] h-6 w-32 px-1">
                            {waveform.slice(0, 24).map((value, i) => (
@@ -5200,7 +5260,7 @@ export default function SoloStage({
                            ))}
                          </div>
                          <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
-                       </div>
+                       </button>
 
                        {isTableReadActive && (
                          <div className="flex items-center gap-2 pointer-events-auto">
@@ -5309,10 +5369,12 @@ export default function SoloStage({
                            ? recordedSegments
                            : [{
                                segmentId: 'master_take_01',
+                               sourceId: 'master_take_01',
                                blobUrl: reviewVideoUrl,
                                startOffset: 0,
                                endOffset: effectiveVideoDuration || videoDuration || 60,
                                duration: effectiveVideoDuration || videoDuration || 60,
+                               sourceDuration: effectiveVideoDuration || videoDuration || 60,
                              }]
                        }
                        onUpdateSegments={setRecordedSegments}
@@ -5547,7 +5609,17 @@ export default function SoloStage({
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
                <Video className="w-16 h-16 text-white/20 mb-6" />
                <h3 className="text-xl font-bold text-white mb-2">Camera Offline</h3>
-               <button onClick={() => setIsCameraActive(true)} className="px-8 py-3 bg-white text-black font-bold rounded-full">Initialize optics</button>
+               <button
+                 type="button"
+                 onClick={() => {
+                   setShowRestorePrompt(false);
+                   setIsRetakingMode(true);
+                   setIsCameraActive(true);
+                 }}
+                 className="px-8 py-3 bg-white text-black font-bold rounded-full cursor-pointer hover:bg-zinc-200 transition-colors"
+               >
+                 Initialize optics
+               </button>
             </div>
           )}
        </div>

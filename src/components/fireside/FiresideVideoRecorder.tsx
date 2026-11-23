@@ -18,7 +18,7 @@
  * (Rule 7 Non-Degradation, Rule 20 British English, Rule 26 Elder Ergonomics, Rule 8 Mobile Viewport)
  */
 
-import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
   Video,
   Square,
@@ -45,6 +45,7 @@ import { useFiresideVideoRecorder } from '@/hooks/useFiresideVideoRecorder';
 import { useHardwarePrivacy } from '@/context/HardwarePrivacyContext';
 
 export interface FiresideVideoRecorderRef {
+  enableCameraPreview: () => Promise<boolean>;
   startRecording: () => Promise<boolean>;
   stopRecording: () => Promise<Blob | null>;
   resetRecording: () => void;
@@ -60,6 +61,7 @@ export interface FiresideVideoRecorderProps {
   activeMood?: StoryMoodTag;
   activeActStage?: 1 | 2 | 3 | 4;
   takeNumber?: number;
+  hasExternalScriptBanner?: boolean;
   onMoodChange?: (mood: StoryMoodTag) => void;
   onRecordingComplete?: (videoBlob: Blob, durationSeconds: number) => void;
   onKeepRecording?: (videoBlob: Blob, durationSeconds: number) => void;
@@ -76,6 +78,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       activeMood,
       activeActStage,
       takeNumber = 1,
+      hasExternalScriptBanner = false,
       onMoodChange,
       onRecordingComplete,
       onKeepRecording,
@@ -88,6 +91,8 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
     const containerRef = useRef<HTMLDivElement>(null);
     const liveVideoRef = useRef<HTMLVideoElement>(null);
     const nativeVideoInputRef = useRef<HTMLInputElement>(null);
+    const [countdown, setCountdown] = useState<number | null>(null);
+    const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const {
       status: hardwarePrivacyStatus,
       killAllHardwareFeeds,
@@ -118,6 +123,20 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
       onReset,
     });
 
+    const cancelCountdown = useCallback(() => {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+      setCountdown(null);
+    }, []);
+
+    useEffect(() => {
+      return () => {
+        cancelCountdown();
+      };
+    }, [cancelCountdown]);
+
     // MW-88-T9: Auto-release camera & microphone tracks when switching away from Act III (Soundstage)
     useEffect(() => {
       if (
@@ -126,6 +145,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
         status !== 'recording' &&
         status !== 'paused'
       ) {
+        cancelCountdown();
         if (stream) {
           stream.getTracks().forEach((track) => {
             try {
@@ -135,12 +155,45 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
         }
         releaseHardwareStream();
       }
-    }, [activeActStage, status, stream, releaseHardwareStream]);
+    }, [activeActStage, status, stream, releaseHardwareStream, cancelCountdown]);
 
-    // Expose imperative API for parent container auto-scrolling and direct trigger
+    // UI-only 3-2-1 breath countdown on the 88px Record button (keeps ref.current.startRecording instant for tests)
+    const handleRecordTriggerClick = useCallback(async () => {
+      if (status === 'recording' || status === 'paused') {
+        cancelCountdown();
+        await stopRecording();
+        return;
+      }
+
+      if (countdown !== null) {
+        cancelCountdown();
+        return;
+      }
+
+      // Warm preview stream BEFORE countdown starts so OS permission never interrupts tick 1
+      if (!stream) {
+        const previewOk = await enableCameraPreview();
+        if (!previewOk) return;
+      }
+
+      let remaining = 3;
+      setCountdown(remaining);
+      countdownTimerRef.current = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          cancelCountdown();
+          void startRecording();
+        } else {
+          setCountdown(remaining);
+        }
+      }, 1000);
+    }, [status, countdown, stream, enableCameraPreview, startRecording, stopRecording, cancelCountdown]);
+
+    // Expose imperative API for parent container auto-scrolling and direct preview/recording trigger
     useImperativeHandle(
       ref,
       () => ({
+        enableCameraPreview,
         startRecording,
         stopRecording,
         resetRecording,
@@ -151,7 +204,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
         status,
         stream,
       }),
-      [startRecording, stopRecording, resetRecording, releaseHardwareStream, status, stream]
+      [enableCameraPreview, startRecording, stopRecording, resetRecording, releaseHardwareStream, status, stream]
     );
 
     // Attach live stream to video element when recording or previewing
@@ -370,30 +423,50 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                       style={{ transform: 'scaleX(-1)' }}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute bottom-3 right-3 z-20">
+                    {/* Top-Right Sever Feed Badge (separated cleanly from top-left REC & bottom-right Wake Lock) */}
+                    <div className="absolute top-3 right-3 z-20">
                       <button
                         type="button"
                         data-testid="HS_FIRESIDE_VIEWFINDER_SEVER_BTN"
-                        onClick={() => killAllHardwareFeeds()}
-                        className="min-h-[44px] px-3 py-1.5 rounded-xl bg-amber-950/85 hover:bg-rose-950/90 border border-amber-500/50 text-amber-300 hover:text-rose-200 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-lg cursor-pointer transition-all"
+                        onClick={() => {
+                          cancelCountdown();
+                          killAllHardwareFeeds();
+                        }}
+                        className="min-h-[36px] sm:min-h-[40px] px-2.5 sm:px-3 py-1 rounded-xl bg-amber-950/85 hover:bg-rose-950/90 border border-amber-500/50 text-amber-300 hover:text-rose-200 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-lg cursor-pointer transition-all"
                         title="Immediately sever camera and microphone hardware feeds"
                       >
-                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                        <span>🔴 CAMERA LIVE • Sever Feed ✕</span>
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
+                        <span className="hidden sm:inline">CAMERA LIVE • Sever Feed ✕</span>
+                        <span className="sm:hidden">LIVE • Sever ✕</span>
                       </button>
                     </div>
+
+                    {/* 3-2-1 Breath Countdown Overlay */}
+                    {countdown !== null && (
+                      <div
+                        data-testid="fireside-video-countdown-overlay"
+                        className="absolute inset-0 z-30 bg-stone-950/55 backdrop-blur-[2px] flex flex-col items-center justify-center text-center pointer-events-none"
+                      >
+                        <span className="text-7xl font-serif font-black text-amber-300 drop-shadow-[0_0_24px_rgba(245,158,11,0.7)] animate-pulse">
+                          {countdown}
+                        </span>
+                        <span className="mt-2 px-3 py-1 rounded-full bg-stone-950/80 border border-amber-500/40 text-xs font-mono text-amber-200">
+                          Take a breath — tap button to cancel
+                        </span>
+                      </div>
+                    )}
                   </>
                 ) : hardwarePrivacyStatus === 'severed' ? (
                   <div
                     data-testid="HS_FIRESIDE_VIEWFINDER_SEVERED_SLATE"
-                    className="w-full h-full flex flex-col items-center justify-center text-stone-300 space-y-3 p-6 pt-20 text-center z-10"
+                    className="w-full h-full flex flex-col items-center justify-center text-stone-300 space-y-3 p-6 text-center z-10"
                   >
                     <span
                       data-testid="HS_FIRESIDE_VIEWFINDER_OPTICS_BADGE"
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-950/70 border border-rose-500/50 text-rose-300 text-[11px] font-mono font-bold tracking-widest"
                     >
                       <Ban className="w-3.5 h-3.5 text-rose-400" />
-                      <span>🚫 OPTICS SEVERED — Privacy Shield Active</span>
+                      <span>OPTICS SEVERED — Privacy Shield Active</span>
                     </span>
                     <p className="text-xs text-stone-300 max-w-xs">
                       Hardware camera and microphone feeds are severed for your privacy. Tap below to re-arm optics.
@@ -409,24 +482,24 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                       className="min-h-[48px] px-4 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 border border-rose-500/50 text-rose-200 text-xs font-mono font-bold tracking-wider flex items-center gap-2 cursor-pointer transition-all active:scale-95 shadow-md"
                     >
                       <span data-testid="HS_FIRESIDE_VIEWFINDER_REARM_BTN">
-                        [ 🛡️ Re-Arm Camera &amp; Mic ]
+                        Re-Arm Camera &amp; Mic
                       </span>
                     </button>
                   </div>
                 ) : (
                   <div
                     data-testid="HS_FIRESIDE_VIEWFINDER_INACTIVE_SLATE"
-                    className="w-full h-full flex flex-col items-center justify-center text-stone-500 space-y-3 p-6 pt-20 text-center z-10"
+                    className="w-full h-full flex flex-col items-center justify-center text-stone-500 space-y-3 p-6 text-center z-10"
                   >
                     <span
                       data-testid="HS_FIRESIDE_VIEWFINDER_OPTICS_BADGE"
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-700/60 text-zinc-300 text-[11px] font-mono font-bold tracking-widest"
                     >
                       <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
-                      <span>🛡️ OPTICS INACTIVE — Standby</span>
+                      <span>OPTICS INACTIVE — Standby</span>
                     </span>
                     <p className="text-xs text-stone-300 max-w-xs">
-                      Tap below to enable your front camera &amp; microphone, or tap Record to start immediately.
+                      Tap below to preview your camera &amp; frame yourself, then tap Record when ready.
                     </p>
                     <button
                       type="button"
@@ -440,42 +513,45 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                   </div>
                 )}
 
-                {/* PINNED PROMPT SPARK BANNER NEAR TOP LENS (Key Ergonomic Innovation) */}
-                <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-4 z-20 pointer-events-none">
-                  <div className="bg-stone-950/80 backdrop-blur-md border border-amber-500/40 rounded-2xl p-3 sm:p-4 text-center shadow-xl">
-                    <p className="text-[11px] sm:text-xs uppercase font-mono tracking-wider text-amber-400 font-semibold mb-1 flex items-center justify-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>{promptTitle}</span>
-                    </p>
-                    <p className="text-xs sm:text-sm font-serif text-stone-100 leading-snug line-clamp-3">
-                      "{promptText}"
-                    </p>
+                {/* PINNED PROMPT SPARK BANNER NEAR TOP LENS (Suppressed when external script banner is already displayed above the camera) */}
+                {!hasExternalScriptBanner && (
+                  <div className="hidden sm:block absolute top-3 inset-x-3 sm:top-14 sm:inset-x-4 z-10 pointer-events-none">
+                    <div className="bg-stone-950/75 backdrop-blur-md border border-amber-500/35 rounded-2xl p-3 text-center shadow-xl">
+                      <p className="text-[11px] uppercase font-mono tracking-wider text-amber-400 font-semibold mb-1 flex items-center justify-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>{promptTitle}</span>
+                      </p>
+                      <p className="text-xs font-serif text-stone-100 leading-snug line-clamp-2">
+                        &ldquo;{promptText}&rdquo;
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Bottom Overlay Status Bar: Rec Timer & Wake Lock */}
+                {/* Top-Left Live Recording Timer (zero overlap with Top-Right Sever or Bottom-Right Screen Awake) */}
                 {(isRecording || isPaused) && (
-                  <div className="absolute bottom-3 inset-x-3 sm:bottom-4 sm:inset-x-4 z-20 flex items-center justify-between pointer-events-none">
-                    {/* Live Duration Badge */}
+                  <div className="absolute top-3 left-3 z-20 pointer-events-none">
                     <div
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-mono text-xs sm:text-sm font-bold backdrop-blur-md shadow-md ${
+                      className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-mono text-xs sm:text-sm font-bold backdrop-blur-md shadow-md ${
                         isRecording
-                          ? 'bg-red-950/80 border border-red-500 text-red-200 animate-pulse'
-                          : 'bg-amber-950/80 border border-amber-500 text-amber-200'
+                          ? 'bg-red-950/85 border border-red-500 text-red-200 animate-pulse'
+                          : 'bg-amber-950/85 border border-amber-500 text-amber-200'
                       }`}
                     >
-                      <span className={`w-2.5 h-2.5 rounded-full ${isRecording ? 'bg-red-500' : 'bg-amber-400'}`} />
+                      <span className={`w-2 h-2 rounded-full ${isRecording ? 'bg-red-500' : 'bg-amber-400'}`} />
                       <span>{isRecording ? 'REC' : 'PAUSED'}</span>
                       <span>{formattedDuration}</span>
                     </div>
+                  </div>
+                )}
 
-                    {/* Wake Lock Active Indicator */}
-                    {isWakeLockActive && (
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-950/80 border border-stone-700/80 text-[11px] font-mono text-stone-300 backdrop-blur-md">
-                        <Eye className="w-3 h-3 text-amber-400" />
-                        <span className="hidden xs:inline">Screen Awake</span>
-                      </div>
-                    )}
+                {/* Bottom-Right Wake Lock Active Indicator (dedicated corner) */}
+                {(isRecording || isPaused) && isWakeLockActive && (
+                  <div className="absolute bottom-3 right-3 z-20 pointer-events-none">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-950/80 border border-stone-700/80 text-[11px] font-mono text-stone-300 backdrop-blur-md">
+                      <Eye className="w-3 h-3 text-amber-400" />
+                      <span className="hidden sm:inline">Screen Awake</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -542,7 +618,7 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                     <button
                       type="button"
                       data-hotspot-id="HS_FIRESIDE_VIDEO_RECORD_BTN"
-                      onClick={isRecording || isPaused ? () => stopRecording() : startRecording}
+                      onClick={() => void handleRecordTriggerClick()}
                       disabled={isProcessing}
                       style={{
                         width: `${FIRESIDE_TOUCH_TARGETS.RECORD_BUTTON_SIZE_PX}px`,
@@ -551,13 +627,29 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                       className={`rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xl relative z-10 ${
                         isRecording || isPaused
                           ? 'bg-red-600 hover:bg-red-500 border-4 border-white/80 shadow-red-600/50'
+                          : countdown !== null
+                          ? 'bg-amber-500/20 border-4 border-amber-400 text-amber-200 shadow-amber-500/40'
                           : 'bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-400 hover:from-amber-500 hover:to-amber-300 border-4 border-stone-950 shadow-amber-500/30'
                       }`}
-                      aria-label={isRecording || isPaused ? 'Stop and save video memo' : 'Start video recording'}
-                      title={isRecording || isPaused ? 'Stop and save video memo' : 'Start video recording'}
+                      aria-label={
+                        isRecording || isPaused
+                          ? 'Stop and save video memo'
+                          : countdown !== null
+                          ? 'Cancel recording countdown'
+                          : 'Start video recording'
+                      }
+                      title={
+                        isRecording || isPaused
+                          ? 'Stop and save video memo'
+                          : countdown !== null
+                          ? 'Tap to cancel countdown'
+                          : 'Start video recording (3-2-1 countdown)'
+                      }
                     >
                       {isRecording || isPaused ? (
                         <Square className="w-8 h-8 text-white fill-white" />
+                      ) : countdown !== null ? (
+                        <span className="text-2xl font-mono font-black text-amber-300">{countdown}</span>
                       ) : (
                         <div className="w-7 h-7 rounded-full bg-red-600 border-2 border-stone-950 shadow-sm" />
                       )}
@@ -589,7 +681,9 @@ export const FiresideVideoRecorder = forwardRef<FiresideVideoRecorderRef, Firesi
                     ? 'Recording video memo. Tap the red square to finish.'
                     : isPaused
                     ? 'Recording paused. Tap Play to resume or the red square to save.'
-                    : 'Tap the circular button to begin your selfie video memo.'}
+                    : countdown !== null
+                    ? `Starting in ${countdown}… Tap the circle to cancel.`
+                    : 'Frame yourself above, then tap the circular button to begin (3-2-1 countdown).'}
                 </p>
               </div>
             </div>

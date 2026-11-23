@@ -54,6 +54,12 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   GIFT_TIER_DISPLAY,
   UNBOXING_LANGUAGE_LABELS,
   GiftTier,
@@ -152,7 +158,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
   },
   {
     id: 'retirement',
-    icon: '🕊️',
+    icon: '🌅',
     label: 'Retirement & Wisdom',
     shortLabel: 'Retirement Story',
     category: 'Milestone',
@@ -163,7 +169,7 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
     id: 'devotion',
     icon: '💍',
     label: 'Decades of Devotion',
-    shortLabel: 'Decades of Love',
+    shortLabel: 'Anniversary & Love',
     category: 'Love',
     template: (name) =>
       `To our beloved ${name || 'Grandmother'}, the memories you have built across the decades are the greatest treasure of our family. This is our gift of remembrance.`,
@@ -172,15 +178,15 @@ const DEDICATION_PRESETS: DedicationPreset[] = [
     id: 'gratitude',
     icon: '💛',
     label: 'Voice of Gratitude',
-    shortLabel: 'Voice of Gratitude',
+    shortLabel: 'Gratitude & Thanks',
     category: 'Family',
     template: (name) =>
       `Dear ${name || 'Storyteller'}, thank you for every bedtime story, every lesson, and every sacrifice. We are giving you this space so your voice is never forgotten.`,
   },
   {
     id: 'memoir',
-    icon: '✨',
-    label: 'Living History',
+    icon: '📖',
+    label: 'Living History & Legacy',
     shortLabel: 'Living History',
     category: 'Legacy',
     template: (name) =>
@@ -260,6 +266,7 @@ export default function GiftPage() {
 
   // Template Replacement Confirmation Popover State
   const [pendingTemplate, setPendingTemplate] = useState<DedicationPreset | null>(null);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -321,6 +328,7 @@ export default function GiftPage() {
     } else {
       setHistoryStack((prev) => [giftMessage, ...prev]);
       setGiftMessage(formatted);
+      setActivePresetId(preset.id);
       setPendingTemplate(null);
       setLastPolishedTone(null);
       toast.success(`Applied ${preset.label} dedication template.`);
@@ -332,6 +340,7 @@ export default function GiftPage() {
     setHistoryStack((prev) => [giftMessage, ...prev]);
     const formatted = pendingTemplate.template(sanitiseRecipientName(recipientName));
     setGiftMessage(formatted);
+    setActivePresetId(pendingTemplate.id);
     setPendingTemplate(null);
     setLastPolishedTone(null);
     toast.success(`Applied ${pendingTemplate.label} template.`);
@@ -978,23 +987,53 @@ export default function GiftPage() {
 
                 {/* OCCASION SPARKS GRID */}
                 <div className="space-y-1.5">
-                  <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-400" />
-                    <span>Occasion Sparks (1-Click Presets):</span>
+                  <div className="text-[11px] font-mono text-gray-400 flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>Occasion Sparks (1-Click Presets):</span>
+                    </span>
+                    <span className="text-[10px] text-gray-500 hidden sm:inline">Hover to preview dedication</span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                    {DEDICATION_PRESETS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handleSelectPreset(preset)}
-                        className="px-2.5 sm:px-3 py-2 min-h-[42px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800 hover:border-amber-500/40 text-xs text-gray-300 hover:text-amber-300 font-sans flex items-center gap-1.5 sm:gap-2 transition cursor-pointer active:scale-95 shadow-sm text-left w-full"
-                      >
-                        <span className="text-sm sm:text-base leading-none shrink-0">{preset.icon}</span>
-                        <span className="font-medium text-[11px] sm:text-xs leading-tight line-clamp-1">{preset.shortLabel || preset.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <TooltipProvider delayDuration={180}>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {DEDICATION_PRESETS.map((preset) => {
+                        const previewText = preset.template(sanitiseRecipientName(recipientName));
+                        const isActive = activePresetId === preset.id;
+                        return (
+                          <Tooltip key={preset.id}>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectPreset(preset)}
+                                title={`${preset.label} — "${previewText}"`}
+                                aria-pressed={isActive}
+                                className={`px-3 py-2.5 min-h-[46px] rounded-xl border text-xs font-sans flex items-center gap-2 transition cursor-pointer active:scale-95 shadow-sm text-left w-full ${
+                                  isActive
+                                    ? 'bg-amber-500/15 border-amber-400/70 text-amber-200 ring-1 ring-amber-400/30'
+                                    : 'bg-gray-950 hover:bg-gray-800/90 border-gray-800 hover:border-amber-500/40 text-gray-200 hover:text-amber-300'
+                                }`}
+                              >
+                                <span className="text-base leading-none shrink-0" aria-hidden="true">{preset.icon}</span>
+                                <span className="font-medium text-xs leading-snug">{preset.shortLabel || preset.label}</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="top"
+                              sideOffset={6}
+                              className="max-w-xs bg-gray-950 border border-amber-500/35 text-gray-100 p-3 rounded-xl shadow-2xl z-50"
+                            >
+                              <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-300 mb-1">
+                                {preset.icon} {preset.label}
+                              </p>
+                              <p className="text-xs font-serif italic text-gray-300 leading-relaxed">
+                                &ldquo;{previewText}&rdquo;
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                  </TooltipProvider>
                 </div>
 
                 {/* SMART SALUTATIONS GRID */}
@@ -1002,15 +1041,16 @@ export default function GiftPage() {
                   <div className="text-[11px] font-mono text-gray-400 flex items-center gap-1">
                     <span>Cultural Salutations:</span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono text-gray-400">
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono text-gray-400">
                     {SALUTATION_PRESETS.map((sal) => (
                       <button
                         key={sal.id}
                         type="button"
                         onClick={() => handleApplySalutation(sal)}
-                        className="px-2.5 sm:px-3 py-2 min-h-[40px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800/80 text-xs text-gray-300 hover:text-amber-300 transition cursor-pointer active:scale-95 flex items-center justify-center font-sans shadow-sm text-center w-full"
+                        title={sal.label}
+                        className="px-3 py-2 min-h-[40px] rounded-xl bg-gray-950 hover:bg-gray-800 border border-gray-800/80 hover:border-amber-500/40 text-xs text-gray-300 hover:text-amber-300 transition cursor-pointer active:scale-95 flex items-center justify-center font-sans shadow-sm text-center w-full"
                       >
-                        <span className="text-[11px] sm:text-xs leading-tight line-clamp-1">{sal.shortLabel || sal.label}</span>
+                        <span className="text-xs leading-tight">{sal.shortLabel || sal.label}</span>
                       </button>
                     ))}
                   </div>
@@ -1112,7 +1152,7 @@ export default function GiftPage() {
                       ) : (
                         <>
                           <Wand2 className="w-3.5 h-3.5 text-amber-400" />
-                          <span>✨ Polish with AI Muse</span>
+                          <span>Polish with AI Muse</span>
                         </>
                       )}
                     </button>

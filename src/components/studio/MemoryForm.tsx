@@ -2110,7 +2110,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           onFocusField={() => setLastFocusedField('metadata')}
                           variant="soundstage"
                         />
-                        <div className="flex flex-wrap gap-x-8 xl:gap-x-16 gap-y-6 xl:gap-y-10 pl-2 relative z-[1010]">
+                        <div className="flex flex-wrap gap-x-8 xl:gap-x-16 gap-y-6 xl:gap-y-10 pl-2 relative z-[1000]">
                         {/* Narrative Scope */}
                         <div className="space-y-4 pointer-events-auto">
                           <span className="text-[11px] font-black text-emerald-400/70 uppercase tracking-[0.4em] flex items-center">

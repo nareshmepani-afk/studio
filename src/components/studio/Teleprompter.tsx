@@ -36,6 +36,7 @@ interface TeleprompterProps {
   hasRecordedTake?: boolean;
   isAlchemySaving?: boolean;
   isAlchemyComplete?: boolean;
+  onEditScript?: () => void;
 }
 
 export const highlightSensoryAnchors = (text: string): string => {
@@ -147,7 +148,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   onTheaterExpandToggle,
   hasRecordedTake = false,
   isAlchemySaving = false,
-  isAlchemyComplete = false
+  isAlchemyComplete = false,
+  onEditScript
 }) => {
   const { 
     sessionId,
@@ -1260,7 +1262,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     <div className="flex flex-col h-full w-full select-none">
       {/* Control Header: UK English Labels */}
       {!isMini && !isTableReadActive && (
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 shrink-0">
+        <div className="flex flex-wrap min-w-0 items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 shrink-0">
           <div className="flex items-center gap-2">
             {!isArmed && (
               <button 
@@ -1547,10 +1549,18 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
                         <button
-                          onClick={() => setActiveDrawer('architect')}
+                          type="button"
+                          onClick={() => {
+                            if (typeof setActiveDrawer === 'function') {
+                              setActiveDrawer('architect');
+                            }
+                            if (typeof onEditScript === 'function') {
+                              onEditScript();
+                            }
+                          }}
                           className="text-cyan-400 hover:text-cyan-300 font-bold underline transition-colors cursor-pointer bg-transparent border-0 p-0 outline-none"
                         >
-                          Architect's Drawer
+                          Architect&apos;s Drawer
                         </button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-slate-900 border-white/10 text-[10px] font-black uppercase tracking-widest text-zinc-200 py-2 px-3">

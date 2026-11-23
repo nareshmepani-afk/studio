@@ -182,10 +182,50 @@ export function useFiresideVideoRecorder(
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Start Video Memo Recording
+  // Shared Front-Camera & Audio Acquisition Helper (720p/24fps + Fallbacks)
+  // ---------------------------------------------------------------------------
+  const acquireVideoAudioStream = useCallback(async (): Promise<MediaStream> => {
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: FIRESIDE_VIDEO_DEFAULTS.FACING_MODE,
+          width: { ideal: FIRESIDE_VIDEO_DEFAULTS.WIDTH, max: FIRESIDE_VIDEO_DEFAULTS.WIDTH },
+          height: { ideal: FIRESIDE_VIDEO_DEFAULTS.HEIGHT, max: FIRESIDE_VIDEO_DEFAULTS.HEIGHT },
+          frameRate: { ideal: FIRESIDE_VIDEO_DEFAULTS.FRAME_RATE, max: 30 },
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+        },
+      });
+    } catch (constraintErr: any) {
+      if (
+        constraintErr?.name === 'OverconstrainedError' ||
+        constraintErr?.name === 'ConstraintNotSatisfiedError' ||
+        constraintErr?.name === 'TypeError'
+      ) {
+        try {
+          return await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: true,
+          });
+        } catch {
+          return await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+        }
+      }
+      throw constraintErr;
+    }
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Start Video Memo Recording (Reuses live preview stream for 0ms zero-flash handoff)
   // ---------------------------------------------------------------------------
   const startRecording = useCallback(async (): Promise<boolean> => {
-    cleanupStream();
     rearmHardware();
     setErrorMessage(null);
     setVideoUrl((prev) => {
@@ -197,47 +237,23 @@ export function useFiresideVideoRecorder(
     setVideoBlob(null);
 
     try {
-      // 1. Request Front-Facing Camera & Audio Stream (with mobile & desktop constraint fallbacks)
-      let mediaStream: MediaStream;
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: FIRESIDE_VIDEO_DEFAULTS.FACING_MODE,
-            width: { ideal: FIRESIDE_VIDEO_DEFAULTS.WIDTH, max: FIRESIDE_VIDEO_DEFAULTS.WIDTH },
-            height: { ideal: FIRESIDE_VIDEO_DEFAULTS.HEIGHT, max: FIRESIDE_VIDEO_DEFAULTS.HEIGHT },
-            frameRate: { ideal: FIRESIDE_VIDEO_DEFAULTS.FRAME_RATE, max: 30 },
-          },
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            sampleRate: 48000,
-          },
-        });
-      } catch (constraintErr: any) {
-        if (
-          constraintErr?.name === 'OverconstrainedError' ||
-          constraintErr?.name === 'ConstraintNotSatisfiedError' ||
-          constraintErr?.name === 'TypeError'
-        ) {
-          try {
-            mediaStream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: 'user' },
-              audio: true,
-            });
-          } catch {
-            mediaStream = await navigator.mediaDevices.getUserMedia({
-              video: true,
-              audio: true,
-            });
-          }
-        } else {
-          throw constraintErr;
-        }
-      }
+      // 1. Reuse already-live preview stream when available (avoids mobile black flash / second permission prompt)
+      const existingStream = streamRef.current;
+      const hasLivePreview = Boolean(
+        existingStream &&
+          existingStream.getVideoTracks().some((t) => t.readyState === 'live') &&
+          existingStream.getAudioTracks().some((t) => t.readyState === 'live')
+      );
 
-      streamRef.current = mediaStream;
-      registerStream(mediaStream);
+      let mediaStream: MediaStream;
+      if (hasLivePreview && existingStream) {
+        mediaStream = existingStream;
+      } else {
+        cleanupStream();
+        mediaStream = await acquireVideoAudioStream();
+        streamRef.current = mediaStream;
+        registerStream(mediaStream);
+      }
       setStream(mediaStream);
       setCameraPermissionState('granted');
       wasCameraActiveBeforeHideRef.current = true;
@@ -515,25 +531,27 @@ export function useFiresideVideoRecorder(
   }, [cleanupStream, releaseWakeLock, onReset]);
 
   // ---------------------------------------------------------------------------
-  // 1-Tap Camera & Microphone Preview Activation
+  // 1-Tap Camera & Microphone Preview Activation (Unified 720p/24fps stream)
   // ---------------------------------------------------------------------------
   const enableCameraPreview = useCallback(async (): Promise<boolean> => {
     rearmHardware();
     setErrorMessage(null);
+
+    const existing = streamRef.current;
+    if (
+      existing &&
+      existing.getVideoTracks().some((t) => t.readyState === 'live') &&
+      existing.getAudioTracks().some((t) => t.readyState === 'live')
+    ) {
+      setStream(existing);
+      setCameraPermissionState('granted');
+      wasCameraActiveBeforeHideRef.current = true;
+      return true;
+    }
+
     setCameraPermissionState('prompt');
     try {
-      let mediaStream: MediaStream;
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: FIRESIDE_VIDEO_DEFAULTS.FACING_MODE },
-          audio: true,
-        });
-      } catch {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-      }
+      const mediaStream = await acquireVideoAudioStream();
       streamRef.current = mediaStream;
       registerStream(mediaStream);
       setStream(mediaStream);
@@ -556,7 +574,7 @@ export function useFiresideVideoRecorder(
       setStatus('error');
       return false;
     }
-  }, [cleanupStream, rearmHardware, registerStream]);
+  }, [acquireVideoAudioStream, cleanupStream, rearmHardware, registerStream]);
 
   // ---------------------------------------------------------------------------
   // 1-Tap Native Mobile Video Capture Import

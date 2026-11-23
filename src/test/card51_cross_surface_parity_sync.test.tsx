@@ -245,4 +245,56 @@ describe('Card 51: Cross-Surface Metadata/Default Parity & Immediate [Save Scrip
     const ageDisplay = screen.getByTestId('memory-mark-age-value');
     expect(ageDisplay.textContent).toBe('-');
   });
+
+  it('Year dropdown selects 1969 via direct click and via quick-jump typing filter without sibling z-index interception', async () => {
+    const onChangeYear = vi.fn();
+
+    render(
+      <MemoryCoordinatesBar
+        location="London"
+        country="United Kingdom"
+        day="none"
+        month="none"
+        year="none"
+        narratorAgeAtTime={0}
+        onChangeLocation={vi.fn()}
+        onChangeCountry={vi.fn()}
+        onChangeDay={vi.fn()}
+        onChangeMonth={vi.fn()}
+        onChangeYear={onChangeYear}
+        onChangeAge={vi.fn()}
+        variant="soundstage"
+      />
+    );
+
+    const bar = screen.getByTestId('memory-coordinates-bar');
+    expect(bar.className).toContain('z-[1040]');
+
+    const yearContainer = screen.getByTestId('memory-mark-year');
+    const triggerBtn = yearContainer.querySelector('button') as HTMLButtonElement;
+    fireEvent.click(triggerBtn);
+
+    // Direct click selection on 1969
+    const opt1969 = screen.getByRole('option', { name: '1969' });
+    fireEvent.click(opt1969);
+    expect(onChangeYear).toHaveBeenCalledWith('1969');
+
+    // Reopen and use quick-jump numeric filter + Enter
+    fireEvent.click(triggerBtn);
+    const filterInput = screen.getByLabelText('Filter options') as HTMLInputElement;
+    fireEvent.change(filterInput, { target: { value: '1965' } });
+    expect(screen.queryByRole('option', { name: '1969' })).toBeNull();
+    expect(screen.getByRole('option', { name: '1965' })).toBeDefined();
+    fireEvent.keyDown(filterInput, { key: 'Enter' });
+    expect(onChangeYear).toHaveBeenCalledWith('1965');
+
+    // Structural stacking shield: MemoryForm Narrative Scope sibling sits strictly below MemoryCoordinatesBar
+    const fs = await import('fs');
+    const path = await import('path');
+    const memoryFormSrc = fs.readFileSync(
+      path.resolve(__dirname, '../components/studio/MemoryForm.tsx'),
+      'utf-8'
+    );
+    expect(memoryFormSrc).toContain('z-[1000]">\r\n                        {/* Narrative Scope */}'.replace(/\r\n/g, memoryFormSrc.includes('\r\n') ? '\r\n' : '\n'));
+  });
 });

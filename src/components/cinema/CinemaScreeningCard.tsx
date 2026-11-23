@@ -36,8 +36,8 @@ export function CinemaScreeningCard({
       className="group relative aspect-[2/3] w-full rounded-2xl overflow-hidden cursor-pointer shadow-2xl hover:shadow-[0_0_40px_rgba(245,158,11,0.25)] transition-all duration-300 border border-white/10 hover:border-amber-400/40"
       onClick={onView}
     >
-      {/* 1. Underlying Theatrical Film Poster (Identical to Studio Act V Showcase) */}
-      <CinemaPoster memory={memory} className="w-full h-full border-0 rounded-2xl pointer-events-none" />
+      {/* 1. Underlying Theatrical Film Poster (Identical to Studio Act V Showcase, with top clearance below badges) */}
+      <CinemaPoster memory={memory} chapterTopOffsetClass="top-12" className="w-full h-full border-0 rounded-2xl pointer-events-none" />
 
       {/* 2. Top Header Badges Bar (Status & Ownership Attribution) - Elevated to z-50 */}
       <div className="absolute top-3.5 inset-x-3.5 z-50 flex items-center justify-between gap-2 pointer-events-auto">

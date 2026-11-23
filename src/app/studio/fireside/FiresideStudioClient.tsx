@@ -93,7 +93,7 @@ const FiresidePrompterBanner: React.FC<FiresidePrompterBannerProps> = ({
   pinnedQuestion,
   testId = 'fireside-recording-script-banner',
 }) => {
-  const [autoBreath, setAutoBreath] = useState(true);
+  const [autoBreath, setAutoBreath] = useState(false);
 
   if (!prose && !pinnedQuestion) return null;
 
@@ -646,6 +646,7 @@ export default function FiresideStudioClient() {
 
   const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
     setSelectedSpark(spark);
+    setSelectedActStage(3);
     setForceRecordMode(true);
     const targetMode: FiresideMediaMode = mediaMode || spark.suggestedMediaMode || 'audio';
     logEvent('FIRESIDE_PROMPT_SELECTED', {
@@ -655,43 +656,32 @@ export default function FiresideStudioClient() {
     });
     setNotification(
       targetMode === 'video'
-        ? `Recording "${spark.title}" in WhatsApp / FaceTime Video Studio.`
-        : `Recording "${spark.title}" in Voice & Photos Studio.`
+        ? `Camera ready for "${spark.title}" — frame yourself and tap Record when ready.`
+        : `Voice booth ready for "${spark.title}" — tap the amber button when you are ready to speak.`
     );
 
-    const triggerStudio = () => {
-      if (targetMode === 'video') {
-        if (videoRecorderRef.current) {
-          videoRecorderRef.current.scrollIntoView();
-          if (videoRecorderRef.current.status !== 'recording') {
-            setRecordedVideoBlob(null);
-            setRecordedVideoDuration(0);
-            videoRecorderRef.current.startRecording();
-          }
-        } else {
-          document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Direction C Surgical Rescue: NEVER auto-start recording on prompt selection.
+    // Open live camera preview synchronously if mounted (preserving iOS Safari user gesture)
+    // and scroll smoothly to the recorder so the narrator records intentionally.
+    if (targetMode === 'video') {
+      if (videoRecorderRef.current) {
+        videoRecorderRef.current.scrollIntoView();
+        if (videoRecorderRef.current.status !== 'recording') {
+          void videoRecorderRef.current.enableCameraPreview();
         }
       } else {
-        if (recorderRef.current) {
-          recorderRef.current.scrollIntoView();
-          if (recorderRef.current.status !== 'recording') {
-            setRecordedAudioBlob(null);
-            setRecordedAudioDuration(0);
-            recorderRef.current.startRecording();
-          }
-        } else {
+        setTimeout(() => {
           document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        }, 80);
       }
-    };
-
-    if (
-      (targetMode === 'video' && videoRecorderRef.current) ||
-      (targetMode === 'audio' && recorderRef.current)
-    ) {
-      triggerStudio();
     } else {
-      setTimeout(triggerStudio, 80);
+      if (recorderRef.current) {
+        recorderRef.current.scrollIntoView();
+      } else {
+        setTimeout(() => {
+          document.getElementById('fireside-active-studio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 80);
+      }
     }
   };
 
@@ -1086,8 +1076,8 @@ export default function FiresideStudioClient() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-stone-100 flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-200">
-      {/* 1. Top Sticky Navigation & Synchronisation Deck */}
-      <div className="sticky top-0 z-30 w-full">
+      {/* 1. Top Navigation & Synchronisation Deck (sticky on md+ desktop, scrolls naturally on mobile to reclaim viewport) */}
+      <div className="md:sticky md:top-0 z-30 w-full">
         {/* Discreet Elder Auth Header with Desktop Stage Ingress & Dynamic Stage Badge */}
         <FiresideAuthHeader
           activePartTitle={activePartTitle}
@@ -1103,13 +1093,25 @@ export default function FiresideStudioClient() {
               <span className="font-medium text-stone-300">Fireside Studio</span>
             </span>
 
-            {/* Persistent Top-Bar Segmented Switcher Pill */}
-            <StudioSurfaceSwitcher
-              currentSurface="fireside"
-              currentSceneId={effectiveSceneId || searchParams?.get('id') || 'part-1-scene-1'}
-              actStage={selectedActStage || 1}
-              isRecording={isFiresideRecording}
-            />
+            {/* Persistent Top-Bar Segmented Switcher Pill + 1-Tap Cinema Ingress */}
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <StudioSurfaceSwitcher
+                currentSurface="fireside"
+                currentSceneId={effectiveSceneId || searchParams?.get('id') || 'part-1-scene-1'}
+                actStage={selectedActStage || 1}
+                isRecording={isFiresideRecording}
+              />
+              {!isFiresideRecording && (
+                <Link
+                  href="/cinema?from=fireside"
+                  data-testid="HS_FIRESIDE_BAR2_CINEMA_LINK"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 text-[11px] font-mono font-bold transition-colors shrink-0"
+                  title="Open Memory Cinema screening gallery"
+                >
+                  <span>Cinema ↗</span>
+                </Link>
+              )}
+            </div>
 
             <div className="flex items-center shrink-0">
               {isSaving ? (
@@ -1322,6 +1324,7 @@ export default function FiresideStudioClient() {
                 activeLanguage={activeLanguage}
                 activeMood={activeMood}
                 activeActStage={selectedActStage}
+                hasExternalScriptBanner={Boolean(activeSceneMemory?.prose || pinnedPrompterQuestion)}
                 takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
                 onMoodChange={handleMoodChange}
                 onRecordingComplete={handleVideoRecordingComplete}

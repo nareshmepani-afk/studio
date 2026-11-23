@@ -16,6 +16,7 @@ import {
   sanitizeProseTemporalFidelity,
   sanitizeSensoryAnchorTemporalFidelity,
 } from '@/lib/truthShield';
+import { enforceBritishEnglish } from '@/lib/dictionary/diasporaVoiceShield';
 
 // Parse service account for Vertex AI SDK
 const serviceAccountRaw = process.env.SERVICE_ACCOUNT_JSON;
@@ -54,7 +55,7 @@ function sanitizeProse(text: string): string {
   if (cleaned.length > 0) {
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
   }
-  return cleaned;
+  return enforceBritishEnglish(cleaned);
 }
 
 function extractRetryErrorMessage(err: any): string {
@@ -136,6 +137,7 @@ export async function expandWithAI(
       - Avoid AI-speak: BANNED words include "odyssey," "lineage," "tapestry," "vibrant," "testament," "unfolding," "interwoven," "symphony," or "shores" (unless refers to a physical beach).
       - BRITISH ENGLISH (en-GB) ONLY (Rule 20.3): Enforce British/Commonwealth English spelling throughout (e.g. colour, favourite, theatre, realise, centre, honour, travelling).
       - DIASPORA VOICE SHIELD: Preserve all South Asian, Gujarati, Punjabi, Hindi, and East African heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji) verbatim without anglicising or replacing them.
+      - PROPER-NOUN & CULTURAL-FRAMING FIDELITY: Preserve every proper noun (places, towns, family names, languages, landmarks) verbatim as written by the narrator — never alter spelling, substitute neighbouring regions, or invent biographical slogans, family mantras, or cultural clichés not present in the narrator's input.
       - Write for future generations.
     `;
 
@@ -150,7 +152,7 @@ export async function expandWithAI(
       },
       {
         key: 'nostalgic',
-        instruction: 'Take 3 ("nostalgic"): Ancestral and generational focus. Passing down values like "Learn. Adapt. Endure." (100-140 words).'
+        instruction: 'Take 3 ("nostalgic"): Ancestral and generational focus. Passing down the family values and lessons reflected in the narrator\'s own words (100-140 words).'
       },
       {
         key: 'master',
@@ -1150,9 +1152,9 @@ export async function generateDraftOptions(
 
     [THE IDENTITY HEADER & NARRATOR PERSPECTIVE]
     - NARRATOR STATUS: Adult reflecting on ${anchorYearStr !== 'Historical Era' ? `the era of ${anchorYearStr}` : 'family roots and memory anchors'}.
-    - NARRATOR AGE AT ANCHOR DATE: ${narratorAgeAtTime} YEAR OLD.
-    - ESTIMATED BIRTH YEAR: ${estimatedBirthYear !== null ? estimatedBirthYear : 'Calculated from era'}.
-    - THE SEED PRINCIPLE: ${narratorAgeAtTime < 4 ? 'Because age is < 4, the narrator is the "Seed," not the "Sower." They have ZERO episodic memory. They were carried and shielded.' : 'Narrator is speaking from lived memory and reflective perspective.'}
+    - NARRATOR AGE AT ANCHOR DATE: ${narratorAgeAtTime > 0 ? `${narratorAgeAtTime} YEAR OLD` : 'Not specified (reflect naturally from the narrator\'s prose without inventing an infant or adult age)'}.
+    - ESTIMATED BIRTH YEAR: ${estimatedBirthYear !== null && narratorAgeAtTime > 0 ? estimatedBirthYear : 'Not specified'}.
+    - THE SEED PRINCIPLE: ${narratorAgeAtTime > 0 && narratorAgeAtTime < 4 ? 'Because age is explicitly < 4, the narrator is the "Seed," not the "Sower." They have ZERO episodic memory. They were carried and shielded.' : 'Narrator is speaking from lived memory and reflective perspective.'}
     - VANTAGE POINT: Frame history with authentic legacy perspective. Prioritize specific family members mentioned in [DATA ANCHORS]. Do not default to "My mother" unless explicitly stated; use inclusive "parents" per user raw input.
 
     [TIMELESS TEMPORAL CALCULATION HORIZON & ACCURACY MANDATE]
@@ -1170,13 +1172,14 @@ export async function generateDraftOptions(
 
     [THE SOIL OF TRUTH - DATA ANCHORS]
     - User Memory: "${safeDescription}"
-    - The Mantra: "Learn, adapt, work hard, keep going."
+    - STRICT ANCHOR BOUNDARY: Draw strictly from User Memory above; NEVER import outside slogans, family mantras, or biographical details not written by the narrator.
 
     [FULL-LENGTH SPOKEN MONOLOGUE WORD-COUNT SCALE PARITY MANDATE]
     - TARGET MONOLOGUE LENGTH: Full-length spoken performance monologue targeting ~${targetScale} words (allowable range: ${targetMin} to ${targetMax} words).
     - CLEAN SCRIPT: First-person spoken prose ONLY. No "V.O.", "Narrator:", camera directions, or technical brackets.
-    - NO IDENTITY THEFT: Never imply a 1-year-old was an adult.
+    - NO IDENTITY THEFT: Never imply a 1-year-old was an adult, and never invent an infant age when age is unspecified.
     - UK ENGLISH COMPLIANCE & DIASPORA VOICE SHIELD: British spellings ONLY (labour, colour, realise, grey, centre, programme, favourite, honour) and preserve South Asian / diaspora heritage terms (e.g. diya, mandir, masala chai, roti, samosas, ba, bapuji) verbatim.
+    - PROPER-NOUN & CULTURAL-FRAMING FIDELITY: Preserve every proper noun (places, towns, family names, languages, landmarks) verbatim as written by the narrator — never alter spelling, substitute neighbouring regions, or invent biographical slogans or cultural clichés not present in User Memory.
   `;
 
   const SingleVisionSchema = z.object({

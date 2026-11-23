@@ -311,6 +311,29 @@ export function checkUKOrthography(text: string): OrthographyMatch[] {
   return matches;
 }
 
+/**
+ * Deterministically converts matched American English spellings to British English (Rule 20),
+ * preserving original casing and skipping protected diaspora heritage terms.
+ */
+export function enforceBritishEnglish(text: string): string {
+  if (!text || text.trim().length === 0) return text;
+
+  return text.replace(/\b([a-zA-Z]+)\b/g, (rawWord) => {
+    const lower = rawWord.toLowerCase();
+    const targetUK = UK_ORTHOGRAPHY_MAPPINGS[lower];
+    if (!targetUK || targetUK === lower || isProtectedDiasporaTerm(rawWord)) {
+      return rawWord;
+    }
+    if (rawWord === rawWord.toUpperCase() && rawWord.length > 1) {
+      return targetUK.toUpperCase();
+    }
+    if (rawWord[0] === rawWord[0].toUpperCase()) {
+      return targetUK.charAt(0).toUpperCase() + targetUK.slice(1);
+    }
+    return targetUK;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // 3. AI CLICHÉ & SCREENPLAY CUE GUARD (Rule 11)
 // ---------------------------------------------------------------------------

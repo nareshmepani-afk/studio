@@ -102,7 +102,7 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
               <>
                 <ShieldCheck className="w-4 h-4 text-zinc-400 shrink-0" />
                 <span className="tracking-widest font-bold whitespace-nowrap">
-                  🛡️ Optics Inactive
+                  Optics Inactive
                 </span>
               </>
             )}
@@ -114,7 +114,7 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
                 </div>
                 <span className="tracking-widest font-black text-amber-300 whitespace-nowrap">
-                  {compact ? '🔴 Live • Sever ✕' : '🔴 CAMERA LIVE • Sever Feed ✕'}
+                  {compact ? 'Live • Sever ✕' : 'CAMERA LIVE • Sever Feed ✕'}
                 </span>
               </>
             )}
@@ -124,10 +124,10 @@ export function OpticsPrivacyShield({ className, compact = false }: OpticsPrivac
                 <Ban className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
                 <span className="tracking-widest font-black text-rose-300 whitespace-nowrap">
                   {compact
-                    ? '🚫 Severed • Re-Arm'
+                    ? 'Severed • Re-Arm'
                     : isSoundstageRoute
-                    ? '🚫 Optics Severed • Click to Restore'
-                    : '🚫 Optics Severed • Re-Arm Permissions'}
+                    ? 'Optics Severed • Click to Restore'
+                    : 'Optics Severed • Re-Arm Permissions'}
                 </span>
               </>
             )}

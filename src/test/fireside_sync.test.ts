@@ -1026,9 +1026,9 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         })
       );
 
-      // Verify Gujarati Cardamom Chai excerpt & verbatim copy
+      // Verify Gujarati Cardamom Chai excerpt & deduplicated header copy
       expect(document.body.textContent).toContain(
-        '🧭 🎙️ FIRESIDE WALKTHROUGH // 30S REHEARSAL • ZERO-FRICTION PRACTICE FLIGHT'
+        'FIRESIDE WALKTHROUGH // 30S REHEARSAL • ZERO-FRICTION PRACTICE FLIGHT'
       );
       expect(document.body.textContent).toContain(
         'Free Walkthrough — Experience Fireside Capture & Soundcheck Without Saving'
@@ -1779,13 +1779,13 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         '[data-testid="optics-privacy-shield-btn"]'
       ) as HTMLButtonElement;
       expect(headerShieldBtn).toBeTruthy();
-      expect(headerShieldBtn.textContent).toContain('🛡️ Optics Inactive');
+      expect(headerShieldBtn.textContent).toContain('Optics Inactive');
 
       const viewfinderOpticsBadge = document.querySelector(
         '[data-testid="HS_FIRESIDE_VIEWFINDER_OPTICS_BADGE"]'
       ) as HTMLElement;
       expect(viewfinderOpticsBadge).toBeTruthy();
-      expect(viewfinderOpticsBadge.textContent).toContain('🛡️ OPTICS INACTIVE');
+      expect(viewfinderOpticsBadge.textContent).toContain('OPTICS INACTIVE');
 
       unmount();
     });

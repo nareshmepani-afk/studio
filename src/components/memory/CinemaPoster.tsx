@@ -8,13 +8,14 @@ import type { Memory } from '@/types';
 interface CinemaPosterProps {
   memory: Memory;
   className?: string;
+  chapterTopOffsetClass?: string;
 }
 
 /**
  * CinemaPoster Component
  * Renders a professional 2:3 vertical film poster for a memory.
  */
-export function CinemaPoster({ memory, className = "" }: CinemaPosterProps) {
+export function CinemaPoster({ memory, className = "", chapterTopOffsetClass = "top-6" }: CinemaPosterProps) {
   const credits = memory.credits;
   
   // Determine the best source for the poster image
@@ -76,7 +77,7 @@ export function CinemaPoster({ memory, className = "" }: CinemaPosterProps) {
       <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.7)] pointer-events-none" />
 
       {/* 3. Gold-tinted Chapter Header (Top Focus) */}
-      <div className="absolute top-6 inset-x-0 text-center px-4 z-10 pointer-events-none">
+      <div className={`absolute ${chapterTopOffsetClass} inset-x-0 text-center px-4 z-10 pointer-events-none`}>
         <motion.div
            initial={{ opacity: 0, y: -10 }}
            animate={{ opacity: 1, y: 0 }}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import { adminDb } from '@/lib/firebase-admin';
 import { getStripe, PRICING_TIERS_CONFIG } from '@/lib/stripe';
+import { ensureGiftVoucherForPaidSession } from '@/lib/giftVoucherMinting';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,18 +48,32 @@ export async function GET(req: NextRequest) {
 
     // ── Gift Purchase Fork ──────────────────────────────────────────
     if (isGift && adminDb) {
-      // Find voucher created for this session
-      const voucherQuery = await adminDb
-        .collection('gift_vouchers')
-        .where('stripeSessionId', '==', stripeSession.id)
-        .limit(1)
-        .get();
-
       let voucherCode = '';
       let giftDocData: any = null;
-      if (!voucherQuery.empty) {
-        voucherCode = voucherQuery.docs[0].id;
-        giftDocData = voucherQuery.docs[0].data();
+
+      if (isPaid) {
+        // Self-healing idempotent mint: guarantees a real Crockford voucher code
+        // immediately on post-payment redirect even if the Stripe webhook arrives later.
+        const ensured = await ensureGiftVoucherForPaidSession({
+          session: stripeSession,
+          giverUid: uid,
+          eventId: 'verify-session',
+        });
+        voucherCode = ensured.voucherCode;
+        giftDocData = ensured.voucherDoc;
+        if (ensured.created) {
+          console.log(`[verify-session] Self-healed gift voucher ${voucherCode} for session ${stripeSession.id}`);
+        }
+      } else {
+        const voucherQuery = await adminDb
+          .collection('gift_vouchers')
+          .where('stripeSessionId', '==', stripeSession.id)
+          .limit(1)
+          .get();
+        if (!voucherQuery.empty) {
+          voucherCode = voucherQuery.docs[0].id;
+          giftDocData = voucherQuery.docs[0].data();
+        }
       }
 
       return NextResponse.json({

@@ -108,7 +108,7 @@ export const FiresideWalkthroughCard: React.FC<FiresideWalkthroughCardProps> = (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-mono font-bold tracking-wider uppercase bg-amber-500/15 border border-amber-500/35 text-amber-300">
             <Compass className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>🧭 🎙️ FIRESIDE WALKTHROUGH // 30S REHEARSAL • ZERO-FRICTION PRACTICE FLIGHT</span>
+            <span>FIRESIDE WALKTHROUGH // 30S REHEARSAL • ZERO-FRICTION PRACTICE FLIGHT</span>
           </span>
 
           <button

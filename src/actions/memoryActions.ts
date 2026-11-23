@@ -277,6 +277,40 @@ export async function unpublishMemoryAction(memoryId: string): Promise<{ success
 }
 
 /**
+ * Recursively converts Firestore Timestamp / Date objects into plain ISO strings
+ * so Next.js Server Actions never fail serialization on complex Memory documents.
+ */
+function serializeFirestoreValue(value: any): any {
+  if (value === null || value === undefined) return value;
+  if (typeof value === 'object') {
+    if (typeof value.toDate === 'function') {
+      try {
+        return value.toDate().toISOString();
+      } catch {
+        return null;
+      }
+    }
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+    if (typeof value._seconds === 'number' && typeof value._nanoseconds === 'number') {
+      return new Date(value._seconds * 1000).toISOString();
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => serializeFirestoreValue(item));
+    }
+    const plain: Record<string, any> = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (val !== undefined) {
+        plain[key] = serializeFirestoreValue(val);
+      }
+    }
+    return plain;
+  }
+  return value;
+}
+
+/**
  * Public action for unauthenticated Guest Access Pass to view published stories.
  */
 export async function getPublicMemoryAction(memoryId: string): Promise<{ success: boolean; memory?: Memory; message?: string }> {
@@ -292,7 +326,13 @@ export async function getPublicMemoryAction(memoryId: string): Promise<{ success
       return { success: false, message: 'Memory story not found.' };
     }
 
-    const memoryData = { id: targetDoc.id, ...targetDoc.data() } as Memory;
+    const ownerUid = targetDoc.ref?.parent?.parent?.id;
+    const rawData = targetDoc.data() || {};
+    const memoryData = serializeFirestoreValue({
+      id: targetDoc.id,
+      ...(ownerUid ? { ownerUid } : {}),
+      ...rawData,
+    }) as Memory;
     return { success: true, memory: memoryData };
   } catch (error: any) {
     console.error('[getPublicMemoryAction] Error fetching public memory:', error);
@@ -620,11 +660,11 @@ export async function getSharedWithMeMemoriesAction(uid: string): Promise<{ memo
     // Map profiles back to candidate docs instantaneously from in-memory dictionary
     const memoriesWithOwners = candidateDocs.map(m => {
       const profile = m.ownerUid ? userProfilesMap[m.ownerUid] : undefined;
-      return {
+      return serializeFirestoreValue({
         ...m,
         ownerDisplayName: profile?.displayName || m.ownerDisplayName || 'Memory Weaver Director',
         ownerEmail: profile?.email || m.ownerEmail || ''
-      };
+      });
     });
 
     return { memories: memoriesWithOwners };

@@ -50,8 +50,20 @@ const OVERALL_BORDER: Record<'OK' | 'WARN' | 'FAIL', string> = {
 
 function formatUtcTime(iso?: string | null): string {
   if (!iso) return '';
-  const match = iso.match(/T(\d{2}:\d{2}:\d{2})/);
-  return match ? `${match[1]} UTC` : iso;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })}, ${d.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: 'UTC',
+  })} UTC`;
 }
 
 /**
