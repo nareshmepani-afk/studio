@@ -1224,7 +1224,7 @@ export default function FiresideStudioClient() {
       </div>
 
       {/* 3. Primary Armchair Storytelling Surface */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-2xl mx-auto space-y-6">
+      <main className="flex-1 flex flex-col items-center justify-center p-3 sm:p-5 w-full max-w-2xl mx-auto space-y-4">
         {/* Unified Studio Orientation & Soundcheck Dock (MW-100-C: anchored at top on all scenes, zero vertical layout jump) */}
         <OrientationSoundcheckDock
           activeLanguage={activeLanguage}
@@ -1241,29 +1241,30 @@ export default function FiresideStudioClient() {
           }}
         />
 
-        {/* Unified Chapter Typography + Option C Combined Part & Scene Stepper (MW-100-C) */}
+        {/* Unified Chapter Typography + Compact Part & Scene Stepper */}
         <div className="text-center w-full max-w-xl" data-testid="fireside-golden-thread-header">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono font-bold mb-1.5 shadow-sm">
-            <span>🌟 Vault Progress: {completedScenes} of {totalScenes} Stories Woven</span>
-            <span className="text-stone-500">•</span>
-            <span>{vaultProgressPercent}%</span>
+          <div className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 mb-1">
+            <p
+              data-testid="fireside-production-stage-label"
+              className="text-[10px] uppercase tracking-[0.25em] text-sky-400/80 font-black"
+            >
+              PRODUCTION STAGE
+            </p>
+            <span className="text-stone-600 text-[10px]">•</span>
+            <span className="text-[11px] font-mono text-amber-300/90 font-medium">
+              {completedScenes} of {totalScenes} Woven ({vaultProgressPercent}%)
+            </span>
           </div>
-          <p
-            data-testid="fireside-production-stage-label"
-            className="text-[10px] uppercase tracking-[0.3em] text-sky-400/80 font-black mb-1"
-          >
-            PRODUCTION STAGE
-          </p>
 
-          <div className="flex items-center justify-center gap-3 w-full">
+          <div className="flex items-center justify-center gap-2.5 sm:gap-3 w-full">
             <button
               type="button"
               data-testid="HS_FIRESIDE_HEADER_PREV_SCENE"
               onClick={handleHeaderPrevScene}
               aria-label="Jump to previous Part Scene 1"
               title="Jump to previous Part Scene 1"
-              style={{ minHeight: 44, minWidth: 44 }}
-              className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              style={{ minHeight: 40, minWidth: 40 }}
+              className="min-h-[40px] min-w-[40px] px-2.5 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
               ‹
             </button>
@@ -1271,7 +1272,7 @@ export default function FiresideStudioClient() {
             <div className="flex flex-col items-center min-w-0 px-1">
               <h1
                 data-testid="fireside-chapter-primary-title"
-                className="text-lg sm:text-xl font-serif text-white font-normal leading-tight"
+                className="text-base sm:text-xl font-serif text-white font-normal leading-tight"
               >
                 {primaryPartHeading}
               </h1>
@@ -1285,7 +1286,7 @@ export default function FiresideStudioClient() {
               )}
               <p
                 data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
-                className="text-[11px] font-mono text-amber-300/90 mt-1 leading-snug"
+                className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
               >
                 {activePartRoman} • Scene {activeSceneNumInPart} of {totalScenesInActivePart} • {activeSceneTitle}
               </p>
@@ -1297,8 +1298,8 @@ export default function FiresideStudioClient() {
               onClick={handleHeaderNextScene}
               aria-label="Jump to next Part Scene 1"
               title="Jump to next Part Scene 1"
-              style={{ minHeight: 44, minWidth: 44 }}
-              className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              style={{ minHeight: 40, minWidth: 40 }}
+              className="min-h-[40px] min-w-[40px] px-2.5 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
             >
               ›
             </button>
@@ -1313,6 +1314,8 @@ export default function FiresideStudioClient() {
             activePromptId={(selectedSpark || activePromptSpark || resolvedActiveSpark)?.id}
             hideInlineOrientationDock={true}
             hideInlineHeaderStepper={true}
+            hideBottomRibbon={true}
+            hideCompletedDuplicateActions={hasCompletedReel}
             activeLanguage={activeLanguage}
             isHybrid={isHybrid}
             onToggleHybrid={setIsHybrid}
@@ -1467,7 +1470,7 @@ export default function FiresideStudioClient() {
               className="w-full min-h-[56px] px-6 py-3.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-400 text-amber-200 hover:text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98 select-none shadow-lg shadow-black/40"
             >
               <PlusCircle className="w-5 h-5 text-amber-400" />
-              <span>[ ➕ Open Bonus Memory Drawer ]</span>
+              <span>Open Bonus Memory Drawer</span>
             </button>
             <p className="mt-2 text-[11px] font-mono text-stone-500 text-center">
               Add handwritten archival notes, family reflections, or heirloom photos

@@ -1005,11 +1005,11 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
 
       const cardTrigger = document.querySelector('[data-testid="HS_FIRESIDE_CARD_DISCARD_BTN"]') as HTMLElement;
-      expect(cardTrigger?.textContent).toContain('[ 🔄 Clear Recording & Return to Script ]');
+      expect(cardTrigger?.textContent).toContain('Clear Recording & Return to Script');
       fireEvent.click(cardTrigger);
 
       const cardConfirm = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"]') as HTMLElement;
-      expect(cardConfirm?.textContent).toContain('[ Confirm & Return to Script ]');
+      expect(cardConfirm?.textContent).toContain('Confirm & Return to Script');
       fireEvent.click(cardConfirm);
       expect(onCardDiscard).toHaveBeenCalledTimes(1);
       unmountCard();
@@ -1160,13 +1160,13 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       const inPlaceBtn = (document.querySelector('[data-testid="HS_FIRESIDE_SPINE_PROGRESS_BTN"]') ||
         document.querySelector('[data-testid="HS_FIRESIDE_INPLACE_PROGRESS_BTN"]')) as HTMLButtonElement;
       expect(inPlaceBtn).toBeTruthy();
-      expect(inPlaceBtn.textContent).toContain('[ ✨ Progress to Act II: Sensory Weave → ]');
+      expect(inPlaceBtn.textContent).toContain('Progress to Act II: Sensory Weave →');
       expect(inPlaceBtn.getAttribute('href')).toBeNull();
 
       // Primary CTA is NOT locked to "Watch Studio Master Reel" — it enables recording the performance!
       const primaryCta = document.querySelector('[data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"]') as HTMLElement;
       expect(primaryCta).toBeTruthy();
-      expect(primaryCta.textContent).toContain('[ 🎬 Action: Record Scene → ]');
+      expect(primaryCta.textContent).toContain('Action: Record Scene →');
       fireEvent.click(primaryCta);
       expect(onSelectPrompt).toHaveBeenCalledWith(FIRESIDE_PROMPT_SPARKS[0], 'en');
 
@@ -1196,7 +1196,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // Default: English + HYBRID: OFF -> Gujarati subtitle suppressed
       const hybridBtn = document.querySelector('[data-testid="HS_FIRESIDE_HYBRID_TOGGLE_BTN"]') as HTMLButtonElement;
       expect(hybridBtn).toBeTruthy();
-      expect(hybridBtn.textContent).toContain('[ 🔤 HYBRID: OFF ]');
+      expect(hybridBtn.textContent).toContain('HYBRID: OFF');
       expect(hybridBtn.getAttribute('title')).toBe(
         'Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English.'
       );
@@ -1204,7 +1204,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
 
       // Click HYBRID toggle -> HYBRID: ON -> Gujarati subtitle appears
       fireEvent.click(hybridBtn);
-      expect(hybridBtn.textContent).toContain('[ 🔤 HYBRID: ON ]');
+      expect(hybridBtn.textContent).toContain('HYBRID: ON');
       expect(document.querySelector('[data-testid="carousel-card-secondary-title"]')?.textContent).toBe('બે દુનિયાનું બાળક');
 
       // Verify exact Section 3B tooltips on badges
@@ -1403,14 +1403,14 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       // 3. Test Cancel first
       fireEvent.change(textarea, { target: { value: 'Transient unsaved edit' } });
       const cancelBtn = document.querySelector('[data-testid="HS_FIRESIDE_CANCEL_SCRIPT_BTN"]') as HTMLButtonElement;
-      expect(cancelBtn?.textContent).toContain('[ Cancel ]');
+      expect(cancelBtn?.textContent).toContain('Cancel');
       fireEvent.click(cancelBtn);
       expect(onSaveProseSpy).not.toHaveBeenCalled();
       expect(document.querySelector('[data-testid="fireside-active-script-body"]')?.textContent).toContain(
         'The history I carry is an epic journey across oceans and generations.'
       );
 
-      // 4. Re-open editor, modify prose, and click [ ✓ Save Script ]
+      // 4. Re-open editor, modify prose, and click Save Script
       fireEvent.click(
         (document.querySelector('[data-testid="HS_FIRESIDE_CAROUSEL_SCRIPT_EDIT_BTN"]') ||
           document.querySelector('[data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN"]')) as HTMLElement
@@ -1421,7 +1421,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       });
 
       const saveBtn = document.querySelector('[data-testid="HS_FIRESIDE_SAVE_SCRIPT_BTN"]') as HTMLButtonElement;
-      expect(saveBtn?.textContent).toContain('[ ✓ Save Script ]');
+      expect(saveBtn?.textContent).toContain('✓ Save Script');
       fireEvent.click(saveBtn);
 
       // 5. Assert 0ms optimistic update on card and callback invocation
@@ -1600,15 +1600,15 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
         '[data-testid="HS_FIRESIDE_DIRECT_RECORD_BTN"]'
       ) as HTMLButtonElement;
       expect(prog1).toBeTruthy();
-      expect(prog1.textContent).toBe('[ ✨ Progress to Act II: Sensory Weave → ]');
+      expect(prog1.textContent).toBe('Progress to Act II: Sensory Weave →');
       expect(prog1.getAttribute('href')).toBeNull();
       expect(prog1.className).toContain('text-amber-300');
       expect(prog1.className).not.toContain('text-emerald-300');
       expect(rec1).toBeTruthy();
-      expect(rec1.textContent).toBe('[ 🎬 Action: Record Scene → ]');
+      expect(rec1.textContent).toBe('Action: Record Scene →');
       u1();
 
-      // Stage 2: [ 🎬 Progress to Act III: Record Performance → ]
+      // Stage 2: Progress to Act III: Record Performance →
       const memStage2 = {
         ...memStage1,
         productionStage: 2,
@@ -1622,11 +1622,11 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       const prog2 = document.querySelector(
         '[data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"]'
       ) as HTMLButtonElement;
-      expect(prog2.textContent).toBe('[ 🎬 Progress to Act III: Record Performance → ]');
+      expect(prog2.textContent).toBe('Progress to Act III: Record Performance →');
       expect(prog2.getAttribute('href')).toBeNull();
       u2();
 
-      // Stage 3: [ 🎞️ Watch Master Reel in Screening Room ▶ ]
+      // Stage 3: Watch Master Reel in Screening Room ▶
       const memStage3 = {
         ...memStage1,
         productionStage: 3,
@@ -1640,7 +1640,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       const prog3 = document.querySelector(
         '[data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"]'
       ) as HTMLButtonElement;
-      expect(prog3.textContent).toBe('[ 🎞️ Watch Master Reel in Screening Room ▶ ]');
+      expect(prog3.textContent).toBe('Watch Master Reel in Screening Room ▶');
       expect(prog3.getAttribute('href')).toBeNull();
       u3();
     });
@@ -1715,7 +1715,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(onSelectActStageSpy).toHaveBeenCalledWith(4);
       const screeningBtn = document.querySelector('[data-testid="HS_FIRESIDE_INPLACE_SCREENING_BTN"]') as HTMLButtonElement;
       expect(screeningBtn).toBeTruthy();
-      expect(screeningBtn.textContent).toContain('[ 🎞️ Watch Master Reel in Screening Room ▶ ]');
+      expect(screeningBtn.textContent).toContain('Watch Master Reel in Screening Room ▶');
       fireEvent.click(screeningBtn);
       expect(onOpenScreeningRoomSpy).toHaveBeenCalledTimes(1);
 
@@ -2085,11 +2085,11 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     expect(readyBadge.className).not.toContain('text-emerald-400');
     expect(queryByTestId('HS_FIRESIDE_BADGE_CAPTURED')).toBeNull();
     const cta = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
-    expect(cta.textContent).toContain('[ 🎬 Action: Record Scene → ]');
+    expect(cta.textContent).toContain('Action: Record Scene →');
     unmount();
   });
 
-  it('13.4 SingleCardPromptCarousel renders [ 📹 CAPTURED ] + [ 🎞️ PRE-RELEASE ] and [ ✏️ Edit Scene / Audition Take → ] when scene has recorded take', () => {
+  it('13.4 SingleCardPromptCarousel renders CAPTURED + PRE-RELEASE and Edit Scene / Audition Take → when scene has recorded take', () => {
     const recordedMem = {
       id: 'mem-1',
       sceneId: 'part-1-scene-1',
@@ -2123,7 +2123,7 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
     expect(getByTestId('HS_FIRESIDE_BADGE_CAPTURED').textContent).toContain('CAPTURED');
     expect(getByTestId('HS_FIRESIDE_BADGE_PRE_RELEASE').textContent).toContain('PRE-RELEASE');
     const cta = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
-    expect(cta.textContent).toContain('[ ✏️ Edit Scene / Audition Take → ]');
+    expect(cta.textContent).toContain('Edit Scene / Audition Take →');
     unmount();
   });
 
@@ -2231,13 +2231,13 @@ describe('Suite 13: MW-100-BRUTAL — Upright Part Labels, 1:1 Desktop Taxonomy 
 
     // Invariant D: Stage progression CTA must show Progress to Act II (not Watch Master Reel) and have amber outline
     const stageProgBtn = getByTestId('HS_FIRESIDE_STAGE_PROGRESSION_BTN');
-    expect(stageProgBtn.textContent).toContain('[ ✨ Progress to Act II: Sensory Weave → ]');
+    expect(stageProgBtn.textContent).toContain('Progress to Act II: Sensory Weave →');
     expect(stageProgBtn.className).toContain('text-amber-300');
     expect(stageProgBtn.className).not.toContain('text-emerald-300');
 
     // Invariant E: Direct record CTA must show Action: Record Scene
     const directActionBtn = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
-    expect(directActionBtn.textContent).toContain('[ 🎬 Action: Record Scene → ]');
+    expect(directActionBtn.textContent).toContain('Action: Record Scene →');
 
     unmount();
   });
@@ -2597,7 +2597,7 @@ describe('16. MW-111: Eliminating Premature Recording Mode Decisions & Act III J
 
     // CTA button matches video mode
     const launchBtn = getByTestId('HS_FIRESIDE_OPEN_VIEWFINDER_BTN');
-    expect(launchBtn.textContent).toContain('[ 🎬 Ignite Camera & Prompter → ]');
+    expect(launchBtn.textContent).toContain('Ignite Camera & Prompter →');
 
     // Click Voice & Photos mode
     fireEvent.click(voiceBtn);
@@ -2632,7 +2632,7 @@ describe('16. MW-111: Eliminating Premature Recording Mode Decisions & Act III J
     expect(voiceBtn.className).toContain('ring-2 ring-emerald-400');
 
     const launchBtn = getByTestId('HS_FIRESIDE_OPEN_VIEWFINDER_BTN');
-    expect(launchBtn.textContent).toContain('[ 🎙️ Open Voice Studio & Prompter → ]');
+    expect(launchBtn.textContent).toContain('Open Voice Studio & Prompter →');
 
     // Clicking voice tile triggers storage persistence via FiresideModeSwitch
     fireEvent.click(voiceBtn);
@@ -2728,7 +2728,7 @@ describe('17. MW-119: Fireside Chromatic Lockstep & Zero-Truncation Ergonomics (
     unmount();
   });
 
-  it('17.3 renders [ 🎬 READY FOR ACTION ] in Sky Blue and CTA [ 🎬 Action: Record Scene → ]', () => {
+  it('17.3 renders READY FOR ACTION in Sky Blue and CTA Action: Record Scene →', () => {
     const { getByTestId, unmount } = render(
       React.createElement(SingleCardPromptCarousel, {
         activeLanguage: 'en',
@@ -2737,12 +2737,12 @@ describe('17. MW-119: Fireside Chromatic Lockstep & Zero-Truncation Ergonomics (
     );
 
     const badge = getByTestId('HS_FIRESIDE_BADGE_READY_FOR_ACTION');
-    expect(badge.textContent).toBe('[ 🎬 READY FOR ACTION ]');
+    expect(badge.textContent).toBe('READY FOR ACTION');
     expect(badge.className).toContain('text-sky-400');
     expect(badge.className).toContain('border-sky-500/30');
 
     const cta = getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN');
-    expect(cta.textContent).toBe('[ 🎬 Action: Record Scene → ]');
+    expect(cta.textContent).toBe('Action: Record Scene →');
     expect(cta.className).toContain('bg-sky-500');
 
     unmount();
@@ -2765,7 +2765,7 @@ describe('17. MW-119: Fireside Chromatic Lockstep & Zero-Truncation Ergonomics (
     );
 
     const progBtn = getByTestId('HS_FIRESIDE_STAGE_PROGRESSION_BTN');
-    expect(progBtn.textContent).toContain('[ ✨ Progress to Act II: Sensory Weave → ]');
+    expect(progBtn.textContent).toContain('Progress to Act II: Sensory Weave →');
     // Secondary amber outline, zero emerald
     expect(progBtn.className).toContain('text-amber-300');
     expect(progBtn.className).toContain('border-amber-500/40');

@@ -117,18 +117,18 @@ export function FiresideAuthHeader({
 
   return (
     <header
-      className={`w-full border-b border-stone-800/80 bg-stone-950/90 backdrop-blur-md px-3 sm:px-6 py-2.5 sm:py-3 transition-colors ${className}`}
+      className={`w-full border-b border-stone-800/80 bg-stone-950/90 backdrop-blur-md px-3 sm:px-6 py-2 sm:py-2.5 transition-colors ${className}`}
     >
-      <div className="max-w-5xl mx-auto flex flex-col items-center justify-between gap-2 sm:gap-2.5">
+      <div className="max-w-5xl mx-auto flex flex-col items-center justify-between gap-1.5 sm:gap-2">
         {/* Row 1: Split into two balanced full-width rows on < sm; single row on sm+ */}
-        <div className="w-full flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="w-full flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           {/* Sub-row 1A: Back to Production Board + Fireside Studio Title (+ Staging Badge on staging only) */}
           <div className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 min-w-0">
             <Link
               href="/studio"
               data-testid="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
               data-hotspot-id="HS_FIRESIDE_HEADER_NAV_DESKTOP_BTN"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
+              className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 py-1 px-2.5 sm:py-1.5 sm:px-3 rounded-xl transition-all shrink-0 cursor-pointer shadow-sm group"
               title="Return to Production Board"
               aria-label="Return to Production Board"
             >
@@ -170,7 +170,7 @@ export function FiresideAuthHeader({
             </span>
 
             {/* Hardware Camera & Microphone Privacy Shield (MW-88-T9 Desktop Parity) */}
-            <OpticsPrivacyShield compact className="py-1 px-2 sm:px-2.5 min-h-[34px] sm:min-h-[40px]" />
+            <OpticsPrivacyShield compact className="py-1 px-2 sm:px-2.5 min-h-[32px] sm:min-h-[36px]" />
 
             {/* Active Curriculum Part Badge if provided */}
             {activePartTitle && (
@@ -184,17 +184,17 @@ export function FiresideAuthHeader({
           </div>
         </div>
 
-        {/* Row 2: Discreet Elder Auth Badge & Mobile Profile Drawer Trigger */}
-        <div className="w-full flex items-center justify-between sm:justify-end gap-2 shrink-0 pt-0.5">
+        {/* Row 2: Compact Elder Auth Badge & Mobile Profile Drawer Trigger */}
+        <div className="w-full flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 shrink-0">
           {isAuthenticated ? (
-            <div className="flex items-center gap-2">
+            <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2">
               <div
                 data-testid="HS_FIRESIDE_HEADER_USER_BADGE"
-                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-3 py-1 rounded-full shadow-sm max-w-[200px] sm:max-w-md truncate"
+                className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-mono text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-2.5 py-1 rounded-full shadow-sm max-w-[185px] sm:max-w-md truncate"
                 title={`Signed in as ${userEmail}. Your memories are secured in the Generational Vault.`}
               >
                 <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="truncate max-w-[120px] sm:max-w-[240px] font-medium text-emerald-200">
+                <span className="truncate max-w-[100px] sm:max-w-[240px] font-medium text-emerald-200">
                   {userEmail}
                 </span>
                 <span className="text-emerald-500/70">•</span>
@@ -206,29 +206,31 @@ export function FiresideAuthHeader({
                 </span>
               </div>
 
-              <button
-                type="button"
-                data-hotspot-id="HS_FIRESIDE_HEADER_SIGNOUT_BTN"
-                data-testid="HS_FIRESIDE_HEADER_SIGNOUT_BTN"
-                onClick={async () => {
-                  try {
-                    await logout(false);
-                  } catch (err) {
-                    console.error('Logout error:', err);
-                  }
-                }}
-                className="inline-flex items-center gap-1 text-[10px] font-mono text-stone-400 hover:text-rose-300 bg-stone-900/80 hover:bg-rose-950/40 border border-stone-800 hover:border-rose-500/40 px-2.5 py-1 rounded-full transition-all cursor-pointer shadow-sm shrink-0"
-                title="Sign out of this session"
-                aria-label="Sign out"
-              >
-                <LogOut className="w-2.5 h-2.5 text-stone-400 group-hover:text-rose-300" />
-                <span>Sign Out</span>
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  data-hotspot-id="HS_FIRESIDE_HEADER_SIGNOUT_BTN"
+                  data-testid="HS_FIRESIDE_HEADER_SIGNOUT_BTN"
+                  onClick={async () => {
+                    try {
+                      await logout(false);
+                    } catch (err) {
+                      console.error('Logout error:', err);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[10px] font-mono text-stone-400 hover:text-rose-300 bg-stone-900/80 hover:bg-rose-950/40 border border-stone-800 hover:border-rose-500/40 px-2 py-1 rounded-full transition-all cursor-pointer shadow-sm shrink-0"
+                  title="Sign out of this session"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="w-2.5 h-2.5 text-stone-400 group-hover:text-rose-300" />
+                  <span>Sign Out</span>
+                </button>
 
-              <ReportIssueTrigger variant="icon-pill" label="Issue" className="shrink-0" />
+                <ReportIssueTrigger variant="icon-pill" label="Issue" className="shrink-0" />
 
-              {/* Mobile Slide-Over Account & Navigation Drawer (min 44px touch target) */}
-              <FiresideProfileDrawer />
+                {/* Mobile Slide-Over Account & Navigation Drawer (min 44px touch target) */}
+                <FiresideProfileDrawer />
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-2">

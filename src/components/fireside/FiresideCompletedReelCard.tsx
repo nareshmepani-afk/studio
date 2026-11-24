@@ -267,7 +267,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
             aria-label="Studio Master reassurance drawer"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>[ ✨ Studio Master ]</span>
+            <span>Studio Master</span>
           </button>
         )}
 
@@ -535,7 +535,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
                   className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-amber-950/40 border border-amber-500/40 hover:border-amber-500/60 text-amber-300 hover:text-amber-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
                 >
                   <Film className="w-4 h-4 text-amber-400" />
-                  <span>[ ⇄ Replace Master Reel ]</span>
+                  <span>Replace Master Reel</span>
                 </button>
                 <span className="text-[11px] text-stone-400 font-mono">
                   Opens Selection Room to assign a new Master before retiring this take.
@@ -556,7 +556,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
                   className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
                 >
                   <RotateCcw className="w-4 h-4 text-rose-400" />
-                  <span>[ 🔄 Clear Recording & Return to Script ]</span>
+                  <span>Clear Recording & Return to Script</span>
                 </button>
                 <span className="text-[11px] text-stone-400 font-mono">
                   Moves this recording to outtakes and resets scene to Act I draft.
@@ -585,7 +585,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
                 onClick={() => setShowDiscardConfirm(false)}
                 className="min-h-[44px] px-3.5 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs font-semibold hover:bg-stone-700 transition cursor-pointer"
               >
-                [ Keep Recording ]
+                Keep Recording
               </button>
               <button
                 type="button"
@@ -602,7 +602,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
                 }}
                 className="min-h-[44px] px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
               >
-                [ Confirm & Return to Script ]
+                Confirm & Return to Script
               </button>
             </div>
           </div>

@@ -75,7 +75,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       // Title and prose check (Part I - Scene 1 is index 0: A Child of Two Worlds; Gujarati subtitle hidden when HYBRID: OFF)
       expect(screen.getByText('A Child of Two Worlds')).toBeInTheDocument();
       expect(screen.queryByTestId('carousel-card-secondary-title')).not.toBeInTheDocument();
-      expect(screen.getByTestId('HS_FIRESIDE_HYBRID_TOGGLE_BTN')).toHaveTextContent('[ 🔤 HYBRID: OFF ]');
+      expect(screen.getByTestId('HS_FIRESIDE_HYBRID_TOGGLE_BTN')).toHaveTextContent('HYBRID: OFF');
       expect(screen.getByText(/What stories did your grandparents share about where your family originally came from/i)).toBeInTheDocument();
 
       // ChapterSpineRail (MW-100) and primary CTA button check (Rule 20 UK English)
@@ -96,7 +96,7 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       // Toggle HYBRID: ON -> secondary Gujarati title appears alongside English
       const hybridToggle = screen.getByTestId('HS_FIRESIDE_HYBRID_TOGGLE_BTN');
       fireEvent.click(hybridToggle);
-      expect(hybridToggle).toHaveTextContent('[ 🔤 HYBRID: ON ]');
+      expect(hybridToggle).toHaveTextContent('HYBRID: ON');
       expect(screen.getByTestId('carousel-card-secondary-title')).toHaveTextContent('બે દુનિયાનું બાળક');
 
       // Find Gujarati pill
@@ -556,6 +556,91 @@ describe('MW-245 & MW-88-T3: Fireside Multilingual Prompt Sparks, Curriculum Syn
       // The editor MUST remain open so the user can continue typing uninterrupted!
       expect(screen.getByTestId('fireside-armchair-script-editor')).toBeInTheDocument();
       expect(screen.queryByTestId('fireside-active-script-body')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('7. Fireside UI-Only Declutter Regression Shield', () => {
+    it('renders compact 1-tap 🌐 language popover collapsed by default, keeps all 4 HS_FIRESIDE_LANG_* hotspots mounted, and closes after selection', () => {
+      const handleLanguageChange = vi.fn();
+      render(<SingleCardPromptCarousel onLanguageChange={handleLanguageChange} />);
+
+      const trigger = screen.getByTestId('HS_FIRESIDE_LANG_PICKER_TRIGGER');
+      const menu = screen.getByTestId('HS_FIRESIDE_LANG_POPOVER_MENU');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(menu.className).toContain('hidden');
+
+      // All 4 telemetry hotspots stay mounted in DOM for analytics & accessibility
+      expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_LANG_EN"]')).toBeTruthy();
+      expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_LANG_GU"]')).toBeTruthy();
+      expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_LANG_PA"]')).toBeTruthy();
+      expect(document.querySelector('[data-hotspot-id="HS_FIRESIDE_LANG_HI"]')).toBeTruthy();
+
+      // 1-tap opens popover
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(menu.className).toContain('flex');
+
+      // Selecting Punjabi switches language and auto-closes popover
+      const paBtn = document.querySelector('[data-hotspot-id="HS_FIRESIDE_LANG_PA"]') as HTMLElement;
+      fireEvent.click(paBtn);
+      expect(handleLanguageChange).toHaveBeenCalledWith('pa');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(menu.className).toContain('hidden');
+    });
+
+    it('suppresses redundant bottom HeirloomFolioSpine when hideBottomRibbon={true} while keeping ChapterSpineRail active', () => {
+      const { rerender } = render(<SingleCardPromptCarousel hideBottomRibbon={false} />);
+      expect(screen.getByTestId('folio-master-spine')).toBeInTheDocument();
+      expect(screen.getByTestId('HS_CHAPTER_SPINE_RAIL')).toBeInTheDocument();
+
+      rerender(<SingleCardPromptCarousel hideBottomRibbon={true} />);
+      expect(screen.queryByTestId('folio-master-spine')).not.toBeInTheDocument();
+      expect(screen.getByTestId('HS_CHAPTER_SPINE_RAIL')).toBeInTheDocument();
+    });
+
+    it('deduplicates Watch/Record buttons when hideCompletedDuplicateActions={true} on a completed scene while preserving them on unrecorded scenes', () => {
+      const recordedMemory = {
+        id: 'mem-completed-declutter',
+        sceneId: 'part-1-scene-1',
+        prose: 'A captured family festival memory.',
+        takes: [
+          {
+            id: 'take-1',
+            takeNumber: 1,
+            source: 'fireside_mobile' as const,
+            mediaMode: 'video' as const,
+            label: 'Take 1',
+            isPreferred: true,
+            mediaUrl: 'https://storage.googleapis.com/test/festival.mp4',
+            durationSeconds: 53,
+            createdAt: '2026-11-24T12:00:00Z',
+          },
+        ],
+      };
+
+      const { rerender } = render(
+        <SingleCardPromptCarousel
+          activeSceneMemory={recordedMemory}
+          getSceneMemory={(id?: string) => (id === 'part-1-scene-1' ? recordedMemory : undefined)}
+          hideCompletedDuplicateActions={true}
+        />
+      );
+
+      // Duplicate top Watch pill and bottom footer dock are suppressed (FiresideCompletedReelCard owns them)
+      expect(screen.queryByTestId('HS_FIRESIDE_SPINE_PROGRESS_BTN')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('HS_FIRESIDE_STAGE_PROGRESSION_BTN')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN')).not.toBeInTheDocument();
+
+      // Unrecorded scene still renders primary action dock normally
+      rerender(
+        <SingleCardPromptCarousel
+          activeSceneMemory={undefined}
+          getSceneMemory={() => undefined}
+          hideCompletedDuplicateActions={true}
+        />
+      );
+      expect(screen.getByTestId('HS_FIRESIDE_STAGE_PROGRESSION_BTN')).toBeInTheDocument();
+      expect(screen.getByTestId('HS_FIRESIDE_DIRECT_RECORD_BTN')).toBeInTheDocument();
     });
   });
 });

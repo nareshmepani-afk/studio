@@ -88,6 +88,8 @@ export interface SingleCardPromptCarouselProps {
   activePromptId?: string;
   hideInlineOrientationDock?: boolean;
   hideInlineHeaderStepper?: boolean;
+  hideBottomRibbon?: boolean;
+  hideCompletedDuplicateActions?: boolean;
   activeLanguage?: FiresideLanguage;
   isHybrid?: boolean;
   onToggleHybrid?: (nextHybrid: boolean) => void;
@@ -185,6 +187,8 @@ export function SingleCardPromptCarousel({
   activePromptId,
   hideInlineOrientationDock = false,
   hideInlineHeaderStepper = false,
+  hideBottomRibbon = false,
+  hideCompletedDuplicateActions = false,
   activeLanguage: controlledLanguage,
   isHybrid: controlledHybrid,
   onToggleHybrid,
@@ -223,6 +227,19 @@ export function SingleCardPromptCarousel({
   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
   const [internalLanguage, setInternalLanguage] = useState<FiresideLanguage>('en');
   const [internalHybrid, setInternalHybrid] = useState<boolean>(false);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState<boolean>(false);
+  const languageMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isLanguageMenuOpen) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
+        setIsLanguageMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isLanguageMenuOpen]);
   const [direction, setDirection] = useState<number>(0);
   const [showFollowUps, setShowFollowUps] = useState<boolean>(false);
   const [isWarmupOpen, setIsWarmupOpen] = useState<boolean>(false);
@@ -513,23 +530,23 @@ export function SingleCardPromptCarousel({
 
     if (effectiveStage >= 3) {
       return {
-        label: '[ 🎞️ Watch Master Reel in Screening Room ▶ ]',
-        spineLabel: '[ 🎞️ Watch Master Reel in Screening Room ▶ ]',
+        label: 'Watch Master Reel in Screening Room ▶',
+        spineLabel: 'Watch Master Reel in Screening Room ▶',
         title: 'Open this memory directly in the in-place Fireside Screening Room.',
         nextTab: 'act4' as const,
       };
     }
     if (effectiveStage === 2) {
       return {
-        label: '[ 🎬 Progress to Act III: Record Performance → ]',
-        spineLabel: '[ 🎬 Progress to Act III: Record Performance → ]',
+        label: 'Progress to Act III: Record Performance →',
+        spineLabel: 'Progress to Act III: Record Performance →',
         title: 'Advance in-place to Act III (Record Performance) inside Fireside Studio.',
         nextTab: 'act3' as const,
       };
     }
     return {
-      label: '[ ✨ Progress to Act II: Sensory Weave → ]',
-      spineLabel: '[ ✨ Progress to Act II: Sensory Weave → ]',
+      label: 'Progress to Act II: Sensory Weave →',
+      spineLabel: 'Progress to Act II: Sensory Weave →',
       title: 'Advance in-place to Act II (Sensory Weave Inspector) inside Fireside Studio.',
       nextTab: 'act2' as const,
     };
@@ -1230,48 +1247,82 @@ export function SingleCardPromptCarousel({
         </div>
       )}
 
-      {/* 1. Compact Sub-Header Language & HYBRID Tray (MW-100-BRUTAL Track 3; Rule 26 touch targets) */}
-      <div className="w-full flex items-center justify-center gap-1.5 mb-2.5 px-1.5 py-1 rounded-2xl bg-stone-950/60 border border-stone-800/70 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-wrap">
-        {LANGUAGES.map((lang) => {
-          const isActive = currentLanguage === lang;
-          return (
-            <button
-              key={lang}
-              type="button"
-              data-hotspot-id={`HS_FIRESIDE_LANG_${lang.toUpperCase()}`}
-              onClick={() => handleLanguageSelect(lang)}
-              style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-              className={`min-h-[48px] px-3 py-1 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
-                isActive
-                  ? 'bg-amber-500/20 text-amber-200 border-amber-500/50 shadow-sm shadow-amber-500/10'
-                  : 'bg-white/5 text-neutral-400 border-white/10 hover:border-white/20 hover:text-neutral-200'
+      {/* 1. Compact 1-Tap 🌐 Language Popover & Hybrid Toggle (all HS_FIRESIDE_LANG_* buttons stay mounted in DOM) */}
+      <div
+        ref={languageMenuRef}
+        className="w-full max-w-xl mx-auto relative flex flex-col items-center mb-2"
+      >
+        <div className="w-full flex items-center justify-center gap-2 px-2 py-1 rounded-2xl bg-stone-950/60 border border-stone-800/70">
+          <button
+            type="button"
+            data-testid="HS_FIRESIDE_LANG_PICKER_TRIGGER"
+            onClick={() => setIsLanguageMenuOpen((prev) => !prev)}
+            aria-expanded={isLanguageMenuOpen}
+            aria-haspopup="menu"
+            aria-label={`Storytelling language: ${FIRESIDE_LANGUAGE_LABELS[currentLanguage]}. Tap to change language.`}
+            className="min-h-[40px] px-3 py-1 rounded-xl text-xs font-medium bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-500/40 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>{FIRESIDE_LANGUAGE_LABELS[currentLanguage].split(' ')[0]}</span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-amber-300/80 transition-transform ${
+                isLanguageMenuOpen ? 'rotate-180' : ''
               }`}
-              aria-label={`Switch storytelling language to ${FIRESIDE_LANGUAGE_LABELS[lang]}`}
-              aria-pressed={isActive}
-            >
-              <Globe className="w-3.5 h-3.5 opacity-70" />
-              <span>{FIRESIDE_LANGUAGE_LABELS[lang].split(' ')[0]}</span>
-            </button>
-          );
-        })}
+            />
+          </button>
 
-        <button
-          type="button"
-          data-testid="HS_FIRESIDE_HYBRID_TOGGLE_BTN"
-          data-hotspot-id="HS_FIRESIDE_HYBRID_TOGGLE_BTN"
-          onClick={handleHybridToggle}
-          title="Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English."
-          aria-label="Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English."
-          aria-pressed={effectiveHybrid}
-          style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-          className={`min-h-[48px] px-3 py-1 rounded-xl text-xs font-mono font-bold transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
-            effectiveHybrid
-              ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50 shadow-sm shadow-emerald-500/10'
-              : 'bg-white/5 text-neutral-300 border-white/15 hover:border-amber-500/40 hover:text-amber-200'
-          }`}
+          <button
+            type="button"
+            data-testid="HS_FIRESIDE_HYBRID_TOGGLE_BTN"
+            data-hotspot-id="HS_FIRESIDE_HYBRID_TOGGLE_BTN"
+            onClick={handleHybridToggle}
+            title="Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English."
+            aria-label="Focus: Bilingual (Subtitled) — Show or hide mother-tongue subtitles alongside English."
+            aria-pressed={effectiveHybrid}
+            className={`min-h-[40px] px-3 py-1 rounded-xl text-xs font-mono font-semibold transition-all duration-200 cursor-pointer border inline-flex items-center gap-1.5 ${
+              effectiveHybrid
+                ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50 shadow-sm shadow-emerald-500/10'
+                : 'bg-white/5 text-neutral-300 border-white/15 hover:border-amber-500/40 hover:text-amber-200'
+            }`}
+          >
+            <span>{effectiveHybrid ? 'HYBRID: ON' : 'HYBRID: OFF'}</span>
+          </button>
+        </div>
+
+        {/* Always-mounted 4-language popover options (toggled cleanly via CSS hidden) */}
+        <div
+          aria-label="Choose storytelling language"
+          data-testid="HS_FIRESIDE_LANG_POPOVER_MENU"
+          className={`${
+            isLanguageMenuOpen ? 'flex' : 'hidden'
+          } flex-wrap items-center justify-center gap-1.5 mt-1.5 p-1.5 rounded-2xl bg-stone-950/95 border border-amber-500/35 shadow-xl w-full`}
         >
-          <span>{effectiveHybrid ? '[ 🔤 HYBRID: ON ]' : '[ 🔤 HYBRID: OFF ]'}</span>
-        </button>
+          {LANGUAGES.map((lang) => {
+            const isActive = currentLanguage === lang;
+            return (
+              <button
+                key={lang}
+                type="button"
+                data-hotspot-id={`HS_FIRESIDE_LANG_${lang.toUpperCase()}`}
+                onClick={() => {
+                  handleLanguageSelect(lang);
+                  setIsLanguageMenuOpen(false);
+                }}
+                style={{ minHeight: 40 }}
+                className={`min-h-[40px] px-3 py-1 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer border flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-amber-500/20 text-amber-200 border-amber-500/50 shadow-sm shadow-amber-500/10'
+                    : 'bg-white/5 text-neutral-300 border-white/10 hover:border-white/25 hover:text-white'
+                }`}
+                aria-label={`Switch storytelling language to ${FIRESIDE_LANGUAGE_LABELS[lang]}`}
+                aria-pressed={isActive}
+              >
+                <Globe className="w-3.5 h-3.5 opacity-70" />
+                <span>{FIRESIDE_LANGUAGE_LABELS[lang].split(' ')[0]}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* 1c. Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100 / MW-100-C) */}
@@ -1337,24 +1388,24 @@ export function SingleCardPromptCarousel({
                         ? `Curriculum Position: ${linkedScene.partTitle.includes('(') ? linkedScene.partTitle : linkedScene.partTitle.replace(': ', ' (') + ')'}, Scene ${linkedScene.sceneNumber} of 11 in your Generational Vault.`
                         : 'Curriculum Position: Part I (Roots and Foundations), Scene 1 of 11 in your Generational Vault.'
                     }
-                    className="font-semibold text-stone-200"
+                    className={hideInlineHeaderStepper ? 'sr-only' : 'font-semibold text-stone-200'}
                   >
                     {linkedScene ? linkedScene.partTitle.split(':')[0] : activePartHeading.split(':')[0]}
                     <span className="sr-only"> • Scene {linkedScene?.sceneNumber || activeSceneNumInPart}</span>
                   </span>
 
-                  <span className="text-stone-600">•</span>
+                  {!hideInlineHeaderStepper && <span className="text-stone-600">•</span>}
 
                   <span
                     data-testid="carousel-story-progress-pill"
-                    className="text-stone-300 font-medium"
+                    className={hideInlineHeaderStepper ? 'sr-only' : 'text-stone-300 font-medium'}
                   >
                     Scene {activeSceneNumInPart} of {totalScenesInActivePart}
                   </span>
 
                   {(currentSceneMemory?.status === 'published' || (currentSceneMemory as any)?.currentStatus === 'published') && (
                     <>
-                      <span className="text-stone-600">•</span>
+                      {!hideInlineHeaderStepper && <span className="text-stone-600">•</span>}
                       <span
                         data-testid="HS_FIRESIDE_BADGE_IN_CINEMA"
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-mono font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.2)]"
@@ -1366,7 +1417,7 @@ export function SingleCardPromptCarousel({
 
                   {isCurrentSceneRecommended && !hasCurrentTake && !hasCurrentDraftProse && (
                     <>
-                      <span className="text-stone-600">•</span>
+                      {!hideInlineHeaderStepper && <span className="text-stone-600">•</span>}
                       <span
                         data-testid="HS_FIRESIDE_CROWN_NEXT_RECOMMENDED"
                         className="text-amber-400 font-semibold"
@@ -1385,16 +1436,16 @@ export function SingleCardPromptCarousel({
                   >
                     {hasCurrentTake && !isCurrentDraftState ? (
                       <>
-                        <span data-testid="HS_FIRESIDE_BADGE_CAPTURED" className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ 📹 CAPTURED ]</span>
-                        <span data-testid="HS_FIRESIDE_BADGE_PRE_RELEASE" className="bg-purple-950/80 text-purple-300 border border-purple-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ 🎞️ PRE-RELEASE ]</span>
+                        <span data-testid="HS_FIRESIDE_BADGE_CAPTURED" className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">CAPTURED</span>
+                        <span data-testid="HS_FIRESIDE_BADGE_PRE_RELEASE" className="bg-purple-950/80 text-purple-300 border border-purple-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">PRE-RELEASE</span>
                       </>
                     ) : hasCurrentTake || hasCurrentDraftProse ? (
                       <>
-                        <span data-testid="HS_FIRESIDE_BADGE_CAPTURED" className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ 📹 CAPTURED ]</span>
-                        <span data-testid="HS_FIRESIDE_BADGE_STUDIO_DRAFT" className="bg-amber-950/80 text-amber-300 border border-amber-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ ✍️ STUDIO DRAFT ]</span>
+                        <span data-testid="HS_FIRESIDE_BADGE_CAPTURED" className="bg-teal-950/80 text-teal-300 border border-teal-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">CAPTURED</span>
+                        <span data-testid="HS_FIRESIDE_BADGE_STUDIO_DRAFT" className="bg-amber-950/80 text-amber-300 border border-amber-500/40 text-xs font-mono px-2 py-0.5 rounded-md font-bold">STUDIO DRAFT</span>
                       </>
                     ) : (
-                      <span data-testid="HS_FIRESIDE_BADGE_READY_FOR_ACTION" className="bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono px-2 py-0.5 rounded-md font-bold">[ 🎬 READY FOR ACTION ]</span>
+                      <span data-testid="HS_FIRESIDE_BADGE_READY_FOR_ACTION" className="bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono px-2 py-0.5 rounded-md font-bold">READY FOR ACTION</span>
                     )}
                   </div>
 
@@ -1433,12 +1484,11 @@ export function SingleCardPromptCarousel({
                 </div>
               </div>
 
-              {/* 4-Act Production Status Spine & In-Place Progression (MW-88-T9 Surface Containment) */}
+              {/* 4-Act Production Status Spine & In-Place Progression (Stacked cleanly on < sm to prevent ellipsis truncation) */}
               <div
                 data-testid="HS_FIRESIDE_ACT_SPINE"
-                className="mb-4 p-2 rounded-2xl bg-black/40 border border-white/10 space-y-2"
+                className="mb-3.5 p-1.5 rounded-2xl bg-black/40 border border-white/10 space-y-2"
               >
-                {/* MW-88-T10: grid-cols-4 (all viewports) + overflow-hidden — no more whitespace-nowrap bleed */}
                 <div className="w-full grid grid-cols-4 gap-1 p-0.5 font-mono">
                   <button
                     type="button"
@@ -1447,7 +1497,7 @@ export function SingleCardPromptCarousel({
                     aria-pressed={selectedActTab === 'act1'}
                     aria-label="Act I: Script — Review or edit your story hook and narrative prose in-place."
                     title="Act I: Script — Review or edit your story hook and narrative prose in-place."
-                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act1'
                         ? 'border-sky-500/50 bg-stone-900/90 text-sky-300 font-bold ring-1 ring-sky-400/40'
                         : activeProse
@@ -1455,8 +1505,14 @@ export function SingleCardPromptCarousel({
                         : 'bg-stone-900/20 border-stone-800/60 text-stone-400 hover:bg-stone-900/40'
                     }`}
                   >
-                    <span className="sm:hidden truncate"><span className="text-amber-400">{activeProse ? '✓ ' : '● '}</span>I • SCRIPT</span>
-                    <span className="hidden sm:inline truncate"><span className="text-amber-400">{activeProse ? '✓ ' : '● '}</span>I • SCRIPT</span>
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[10px]">
+                      <span className="font-bold leading-none"><span className="text-amber-400">{activeProse ? '✓ ' : '● '}</span>I</span>
+                      <span className="sr-only"> • </span>
+                      <span className="tracking-tight leading-none">SCRIPT</span>
+                    </span>
+                    <span className="hidden sm:inline text-xs">
+                      <span className="text-amber-400">{activeProse ? '✓ ' : '● '}</span>I • SCRIPT
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -1465,7 +1521,7 @@ export function SingleCardPromptCarousel({
                     aria-pressed={selectedActTab === 'act2'}
                     aria-label="Act II: Weave — Inspect and pulse-highlight sensory anchor cues in-place."
                     title="Act II: Weave — Inspect and pulse-highlight sensory anchor cues in-place."
-                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act2'
                         ? 'border-amber-500/50 bg-amber-950/40 text-amber-300 font-bold ring-1 ring-amber-400/40'
                         : hasSceneCompletedReel || activeProductionStage >= 2
@@ -1475,10 +1531,12 @@ export function SingleCardPromptCarousel({
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    <span className="sm:hidden truncate">
-                      {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II • WEAVE
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[10px]">
+                      <span className="font-bold leading-none">{hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II</span>
+                      <span className="sr-only"> • </span>
+                      <span className="tracking-tight leading-none">WEAVE</span>
                     </span>
-                    <span className="hidden sm:inline truncate">
+                    <span className="hidden sm:inline text-xs">
                       {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II • WEAVE
                     </span>
                   </button>
@@ -1489,7 +1547,7 @@ export function SingleCardPromptCarousel({
                     aria-pressed={selectedActTab === 'act3'}
                     aria-label="Act III: Record — Capture your spoken voice or selfie video performance in-place."
                     title="Act III: Record — Capture your spoken voice or selfie video performance in-place."
-                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act3'
                         ? 'border-amber-500/50 bg-amber-950/40 text-amber-300 font-bold ring-1 ring-amber-400/40'
                         : hasSceneCompletedReel || activeProductionStage >= 3
@@ -1497,10 +1555,12 @@ export function SingleCardPromptCarousel({
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    <span className="sm:hidden truncate">
-                      {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III • RECORD
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[10px]">
+                      <span className="font-bold leading-none">{hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III</span>
+                      <span className="sr-only"> • </span>
+                      <span className="tracking-tight leading-none">RECORD</span>
                     </span>
-                    <span className="hidden sm:inline truncate">
+                    <span className="hidden sm:inline text-xs">
                       {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III • RECORD
                     </span>
                   </button>
@@ -1511,7 +1571,7 @@ export function SingleCardPromptCarousel({
                     aria-pressed={selectedActTab === 'act4'}
                     aria-label="Act IV: Screening — Watch your completed Master Reel in the in-place Fireside Screening Room."
                     title="Act IV: Screening — Watch your completed Master Reel in the in-place Fireside Screening Room."
-                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center overflow-hidden text-xs font-mono ${
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act4'
                         ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
                         : isMasteredScene || activeProductionStage === 4
@@ -1519,16 +1579,19 @@ export function SingleCardPromptCarousel({
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    <span className="sm:hidden truncate">
-                      {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV • REEL
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[10px]">
+                      <span className="font-bold leading-none">{isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV</span>
+                      <span className="sr-only"> • </span>
+                      <span className="tracking-tight leading-none">REEL</span>
                     </span>
-                    <span className="hidden sm:inline truncate">
+                    <span className="hidden sm:inline text-xs">
                       {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV • REEL
                     </span>
                   </button>
                 </div>
 
-                {(Boolean(activeProse && activeProse.trim().length > 0) || activeProductionStage >= 2) && (
+                {(Boolean(activeProse && activeProse.trim().length > 0) || activeProductionStage >= 2) &&
+                  !(hideCompletedDuplicateActions && hasCurrentTake && stageProgression.nextTab === 'act4') && (
                   <div className="flex items-center justify-between gap-2 pt-0.5">
                     <button
                       type="button"
@@ -1692,8 +1755,8 @@ export function SingleCardPromptCarousel({
                         className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
                       >
                         {currentCaptureMode === 'audio'
-                          ? '[ 🎙️ Open Voice Studio & Prompter → ]'
-                          : '[ 🎬 Ignite Camera & Prompter → ]'}
+                          ? 'Open Voice Studio & Prompter →'
+                          : 'Ignite Camera & Prompter →'}
                       </button>
                     </div>
                   </div>
@@ -1717,7 +1780,7 @@ export function SingleCardPromptCarousel({
                       onClick={() => onOpenScreeningRoom?.()}
                       className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs font-mono font-bold shrink-0 cursor-pointer transition-all shadow-md"
                     >
-                      [ 🎞️ Watch Master Reel in Screening Room ▶ ]
+                      Watch Master Reel in Screening Room ▶
                     </button>
                     {currentSceneMemory?.id && (
                       <Link
@@ -1879,7 +1942,7 @@ export function SingleCardPromptCarousel({
                       onClick={handleSaveScript}
                       className="min-h-[48px] px-4 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold bg-amber-500 hover:bg-amber-400 text-black shadow-md shadow-amber-500/20 transition-all cursor-pointer"
                     >
-                      [ ✓ Save Script ]
+                      ✓ Save Script
                     </button>
                     {cloudSyncStatus === 'buffering' && (
                       <span className="text-[11px] font-mono text-amber-300/80 flex items-center gap-1 animate-pulse">
@@ -1912,7 +1975,7 @@ export function SingleCardPromptCarousel({
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 text-amber-400" />
-                          <span>[ ✨ Proofread Script ]</span>
+                          <span>Proofread Script</span>
                         </>
                       )}
                     </button>
@@ -1924,7 +1987,7 @@ export function SingleCardPromptCarousel({
                         className="min-h-[48px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-300 transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <RotateCcw className="w-3.5 h-3.5 text-stone-400" />
-                        <span>[ ↺ Revert Draft ]</span>
+                        <span>Revert Draft</span>
                       </button>
                     )}
                     <button
@@ -1934,7 +1997,7 @@ export function SingleCardPromptCarousel({
                       onClick={handleCancelEditScript}
                       className="min-h-[48px] px-4 py-2 rounded-xl text-xs sm:text-sm font-mono font-semibold bg-white/5 hover:bg-white/10 border border-white/20 text-stone-200 transition-all cursor-pointer"
                     >
-                      [ Cancel ]
+                      Cancel
                     </button>
                   </div>
                 </div>
@@ -2265,7 +2328,7 @@ export function SingleCardPromptCarousel({
                       onClick={handleStartEditScript}
                       className="w-full py-4 px-6 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-[0.99] text-stone-950 font-bold text-base tracking-wide shadow-lg shadow-amber-500/20 flex items-center justify-center gap-3 transition-all cursor-pointer"
                     >
-                      <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">[ ✏️ Draft Scene / Begin Story ]</span>
+                      <span data-testid="HS_FIRESIDE_EDIT_SCRIPT_BTN">✏️ Draft Scene / Begin Story</span>
                     </button>
                   </div>
                 </div>
@@ -2333,7 +2396,7 @@ export function SingleCardPromptCarousel({
                                     : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/35 text-amber-200'
                                 }`}
                               >
-                                {isPinned ? '✓ [ 📌 Pinned to Prompter ]' : '[ 📌 Pin to Prompter ]'}
+                                {isPinned ? '✓ Pinned to Prompter' : 'Pin to Prompter'}
                               </button>
                               <button
                                 type="button"
@@ -2342,7 +2405,7 @@ export function SingleCardPromptCarousel({
                                 onClick={() => onAnswerFollowUpNote?.(question)}
                                 className="min-h-[48px] px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-white/5 hover:bg-white/10 border border-white/15 text-stone-200 transition-all cursor-pointer"
                               >
-                                [ ✍️ Answer / Add Note ]
+                                Answer / Add Note
                               </button>
                             </div>
                           </li>
@@ -2391,85 +2454,88 @@ export function SingleCardPromptCarousel({
         </AnimatePresence>
       </div>
 
-      {/* 5. Elder-Ergonomic Primary Action Dock (Rule 26: min-h-[56px])
-          Navigation between scenes is handled by ChapterSpineRail (MW-100) above. */}
-      <div className="w-full mt-5 flex flex-col gap-3">
-        {/* Dual-Action Synchronised In-Place Footer Dock (MW-88-T8 & MW-88-T9: 100% Surface Containment) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            type="button"
-            data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"
-            data-hotspot-id="HS_FIRESIDE_STAGE_PROGRESSION_BTN"
-            onClick={() => {
-              if (stageProgression.nextTab === 'act4') {
-                handleSelectActTab('act4');
-                onOpenScreeningRoom?.();
-              } else if (stageProgression.nextTab === 'act3') {
+      {/* 5. Elder-Ergonomic Primary Action Dock (Hidden when FiresideCompletedReelCard already owns Watch/Retake below) */}
+      {!(hideCompletedDuplicateActions && hasCurrentTake) && (
+        <div className="w-full mt-4 flex flex-col gap-2.5">
+          {/* Dual-Action Synchronised In-Place Footer Dock (MW-88-T8 & MW-88-T9: 100% Surface Containment) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_STAGE_PROGRESSION_BTN"
+              data-hotspot-id="HS_FIRESIDE_STAGE_PROGRESSION_BTN"
+              onClick={() => {
+                if (stageProgression.nextTab === 'act4') {
+                  handleSelectActTab('act4');
+                  onOpenScreeningRoom?.();
+                } else if (stageProgression.nextTab === 'act3') {
+                  handleSelectActTab('act3');
+                  handleSelectCurrent();
+                  scrollToActiveSoundstage();
+                } else {
+                  handleSelectActTab('act2');
+                }
+              }}
+              title={stageProgression.title}
+              style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+              className={`w-full min-h-[52px] px-4 py-2.5 rounded-2xl font-mono font-bold text-xs sm:text-sm active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer ${
+                stageProgression.nextTab === 'act4'
+                  ? 'bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-950/30'
+                  : 'bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-sm'
+              }`}
+            >
+              {stageProgression.label}
+            </button>
+
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_DIRECT_RECORD_BTN"
+              data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"
+              onClick={() => {
                 handleSelectActTab('act3');
-                handleSelectCurrent();
-                scrollToActiveSoundstage();
-              } else {
-                handleSelectActTab('act2');
+                if (hasCurrentTake) {
+                  onOpenScreeningRoom?.();
+                } else {
+                  handleSelectCurrent();
+                  scrollToActiveSoundstage();
+                }
+              }}
+              style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+              className={
+                hasCurrentTake
+                  ? 'w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-sky-500/40 bg-sky-950/30 text-sky-300 hover:bg-sky-900/40 font-mono font-bold text-xs sm:text-sm shadow-lg shadow-sky-950/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer'
+                  : 'w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-gray-950 font-mono font-black text-xs sm:text-sm shadow-lg shadow-sky-500/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer'
               }
-            }}
-            title={stageProgression.title}
-            style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-            className={`w-full min-h-[56px] px-4 py-3 rounded-2xl font-mono font-bold text-xs sm:text-sm active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer ${
-              stageProgression.nextTab === 'act4'
-                ? 'bg-emerald-950/80 hover:bg-emerald-900/90 border-2 border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-950/30'
-                : 'bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 shadow-sm'
-            }`}
-          >
-            {stageProgression.label}
-          </button>
-
-          <button
-            type="button"
-            data-testid="HS_FIRESIDE_DIRECT_RECORD_BTN"
-            data-hotspot-id="HS_FIRESIDE_CONFIRM_STORY_BTN"
-            onClick={() => {
-              handleSelectActTab('act3');
-              if (hasCurrentTake) {
-                onOpenScreeningRoom?.();
-              } else {
-                handleSelectCurrent();
-                scrollToActiveSoundstage();
+              aria-label={
+                effectiveMediaMode === 'video'
+                  ? `Record performance: ${currentSpark.title}`
+                  : `Speak this memory: ${currentSpark.title}`
               }
-            }}
-            style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-            className={
-              hasCurrentTake
-                ? 'w-full min-h-[48px] px-4 py-3 rounded-xl border border-sky-500/40 bg-sky-950/30 text-sky-300 hover:bg-sky-900/40 font-mono font-bold text-xs sm:text-sm shadow-lg shadow-sky-950/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer'
-                : 'w-full min-h-[48px] px-4 py-3 rounded-xl bg-sky-500 hover:bg-sky-400 text-gray-950 font-mono font-black text-xs sm:text-sm shadow-lg shadow-sky-500/20 active:scale-98 transition-all flex items-center justify-center text-center cursor-pointer'
-            }
-            aria-label={
-              effectiveMediaMode === 'video'
-                ? `Record performance: ${currentSpark.title}`
-                : `Speak this memory: ${currentSpark.title}`
-            }
-          >
-            {hasCurrentTake
-              ? '[ ✏️ Edit Scene / Audition Take → ]'
-              : '[ 🎬 Action: Record Scene → ]'}
-          </button>
+            >
+              {hasCurrentTake
+                ? 'Edit Scene / Audition Take →'
+                : 'Action: Record Scene →'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 6. The Heirloom Folio Spine (ARCH-MW-139 / SPEC-MW-139) */}
-      <HeirloomFolioSpine
-        scenes={spineScenes}
-        activeSceneId={activeSceneId}
-        onSelectScene={handleSelectScene}
-        currentIndex={currentIndex}
-        onPrevScene={handlePrev}
-        onNextScene={handleNext}
-        canPrev={currentIndex > 0}
-        canNext={currentIndex < sparkDeck.length - 1}
-        isEditing={isEditingScript}
-        mobileVariant="ribbon"
-        includeDesktopSpine={false}
-        className="w-full mt-3"
-      />
+      {/* 6. The Heirloom Folio Spine (Hidden when parent FiresideStudioClient provides Part/Scene + ChapterSpineRail navigation) */}
+      {!hideBottomRibbon && (
+        <HeirloomFolioSpine
+          scenes={spineScenes}
+          activeSceneId={activeSceneId}
+          onSelectScene={handleSelectScene}
+          currentIndex={currentIndex}
+          onPrevScene={handlePrev}
+          onNextScene={handleNext}
+          canPrev={currentIndex > 0}
+          canNext={currentIndex < sparkDeck.length - 1}
+          isEditing={isEditingScript}
+          mobileVariant="ribbon"
+          includeDesktopSpine={false}
+          className="w-full mt-3"
+        />
+      )}
     </div>
   );
 }

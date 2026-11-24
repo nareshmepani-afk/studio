@@ -94,18 +94,18 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
       className={`w-full max-w-xl mx-auto transition-all duration-200 ${className}`}
     >
       {isCollapsed ? (
-        /* Minimised Single-Line 44px+ Utility Strip */
+        /* Minimised Compact Single-Line Utility Strip */
         <div
           data-testid="HS_ORIENTATION_DOCK_COLLAPSED_STRIP"
-          className="w-full min-h-[48px] px-3 py-1.5 rounded-2xl bg-stone-950/90 border border-amber-500/30 shadow-md flex flex-wrap items-center justify-between gap-2"
+          className="w-full min-h-[44px] px-2 sm:px-3 py-1.5 rounded-2xl bg-stone-950/90 border border-amber-500/25 shadow-sm flex flex-wrap items-center justify-between gap-1.5"
         >
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Link
               href="/studio"
               data-testid="HS_ORIENTATION_LAUNCH_SOUNDSTAGE_BTN"
               data-hotspot-id="HS_FIRESIDE_BANNER_LAUNCH_STAGE_BTN"
-              style={{ minHeight: 44 }}
-              className="min-h-[44px] px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              style={{ minHeight: 40 }}
+              className="min-h-[40px] px-2.5 py-1 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-200 text-[11px] sm:text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Switch to the full 4-Act Desktop Theatrical Soundstage"
             >
               <Monitor className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -117,8 +117,8 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
               data-testid="HS_ORIENTATION_LAUNCH_SOUNDCHECK_BTN"
               data-hotspot-id="HS_FIRESIDE_WALKTHROUGH_COLLAPSED_PILL"
               onClick={handleOpenSoundcheck}
-              style={{ minHeight: 44 }}
-              className="min-h-[44px] px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-200 text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              style={{ minHeight: 40 }}
+              className="min-h-[40px] px-2.5 py-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-200 text-[11px] sm:text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Launch 30-second rehearsal and microphone soundcheck without saving"
             >
               <Compass className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -135,10 +135,10 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
             type="button"
             data-testid="HS_ORIENTATION_DOCK_MINIMISE_BTN"
             onClick={handleToggleCollapse}
-            style={{ minHeight: 44 }}
+            style={{ minHeight: 40 }}
             aria-expanded={false}
             aria-label="Expand Studio Orientation and Soundcheck Dock"
-            className="min-h-[44px] px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700/80 text-stone-300 hover:text-white text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            className="min-h-[40px] px-2.5 py-1 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700/80 text-stone-300 hover:text-white text-[11px] sm:text-xs font-mono font-bold inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0"
           >
             <span>Expand</span>
             <ChevronDown className="w-3.5 h-3.5" />
@@ -146,7 +146,7 @@ export const OrientationSoundcheckDock: React.FC<OrientationSoundcheckDockProps>
         </div>
       ) : (
         /* Expanded Orientation & Soundcheck Dock (First-Visit Default) */
-        <div className="w-full rounded-3xl bg-gradient-to-b from-stone-950/95 via-stone-900/90 to-stone-950/95 border border-amber-500/35 p-3.5 sm:p-4 shadow-2xl space-y-3">
+        <div className="w-full rounded-3xl bg-gradient-to-b from-stone-950/95 via-stone-900/90 to-stone-950/95 border border-amber-500/35 p-3 sm:p-4 shadow-2xl space-y-2.5">
           {/* Dock Header Bar with Minimise Option */}
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-stone-800/80">
             <div className="flex items-center gap-2">
