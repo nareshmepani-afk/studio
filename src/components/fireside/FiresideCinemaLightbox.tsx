@@ -38,6 +38,12 @@ import {
 } from 'lucide-react';
 import { HeirloomPhotoAttachment } from '@/types/fireside';
 import { StoryMoodTag, EditingAuthority } from '@/types/curriculum';
+import {
+  CinemaTitleOverlays,
+  toggleStageFullscreen,
+  useCinemaPreRollController,
+  type RawCinemaSlateInput,
+} from '@/components/cinema/CinemaTitleOverlays';
 
 export interface FiresideCinemaLightboxProps {
   isOpen: boolean;
@@ -46,6 +52,13 @@ export interface FiresideCinemaLightboxProps {
   onDiscardTake?: () => void;
   editingAuthority?: EditingAuthority;
   sceneTitle: string;
+  chapterTitle?: string | null;
+  sceneNumber?: number | null;
+  location?: string | null;
+  year?: string | number | null;
+  age?: number | string | null;
+  narratorName?: string | null;
+  hasBurnedInTitleSlate?: boolean;
   mediaUrl?: string | null;
   mediaMode?: 'audio' | 'video';
   photos?: HeirloomPhotoAttachment[] | { url: string; caption?: string }[];
@@ -62,6 +75,13 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   onDiscardTake,
   editingAuthority = 'fireside_flexible',
   sceneTitle,
+  chapterTitle,
+  sceneNumber,
+  location,
+  year,
+  age,
+  narratorName,
+  hasBurnedInTitleSlate = false,
   mediaUrl,
   mediaMode = 'video',
   photos = [],
@@ -79,12 +99,48 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [mediaLoadError, setMediaLoadError] = useState<string | null>(null);
+  const [isStageFullscreen, setIsStageFullscreen] = useState(false);
   const isDesktopLocked = editingAuthority === 'desktop_locked';
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const soundtrackAudioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const getActiveMedia = useCallback(
+    () => (mediaMode === 'video' ? videoRef.current : audioRef.current),
+    [mediaMode]
+  );
+
+  const {
+    phase: preRollPhase,
+    isPreRollVisible,
+    triggerPlay,
+    skipPreRoll,
+    pausePlayback,
+    resetSessionForReplay,
+  } = useCinemaPreRollController({
+    sessionKey: `${sceneTitle}_${mediaUrl || ''}`,
+    isOpen,
+    hasBurnedInTitleSlate,
+    getMediaElement: getActiveMedia,
+    onPlaybackStateChange: setIsPlaying,
+  });
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleFs = () => {
+      setIsStageFullscreen(
+        Boolean(document.fullscreenElement || (document as any).webkitFullscreenElement)
+      );
+    };
+    document.addEventListener('fullscreenchange', handleFs);
+    document.addEventListener('webkitfullscreenchange', handleFs);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFs);
+      document.removeEventListener('webkitfullscreenchange', handleFs);
+    };
+  }, []);
 
   // Sync finite duration from prop whenever it updates
   useEffect(() => {
@@ -93,42 +149,37 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
     }
   }, [durationSeconds]);
 
-  // Auto-play when opened
+  // Auto-play with 3.0s Title Slate pre-roll when opened on valid cloud media
   useEffect(() => {
     setShowDiscardConfirm(false);
     if (isOpen) {
-      if (typeof mediaUrl === 'string' && mediaUrl.startsWith('blob:')) {
+      const isStaleBlob = typeof mediaUrl === 'string' && mediaUrl.startsWith('blob:');
+      if (isStaleBlob) {
         setMediaLoadError(
           'This take was recorded in an earlier local session. Please record a fresh take to secure permanently in the Generational Vault.'
         );
+        setIsPlaying(false);
       } else {
         setMediaLoadError(null);
       }
-      setIsPlaying(true);
       setCurrentTime(0);
       setPhotoIndex(0);
       if (Number.isFinite(durationSeconds) && durationSeconds > 0) {
         setDuration(durationSeconds);
       }
 
-      // Play media on open
-      setTimeout(() => {
-        if (mediaMode === 'video' && videoRef.current) {
-          videoRef.current.currentTime = 0;
-          videoRef.current.play().catch(() => {});
-        } else if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(() => {});
-        }
-      }, 100);
+      if (!isStaleBlob && mediaUrl) {
+        const startTimer = setTimeout(() => {
+          triggerPlay();
+        }, 60);
+        return () => clearTimeout(startTimer);
+      }
     } else {
-      setIsPlaying(false);
+      pausePlayback();
       setMediaLoadError(null);
-      if (videoRef.current) videoRef.current.pause();
-      if (audioRef.current) audioRef.current.pause();
       if (soundtrackAudioRef.current) soundtrackAudioRef.current.pause();
     }
-  }, [isOpen, mediaMode, durationSeconds, mediaUrl]);
+  }, [isOpen, mediaMode, durationSeconds, mediaUrl, triggerPlay, pausePlayback]);
 
   // Slideshow timer for audio mode with photos
   useEffect(() => {
@@ -160,26 +211,18 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   }, [isOpen, onClose]);
 
   const togglePlayPause = useCallback(() => {
-    if (mediaMode === 'video' && videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-        setIsPlaying(true);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
-    } else if (audioRef.current) {
-      if (audioRef.current.paused) {
-        audioRef.current.play();
-        setIsPlaying(true);
-      } else {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      }
+    if (isPlaying || isPreRollVisible) {
+      pausePlayback();
+    } else if (mediaUrl && !mediaLoadError) {
+      triggerPlay();
     } else {
       setIsPlaying((prev) => !prev);
     }
-  }, [mediaMode]);
+  }, [isPlaying, isPreRollVisible, mediaUrl, mediaLoadError, pausePlayback, triggerPlay]);
+
+  const handleToggleFullscreen = useCallback(() => {
+    toggleStageFullscreen(containerRef.current, videoRef.current);
+  }, []);
 
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => {
@@ -305,8 +348,32 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
       <main className="w-full max-w-6xl mx-auto flex-1 flex items-center justify-center my-4 overflow-hidden relative">
         <div
           ref={containerRef}
-          className="w-full aspect-[16/9] sm:aspect-[2.39/1] max-h-[70vh] bg-stone-950 rounded-2xl sm:rounded-3xl border border-stone-800/80 shadow-2xl relative overflow-hidden flex items-center justify-center"
+          data-testid="HS_FIRESIDE_LIGHTBOX_STAGE"
+          className="w-full aspect-[16/9] sm:aspect-[2.39/1] max-h-[70vh] bg-stone-950 rounded-2xl sm:rounded-3xl border border-stone-800/80 shadow-2xl relative overflow-hidden flex items-center justify-center group"
         >
+          {!mediaLoadError && Boolean(mediaUrl) && (
+            <CinemaTitleOverlays
+              meta={{
+                title: sceneTitle,
+                chapterTitle,
+                sceneNumber,
+                location,
+                year,
+                age,
+                narratorName,
+                backdropUrl: posterUrl || photoUrl,
+                hasBurnedInTitleSlate,
+              }}
+              phase={preRollPhase}
+              isPlaying={isPlaying}
+              currentTime={currentTime}
+              onSkipPreRoll={skipPreRoll}
+              showTopMarquee={isStageFullscreen}
+              marqueeClassName="top-4 inset-x-10 sm:inset-x-24"
+              lowerThirdClassName="bottom-6 left-4 sm:left-6"
+            />
+          )}
+
           {mediaMode === 'video' && mediaUrl ? (
             <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-b from-stone-900 via-stone-950 to-black">
               <video
@@ -317,7 +384,10 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                 preload="auto"
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
-                onEnded={() => setIsPlaying(false)}
+                onEnded={() => {
+                  setIsPlaying(false);
+                  resetSessionForReplay();
+                }}
                 onError={() => {
                   setMediaLoadError(
                     'This take was recorded in an earlier local session or the media link is unavailable. Please record a fresh take to secure permanently in the Generational Vault.'
@@ -384,7 +454,10 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                   preload="metadata"
                   onLoadedMetadata={handleLoadedMetadata}
                   onTimeUpdate={handleTimeUpdate}
-                  onEnded={() => setIsPlaying(false)}
+                  onEnded={() => {
+                    setIsPlaying(false);
+                    resetSessionForReplay();
+                  }}
                   onError={() => {
                     setMediaLoadError(
                       'This take was recorded in an earlier local session or the media link is unavailable. Please record a fresh take to secure permanently in the Generational Vault.'
@@ -471,6 +544,22 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
               aria-label={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_LIGHTBOX_FULLSCREEN_BTN"
+              data-hotspot-id="HS_FIRESIDE_LIGHTBOX_FULLSCREEN_BTN"
+              onClick={handleToggleFullscreen}
+              className="min-w-[48px] min-h-[48px] rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition cursor-pointer active:scale-95"
+              aria-label={isStageFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              title={isStageFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            >
+              {isStageFullscreen ? (
+                <Minimize2 className="w-5 h-5" />
+              ) : (
+                <Maximize2 className="w-5 h-5" />
+              )}
             </button>
 
             {onOpenBonusDrawer && (

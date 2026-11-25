@@ -85,6 +85,11 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { MemoryCoordinatesBar } from '@/components/studio/MemoryCoordinatesBar';
 import { FiresideAct5PremierePanel } from '@/components/fireside/FiresideAct5PremierePanel';
+import { SpokenSlatePrompterCue } from '@/components/cinema/CinemaTitleOverlays';
+import {
+  readPrompterSlateFromStorage,
+  writePrompterSlateToStorage,
+} from '@/hooks/studio/useMemorySlateMetadata';
 import { FiresideCoordinatesSheet } from '@/components/fireside/FiresideMobileSheets';
 import type { SceneAccessEvaluation } from '@/lib/curriculum/entitlements';
 
@@ -285,6 +290,10 @@ export function SingleCardPromptCarousel({
   const [localProseOverride, setLocalProseOverride] = useState<string | null>(null);
   const [selectedActTab, setSelectedActTab] = useState<'act1' | 'act2' | 'act3' | 'act4' | 'act5'>('act1');
   const [isCoordsSheetOpen, setIsCoordsSheetOpen] = useState<boolean>(false);
+  const [showFiresideSpokenSlate, setShowFiresideSpokenSlate] = useState<boolean>(() => {
+    const cached = readPrompterSlateFromStorage(null);
+    return cached ? cached.showSpokenSlate : true;
+  });
   const actSwipeTouchRef = useRef<{ x: number; y: number; blocked: boolean } | null>(null);
   const [highlightedSensoryType, setHighlightedSensoryType] = useState<
     'soundscape' | 'visual' | 'aroma' | null
@@ -1987,26 +1996,51 @@ export function SingleCardPromptCarousel({
                     </div>
 
                     {!inlineAct3RecorderNode && (
-                      <div className="flex items-center justify-end pt-1">
-                        <button
-                          type="button"
-                          data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
-                          onClick={() => {
-                            if (isLockedPreview) {
-                              onOpenUpgradeSheet?.();
-                              return;
-                            }
-                            handleSelectCurrent();
-                            scrollToActiveSoundstage();
+                      <>
+                        <SpokenSlatePrompterCue
+                          meta={{
+                            title: primaryCardTitle,
+                            chapterTitle: linkedScene?.partTitle || null,
+                            sceneNumber: linkedScene?.sceneNumber ?? null,
+                            location: currentSceneMemory?.location || null,
+                            country: currentSceneMemory?.country || null,
+                            year:
+                              currentSceneMemory?.year ??
+                              currentSceneMemory?.dateComponents?.year ??
+                              null,
+                            age: (currentSceneMemory as any)?.narratorAgeAtTime ?? null,
                           }}
-                          style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-                          className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
-                        >
-                          {currentCaptureMode === 'audio'
-                            ? 'Open Voice Studio & Prompter →'
-                            : 'Ignite Camera & Prompter →'}
-                        </button>
-                      </div>
+                          enabled={showFiresideSpokenSlate}
+                          onToggle={(next) => {
+                            setShowFiresideSpokenSlate(next);
+                            writePrompterSlateToStorage(null, {
+                              showSpokenSlate: next,
+                              slateMetadata: { title: primaryCardTitle },
+                            });
+                          }}
+                          compact={true}
+                        />
+                        <div className="flex items-center justify-end pt-1">
+                          <button
+                            type="button"
+                            data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
+                            onClick={() => {
+                              if (isLockedPreview) {
+                                onOpenUpgradeSheet?.();
+                                return;
+                              }
+                              handleSelectCurrent();
+                              scrollToActiveSoundstage();
+                            }}
+                            style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+                            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
+                          >
+                            {currentCaptureMode === 'audio'
+                              ? 'Open Voice Studio & Prompter →'
+                              : 'Ignite Camera & Prompter →'}
+                          </button>
+                        </div>
+                      </>
                     )}
 
                     {inlineAct3RecorderNode && (

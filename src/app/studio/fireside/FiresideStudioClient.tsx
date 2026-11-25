@@ -73,6 +73,14 @@ import {
 import { cn } from '@/lib/utils';
 import { applyTheatricalSlashes, renderPrompterCadenceHtml } from '@/utils/scriptFormatter';
 import { uploadAudioWithResiliency, uploadVideoWithResiliency } from '@/lib/media/chunkedAudioUpload';
+import {
+  SpokenSlatePrompterCue,
+  type RawCinemaSlateInput,
+} from '@/components/cinema/CinemaTitleOverlays';
+import {
+  readPrompterSlateFromStorage,
+  writePrompterSlateToStorage,
+} from '@/hooks/studio/useMemorySlateMetadata';
 
 function resolveInitialSpark(targetParam?: string): FiresidePromptSpark {
   if (targetParam) {
@@ -97,23 +105,48 @@ function resolveInitialSpark(targetParam?: string): FiresidePromptSpark {
 interface FiresidePrompterBannerProps {
   prose?: string;
   pinnedQuestion?: string | null;
+  slateMeta?: RawCinemaSlateInput;
   testId?: string;
 }
 
 const FiresidePrompterBanner: React.FC<FiresidePrompterBannerProps> = ({
   prose,
   pinnedQuestion,
+  slateMeta,
   testId = 'fireside-recording-script-banner',
 }) => {
   const [autoBreath, setAutoBreath] = useState(false);
+  const [showSpokenSlate, setShowSpokenSlate] = useState<boolean>(() => {
+    const stored = readPrompterSlateFromStorage(null);
+    return stored ? stored.showSpokenSlate : true;
+  });
 
-  if (!prose && !pinnedQuestion) return null;
+  const handleToggleSpokenSlate = (next: boolean) => {
+    setShowSpokenSlate(next);
+    writePrompterSlateToStorage(null, {
+      showSpokenSlate: next,
+      slateMetadata: slateMeta || {},
+    });
+  };
+
+  if (!prose && !pinnedQuestion && !slateMeta) return null;
 
   return (
-    <div
-      data-testid={testId}
-      className="w-full max-w-xl mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left shadow-lg"
-    >
+    <div className="w-full max-w-xl mx-auto mt-2 space-y-2 text-left">
+      {slateMeta && (
+        <SpokenSlatePrompterCue
+          meta={slateMeta}
+          enabled={showSpokenSlate}
+          onToggle={handleToggleSpokenSlate}
+          compact={true}
+        />
+      )}
+
+      {(prose || pinnedQuestion) && (
+        <div
+          data-testid={testId}
+          className="w-full max-w-xl mx-auto mt-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left shadow-lg"
+        >
       <div className="flex items-center justify-between gap-1.5 text-amber-400 font-mono text-[11px] uppercase tracking-wider font-semibold mb-1.5">
         <div className="flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5" />
@@ -166,6 +199,8 @@ const FiresidePrompterBanner: React.FC<FiresidePrompterBannerProps> = ({
           <p className="text-xs font-serif italic text-amber-100 leading-snug">
             {pinnedQuestion}
           </p>
+        </div>
+      )}
         </div>
       )}
     </div>
@@ -1311,6 +1346,32 @@ export default function FiresideStudioClient() {
     [handleActivePromptChange]
   );
 
+  const activeFiresideSlateMeta: RawCinemaSlateInput = useMemo(
+    () => ({
+      title:
+        selectedSpark?.title ||
+        activePromptSpark?.title ||
+        activeSceneMemory?.sceneTitle ||
+        activeSceneTitle,
+      chapterTitle: activePartTitle,
+      sceneNumber: activeSceneNumInPart,
+      location: activeSceneMemory?.location || null,
+      country: activeSceneMemory?.country || null,
+      year: activeSceneMemory?.year ?? activeSceneMemory?.dateComponents?.year ?? null,
+      age: (activeSceneMemory as any)?.narratorAgeAtTime ?? null,
+      narratorName: (user as any)?.displayName || null,
+    }),
+    [
+      selectedSpark?.title,
+      activePromptSpark?.title,
+      activeSceneMemory,
+      activeSceneTitle,
+      activePartTitle,
+      activeSceneNumInPart,
+      user,
+    ]
+  );
+
   const recorderStudioBlock = !isActiveSceneLockedPreview ? (
     mediaMode === 'video' ? (
       /* Video Memo Recording Surface */
@@ -1337,6 +1398,7 @@ export default function FiresideStudioClient() {
           <FiresidePrompterBanner
             prose={activeSceneMemory?.prose}
             pinnedQuestion={pinnedPrompterQuestion}
+            slateMeta={activeFiresideSlateMeta}
           />
         </div>
 
@@ -1346,7 +1408,7 @@ export default function FiresideStudioClient() {
           activeLanguage={activeLanguage}
           activeMood={activeMood}
           activeActStage={selectedActStage as any}
-          hasExternalScriptBanner={Boolean(activeSceneMemory?.prose || pinnedPrompterQuestion)}
+          hasExternalScriptBanner={true}
           isMasterProtected={isActiveMasterProtected}
           takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
           onMoodChange={handleMoodChange}
@@ -1396,6 +1458,7 @@ export default function FiresideStudioClient() {
             <FiresidePrompterBanner
               prose={activeSceneMemory?.prose}
               pinnedQuestion={pinnedPrompterQuestion}
+              slateMeta={activeFiresideSlateMeta}
             />
           </div>
 
@@ -1917,6 +1980,13 @@ export default function FiresideStudioClient() {
         onDiscardTake={handleDiscardActiveTake}
         editingAuthority={activeEditingAuthority}
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
+        chapterTitle={activePartTitle}
+        sceneNumber={activeSceneNumInPart}
+        location={activeSceneMemory?.location || null}
+        year={activeSceneMemory?.year ?? activeSceneMemory?.dateComponents?.year ?? null}
+        age={(activeSceneMemory as any)?.narratorAgeAtTime ?? null}
+        narratorName={(user as any)?.displayName || null}
+        hasBurnedInTitleSlate={Boolean((activeSceneMemory as any)?.hasBurnedInTitleSlate)}
         mediaUrl={
           preferredTake?.mediaUrl ||
           activeSceneMemory?.videoUrl ||

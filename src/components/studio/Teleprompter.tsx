@@ -13,6 +13,12 @@ import {
   renderPrompterCadenceHtml,
   getBrakeDuration,
 } from '@/utils/scriptFormatter';
+import { SpokenSlatePrompterCue } from '@/components/cinema/CinemaTitleOverlays';
+import {
+  useMemorySlateMetadata,
+  readPrompterSlateFromStorage,
+  writePrompterSlateToStorage,
+} from '@/hooks/studio/useMemorySlateMetadata';
 import {
   Tooltip,
   TooltipContent,
@@ -162,6 +168,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     showBreathingMarks,
     enablePunctuationBraking,
     isolateSentenceHighlight,
+    narratorAgeAtTime,
     actions: {
       toggleScrolling,
       setScrolling,
@@ -208,6 +215,88 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   // Option A: "ARM & ENGAGE" Master Ignition State & 3s Countdown Sequence
   const [isArmed, setIsArmed] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const slateMetadata = useMemorySlateMetadata(sessionId, narratorAgeAtTime);
+  const [showSpokenSlate, setShowSpokenSlate] = useState<boolean>(() => {
+    const cached = readPrompterSlateFromStorage(sessionId);
+    return cached ? cached.showSpokenSlate : true;
+  });
+  const showSpokenSlateRef = useRef<boolean>(showSpokenSlate);
+  const slateMetadataRef = useRef(slateMetadata);
+  showSpokenSlateRef.current = showSpokenSlate;
+  slateMetadataRef.current = slateMetadata;
+  const [isSlateLeadInHolding, setIsSlateLeadInHolding] = useState(false);
+  const isSlateLeadInRef = useRef(false);
+  const slateLeadInTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelSlateLeadIn = useCallback(() => {
+    if (slateLeadInTimerRef.current) {
+      clearTimeout(slateLeadInTimerRef.current);
+      slateLeadInTimerRef.current = null;
+    }
+    if (isSlateLeadInRef.current) {
+      isSlateLeadInRef.current = false;
+      setIsSlateLeadInHolding(false);
+    }
+  }, []);
+
+  const startSlateLeadInHold = useCallback(
+    (durationMs = 2500) => {
+      cancelSlateLeadIn();
+      isSlateLeadInRef.current = true;
+      setIsSlateLeadInHolding(true);
+      slateLeadInTimerRef.current = setTimeout(() => {
+        isSlateLeadInRef.current = false;
+        setIsSlateLeadInHolding(false);
+        slateLeadInTimerRef.current = null;
+      }, durationMs);
+    },
+    [cancelSlateLeadIn]
+  );
+
+  const handleToggleSpokenSlate = useCallback(
+    (nextVal: boolean) => {
+      setShowSpokenSlate(nextVal);
+      if (!nextVal) cancelSlateLeadIn();
+      writePrompterSlateToStorage(sessionId, {
+        showSpokenSlate: nextVal,
+        slateMetadata,
+      });
+      if (sessionId && typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+        channel.postMessage({
+          type: 'state',
+          showSpokenSlate: nextVal,
+          slateMetadata,
+          sender: 'main',
+        });
+        channel.close();
+      }
+    },
+    [cancelSlateLeadIn, sessionId, slateMetadata]
+  );
+
+  useEffect(() => {
+    writePrompterSlateToStorage(sessionId, {
+      showSpokenSlate,
+      slateMetadata,
+    });
+    if (sessionId && typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({
+        type: 'state',
+        showSpokenSlate,
+        slateMetadata,
+        sender: 'main',
+      });
+      channel.close();
+    }
+  }, [sessionId, showSpokenSlate, slateMetadata]);
+
+  useEffect(() => {
+    if (!isScrolling) {
+      cancelSlateLeadIn();
+    }
+  }, [isScrolling, cancelSlateLeadIn]);
 
   const handleActivateTeleprompter = useCallback(() => {
     setCountdown(3);
@@ -223,12 +312,26 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     } else {
       setCountdown(null);
       setIsArmed(true);
+      const isAtTop = !containerRef.current || containerRef.current.scrollTop < 24;
+      if (showSpokenSlate && isAtTop) {
+        startSlateLeadInHold(2500);
+        if (sessionId && typeof BroadcastChannel !== 'undefined') {
+          const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+          channel.postMessage({
+            type: 'state',
+            isScrolling: true,
+            slateLeadInMs: 2500,
+            sender: 'main',
+          });
+          channel.close();
+        }
+      }
       setScrolling(true);
       if (!isRecording) {
         toggleRecording();
       }
     }
-  }, [countdown, isRecording, setScrolling, toggleRecording]);
+  }, [countdown, isRecording, sessionId, setScrolling, showSpokenSlate, startSlateLeadInHold, toggleRecording]);
 
   const [isRehearsingAudio, setIsRehearsingAudio] = useState(false);
   const isInternalScroll = useRef(false);
@@ -238,6 +341,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const recordUserInteraction = () => {
+    cancelSlateLeadIn();
     isUserInteractingRef.current = true;
     if (interactionTimeoutRef.current) {
       clearTimeout(interactionTimeoutRef.current);
@@ -274,7 +378,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       clearTimeout(timer);
       window.removeEventListener('resize', recacheCoordinates);
     };
-  }, [selectedTake, showBreathingMarks, fontSize]);
+  }, [selectedTake, showBreathingMarks, fontSize, showSpokenSlate, slateMetadata.title]);
 
   // Smooth Eye-Level Line Gliding on activeSentenceIndex change
   useEffect(() => {
@@ -408,6 +512,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       if (interactionTimeoutRef.current) {
         clearTimeout(interactionTimeoutRef.current);
       }
+      if (slateLeadInTimerRef.current) {
+        clearTimeout(slateLeadInTimerRef.current);
+      }
     };
   }, []);
 
@@ -540,6 +647,14 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         if (payload.rehearsalSpeed !== undefined && setRehearsalSpeed) {
           setRehearsalSpeed(payload.rehearsalSpeed);
         }
+        if (payload.showSpokenSlate !== undefined && payload.showSpokenSlate !== showSpokenSlateRef.current) {
+          showSpokenSlateRef.current = payload.showSpokenSlate;
+          setShowSpokenSlate(payload.showSpokenSlate);
+          writePrompterSlateToStorage(sessionId, {
+            showSpokenSlate: payload.showSpokenSlate,
+            slateMetadata: slateMetadataRef.current,
+          });
+        }
       } else if (type === 'REHEARSAL_TOGGLE') {
         if (payload.isRehearsing !== undefined && setIsRehearsing) {
           setIsRehearsing(payload.isRehearsing);
@@ -592,6 +707,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           activeSentenceIndex,
           isRecording,
           takeStatus,
+          showSpokenSlate: showSpokenSlateRef.current,
+          slateMetadata: slateMetadataRef.current,
           isCameraActive: !!stream && stream.getVideoTracks().some(t => t.readyState === 'live'),
           sender: 'main'
         });
@@ -951,7 +1068,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
         const aiMultiplier = isAiSpeaking.current ? 0 : 1.0;
         const brakeMultiplier = isBraking.current ? 0 : 1.0;
-        scrollAccumulatorRef.current += activeSpeed * 0.4 * currentMultiplier * brakeMultiplier * aiMultiplier;
+        const leadInMultiplier = isSlateLeadInRef.current ? 0 : 1.0;
+        scrollAccumulatorRef.current += activeSpeed * 0.4 * currentMultiplier * brakeMultiplier * aiMultiplier * leadInMultiplier;
         
         const targetScroll = Math.floor(scrollAccumulatorRef.current);
         lastProgrammaticScrollTop.current = targetScroll;
@@ -1572,41 +1690,53 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                 </p>
               </div>
             ) : (
-              formattedParagraphs.map((sentences, paraIdx) => {
-                const isActive = paraIdx === activeBeatIndex;
-                return (
-                  <p
-                    key={paraIdx}
-                    className={cn(
-                      "prose-block transition-all duration-700",
-                      modalityMode === 'interview'
-                        ? isActive
-                          ? 'opacity-100 scale-100 text-emerald-300 font-bold shadow-teal-500/10'
-                          : paraIdx < activeBeatIndex
-                          ? 'opacity-10 scale-95 duration-100'
-                          : 'opacity-30 scale-95'
-                        : 'opacity-90'
-                    )}
-                  >
-                    {sentences.map((sent) => (
-                      <span
-                        key={sent.index}
-                        data-sentence-index={sent.index}
-                        onClick={() => handleSentenceClick(sent.index)}
-                        className={cn(
-                          "transition-all duration-300 cursor-pointer hover:text-white",
-                          isolateSentenceHighlight
-                            ? sent.index === activeSentenceIndex
-                              ? "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
-                              : "text-zinc-600/40"
-                            : "text-zinc-100"
-                        )}
-                        dangerouslySetInnerHTML={(sent as any).htmlObj || { __html: `${highlightSensoryAnchors(sent.text)} ` }}
-                      />
-                    ))}
-                  </p>
-                );
-              })
+              <>
+                <SpokenSlatePrompterCue
+                  meta={slateMetadata}
+                  enabled={showSpokenSlate}
+                  onToggle={handleToggleSpokenSlate}
+                  isLeadInHolding={isSlateLeadInHolding}
+                  compact={isMini}
+                />
+                {formattedParagraphs.map((sentences, paraIdx) => {
+                  const isActive = paraIdx === activeBeatIndex;
+                  return (
+                    <p
+                      key={paraIdx}
+                      className={cn(
+                        "prose-block transition-all duration-700",
+                        modalityMode === 'interview'
+                          ? isActive
+                            ? 'opacity-100 scale-100 text-emerald-300 font-bold shadow-teal-500/10'
+                            : paraIdx < activeBeatIndex
+                            ? 'opacity-10 scale-95 duration-100'
+                            : 'opacity-30 scale-95'
+                          : 'opacity-90'
+                      )}
+                    >
+                      {sentences.map((sent) => (
+                        <span
+                          key={sent.index}
+                          data-sentence-index={sent.index}
+                          onClick={() => {
+                            cancelSlateLeadIn();
+                            handleSentenceClick(sent.index);
+                          }}
+                          className={cn(
+                            "transition-all duration-300 cursor-pointer hover:text-white",
+                            isolateSentenceHighlight
+                              ? sent.index === activeSentenceIndex
+                                ? "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
+                                : "text-zinc-600/40"
+                              : "text-zinc-100"
+                          )}
+                          dangerouslySetInnerHTML={(sent as any).htmlObj || { __html: `${highlightSensoryAnchors(sent.text)} ` }}
+                        />
+                      ))}
+                    </p>
+                  );
+                })}
+              </>
             )}
           </div>
         </div>

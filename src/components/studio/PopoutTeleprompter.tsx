@@ -16,6 +16,15 @@ import {
   getBrakeDuration,
 } from '@/utils/scriptFormatter';
 import { PaceVisualiserGauge } from './Teleprompter';
+import {
+  SpokenSlatePrompterCue,
+  type RawCinemaSlateInput,
+} from '@/components/cinema/CinemaTitleOverlays';
+import {
+  useMemorySlateMetadata,
+  readPrompterSlateFromStorage,
+  writePrompterSlateToStorage,
+} from '@/hooks/studio/useMemorySlateMetadata';
 
 const highlightSensoryAnchors = (text: string): string => {
   return renderPrompterCadenceHtml(text, { autoBreath: false, highlightSensory: true });
@@ -60,6 +69,48 @@ export const PopoutTeleprompter: React.FC = () => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [takeStatus, setTakeStatus] = useState<'recording' | 'saving' | 'compiled' | 'complete' | 'idle'>('idle');
   const [popoutWpm, setPopoutWpm] = useState(0);
+  const fallbackSlateMeta = useMemorySlateMetadata(sessionId);
+  const [syncedSlateMeta, setSyncedSlateMeta] = useState<RawCinemaSlateInput | null>(() => {
+    const cached = readPrompterSlateFromStorage(sessionId);
+    return cached?.slateMetadata?.title ? cached.slateMetadata : null;
+  });
+  const [showSpokenSlate, setShowSpokenSlate] = useState<boolean>(() => {
+    const cached = readPrompterSlateFromStorage(sessionId);
+    return cached ? cached.showSpokenSlate : true;
+  });
+  const [isSlateLeadInHolding, setIsSlateLeadInHolding] = useState(false);
+  const isSlateLeadInRef = useRef(false);
+  const slateLeadInTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const effectiveSlateMeta = syncedSlateMeta || fallbackSlateMeta;
+
+  const cancelPopoutLeadIn = () => {
+    if (slateLeadInTimerRef.current) {
+      clearTimeout(slateLeadInTimerRef.current);
+      slateLeadInTimerRef.current = null;
+    }
+    if (isSlateLeadInRef.current) {
+      isSlateLeadInRef.current = false;
+      setIsSlateLeadInHolding(false);
+    }
+  };
+
+  const handleTogglePopoutSpokenSlate = (nextVal: boolean) => {
+    setShowSpokenSlate(nextVal);
+    if (!nextVal) cancelPopoutLeadIn();
+    writePrompterSlateToStorage(sessionId, {
+      showSpokenSlate: nextVal,
+      slateMetadata: effectiveSlateMeta,
+    });
+    if (sessionId && typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({
+        type: 'state',
+        showSpokenSlate: nextVal,
+        sender: 'popout',
+      });
+      channel.close();
+    }
+  };
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
   const popoutPeerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
@@ -276,6 +327,9 @@ export const PopoutTeleprompter: React.FC = () => {
       if (interactionTimeoutRef.current) {
         clearTimeout(interactionTimeoutRef.current);
       }
+      if (slateLeadInTimerRef.current) {
+        clearTimeout(slateLeadInTimerRef.current);
+      }
     };
   }, []);
 
@@ -322,7 +376,7 @@ export const PopoutTeleprompter: React.FC = () => {
       clearTimeout(timer);
       window.removeEventListener('resize', recacheCoordinates);
     };
-  }, [selectedTake, showBreathingMarks, fontSize]);
+  }, [selectedTake, showBreathingMarks, fontSize, showSpokenSlate, effectiveSlateMeta.title]);
 
   // Auto-focus the popout window immediately on mount so keyboard shortcuts work right away
   useEffect(() => {
@@ -429,6 +483,22 @@ export const PopoutTeleprompter: React.FC = () => {
         }
         if (payload.isCameraActive !== undefined) {
           setIsCameraActive(payload.isCameraActive);
+        }
+        if (payload.showSpokenSlate !== undefined) {
+          setShowSpokenSlate(payload.showSpokenSlate);
+        }
+        if (payload.slateMetadata?.title) {
+          setSyncedSlateMeta(payload.slateMetadata);
+        }
+        if (typeof payload.slateLeadInMs === 'number' && payload.slateLeadInMs > 0) {
+          cancelPopoutLeadIn();
+          isSlateLeadInRef.current = true;
+          setIsSlateLeadInHolding(true);
+          slateLeadInTimerRef.current = setTimeout(() => {
+            isSlateLeadInRef.current = false;
+            setIsSlateLeadInHolding(false);
+            slateLeadInTimerRef.current = null;
+          }, payload.slateLeadInMs);
         }
       } else if (type === 'REHEARSAL_TOGGLE') {
         if (payload.isRehearsing !== undefined && setIsRehearsing) {
@@ -777,7 +847,8 @@ export const PopoutTeleprompter: React.FC = () => {
         }
 
         const brakeMultiplier = isBraking.current ? 0 : 1.0;
-        scrollAccumulatorRef.current += scrollSpeedRef.current * 0.4 * currentMultiplier * brakeMultiplier;
+        const leadInMultiplier = isSlateLeadInRef.current ? 0 : 1.0;
+        scrollAccumulatorRef.current += scrollSpeedRef.current * 0.4 * currentMultiplier * brakeMultiplier * leadInMultiplier;
         
         const targetScroll = Math.floor(scrollAccumulatorRef.current);
         lastProgrammaticScrollTop.current = targetScroll;
@@ -1165,6 +1236,14 @@ export const PopoutTeleprompter: React.FC = () => {
         )}
       >
         <div className="space-y-6 max-w-4xl mx-auto relative">
+          {Boolean(selectedTake) && (
+            <SpokenSlatePrompterCue
+              meta={effectiveSlateMeta}
+              enabled={showSpokenSlate}
+              onToggle={handleTogglePopoutSpokenSlate}
+              isLeadInHolding={isSlateLeadInHolding}
+            />
+          )}
           {formattedParagraphs.map((sentences, paraIdx) => (
             <p key={paraIdx} className="opacity-95 text-justify">
               {sentences.map((sent) => (

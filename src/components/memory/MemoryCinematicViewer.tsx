@@ -12,6 +12,12 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import { CinemaPoster } from '@/components/memory/CinemaPoster';
 import { CinemaShareModal } from '@/components/cinema/CinemaShareModal';
+import {
+  CinemaTitleOverlays,
+  toggleStageFullscreen,
+  useCinemaPreRollController,
+  type RawCinemaSlateInput,
+} from '@/components/cinema/CinemaTitleOverlays';
 import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft } from 'lucide-react';
@@ -25,12 +31,17 @@ interface MemoryCinematicViewerProps {
 
 export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const stageContainerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [activeViewMode, setActiveViewMode] = useState<'media' | 'poster'>('media');
+  const [isStageFullscreen, setIsStageFullscreen] = useState<boolean>(false);
+  const [showStageChrome, setShowStageChrome] = useState<boolean>(true);
+  const fsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { user } = useAuth();
   const isDirector = !!user;
   const [isAirPlayAvailable, setIsAirPlayAvailable] = useState<boolean>(false);
@@ -285,29 +296,102 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     cohesiveScript: (memory as any)?.cohesiveScript || narrativeText
   };
 
+  const getActiveMediaElement = () => (videoUrl ? videoRef.current : audioRef.current);
+
+  const slateMeta: RawCinemaSlateInput = useMemo(
+    () => ({
+      title: memory?.title,
+      chapterTitle: memory?.chapterTitle,
+      location: memory?.location,
+      country: memory?.country,
+      year:
+        memory?.dateComponents?.year ||
+        (memory as any)?.year ||
+        (typeof memory?.date === 'string' && /^\d{4}$/.test(memory.date.trim())
+          ? memory.date.trim()
+          : null),
+      age: (memory as any)?.narratorAgeAtTime || null,
+      narratorName:
+        memory?.credits?.director || memory?.credits?.starring || null,
+      backdropUrl: imageUrl || null,
+      hasBurnedInTitleSlate: Boolean((memory as any)?.hasBurnedInTitleSlate),
+    }),
+    [memory, imageUrl]
+  );
+
+  const {
+    phase: preRollPhase,
+    isPreRollVisible,
+    triggerPlay,
+    skipPreRoll,
+    pausePlayback,
+    resetSessionForReplay,
+  } = useCinemaPreRollController({
+    sessionKey: memory?.id || 'empty',
+    isOpen: Boolean(memory),
+    hasBurnedInTitleSlate: Boolean((memory as any)?.hasBurnedInTitleSlate),
+    getMediaElement: getActiveMediaElement,
+    onPlaybackStateChange: setIsPlaying,
+  });
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleFsChange = () => {
+      const active = Boolean(
+        document.fullscreenElement || (document as any).webkitFullscreenElement
+      );
+      setIsStageFullscreen(active);
+      setShowStageChrome(true);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+      if (fsHideTimerRef.current) clearTimeout(fsHideTimerRef.current);
+    };
+  }, []);
+
+  const bumpFullscreenChrome = () => {
+    setShowStageChrome(true);
+    if (fsHideTimerRef.current) clearTimeout(fsHideTimerRef.current);
+    if (isStageFullscreen && isPlaying) {
+      fsHideTimerRef.current = setTimeout(() => {
+        setShowStageChrome(false);
+      }, 3000);
+    }
+  };
+
+  const openShareModalSafely = () => {
+    if (typeof document !== 'undefined' && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setIsShareModalOpen(true);
+  };
+
   const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      videoRef.current.pause();
-      setIsPlaying(false);
+    const activeMedia = getActiveMediaElement();
+    if (!activeMedia) return;
+    if (isPlaying || isPreRollVisible) {
+      pausePlayback();
     } else {
-      videoRef.current.play();
-      setIsPlaying(true);
+      triggerPlay();
     }
   };
 
   const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime || 0);
-    const d = videoRef.current.duration;
+    const activeMedia = getActiveMediaElement();
+    if (!activeMedia) return;
+    setCurrentTime(activeMedia.currentTime || 0);
+    const d = activeMedia.duration;
     if (isFinite(d) && !isNaN(d) && d > 0 && (!isFinite(duration) || duration === 0)) {
       setDuration(d);
     }
   };
 
   const handleLoadedMetadata = () => {
-    if (!videoRef.current) return;
-    const v = videoRef.current;
+    const v = getActiveMediaElement();
+    if (!v) return;
     const d = v.duration;
     if (isFinite(d) && !isNaN(d) && d > 0) {
       setDuration(d);
@@ -328,25 +412,22 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
+    const activeMedia = getActiveMediaElement();
+    if (activeMedia) {
+      activeMedia.currentTime = time;
       setCurrentTime(time);
     }
   };
 
   const toggleMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !isMuted;
+    const activeMedia = getActiveMediaElement();
+    if (!activeMedia) return;
+    activeMedia.muted = !isMuted;
     setIsMuted(!isMuted);
   };
 
   const toggleFullscreen = () => {
-    if (!videoRef.current) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      videoRef.current.requestFullscreen();
-    }
+    toggleStageFullscreen(stageContainerRef.current, videoRef.current);
   };
 
   const formatTime = (seconds: number) => {
@@ -419,7 +500,26 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
           </button>
 
           {/* Media Section (Left/Top) */}
-          <div className="w-full xl:w-2/3 h-[50vh] xl:h-full bg-slate-950 relative group flex items-center justify-center overflow-hidden">
+          <div
+            ref={stageContainerRef}
+            data-testid="HS_CINEMA_STAGE_CONTAINER"
+            onMouseMove={bumpFullscreenChrome}
+            onTouchStart={bumpFullscreenChrome}
+            className="w-full xl:w-2/3 h-[50vh] xl:h-full bg-slate-950 relative group flex items-center justify-center overflow-hidden"
+          >
+            {activeViewMode !== 'poster' && Boolean(videoUrl || audioUrl) && (
+              <CinemaTitleOverlays
+                meta={slateMeta}
+                phase={preRollPhase}
+                isPlaying={isPlaying}
+                currentTime={currentTime}
+                onSkipPreRoll={skipPreRoll}
+                showTopMarquee={true}
+                marqueeClassName="top-5 inset-x-16 sm:inset-x-40"
+                lowerThirdClassName="bottom-44 left-5 sm:left-8"
+              />
+            )}
+
             {activeViewMode === 'poster' ? (
               <div className="w-full h-full p-4 flex items-center justify-center bg-slate-950/90 relative z-30">
                 <CinemaPoster memory={memory} className="h-full max-h-[78vh] w-auto aspect-[2/3] shadow-[0_0_50px_rgba(245,158,11,0.2)]" />
@@ -435,6 +535,10 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                   onWaiting={() => setIsVideoBuffering(true)}
                   onPlaying={() => setIsVideoBuffering(false)}
                   onCanPlay={() => setIsVideoBuffering(false)}
+                  onEnded={() => {
+                    setIsPlaying(false);
+                    resetSessionForReplay();
+                  }}
                   onClick={togglePlay}
                   x-webkit-airplay="allow"
                   controlsList="nodownload"
@@ -444,7 +548,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 />
 
                 {/* Atmospheric Buffering Reel Spinner */}
-                {isVideoBuffering && (
+                {isVideoBuffering && !isPreRollVisible && (
                   <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-30 pointer-events-none animate-fade-in">
                     <div className="w-12 h-12 rounded-full border-3 border-amber-500/20 border-t-amber-400 animate-spin" />
                     <span className="text-[10px] font-mono text-amber-300 font-bold uppercase tracking-widest">
@@ -454,10 +558,11 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 )}
 
                 {/* CUSTOM STUDIO-STANDARD PLAYBACK SCRUBBER PILL OVERLAY */}
-                <div className="absolute bottom-28 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all opacity-90 group-hover:opacity-100">
+                <div className={`absolute bottom-28 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all ${isStageFullscreen && !showStageChrome ? 'opacity-0 pointer-events-none' : 'opacity-90 group-hover:opacity-100'}`}>
                   <button
                     type="button"
                     onClick={togglePlay}
+                    aria-label={isPlaying ? 'Pause' : 'Play'}
                     className="w-9 h-9 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center font-bold shrink-0 transition-transform active:scale-95 cursor-pointer shadow-lg"
                   >
                     {isPlaying ? <Pause className="w-4 h-4 fill-current text-slate-950" /> : <Play className="w-4 h-4 fill-current ml-0.5 text-slate-950" />}
@@ -499,7 +604,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                             <Airplay className="w-3.5 h-3.5" />
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-2.5 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                        <TooltipContent portalContainer={stageContainerRef.current} side="top" className="bg-slate-950/95 border border-white/10 p-2.5 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
                           <p className="font-mono text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1">AirPlay Streaming</p>
                           <p className="text-[10px] text-white/70">Mirror playback directly to Apple TV or AirPlay 2 compatible screens.</p>
                         </TooltipContent>
@@ -517,7 +622,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                             <Cast className="w-3.5 h-3.5" />
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-2.5 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                        <TooltipContent portalContainer={stageContainerRef.current} side="top" className="bg-slate-950/95 border border-white/10 p-2.5 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
                           <p className="font-mono text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1">Google Cast</p>
                           <p className="text-[10px] text-white/70">Stream master reel to Chromecast or Android TV devices.</p>
                         </TooltipContent>
@@ -525,6 +630,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                     </TooltipProvider>
                     <button
                       type="button"
+                      data-testid="HS_CINEMA_FULLSCREEN_BTN"
                       onClick={toggleFullscreen}
                       className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
                       title="Fullscreen"
@@ -535,11 +641,89 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 </div>
               </div>
             ) : audioUrl ? (
-              <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/30">
-                <div className="w-32 h-32 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30 animate-pulse">
-                   <Layers className="w-12 h-12 text-amber-400" />
+              <div
+                onClick={togglePlay}
+                className="relative w-full h-full flex flex-col items-center justify-center gap-5 p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/30 cursor-pointer"
+              >
+                {imageUrl && (
+                  <>
+                    <img
+                      src={imageUrl}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110 pointer-events-none"
+                    />
+                    <img
+                      src={imageUrl}
+                      alt={memory.title}
+                      className="relative z-10 max-h-[45%] w-auto rounded-2xl border border-amber-500/35 shadow-2xl object-contain"
+                    />
+                  </>
+                )}
+                {!imageUrl && (
+                  <div className="relative z-10 w-28 h-28 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30 animate-pulse">
+                    <Layers className="w-10 h-10 text-amber-400" />
+                  </div>
+                )}
+                <audio
+                  ref={audioRef}
+                  src={audioUrl}
+                  preload="auto"
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onEnded={() => {
+                    setIsPlaying(false);
+                    resetSessionForReplay();
+                  }}
+                />
+                {/* Shared Studio-Standard Playback Scrubber for Audio-Only Voice Memoirs */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className={`absolute bottom-28 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all ${isStageFullscreen && !showStageChrome ? 'opacity-0 pointer-events-none' : 'opacity-90 group-hover:opacity-100'}`}
+                >
+                  <button
+                    type="button"
+                    data-testid="HS_CINEMA_AUDIO_PLAY_BTN"
+                    onClick={togglePlay}
+                    aria-label={isPlaying ? 'Pause' : 'Play'}
+                    className="w-9 h-9 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center font-bold shrink-0 transition-transform active:scale-95 cursor-pointer shadow-lg"
+                  >
+                    {isPlaying ? <Pause className="w-4 h-4 fill-current text-slate-950" /> : <Play className="w-4 h-4 fill-current ml-0.5 text-slate-950" />}
+                  </button>
+                  <div className="flex-1 flex flex-col justify-center gap-1">
+                    <div className="flex items-center justify-between text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest">
+                      <span>Spoken Voice Memoir</span>
+                      <span>{formatTime(currentTime)} / {formatTime(effectiveVideoDuration)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={effectiveVideoDuration > 0 && isFinite(effectiveVideoDuration) ? effectiveVideoDuration : (currentTime > 0 ? currentTime + 10 : 100)}
+                      value={currentTime}
+                      onChange={handleSeek}
+                      className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={toggleMute}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
+                      title="Toggle Mute"
+                    >
+                      {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="HS_CINEMA_FULLSCREEN_BTN"
+                      onClick={toggleFullscreen}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
+                      title="Fullscreen"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <audio src={audioUrl} controls className="w-full max-w-md" />
               </div>
             ) : imageUrl ? (
               <div className="relative w-full h-full">
@@ -594,7 +778,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
             {/* FLOATING STAGE CONTROLS TOOLBAR — Director Mode Only */}
             {isDirector && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/95 border border-amber-500/40 rounded-full px-4 py-2 backdrop-blur-2xl shadow-[0_0_40px_rgba(245,158,11,0.25)] flex items-center gap-3 z-50">
+            <div className={`absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/95 border border-amber-500/40 rounded-full px-4 py-2 backdrop-blur-2xl shadow-[0_0_40px_rgba(245,158,11,0.25)] flex items-center gap-3 z-50 transition-opacity ${isStageFullscreen && !showStageChrome ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <div className="flex items-center gap-2 pr-3 border-r border-white/10 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">
                 <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                 <span>Stage Controls</span>
@@ -603,7 +787,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
               {/* Share Link Button */}
               <button
                 type="button"
-                onClick={() => setIsShareModalOpen(true)}
+                onClick={openShareModalSafely}
                 className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-white/10 hover:scale-105"
               >
                 <Share2 className="w-3.5 h-3.5 text-amber-400" />
@@ -668,7 +852,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                       <span>Cast to TV</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-3.5 text-left max-w-xs backdrop-blur-xl shadow-2xl z-[10002] rounded-xl">
+                  <TooltipContent portalContainer={stageContainerRef.current} side="top" className="bg-slate-950/95 border border-white/10 p-3.5 text-left max-w-xs backdrop-blur-xl shadow-2xl z-[10002] rounded-xl">
                     <p className="text-[10px] font-mono tracking-[0.15em] text-amber-400 font-bold uppercase mb-2 flex items-center gap-1.5">
                       <Tv className="w-3.5 h-3.5" />
                       How to Stream to Your TV
@@ -730,10 +914,10 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
             {/* GUEST VIEWER TOOLBAR — Share & Bookmark only */}
             {!isDirector && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/95 border border-amber-500/40 rounded-full px-4 py-2 backdrop-blur-2xl shadow-[0_0_40px_rgba(245,158,11,0.25)] flex items-center gap-3 z-50">
+            <div className={`absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/95 border border-amber-500/40 rounded-full px-4 py-2 backdrop-blur-2xl shadow-[0_0_40px_rgba(245,158,11,0.25)] flex items-center gap-3 z-50 transition-opacity ${isStageFullscreen && !showStageChrome ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <button
                 type="button"
-                onClick={() => setIsShareModalOpen(true)}
+                onClick={openShareModalSafely}
                 className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-white/10 hover:scale-105"
               >
                 <Share2 className="w-3.5 h-3.5 text-amber-400" />

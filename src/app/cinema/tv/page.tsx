@@ -5,6 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Tv, Cast, X, Volume2, VolumeX, Sparkles, Film, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import {
+  CinemaTitleOverlays,
+  useCinemaPreRollController,
+} from '@/components/cinema/CinemaTitleOverlays';
 
 function SmartTVPlayerContent() {
   const searchParams = useSearchParams();
@@ -170,23 +174,31 @@ function SmartTVPlayerContent() {
     return () => window.removeEventListener('keydown', handleTVRemoteKey);
   }, [duration, isPlaying, isMuted]);
 
+  const {
+    phase: preRollPhase,
+    isPreRollVisible,
+    triggerPlay,
+    skipPreRoll,
+    pausePlayback,
+    resetSessionForReplay,
+  } = useCinemaPreRollController({
+    sessionKey: memoryId || 'tv_empty',
+    isOpen: Boolean(memory),
+    hasBurnedInTitleSlate: Boolean((memory as any)?.hasBurnedInTitleSlate),
+    getMediaElement: () => videoRef.current,
+    onPlaybackStateChange: (playing) => {
+      setIsPlaying(playing);
+      if (playing) setIsBuffering(false);
+    },
+  });
+
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
+      if (isPlaying || isPreRollVisible) {
+        pausePlayback();
       } else {
-        setIsBuffering(true);
-        videoRef.current.play()
-          .then(() => {
-            setIsPlaying(true);
-            setIsBuffering(false);
-          })
-          .catch((err) => {
-            console.warn('[SmartTV] Play failed:', err);
-            setIsPlaying(false);
-            setIsBuffering(false);
-          });
+        setIsBuffering(false);
+        triggerPlay();
       }
     }
   };
@@ -241,32 +253,13 @@ function SmartTVPlayerContent() {
         (m: any) => m.type === 'image' || m.url?.endsWith('.jpg') || m.url?.endsWith('.png') || m.url?.endsWith('.webp')
       )?.url;
 
-  // Autoplay handler with graceful fallback for browser policies
+  // Autoplay handler with 3.0s Title Slate pre-roll & graceful fallback for TV browser policies
   useEffect(() => {
     if (videoUrl && videoRef.current) {
-      setIsBuffering(true);
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-            setIsBuffering(false);
-          })
-          .catch((err) => {
-            console.warn('[SmartTV] Autoplay blocked by browser policy, waiting for user gesture:', err);
-            setIsPlaying(false);
-            setIsBuffering(false);
-          });
-      }
-
-      // Safety timeout: ensure buffering overlay never gets permanently stuck
-      const safetyTimeout = setTimeout(() => {
-        setIsBuffering(false);
-      }, 5000);
-
-      return () => clearTimeout(safetyTimeout);
+      setIsBuffering(false);
+      triggerPlay();
     }
-  }, [videoUrl]);
+  }, [videoUrl, triggerPlay]);
 
   if (loading) {
     return (
@@ -302,7 +295,28 @@ function SmartTVPlayerContent() {
     <div className="w-screen h-screen bg-black overflow-hidden relative font-sans select-none">
       {/* 4K Background Player */}
       {videoUrl ? (
-        <div className="relative w-full h-full cursor-pointer" onClick={togglePlay}>
+        <div className="relative w-full h-full cursor-pointer group" onClick={togglePlay}>
+          <CinemaTitleOverlays
+            meta={{
+              title: memory.title,
+              chapterTitle: memory.chapterTitle,
+              location: memory.location,
+              country: memory.country,
+              year: memory.dateComponents?.year || memory.year,
+              age: memory.narratorAgeAtTime,
+              narratorName: memory.credits?.director || memory.credits?.starring,
+              backdropUrl: posterImageUrl,
+              hasBurnedInTitleSlate: Boolean(memory.hasBurnedInTitleSlate),
+            }}
+            phase={preRollPhase}
+            isPlaying={isPlaying}
+            currentTime={currentTime}
+            onSkipPreRoll={skipPreRoll}
+            showTopMarquee={!showHud}
+            marqueeClassName="top-8 inset-x-20"
+            lowerThirdClassName="bottom-44 left-12"
+          />
+
           <video
             ref={videoRef}
             src={videoUrl}
@@ -317,7 +331,13 @@ function SmartTVPlayerContent() {
               setIsPlaying(true);
               setIsBuffering(false);
             }}
-            onPause={() => setIsPlaying(false)}
+            onPause={() => {
+              if (!isPreRollVisible) setIsPlaying(false);
+            }}
+            onEnded={() => {
+              setIsPlaying(false);
+              resetSessionForReplay();
+            }}
             playsInline
             x-webkit-airplay="allow"
             controlsList="nodownload"
