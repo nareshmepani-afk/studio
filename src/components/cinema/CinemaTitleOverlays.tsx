@@ -355,6 +355,7 @@ export interface CinemaTitleOverlaysProps {
   showTopMarquee?: boolean;
   marqueeClassName?: string;
   lowerThirdClassName?: string;
+  skipIntroClassName?: string;
 }
 
 export const CinemaTitleOverlays: React.FC<CinemaTitleOverlaysProps> = ({
@@ -366,6 +367,7 @@ export const CinemaTitleOverlays: React.FC<CinemaTitleOverlaysProps> = ({
   showTopMarquee = true,
   marqueeClassName = 'top-5 inset-x-16 sm:inset-x-40',
   lowerThirdClassName = 'bottom-40 left-5 sm:left-8',
+  skipIntroClassName = 'top-3 right-3 sm:top-5 sm:right-5',
 }) => {
   const meta = useMemo(() => normaliseCinemaSlateMeta(rawMeta), [rawMeta]);
 
@@ -417,7 +419,8 @@ export const CinemaTitleOverlays: React.FC<CinemaTitleOverlaysProps> = ({
             phase === 'dissolving' ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
         >
-          {/* Blurred Archival Photo / Poster Backdrop with Obsidian & Gold Fallback */}
+          {/* Blurred Archival Photo / Poster Backdrop with Solid Base & Obsidian Fallback */}
+          <div className="absolute inset-0 bg-slate-950 pointer-events-none" />
           {meta.backdropImageUrl ? (
             <>
               <img
@@ -438,39 +441,39 @@ export const CinemaTitleOverlays: React.FC<CinemaTitleOverlaysProps> = ({
 
           {/* Subtle Radial Candlelight Glow & Filmic Hairline Frame */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/15 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute inset-4 sm:inset-6 rounded-2xl border border-amber-400/20 pointer-events-none" />
+          <div className="absolute inset-2.5 sm:inset-6 rounded-2xl border border-amber-400/20 pointer-events-none" />
 
           {/* Centre Heirloom Typography Stack */}
-          <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center space-y-3 sm:space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/35 text-amber-300 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-[0.3em]">
+          <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center space-y-1.5 sm:space-y-4 px-2">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-amber-500/15 border border-amber-400/35 text-amber-300 text-[8px] sm:text-[10px] font-mono font-bold uppercase tracking-[0.22em] sm:tracking-[0.3em] max-w-full">
               <Film className="w-3 h-3 text-amber-400 shrink-0" />
-              <span>{meta.chapterOverline}</span>
+              <span className="truncate">{meta.chapterOverline}</span>
             </div>
 
-            <h2 className="text-2xl sm:text-4xl md:text-5xl font-serif italic text-white tracking-wide leading-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.85)]">
+            <h2 className="text-xl sm:text-4xl md:text-5xl font-serif italic text-white tracking-wide leading-tight drop-shadow-[0_4px_20px_rgba(0,0,0,0.85)]">
               {meta.title}
             </h2>
 
-            <div className="h-px w-16 bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
+            <div className="h-px w-12 sm:w-16 bg-gradient-to-r from-transparent via-amber-400/70 to-transparent" />
 
             {meta.coordinatesLine && (
-              <p className="text-xs sm:text-sm font-mono font-semibold uppercase tracking-[0.25em] text-amber-200/95 flex items-center justify-center gap-2 flex-wrap">
-                {meta.locationLabel && <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+              <p className="text-[10px] sm:text-sm font-mono font-semibold uppercase tracking-[0.2em] sm:tracking-[0.25em] text-amber-200/95 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
+                {meta.locationLabel && <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />}
                 {!meta.locationLabel && meta.yearLabel && (
-                  <CalendarDays className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <CalendarDays className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
                 )}
                 <span>{meta.coordinatesLine}</span>
               </p>
             )}
 
             {meta.narratorAttribution && (
-              <p className="text-xs sm:text-sm font-serif italic text-stone-300">
+              <p className="text-[11px] sm:text-sm font-serif italic text-stone-300">
                 {meta.narratorAttribution}
               </p>
             )}
           </div>
 
-          {/* Skip Intro Trigger */}
+          {/* Skip Intro Trigger (Top-Right clear of centre credits & bottom stage controls) */}
           <button
             type="button"
             data-testid="HS_CINEMA_SKIP_INTRO_BTN"
@@ -479,7 +482,7 @@ export const CinemaTitleOverlays: React.FC<CinemaTitleOverlaysProps> = ({
               e.stopPropagation();
               onSkipPreRoll();
             }}
-            className="absolute bottom-6 right-6 sm:bottom-8 sm:right-8 z-20 min-h-[40px] px-3.5 py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 border border-amber-400/40 text-amber-200 hover:text-white text-[11px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-lg"
+            className={`absolute ${skipIntroClassName} z-20 min-h-[34px] sm:min-h-[40px] px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-slate-950/90 hover:bg-slate-900 border border-amber-400/45 text-amber-200 hover:text-white text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-lg`}
           >
             <span>Skip Intro</span>
             <SkipForward className="w-3.5 h-3.5 text-amber-400" />

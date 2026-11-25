@@ -517,6 +517,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 showTopMarquee={true}
                 marqueeClassName="top-5 inset-x-16 sm:inset-x-40"
                 lowerThirdClassName="bottom-44 left-5 sm:left-8"
+                skipIntroClassName="top-6 right-20 xl:right-8"
               />
             )}
 

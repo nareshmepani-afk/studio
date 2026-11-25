@@ -64,7 +64,18 @@ function buildFallbackCurriculumMeta(
   let candidateId = sessionId || null;
   if (typeof window !== 'undefined') {
     const params = new URLSearchParams(window.location.search);
-    candidateId = params.get('promptId') || params.get('id') || candidateId;
+    const pathTail = window.location.pathname.split('/').filter(Boolean).pop() || null;
+    candidateId = params.get('promptId') || params.get('id') || pathTail || candidateId;
+  }
+
+  if (candidateId && /einstein/i.test(candidateId)) {
+    return {
+      title: 'The Pocket Compass',
+      chapterTitle: 'Historical Experiments (Demo)',
+      location: 'Ulm, Germany',
+      year: '1884',
+      age: 5,
+    };
   }
 
   const matchedScene = candidateId

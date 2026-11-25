@@ -522,8 +522,8 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
         </div>
 
         {/* Buttons Row */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 max-w-full">
             <button
               type="button"
               onClick={togglePlayPause}
@@ -570,11 +570,12 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                   onOpenBonusDrawer();
                 }}
                 data-hotspot-id="HS_FIRESIDE_LIGHTBOX_BONUS_BTN"
-                className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-xs font-semibold flex items-center gap-2 transition cursor-pointer active:scale-95"
+                className="min-h-[48px] px-3 sm:px-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-amber-500/40 text-amber-300 hover:text-amber-200 text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition cursor-pointer active:scale-95"
                 title="Open Bonus Memory Drawer to add a recollection note or photo"
               >
-                <PlusCircle className="w-4 h-4 text-amber-400" />
-                <span>Open Bonus Memory Drawer</span>
+                <PlusCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="sm:hidden">Bonus Note</span>
+                <span className="hidden sm:inline">Open Bonus Memory Drawer</span>
               </button>
             )}
 
