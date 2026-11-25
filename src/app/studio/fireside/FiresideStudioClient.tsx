@@ -317,6 +317,7 @@ export default function FiresideStudioClient() {
   // Unified Curriculum Vault Hook (MW-88-T1, MW-88-T2 & MW-88-T5: Bi-Directional Bridge + Fireside 2.0 Entitlement Shield)
   const {
     scenes,
+    isLoading: isVaultLoading,
     getSceneMemory,
     saveSceneTake,
     discardSceneTake,
@@ -1258,8 +1259,8 @@ export default function FiresideStudioClient() {
     : effectiveActStage === 4
     ? 'Next: Premiere'
     : activeSceneMemory?.status === 'published'
-    ? 'View in Cinema'
-    : 'Publish Premiere';
+    ? 'Open Cinema'
+    : 'Premiere';
 
   const handleBottomPrimaryAction = () => {
     if (isActiveSceneLockedPreview) {
@@ -1644,6 +1645,7 @@ export default function FiresideStudioClient() {
         {activeView === 'cinema' ? (
           <FiresideCinemaView
             directorName={(user as any)?.displayName || null}
+            isLoading={isVaultLoading}
             wovenCount={completedScenes}
             totalScenes={totalScenes}
             wovenPercent={vaultProgressPercent}

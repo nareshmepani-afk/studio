@@ -1826,8 +1826,17 @@ export function SingleCardPromptCarousel({
                     >
                       <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
                       <span className="truncate max-w-[200px]">
-                        {activeCoordinateLocation || 'Where & When'}
-                        {activeCoordinateYear ? ` · ${activeCoordinateYear}` : ''}
+                        {activeCoordinateLocation &&
+                        activeCoordinateLocation !== 'undefined' &&
+                        activeCoordinateLocation !== 'none'
+                          ? activeCoordinateLocation
+                          : 'Where & When'}
+                        {activeCoordinateYear &&
+                        activeCoordinateYear !== 'none' &&
+                        activeCoordinateYear !== '-' &&
+                        activeCoordinateYear !== 'undefined'
+                          ? ` · ${activeCoordinateYear}`
+                          : ''}
                       </span>
                     </button>
 

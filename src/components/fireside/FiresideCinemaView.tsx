@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 
 export interface FiresideCinemaViewProps {
   directorName?: string | null;
+  isLoading?: boolean;
   wovenCount: number;
   totalScenes: number;
   wovenPercent: number;
@@ -31,6 +32,7 @@ export interface FiresideCinemaViewProps {
 
 export const FiresideCinemaView: React.FC<FiresideCinemaViewProps> = ({
   directorName,
+  isLoading = false,
   wovenCount,
   totalScenes,
   wovenPercent,
@@ -195,7 +197,14 @@ export const FiresideCinemaView: React.FC<FiresideCinemaViewProps> = ({
       </div>
 
       {/* Reel Cards */}
-      {visibleItems.length === 0 ? (
+      {isLoading && visibleItems.length === 0 ? (
+        <div className="p-8 rounded-3xl bg-stone-950/90 border border-stone-800 text-center space-y-3">
+          <div className="w-7 h-7 rounded-full border-2 border-amber-400 border-t-transparent animate-spin mx-auto" />
+          <p className="text-xs font-mono text-amber-200/80">
+            Loading your Heirloom Screening Room...
+          </p>
+        </div>
+      ) : visibleItems.length === 0 ? (
         <div className="p-8 rounded-3xl bg-stone-950/90 border border-stone-800 text-center space-y-3">
           <Sparkles className="w-8 h-8 text-amber-400 mx-auto" />
           <h3 className="text-base font-serif text-white">
@@ -276,8 +285,16 @@ export const FiresideCinemaView: React.FC<FiresideCinemaViewProps> = ({
                     </h3>
                     <p className="text-[11px] font-mono text-amber-300/90">
                       {[
-                        item.memory.location,
-                        item.memory.year ? String(item.memory.year) : null,
+                        item.memory.location &&
+                        item.memory.location !== 'undefined' &&
+                        item.memory.location !== 'none'
+                          ? item.memory.location
+                          : null,
+                        item.memory.year &&
+                        String(item.memory.year) !== 'undefined' &&
+                        String(item.memory.year) !== 'none'
+                          ? String(item.memory.year)
+                          : null,
                         formatDuration(activeTake?.durationSeconds),
                       ]
                         .filter(Boolean)

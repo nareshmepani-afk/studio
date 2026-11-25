@@ -62,9 +62,18 @@ export function PromptCard(props: PromptCardProps) {
   const router = useRouter();
   const [isBriefOpen, setIsBriefOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isMobileScreen, setIsMobileScreen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const syncViewport = () => {
+      if (typeof window !== 'undefined') {
+        setIsMobileScreen(window.innerWidth < 768);
+      }
+    };
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    return () => window.removeEventListener('resize', syncViewport);
   }, []);
 
 
@@ -176,9 +185,16 @@ export function PromptCard(props: PromptCardProps) {
   );
 
   const targetRouteId = (isCompleted && memoryId) ? memoryId : promptId;
-  const primaryHref = isInCinema
+  const primaryHref = isMobileScreen && canAccess
+    ? isInCinema
+      ? `/studio/fireside?view=cinema&id=${encodeURIComponent(promptId)}`
+      : `/studio/fireside?id=${encodeURIComponent(promptId)}`
+    : isInCinema
     ? `/cinema/tv?id=${memoryId}`
     : `/studio/production/${targetRouteId}${isCompleted ? '?act=1' : ''}`;
+  const secondaryEditHref = isMobileScreen
+    ? `/studio/fireside?id=${encodeURIComponent(promptId)}`
+    : `/studio/production/${targetRouteId}?act=1`;
 
   const mainButton = (
     <Button
@@ -223,7 +239,7 @@ export function PromptCard(props: PromptCardProps) {
         <Link 
           href={primaryHref}
           onClick={handleAction}
-          className="absolute inset-0 z-0"
+          className="absolute inset-0 z-10"
           prefetch={true}
         />
         
@@ -325,7 +341,7 @@ export function PromptCard(props: PromptCardProps) {
                    <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className="relative z-10">
+                          <div className="relative z-20">
                             <Button 
                               variant="ghost" 
                               size="icon" 
@@ -403,7 +419,7 @@ export function PromptCard(props: PromptCardProps) {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="relative z-10">
+                        <div className="relative z-20">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -426,7 +442,7 @@ export function PromptCard(props: PromptCardProps) {
               <div className="flex items-center gap-2">
                   {isInCinema && canAccess && (
                     <Link
-                      href={`/studio/production/${targetRouteId}?act=1`}
+                      href={secondaryEditHref}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (isMobileViewport()) {
