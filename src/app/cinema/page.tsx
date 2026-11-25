@@ -885,7 +885,7 @@ function CinemaContent() {
               <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.25em] sm:tracking-[0.5em] font-black text-white/60">All scenes recorded in high fidelity</p>
            </div>
            <p className="text-xs max-w-md mx-auto leading-relaxed text-white/40 font-light px-4">
-              Your memory weaving journey is approximately {stats.completionPercentage}% complete. 
+              Your memory weaving journey: {stats.wovenCount ?? stats.recordedCount} of {stats.totalPossible + 1} Woven ({stats.completionPercentage}%){stats.published > 0 ? ` • ${stats.published} Premiered in Cinema.` : '.'}
               {stats.totalRequests > 0 && ` You have ${stats.totalRequests} pending story requests from your audience.`}
            </p>
         </div>

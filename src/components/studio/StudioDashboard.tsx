@@ -121,7 +121,7 @@ export function StudioDashboard({
     // On mobile viewports (< 768px), route to Fireside Recording Booth
     // On desktop viewports (>= 768px), route to Desktop Production Deck
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      router.push(`/studio/fireside?id=${targetId}`);
+      router.push(`/studio/fireside?id=${encodeURIComponent(promptId)}`);
     } else {
       router.push(`/studio/production/${targetId}${actParam}`);
     }
@@ -207,7 +207,7 @@ export function StudioDashboard({
                   >
                     <Mic className="w-4 h-4 mr-2 text-amber-400 shrink-0" />
                     <span className="hidden sm:inline">🎙️ Fireside Studio Booth</span>
-                    <span className="inline sm:hidden">🎙️ Fireside</span>
+                    <span className="inline sm:hidden">Fireside</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">
@@ -224,13 +224,19 @@ export function StudioDashboard({
                 <TooltipTrigger asChild>
                   <Button
                     variant="outline"
-                    onClick={() => router.push('/studio/production/p_einstein')}
+                    onClick={() => {
+                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                        router.push('/studio/fireside?soundcheck=true');
+                      } else {
+                        router.push('/studio/production/p_einstein');
+                      }
+                    }}
                     data-hotspot-id="HS_STUDIO_TRY_DEMO_BTN"
                     className="flex-1 sm:flex-none border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 hover:text-white hover:border-indigo-400/60 transition-all font-bold tracking-tight shadow-[0_0_15px_rgba(99,102,241,0.15)]"
                   >
                     <FlaskConical className="w-4 h-4 mr-2 text-indigo-400 shrink-0" />
                     <span className="hidden sm:inline">✨ Try Einstein Demo</span>
-                    <span className="inline sm:hidden">🧪 Demo</span>
+                    <span className="inline sm:hidden">Demo</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">

@@ -380,8 +380,12 @@ export function useStudioData(userId: string | undefined) {
     const recordedCount = videoCount + audioCount;
     const textDraftsCount = memories.filter(m => !isVideoMemory(m) && !isAudioMemory(m)).length;
 
-    // Exclude demo module from total possible personal memoir scenes (31 narrative scenes)
+    // Exclude demo module from total possible personal memoir scenes (30 narrative scenes; 31 total curriculum scenes)
     const totalPossible = MASTER_STORY_STRUCTURE.filter(p => !p.isDemo).reduce((acc, part) => acc + part.scenes.length, 0);
+    const totalCurriculumScenes = MASTER_STORY_STRUCTURE.reduce((acc, part) => acc + part.scenes.length, 0);
+    const wovenCount = memories.filter(m => !(m as any).isDemo && (m as any).sceneId !== 'prologue-flight-simulator').length;
+    const wovenPercentage = totalCurriculumScenes > 0 ? Math.min(100, Math.round((wovenCount / totalCurriculumScenes) * 100)) : 0;
+    const premieredPercentage = totalPossible > 0 ? Math.round((published / totalPossible) * 100) : 0;
 
     return {
       published,
@@ -392,7 +396,10 @@ export function useStudioData(userId: string | undefined) {
       recordedCount,
       textDraftsCount,
       totalPossible,
-      completionPercentage: totalPossible > 0 ? Math.round((published / totalPossible) * 100) : 0,
+      wovenCount,
+      wovenPercentage,
+      premieredPercentage,
+      completionPercentage: wovenPercentage,
       totalRequests: requests.length
     };
   }, [memories, requests]);

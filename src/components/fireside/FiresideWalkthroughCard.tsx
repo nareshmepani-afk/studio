@@ -84,7 +84,7 @@ export const FiresideWalkthroughCard: React.FC<FiresideWalkthroughCardProps> = (
           style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
           className="w-full min-h-[56px] px-5 py-3 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 active:scale-98 border border-amber-400/40 text-amber-200 font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-md shadow-amber-500/10"
         >
-          <span>[ 🎙️ 📹 Free Walkthrough &amp; 30s Soundcheck ]</span>
+          <span><span className="sr-only">[ </span>🎙️ 📹 Free Walkthrough &amp; 30s Soundcheck<span className="sr-only"> ]</span></span>
           {warmupCompleted && (
             <span className="ml-1 text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
               ✓ Ready
@@ -155,7 +155,7 @@ export const FiresideWalkthroughCard: React.FC<FiresideWalkthroughCardProps> = (
             style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
             className="flex-1 min-h-[56px] px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-400 text-stone-950 font-black text-xs sm:text-sm font-mono uppercase tracking-wider shadow-[0_0_25px_rgba(245,158,11,0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
           >
-            <span>[ 🎬 Step into 30s Practice Walkthrough ]</span>
+            <span>🎬 Step into 30s Practice Walkthrough</span>
           </button>
 
           <button
@@ -165,7 +165,7 @@ export const FiresideWalkthroughCard: React.FC<FiresideWalkthroughCardProps> = (
             onClick={handleDismiss}
             className="min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-900/80 hover:bg-stone-800 border border-stone-800 text-stone-400 hover:text-stone-200 font-mono text-xs uppercase tracking-widest transition-colors flex items-center justify-center cursor-pointer"
           >
-            <span>[ ✕ Dismiss ]</span>
+            <span>✕ Dismiss</span>
           </button>
         </div>
       </div>

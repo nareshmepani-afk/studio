@@ -52,6 +52,7 @@ export interface FiresideCinemaLightboxProps {
   durationSeconds?: number;
   soundtrackUrl?: string | null;
   moodTag?: StoryMoodTag;
+  posterUrl?: string | null;
 }
 
 export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
@@ -67,6 +68,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   durationSeconds = 0,
   soundtrackUrl,
   moodTag,
+  posterUrl,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -306,12 +308,13 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
           className="w-full aspect-[16/9] sm:aspect-[2.39/1] max-h-[70vh] bg-stone-950 rounded-2xl sm:rounded-3xl border border-stone-800/80 shadow-2xl relative overflow-hidden flex items-center justify-center"
         >
           {mediaMode === 'video' && mediaUrl ? (
-            <div className="w-full h-full relative flex items-center justify-center bg-black">
+            <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-b from-stone-900 via-stone-950 to-black">
               <video
                 ref={videoRef}
                 src={mediaUrl}
+                poster={posterUrl || photoUrl || undefined}
                 playsInline
-                preload="metadata"
+                preload="auto"
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={() => setIsPlaying(false)}
@@ -501,8 +504,8 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                 }}
                 className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition cursor-pointer active:scale-95"
               >
-                <Trash2 className="w-4 h-4 text-rose-400" />
-                <span>[ 🗑️ Discard Take ]</span>
+                <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>Discard Take</span>
               </button>
             ) : (
               <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-xl bg-stone-900/95 border border-rose-500/40 animate-in fade-in duration-150">
@@ -520,7 +523,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                   }}
                   className="min-h-[40px] px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
                 >
-                  [ Confirm Discard ]
+                  Confirm Discard
                 </button>
                 <button
                   type="button"
@@ -529,7 +532,7 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
                   onClick={() => setShowDiscardConfirm(false)}
                   className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold transition cursor-pointer"
                 >
-                  [ Cancel ]
+                  Cancel
                 </button>
               </div>
             )}

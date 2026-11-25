@@ -20,7 +20,20 @@ import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { useFiresideSync } from '@/hooks/useFiresideSync';
 import { useFoldableCanvas } from '@/hooks/useFoldableCanvas';
 import { useCurriculumVault, StoryMoodTag, isSceneCompleted, isSceneMasterProtected, resolveEditingAuthority, EditingAuthority } from '@/hooks/useCurriculumVault';
-import { FiresideAuthHeader } from '@/components/fireside/FiresideAuthHeader';
+import { FiresideAuthHeader, isProductionHostname } from '@/components/fireside/FiresideAuthHeader';
+import { isProductionProject, isStagingProject, resolveProjectId } from '@/config/environment';
+import { MASTER_STORY_STRUCTURE, getSceneById, getPartForScene, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
+import { FiresideMobileTopBar } from '@/components/fireside/FiresideMobileTopBar';
+import {
+  FiresideChapterSheet,
+  FiresideLangSheet,
+  FiresideStudioMenuSheet,
+  FiresideUpgradeSheet,
+  FiresideWelcomeSheet,
+  FIRESIDE_WELCOME_DISMISSED_KEY,
+} from '@/components/fireside/FiresideMobileSheets';
+import { FiresideCinemaView, FiresideBottomBar } from '@/components/fireside/FiresideCinemaView';
+import { FiresideWarmupModal } from '@/components/fireside/FiresideWarmupModal';
 import {
   FiresideModeSwitch,
   FIRESIDE_MODE_STORAGE_KEY,
@@ -60,7 +73,6 @@ import {
 import { cn } from '@/lib/utils';
 import { applyTheatricalSlashes, renderPrompterCadenceHtml } from '@/utils/scriptFormatter';
 import { uploadAudioWithResiliency, uploadVideoWithResiliency } from '@/lib/media/chunkedAudioUpload';
-import { getSceneById, getPartForScene, resolveSceneFromPromptId } from '@/lib/curriculum/masterStoryStructure';
 
 function resolveInitialSpark(targetParam?: string): FiresidePromptSpark {
   if (targetParam) {
@@ -162,7 +174,7 @@ const FiresidePrompterBanner: React.FC<FiresidePrompterBannerProps> = ({
 
 export default function FiresideStudioClient() {
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, logout } = useAuth() as any;
   const { logEvent, traceInteraction } = useJourneyLogger(user?.uid || null);
 
   // Global Capturing Click Listener for Hotspot Telemetry (Rule 8: Zero-Footprint Telemetry)
@@ -212,7 +224,20 @@ export default function FiresideStudioClient() {
   const [pinnedPrompterQuestion, setPinnedPrompterQuestion] = useState<string | null>(null);
   const [bonusDrawerSeedPrompt, setBonusDrawerSeedPrompt] = useState<string | null>(null);
   const [editingBonusNote, setEditingBonusNote] = useState<BonusMemoryNote | null>(null);
-  const [selectedActStage, setSelectedActStage] = useState<1 | 2 | 3 | 4 | undefined>(undefined);
+  const [selectedActStage, setSelectedActStage] = useState<1 | 2 | 3 | 4 | 5 | undefined>(
+    isDirectRecordRequested ? 3 : undefined
+  );
+  const [activeView, setActiveView] = useState<'studio' | 'cinema'>(() =>
+    searchParams?.get('view') === 'cinema' ? 'cinema' : 'studio'
+  );
+  const [isChapterSheetOpen, setIsChapterSheetOpen] = useState<boolean>(false);
+  const [isLangSheetOpen, setIsLangSheetOpen] = useState<boolean>(false);
+  const [isMenuSheetOpen, setIsMenuSheetOpen] = useState<boolean>(false);
+  const [isUpgradeSheetOpen, setIsUpgradeSheetOpen] = useState<boolean>(false);
+  const [isWelcomeSheetOpen, setIsWelcomeSheetOpen] = useState<boolean>(false);
+  const [isMobileWarmupOpen, setIsMobileWarmupOpen] = useState<boolean>(() =>
+    searchParams?.get('soundcheck') === 'true'
+  );
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
@@ -289,8 +314,9 @@ export default function FiresideStudioClient() {
 
   const effectiveSceneId = selectedSpark?.linkedSceneId || activePromptSpark?.linkedSceneId || 'part-1-scene-1';
 
-  // Unified Curriculum Vault Hook (MW-88-T1, MW-88-T2 & MW-88-T5: Bi-Directional Bridge)
+  // Unified Curriculum Vault Hook (MW-88-T1, MW-88-T2 & MW-88-T5: Bi-Directional Bridge + Fireside 2.0 Entitlement Shield)
   const {
+    scenes,
     getSceneMemory,
     saveSceneTake,
     discardSceneTake,
@@ -309,9 +335,15 @@ export default function FiresideStudioClient() {
     reorderSceneTakes,
     safeDiscardTake,
     restoreOuttakeTake,
+    publishSceneToCinema,
+    getSceneAccess,
   } = useCurriculumVault({
     userId: user?.uid,
     initialSceneId: effectiveSceneId,
+    entitlementUser: user as any,
+    directorPassStatus: (user as any)?.directorPassStatus ?? null,
+    enforcePartEntitlement: true,
+    onLockedSceneWrite: () => setIsUpgradeSheetOpen(true),
   });
 
   const isCleanSlateParam = searchParams.get('clean_slate') === 'true';
@@ -477,7 +509,7 @@ export default function FiresideStudioClient() {
       if (matched) return matched.id;
     }
     return undefined;
-  }, [initialIdParam, initialPromptParam, nextPendingSceneId, activeSceneMemory]);
+  }, [initialIdParam, initialPromptParam, nextPendingSceneId, activeSceneMemory, scenes, getSceneMemory]);
 
   // Synchronise activePromptSpark when autoSparkId resolves (e.g. via deep-link or next pending scene)
   useEffect(() => {
@@ -522,8 +554,55 @@ export default function FiresideStudioClient() {
     }
     if (searchParams?.get('record') === 'true' || searchParams?.get('retake') === 'true' || searchParams?.get('act') === '3') {
       setForceRecordMode(true);
+      setSelectedActStage(3);
+    }
+    if (searchParams?.get('view') === 'cinema') {
+      setActiveView('cinema');
+    } else if (searchParams?.get('view') === 'studio') {
+      setActiveView('studio');
+    }
+    if (searchParams?.get('soundcheck') === 'true') {
+      setIsMobileWarmupOpen(true);
     }
   }, [initialLangParam, searchParams]);
+
+  const handleSelectFiresideView = useCallback((nextView: 'studio' | 'cinema') => {
+    setActiveView(nextView);
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        if (nextView === 'cinema') {
+          url.searchParams.set('view', 'cinema');
+        } else {
+          url.searchParams.delete('view');
+        }
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+    }
+  }, []);
+
+  // First-visit mobile welcome sheet (only on < 768px when user has 0 woven scenes and hasn't dismissed it)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth >= 768) return;
+    if (completedScenes > 0) return;
+    if (searchParams?.get('view') === 'cinema' || searchParams?.get('soundcheck') === 'true') return;
+    try {
+      const dismissed = window.localStorage.getItem(FIRESIDE_WELCOME_DISMISSED_KEY) === 'true';
+      if (!dismissed) {
+        setIsWelcomeSheetOpen(true);
+      }
+    } catch {}
+  }, [completedScenes, searchParams]);
+
+  const handleDismissWelcomeSheet = useCallback(() => {
+    setIsWelcomeSheetOpen(false);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(FIRESIDE_WELCOME_DISMISSED_KEY, 'true');
+      } catch {}
+    }
+  }, []);
 
   // Auto-dismiss toast when viewport reaches active studio / Heirloom Photo Digitisation hyperlink position
   useEffect(() => {
@@ -1128,10 +1207,258 @@ export default function FiresideStudioClient() {
       ? resolvedActiveSpark.localizedTitles?.en || resolvedActiveSpark.title
       : resolvedActiveSpark.localizedTitles?.[activeLanguage] || resolvedActiveSpark.title;
 
+  const activeSceneAccess = getSceneAccess(effectiveSceneId);
+  const isActiveSceneLockedPreview = Boolean(activeSceneAccess?.isLockedPreview);
+
+  const premieredCount = useMemo(() => {
+    return MASTER_STORY_STRUCTURE.filter((p) => !p.isDemo).reduce(
+      (acc, p) =>
+        acc +
+        p.scenes.filter((s) => getSceneMemory(s.id)?.status === 'published').length,
+      0
+    );
+  }, [scenes, getSceneMemory]);
+
+  const projectId = resolveProjectId();
+  const showStagingBadge =
+    !isProductionProject(projectId) &&
+    (typeof window === 'undefined' || !isProductionHostname(window.location?.hostname)) &&
+    isStagingProject(projectId);
+  const isAuthenticated = Boolean(user && !user.isAnonymous);
+  const activeTierLabel =
+    (user as any)?.membershipTier === 'generational_vault'
+      ? 'Generational Vault'
+      : (user as any)?.directorPassStatus === 'paid_host_pass_active' ||
+        (user as any)?.role === 'Super Admin'
+      ? 'Director Pass'
+      : isAuthenticated
+      ? 'Sandbox Free Forever'
+      : 'Guest Session';
+
+  const effectiveActStage: 1 | 2 | 3 | 4 | 5 =
+    selectedActStage ??
+    (activeSceneMemory?.status === 'published'
+      ? 4
+      : hasCompletedReel
+      ? 4
+      : ((activeSceneMemory?.productionStage as 1 | 2 | 3 | 4 | undefined) || 1));
+
+  const isInlineAct3Active = effectiveActStage === 3 && !isActiveSceneLockedPreview;
+
+  const bottomPrimaryCtaLabel = isActiveSceneLockedPreview
+    ? 'Unlock Chapter'
+    : effectiveActStage === 1
+    ? 'Next: Weave'
+    : effectiveActStage === 2
+    ? 'Next: Record'
+    : effectiveActStage === 3
+    ? hasCompletedReel
+      ? 'Next: Cut'
+      : 'Record Scene'
+    : effectiveActStage === 4
+    ? 'Next: Premiere'
+    : activeSceneMemory?.status === 'published'
+    ? 'View in Cinema'
+    : 'Publish Premiere';
+
+  const handleBottomPrimaryAction = () => {
+    if (isActiveSceneLockedPreview) {
+      setIsUpgradeSheetOpen(true);
+      return;
+    }
+    if (effectiveActStage === 1) {
+      setSelectedActStage(2);
+    } else if (effectiveActStage === 2) {
+      setSelectedActStage(3);
+    } else if (effectiveActStage === 3) {
+      if (hasCompletedReel) {
+        setSelectedActStage(4);
+      } else if (typeof document !== 'undefined') {
+        const el = document.getElementById('fireside-active-studio');
+        el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      }
+    } else if (effectiveActStage === 4) {
+      setSelectedActStage(5);
+    } else {
+      if (activeSceneMemory?.status === 'published') {
+        handleSelectFiresideView('cinema');
+      } else {
+        void publishSceneToCinema(effectiveSceneId);
+      }
+    }
+  };
+
+  const handleSelectSceneById = useCallback(
+    (sceneId: string) => {
+      const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === sceneId);
+      if (spark) {
+        handleActivePromptChange(spark);
+        handleSelectFiresideView('studio');
+      }
+    },
+    [handleActivePromptChange, handleSelectFiresideView]
+  );
+
+  const handleWatchSceneFromCinema = useCallback(
+    (sceneId: string) => {
+      const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === sceneId);
+      if (spark) {
+        handleActivePromptChange(spark);
+      }
+      setIsLightboxOpen(true);
+    },
+    [handleActivePromptChange]
+  );
+
+  const recorderStudioBlock = !isActiveSceneLockedPreview ? (
+    mediaMode === 'video' ? (
+      /* Video Memo Recording Surface */
+      <div id="fireside-active-studio" className="w-full pt-3 border-t border-stone-900/80 flex flex-col items-center">
+        <div className="w-full max-w-xl flex justify-end mb-2 px-1">
+          <button
+            type="button"
+            data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"
+            onClick={() => handleModeChange('audio')}
+            className="px-3 py-1.5 rounded-full bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 text-stone-300 hover:text-amber-200 text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+            title="Switch to Voice & Photos recording mode"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+            <span>Switch to Voice & Photos</span>
+          </button>
+        </div>
+        <div className="text-center mb-3 w-full max-w-xl">
+          <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
+            WhatsApp / FaceTime Video Memo
+          </p>
+          <h2 className="text-lg sm:text-xl font-serif text-stone-200">
+            {selectedSpark ? `Record: ${selectedSpark.title}` : `Record: ${activeSceneTitle}`}
+          </h2>
+          <FiresidePrompterBanner
+            prose={activeSceneMemory?.prose}
+            pinnedQuestion={pinnedPrompterQuestion}
+          />
+        </div>
+
+        <FiresideVideoRecorder
+          ref={videoRecorderRef}
+          promptSpark={selectedSpark || activePromptSpark}
+          activeLanguage={activeLanguage}
+          activeMood={activeMood}
+          activeActStage={selectedActStage as any}
+          hasExternalScriptBanner={Boolean(activeSceneMemory?.prose || pinnedPrompterQuestion)}
+          isMasterProtected={isActiveMasterProtected}
+          takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
+          onMoodChange={handleMoodChange}
+          onRecordingComplete={handleVideoRecordingComplete}
+          onKeepRecording={handleKeepVideoRecording}
+          onReset={handleResetVideoRecording}
+          onRecordingChange={setIsFiresideRecording}
+          className="w-full"
+        />
+      </div>
+    ) : (
+      /* Voice Recording & Heirloom Photo Tray Surface */
+      <>
+        {/* Physical Album Photo Capture Tray (MW-247) */}
+        <div className="w-full max-w-xl mx-auto">
+          <AlbumPhotoCaptureTray
+            ref={photoTrayRef}
+            photos={photos}
+            onPhotosChange={setPhotos}
+            maxPhotos={6}
+            suggestedPhotoPrompt={selectedSpark ? selectedSpark.recommendedPhotoPrompt[activeLanguage] : null}
+            className="w-full"
+          />
+        </div>
+
+        {/* Tactile Web Audio Voice Recorder (MW-246) */}
+        <div id="fireside-active-studio" className="w-full pt-3 border-t border-stone-900/80 flex flex-col items-center">
+          <div className="w-full max-w-xl flex justify-end mb-2 px-1">
+            <button
+              type="button"
+              data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"
+              onClick={() => handleModeChange('video')}
+              className="px-3 py-1.5 rounded-full bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 text-stone-300 hover:text-amber-200 text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Switch to Video Memo recording mode"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+              <span>Switch to Video Memo</span>
+            </button>
+          </div>
+          <div className="text-center mb-3 w-full max-w-xl">
+            <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
+              Fireside Voice Recording
+            </p>
+            <h2 className="text-lg sm:text-xl font-serif text-stone-200">
+              {selectedSpark ? `Speak: ${selectedSpark.title}` : `Speak: ${activeSceneTitle}`}
+            </h2>
+            <FiresidePrompterBanner
+              prose={activeSceneMemory?.prose}
+              pinnedQuestion={pinnedPrompterQuestion}
+            />
+          </div>
+
+          <TactileVoiceRecorder
+            ref={recorderRef}
+            promptSpark={selectedSpark || activePromptSpark}
+            activeLanguage={activeLanguage}
+            activeMood={activeMood}
+            activeActStage={selectedActStage as any}
+            photos={photos.length > 0 ? photos : activeSceneMemory?.photos || []}
+            isMasterProtected={isActiveMasterProtected}
+            takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
+            onMoodChange={handleMoodChange}
+            onRecordingComplete={handleAudioRecordingComplete}
+            onKeepRecording={handleKeepAudioRecording}
+            onReset={handleResetAudioRecording}
+            onRecordingChange={setIsFiresideRecording}
+            className="w-full"
+          />
+        </div>
+      </>
+    )
+  ) : null;
+
+  const firstPhotoForPoster = (
+    photos.length > 0
+      ? photos
+      : activeSceneMemory?.photos && activeSceneMemory.photos.length > 0
+      ? activeSceneMemory.photos
+      : []
+  )[0];
+  const resolvedPosterUrl =
+    (activeSceneMemory as any)?.posterUrl ||
+    (activeSceneMemory as any)?.thumbnailUrl ||
+    (firstPhotoForPoster
+      ? typeof firstPhotoForPoster === 'string'
+        ? firstPhotoForPoster
+        : (firstPhotoForPoster as any).storageUrl ||
+          (firstPhotoForPoster as any).localUri ||
+          (firstPhotoForPoster as any).url ||
+          null
+      : null);
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-stone-100 flex flex-col justify-between selection:bg-amber-500/30 selection:text-amber-200">
-      {/* 1. Top Navigation & Synchronisation Deck (sticky on md+ desktop, scrolls naturally on mobile to reclaim viewport) */}
+      {/* Fireside 2.0 Single 52px Mobile Top Bar (< 768px) */}
+      <FiresideMobileTopBar
+        partRoman={activePartRoman}
+        sceneNumberInPart={activeSceneNumInPart}
+        totalScenesInPart={totalScenesInActivePart}
+        isLockedPreview={isActiveSceneLockedPreview}
+        activeLanguage={activeLanguage}
+        isHybrid={isHybrid}
+        isSaving={isSaving}
+        isSynced={isSynced}
+        isOffline={isOffline}
+        onOpenChapterSheet={() => setIsChapterSheetOpen(true)}
+        onOpenLangSheet={() => setIsLangSheetOpen(true)}
+        onOpenMenuSheet={() => setIsMenuSheetOpen(true)}
+      />
+
+      {/* 1. Desktop / Unfolded Tablet Navigation & Synchronisation Deck (>= 768px) */}
       <div className="md:sticky md:top-0 z-30 w-full">
+        <div className="hidden md:block w-full">
         {/* Discreet Elder Auth Header with Desktop Stage Ingress & Dynamic Stage Badge */}
         <FiresideAuthHeader
           activePartTitle={activePartTitle}
@@ -1147,23 +1474,26 @@ export default function FiresideStudioClient() {
               <span className="font-medium text-stone-300">Fireside Studio</span>
             </span>
 
-            {/* Persistent Top-Bar Segmented Switcher Pill + 1-Tap Cinema Ingress */}
+            {/* Persistent Top-Bar Segmented Switcher Pill + 1-Tap In-App Fireside Cinema Toggle */}
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <StudioSurfaceSwitcher
                 currentSurface="fireside"
                 currentSceneId={effectiveSceneId || searchParams?.get('id') || 'part-1-scene-1'}
-                actStage={selectedActStage || 1}
+                actStage={(selectedActStage && selectedActStage <= 4 ? selectedActStage : 1) as any}
                 isRecording={isFiresideRecording}
               />
               {!isFiresideRecording && (
-                <Link
-                  href="/cinema?from=fireside"
+                <button
+                  type="button"
                   data-testid="HS_FIRESIDE_BAR2_CINEMA_LINK"
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 text-[11px] font-mono font-bold transition-colors shrink-0"
-                  title="Open Memory Cinema screening gallery"
+                  onClick={() =>
+                    handleSelectFiresideView(activeView === 'cinema' ? 'studio' : 'cinema')
+                  }
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 text-[11px] font-mono font-bold transition-colors shrink-0 cursor-pointer"
+                  title="Toggle in-app Fireside Family Cinema gallery"
                 >
-                  <span>Cinema ↗</span>
-                </Link>
+                  <span>{activeView === 'cinema' ? '← Fireside Studio' : 'Fireside Cinema'}</span>
+                </button>
               )}
             </div>
 
@@ -1221,122 +1551,17 @@ export default function FiresideStudioClient() {
             </div>
           </div>
         </div>
+        </div>
       </div>
 
       {/* 3. Primary Armchair Storytelling Surface */}
-      <main className="flex-1 flex flex-col items-center justify-center p-3 sm:p-5 w-full max-w-2xl mx-auto space-y-4">
-        {/* Unified Studio Orientation & Soundcheck Dock (MW-100-C: anchored at top on all scenes, zero vertical layout jump) */}
-        <OrientationSoundcheckDock
-          activeLanguage={activeLanguage}
-          showDesktopBanner={showDesktopBanner}
-          onDismissDesktopBanner={handleDismissDesktopBanner}
-          onWarmupComplete={() => {
-            logEvent('FIRESIDE_WARMUP_COMPLETED' as any, {
-              language: activeLanguage,
-            });
-            setNotification('Soundcheck complete. Entering Part I: Roots and Foundations.');
-            setTimeout(() => {
-              setNotification(null);
-            }, 5000);
-          }}
-        />
-
-        {/* Unified Chapter Typography + Compact Part & Scene Stepper */}
-        <div className="text-center w-full max-w-xl" data-testid="fireside-golden-thread-header">
-          <div className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 mb-1">
-            <p
-              data-testid="fireside-production-stage-label"
-              className="text-[10px] uppercase tracking-[0.25em] text-sky-400/80 font-black"
-            >
-              PRODUCTION STAGE
-            </p>
-            <span className="text-stone-600 text-[10px]">•</span>
-            <span className="text-[11px] font-mono text-amber-300/90 font-medium">
-              {completedScenes} of {totalScenes} Woven ({vaultProgressPercent}%)
-            </span>
-          </div>
-
-          <div className="flex items-center justify-center gap-2.5 sm:gap-3 w-full">
-            <button
-              type="button"
-              data-testid="HS_FIRESIDE_HEADER_PREV_SCENE"
-              onClick={handleHeaderPrevScene}
-              aria-label="Jump to previous Part Scene 1"
-              title="Jump to previous Part Scene 1"
-              style={{ minHeight: 40, minWidth: 40 }}
-              className="min-h-[40px] min-w-[40px] px-2.5 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
-            >
-              ‹
-            </button>
-
-            <div className="flex flex-col items-center min-w-0 px-1">
-              <h1
-                data-testid="fireside-chapter-primary-title"
-                className="text-base sm:text-xl font-serif text-white font-normal leading-tight"
-              >
-                {primaryPartHeading}
-              </h1>
-              {(isHybrid || activeLanguage !== 'en') && (
-                <p
-                  data-testid="fireside-chapter-secondary-title"
-                  className="text-xs sm:text-sm font-serif text-amber-200/85 mt-0.5 leading-tight"
-                >
-                  {secondaryPartHeading}
-                </p>
-              )}
-              <p
-                data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
-                className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
-              >
-                {activePartRoman} • Scene {activeSceneNumInPart} of {totalScenesInActivePart} • {activeSceneTitle}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              data-testid="HS_FIRESIDE_HEADER_NEXT_SCENE"
-              onClick={handleHeaderNextScene}
-              aria-label="Jump to next Part Scene 1"
-              title="Jump to next Part Scene 1"
-              style={{ minHeight: 40, minWidth: 40 }}
-              className="min-h-[40px] min-w-[40px] px-2.5 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
-            >
-              ›
-            </button>
-          </div>
-        </div>
-
-        {/* The Prompt Carousel */}
-        <div className="w-full">
-          <SingleCardPromptCarousel
-            prompts={FIRESIDE_PROMPT_SPARKS}
-            initialPromptId={autoSparkId}
-            activePromptId={(selectedSpark || activePromptSpark || resolvedActiveSpark)?.id}
-            hideInlineOrientationDock={true}
-            hideInlineHeaderStepper={true}
-            hideBottomRibbon={true}
-            hideCompletedDuplicateActions={hasCompletedReel}
+      <main className="flex-1 flex flex-col items-center justify-start p-3 sm:p-5 w-full max-w-2xl mx-auto space-y-4">
+        {/* Desktop / Unfolded Tablet Orientation & Chapter Header (>= 768px) */}
+        <div className="hidden md:flex md:flex-col items-center w-full space-y-4">
+          <OrientationSoundcheckDock
             activeLanguage={activeLanguage}
-            isHybrid={isHybrid}
-            onToggleHybrid={setIsHybrid}
-            mediaMode={mediaMode}
-            onMediaModeChange={handleModeChange}
-            editingAuthority={activeEditingAuthority}
-            resolveSceneAuthority={resolveSceneAuthority}
-            activeSceneMemory={activeSceneMemory}
-            getSceneMemory={(sceneId?: string) => sceneId ? getSceneMemoryWithDefaults(sceneId) : undefined}
-            onSaveProse={handleSaveProse}
-            onSaveCoordinates={handleSaveCoordinates}
-            pinnedPrompterQuestion={pinnedPrompterQuestion}
-            onPinQuestionToPrompter={handlePinQuestionToPrompter}
-            onAnswerFollowUpNote={handleAnswerFollowUpNote}
-            onSelectPrompt={handleSelectPrompt}
-            onActivePromptChange={handleActivePromptChange}
-            onLanguageChange={handleLanguageChange}
-            onPhotoPromptClick={handlePhotoPromptClick}
-            selectedActStage={selectedActStage}
-            onSelectActStage={setSelectedActStage}
-            onOpenScreeningRoom={() => setIsLightboxOpen(true)}
+            showDesktopBanner={showDesktopBanner}
+            onDismissDesktopBanner={handleDismissDesktopBanner}
             onWarmupComplete={() => {
               logEvent('FIRESIDE_WARMUP_COMPLETED' as any, {
                 language: activeLanguage,
@@ -1347,189 +1572,220 @@ export default function FiresideStudioClient() {
               }, 5000);
             }}
           />
-        </div>
 
-        {/* Active Recording Surface (Visible when uncompleted, reviewing a take, or recording an additional take) */}
-        {!isCompleted && (
-          mediaMode === 'video' ? (
-            /* Video Memo Recording Surface */
-            <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
-              <div className="w-full max-w-xl flex justify-end mb-2 px-1">
+          {activeView === 'studio' && (
+            <div className="text-center w-full max-w-xl" data-testid="fireside-golden-thread-header">
+              <div className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 mb-1">
+                <p
+                  data-testid="fireside-production-stage-label"
+                  className="text-[10px] uppercase tracking-[0.25em] text-sky-400/80 font-black"
+                >
+                  PRODUCTION STAGE
+                </p>
+                <span className="text-stone-600 text-[10px]">•</span>
+                <span className="text-[11px] font-mono text-amber-300/90 font-medium">
+                  {completedScenes} of {totalScenes} Woven ({vaultProgressPercent}%)
+                  {premieredCount > 0 ? ` · ${premieredCount} Premiered` : ''}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-center gap-2.5 sm:gap-3 w-full">
                 <button
                   type="button"
-                  data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"
-                  onClick={() => handleModeChange('audio')}
-                  className="px-3 py-1.5 rounded-full bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 text-stone-300 hover:text-amber-200 text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
-                  title="Switch to Voice & Photos recording mode"
+                  data-testid="HS_FIRESIDE_HEADER_PREV_SCENE"
+                  onClick={handleHeaderPrevScene}
+                  aria-label="Jump to previous Part Scene 1"
+                  title="Jump to previous Part Scene 1"
+                  style={{ minHeight: 40, minWidth: 40 }}
+                  className="min-h-[40px] min-w-[40px] px-2.5 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Switch to Voice & Photos</span>
+                  ‹
+                </button>
+
+                <div className="flex flex-col items-center min-w-0 px-1">
+                  <h1
+                    data-testid="fireside-chapter-primary-title"
+                    className="text-base sm:text-xl font-serif text-white font-normal leading-tight"
+                  >
+                    {primaryPartHeading}
+                  </h1>
+                  {(isHybrid || activeLanguage !== 'en') && (
+                    <p
+                      data-testid="fireside-chapter-secondary-title"
+                      className="text-xs sm:text-sm font-serif text-amber-200/85 mt-0.5 leading-tight"
+                    >
+                      {secondaryPartHeading}
+                    </p>
+                  )}
+                  <p
+                    data-testid="HS_FIRESIDE_HEADER_SCENE_SUBTITLE"
+                    className="text-[11px] font-mono text-amber-300/90 mt-0.5 leading-snug"
+                  >
+                    {activePartRoman} • Scene {activeSceneNumInPart} of {totalScenesInActivePart} • {activeSceneTitle}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_HEADER_NEXT_SCENE"
+                  onClick={handleHeaderNextScene}
+                  aria-label="Jump to next Part Scene 1"
+                  title="Jump to next Part Scene 1"
+                  style={{ minHeight: 40, minWidth: 40 }}
+                  className="min-h-[40px] min-w-[40px] px-2.5 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 hover:text-amber-300 font-mono text-lg font-bold flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                >
+                  ›
                 </button>
               </div>
-              <div className="text-center mb-4 w-full max-w-xl">
-                <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
-                  WhatsApp / FaceTime Video Memo
-                </p>
-                <h2 className="text-lg sm:text-xl font-serif text-stone-200">
-                  {selectedSpark ? `Record: ${selectedSpark.title}` : 'Record Your Video Memo'}
-                </h2>
-                <FiresidePrompterBanner
-                  prose={activeSceneMemory?.prose}
-                  pinnedQuestion={pinnedPrompterQuestion}
-                />
-              </div>
+            </div>
+          )}
+        </div>
 
-              <FiresideVideoRecorder
-                ref={videoRecorderRef}
-                promptSpark={selectedSpark || activePromptSpark}
+        {activeView === 'cinema' ? (
+          <FiresideCinemaView
+            directorName={(user as any)?.displayName || null}
+            wovenCount={completedScenes}
+            totalScenes={totalScenes}
+            wovenPercent={vaultProgressPercent}
+            premieredCount={premieredCount}
+            getSceneMemory={(id: string) => getSceneMemoryWithDefaults(id)}
+            resolveDocIdForScene={resolveDocIdForScene}
+            onWatchSceneReel={handleWatchSceneFromCinema}
+            onOpenSceneInStudio={handleSelectSceneById}
+          />
+        ) : (
+          <>
+            {/* The 5-Act Prompt Carousel & Swipe Pager */}
+            <div className="w-full">
+              <SingleCardPromptCarousel
+                prompts={FIRESIDE_PROMPT_SPARKS}
+                initialPromptId={autoSparkId}
+                activePromptId={(selectedSpark || activePromptSpark || resolvedActiveSpark)?.id}
+                hideInlineOrientationDock={true}
+                hideInlineHeaderStepper={true}
+                hideBottomRibbon={true}
+                hideCompletedDuplicateActions={hasCompletedReel}
+                fireside2MobileMode={true}
+                isRecordingActive={isFiresideRecording}
+                sceneAccess={activeSceneAccess}
+                resolveSceneAccess={(sceneId?: string) =>
+                  sceneId ? getSceneAccess(sceneId) : undefined
+                }
+                onOpenUpgradeSheet={() => setIsUpgradeSheetOpen(true)}
+                onPublishToCinema={(sceneId: string) => publishSceneToCinema(sceneId)}
+                onOpenFiresideCinema={() => handleSelectFiresideView('cinema')}
+                resolveDocIdForScene={resolveDocIdForScene}
+                inlineAct3RecorderNode={isInlineAct3Active ? recorderStudioBlock : undefined}
                 activeLanguage={activeLanguage}
-                activeMood={activeMood}
-                activeActStage={selectedActStage}
-                hasExternalScriptBanner={Boolean(activeSceneMemory?.prose || pinnedPrompterQuestion)}
-                isMasterProtected={isActiveMasterProtected}
-                takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
-                onMoodChange={handleMoodChange}
-                onRecordingComplete={handleVideoRecordingComplete}
-                onKeepRecording={handleKeepVideoRecording}
-                onReset={handleResetVideoRecording}
-                onRecordingChange={setIsFiresideRecording}
-                className="w-full"
+                isHybrid={isHybrid}
+                onToggleHybrid={setIsHybrid}
+                mediaMode={mediaMode}
+                onMediaModeChange={handleModeChange}
+                editingAuthority={activeEditingAuthority}
+                resolveSceneAuthority={resolveSceneAuthority}
+                activeSceneMemory={activeSceneMemory}
+                getSceneMemory={(sceneId?: string) => sceneId ? getSceneMemoryWithDefaults(sceneId) : undefined}
+                onSaveProse={handleSaveProse}
+                onSaveCoordinates={handleSaveCoordinates}
+                pinnedPrompterQuestion={pinnedPrompterQuestion}
+                onPinQuestionToPrompter={handlePinQuestionToPrompter}
+                onAnswerFollowUpNote={handleAnswerFollowUpNote}
+                onSelectPrompt={handleSelectPrompt}
+                onActivePromptChange={handleActivePromptChange}
+                onLanguageChange={handleLanguageChange}
+                onPhotoPromptClick={handlePhotoPromptClick}
+                selectedActStage={selectedActStage}
+                onSelectActStage={setSelectedActStage}
+                onOpenScreeningRoom={() => setIsLightboxOpen(true)}
+                onWarmupComplete={() => {
+                  logEvent('FIRESIDE_WARMUP_COMPLETED' as any, {
+                    language: activeLanguage,
+                  });
+                  setNotification('Soundcheck complete. Entering Part I: Roots and Foundations.');
+                  setTimeout(() => {
+                    setNotification(null);
+                  }, 5000);
+                }}
               />
             </div>
-          ) : (
-            /* Voice Recording & Heirloom Photo Tray Surface */
-            <>
-              {/* Physical Album Photo Capture Tray (MW-247) */}
-              <div className="w-full max-w-xl mx-auto">
-                <AlbumPhotoCaptureTray
-                  ref={photoTrayRef}
-                  photos={photos}
-                  onPhotosChange={setPhotos}
-                  maxPhotos={6}
-                  suggestedPhotoPrompt={selectedSpark ? selectedSpark.recommendedPhotoPrompt[activeLanguage] : null}
-                  className="w-full"
-                />
+
+            {/* Active Recording Surface below card (rendered when NOT already mounted inline inside Act III) */}
+            {!isCompleted && !isInlineAct3Active && recorderStudioBlock}
+
+            {/* Top-Level Bonus Memory Drawer Trigger for In-Progress / Unrecorded Unlocked Scenes */}
+            {!hasCompletedReel && !isActiveSceneLockedPreview && (
+              <div className="w-full max-w-xl mx-auto pt-4 pb-2 border-t border-stone-900/80 flex flex-col items-center">
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_OPEN_BONUS_DRAWER_BTN"
+                  data-hotspot-id="HS_FIRESIDE_OPEN_BONUS_DRAWER_BTN"
+                  onClick={handleOpenBonusDrawer}
+                  className="w-full min-h-[52px] px-6 py-3 rounded-2xl bg-stone-900/90 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-400 text-amber-200 hover:text-white font-semibold text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98 select-none shadow-lg shadow-black/40"
+                >
+                  <PlusCircle className="w-5 h-5 text-amber-400" />
+                  <span>Open Bonus Memory Drawer</span>
+                </button>
+                <p className="mt-1.5 text-[11px] font-mono text-stone-500 text-center">
+                  Add handwritten archival notes, family reflections, or heirloom photos
+                </p>
               </div>
+            )}
 
-              {/* Tactile Web Audio Voice Recorder (MW-246) */}
-              <div id="fireside-active-studio" className="w-full pt-4 border-t border-stone-900/80 flex flex-col items-center">
-                <div className="w-full max-w-xl flex justify-end mb-2 px-1">
-                  <button
-                    type="button"
-                    data-testid="HS_ACT3_VIEWFINDER_SWITCH_MODE"
-                    onClick={() => handleModeChange('video')}
-                    className="px-3 py-1.5 rounded-full bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 hover:border-amber-500/50 text-stone-300 hover:text-amber-200 text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
-                    title="Switch to Video Memo recording mode"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Switch to Video Memo</span>
-                  </button>
-                </div>
-                <div className="text-center mb-4 w-full max-w-xl">
-                  <p className="text-xs uppercase tracking-widest text-amber-500/90 font-semibold mb-1">
-                    Fireside Voice Recording
-                  </p>
-                  <h2 className="text-lg sm:text-xl font-serif text-stone-200">
-                    {selectedSpark ? `Speak: ${selectedSpark.title}` : 'Speak Your Spoken Memoir'}
-                  </h2>
-                  <FiresidePrompterBanner
-                    prose={activeSceneMemory?.prose}
-                    pinnedQuestion={pinnedPrompterQuestion}
-                  />
-                </div>
-
-                <TactileVoiceRecorder
-                  ref={recorderRef}
-                  promptSpark={selectedSpark || activePromptSpark}
+            {/* Celebratory Completed Reel Card (Visible whenever scene has a recorded take) */}
+            {hasCompletedReel && (
+              <div
+                id={isCompleted ? 'fireside-active-studio' : 'fireside-completed-reel-section'}
+                className="w-full max-w-xl mx-auto pt-3 border-t border-stone-900/80 flex flex-col items-center"
+              >
+                <FiresideCompletedReelCard
+                  sceneId={effectiveSceneId}
+                  sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
+                  sceneMemory={activeSceneMemory}
+                  editingAuthority={activeEditingAuthority}
+                  sessionPhotos={photos}
+                  overrideDurationSeconds={
+                    mediaMode === 'video' && recordedVideoDuration > 0
+                      ? recordedVideoDuration
+                      : recordedAudioDuration > 0
+                      ? recordedAudioDuration
+                      : undefined
+                  }
                   activeLanguage={activeLanguage}
-                  activeMood={activeMood}
-                  activeActStage={selectedActStage}
-                  photos={photos.length > 0 ? photos : activeSceneMemory?.photos || []}
-                  isMasterProtected={isActiveMasterProtected}
-                  takeNumber={activeTakeNumberRef.current || (activeSceneMemory?.takes?.length || 1)}
-                  onMoodChange={handleMoodChange}
-                  onRecordingComplete={handleAudioRecordingComplete}
-                  onKeepRecording={handleKeepAudioRecording}
-                  onReset={handleResetAudioRecording}
-                  onRecordingChange={setIsFiresideRecording}
-                  className="w-full"
+                  onWatchTheatricalReel={() => setIsLightboxOpen(true)}
+                  onAddBonusNote={() => {
+                    setBonusDrawerSeedPrompt(null);
+                    setEditingBonusNote(null);
+                    setIsBonusDrawerOpen(true);
+                  }}
+                  onEditBonusNote={(note) => {
+                    setBonusDrawerSeedPrompt(null);
+                    setEditingBonusNote(note);
+                    setIsBonusDrawerOpen(true);
+                  }}
+                  onDeleteBonusNote={async (noteId) => {
+                    await deleteBonusMemoryNote(effectiveSceneId, noteId);
+                    setNotification('Bonus recollection removed from vault.');
+                    setTimeout(() => setNotification(null), 3000);
+                  }}
+                  onDiscardTake={handleDiscardActiveTake}
+                  onPromoteMasterTake={(takeId) => promotePreferredTake(effectiveSceneId, takeId)}
+                  onReorderTakes={(orderedIds) => reorderSceneTakes(effectiveSceneId, orderedIds)}
+                  onSafeDiscardTake={(discardId, fallbackId) => safeDiscardTake(effectiveSceneId, discardId, fallbackId)}
+                  onRestoreTake={(takeId) => restoreOuttakeTake(effectiveSceneId, takeId)}
+                  onReRecordRequest={() => {
+                    setIsReviewingTake(false);
+                    setForceRecordMode(true);
+                    setSelectedActStage(3);
+                  }}
                 />
               </div>
-            </>
-          )
-        )}
-
-        {/* Top-Level Bonus Memory Drawer Trigger for In-Progress / Unrecorded Scenes (SPEC-MW-108 / Card 35 / Ticket #259) */}
-        {!hasCompletedReel && (
-          <div className="w-full max-w-xl mx-auto pt-6 pb-2 border-t border-stone-900/80 flex flex-col items-center">
-            <button
-              type="button"
-              data-testid="HS_FIRESIDE_OPEN_BONUS_DRAWER_BTN"
-              data-hotspot-id="HS_FIRESIDE_OPEN_BONUS_DRAWER_BTN"
-              onClick={handleOpenBonusDrawer}
-              className="w-full min-h-[56px] px-6 py-3.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-400 text-amber-200 hover:text-white font-semibold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all cursor-pointer active:scale-98 select-none shadow-lg shadow-black/40"
-            >
-              <PlusCircle className="w-5 h-5 text-amber-400" />
-              <span>Open Bonus Memory Drawer</span>
-            </button>
-            <p className="mt-2 text-[11px] font-mono text-stone-500 text-center">
-              Add handwritten archival notes, family reflections, or heirloom photos
-            </p>
-          </div>
-        )}
-
-        {/* Celebratory Completed Reel Card (Always visible whenever scene has a recorded take) */}
-        {hasCompletedReel && (
-          <div
-            id={isCompleted ? 'fireside-active-studio' : 'fireside-completed-reel-section'}
-            className="w-full max-w-xl mx-auto pt-4 border-t border-stone-900/80 flex flex-col items-center"
-          >
-            <FiresideCompletedReelCard
-              sceneId={effectiveSceneId}
-              sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
-              sceneMemory={activeSceneMemory}
-              editingAuthority={activeEditingAuthority}
-              sessionPhotos={photos}
-              overrideDurationSeconds={
-                mediaMode === 'video' && recordedVideoDuration > 0
-                  ? recordedVideoDuration
-                  : recordedAudioDuration > 0
-                  ? recordedAudioDuration
-                  : undefined
-              }
-              activeLanguage={activeLanguage}
-              onWatchTheatricalReel={() => setIsLightboxOpen(true)}
-              onAddBonusNote={() => {
-                setBonusDrawerSeedPrompt(null);
-                setEditingBonusNote(null);
-                setIsBonusDrawerOpen(true);
-              }}
-              onEditBonusNote={(note) => {
-                setBonusDrawerSeedPrompt(null);
-                setEditingBonusNote(note);
-                setIsBonusDrawerOpen(true);
-              }}
-              onDeleteBonusNote={async (noteId) => {
-                await deleteBonusMemoryNote(effectiveSceneId, noteId);
-                setNotification('Bonus recollection removed from vault.');
-                setTimeout(() => setNotification(null), 3000);
-              }}
-              onDiscardTake={handleDiscardActiveTake}
-              onPromoteMasterTake={(takeId) => promotePreferredTake(effectiveSceneId, takeId)}
-              onReorderTakes={(orderedIds) => reorderSceneTakes(effectiveSceneId, orderedIds)}
-              onSafeDiscardTake={(discardId, fallbackId) => safeDiscardTake(effectiveSceneId, discardId, fallbackId)}
-              onRestoreTake={(takeId) => restoreOuttakeTake(effectiveSceneId, takeId)}
-              onReRecordRequest={() => {
-                setIsReviewingTake(false);
-                setForceRecordMode(true);
-              }}
-            />
-          </div>
+            )}
+          </>
         )}
 
         {/* Selected Spark / Recording Confirmation Toast */}
         {notification && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] bg-stone-900/95 border border-amber-500/40 text-amber-200 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-lg flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] bg-stone-900/95 border border-amber-500/40 text-amber-200 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-lg flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center gap-2.5 min-w-0">
               <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
               <p className="text-xs font-medium leading-relaxed">
@@ -1537,11 +1793,10 @@ export default function FiresideStudioClient() {
               </p>
             </div>
 
-
-              <Link
+            <Link
               href={`/studio/production/${resolveDocIdForScene(effectiveSceneId) || activeSceneMemory?.id || effectiveSceneId}?act=1`}
               data-testid="toast-studio-jump-link"
-              className="shrink-0 text-xs font-bold text-amber-300 hover:text-amber-100 underline underline-offset-2 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 transition-all cursor-pointer"
+              className="hidden md:inline-flex shrink-0 text-xs font-bold text-amber-300 hover:text-amber-100 underline underline-offset-2 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 transition-all cursor-pointer"
             >
               Open Studio ↓
             </Link>
@@ -1574,6 +1829,80 @@ export default function FiresideStudioClient() {
         )}
       </main>
 
+      {/* Fireside 2.0 Sticky Thumb-Zone Bottom Bar (🔥 Studio | Primary CTA | 🎞️ Cinema) */}
+      <FiresideBottomBar
+        activeView={activeView}
+        recordedCount={completedScenes}
+        primaryCtaLabel={bottomPrimaryCtaLabel}
+        isLockedPreview={isActiveSceneLockedPreview}
+        isRecording={isFiresideRecording}
+        onSelectView={handleSelectFiresideView}
+        onPrimaryAction={handleBottomPrimaryAction}
+      />
+
+      {/* Fireside 2.0 Mobile Slide-Up Bottom Sheets */}
+      <FiresideChapterSheet
+        open={isChapterSheetOpen}
+        onOpenChange={setIsChapterSheetOpen}
+        activeSceneId={effectiveSceneId}
+        activeLanguage={activeLanguage}
+        wovenCount={completedScenes}
+        totalScenes={totalScenes}
+        wovenPercent={vaultProgressPercent}
+        premieredCount={premieredCount}
+        getSceneMemory={(id: string) => getSceneMemoryWithDefaults(id)}
+        getSceneAccess={getSceneAccess}
+        onSelectScene={handleSelectSceneById}
+        onOpenUpgradeSheet={() => setIsUpgradeSheetOpen(true)}
+      />
+
+      <FiresideLangSheet
+        open={isLangSheetOpen}
+        onOpenChange={setIsLangSheetOpen}
+        activeLanguage={activeLanguage}
+        isHybrid={isHybrid}
+        onSelectLanguage={handleLanguageChange}
+        onToggleHybrid={setIsHybrid}
+      />
+
+      <FiresideStudioMenuSheet
+        open={isMenuSheetOpen}
+        onOpenChange={setIsMenuSheetOpen}
+        isAuthenticated={isAuthenticated}
+        userEmail={user?.email || null}
+        tierLabel={activeTierLabel}
+        showStagingBadge={showStagingBadge}
+        commitSha={process.env.NEXT_PUBLIC_COMMIT_SHA || ''}
+        onLaunchSoundcheck={() => setIsMobileWarmupOpen(true)}
+        onSignOut={() => void logout?.(false)}
+      />
+
+      <FiresideUpgradeSheet
+        open={isUpgradeSheetOpen}
+        onOpenChange={setIsUpgradeSheetOpen}
+        partTitle={activePartTitle}
+      />
+
+      <FiresideWelcomeSheet
+        open={isWelcomeSheetOpen}
+        onDismiss={handleDismissWelcomeSheet}
+        onStartSoundcheck={() => setIsMobileWarmupOpen(true)}
+      />
+
+      <FiresideWarmupModal
+        isOpen={isMobileWarmupOpen}
+        activeLanguage={activeLanguage}
+        onClose={() => setIsMobileWarmupOpen(false)}
+        onComplete={(exitMsg) => {
+          setIsMobileWarmupOpen(false);
+          logEvent('FIRESIDE_WARMUP_COMPLETED' as any, {
+            language: activeLanguage,
+          });
+          setNotification(exitMsg || 'Soundcheck complete. Ready to speak your story!');
+          setTimeout(() => setNotification(null), 5000);
+        }}
+      />
+
       {/* 2.39:1 Cinema Master Reel Lightbox Player (Ticket #259 & MW-88-T5) */}
       <FiresideCinemaLightbox
         isOpen={isLightboxOpen}
@@ -1588,6 +1917,8 @@ export default function FiresideStudioClient() {
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
         mediaUrl={
           preferredTake?.mediaUrl ||
+          activeSceneMemory?.videoUrl ||
+          activeSceneMemory?.audioUrl ||
           (mediaMode === 'video' && recordedVideoBlob
             ? URL.createObjectURL(recordedVideoBlob)
             : recordedAudioBlob
@@ -1602,6 +1933,7 @@ export default function FiresideStudioClient() {
             ? activeSceneMemory.photos
             : []
         }
+        posterUrl={resolvedPosterUrl}
         durationSeconds={preferredTake?.durationSeconds || recordedVideoDuration || recordedAudioDuration}
         moodTag={activeMood}
       />
@@ -1636,8 +1968,8 @@ export default function FiresideStudioClient() {
         }}
       />
 
-      {/* Subtle Footer */}
-      <footer className="w-full py-4 border-t border-stone-900 text-center text-[11px] text-stone-500 flex items-center justify-center gap-1.5">
+      {/* Subtle Footer (Desktop) */}
+      <footer className="hidden md:flex w-full py-4 border-t border-stone-900 text-center text-[11px] text-stone-500 items-center justify-center gap-1.5">
         <HeartHandshake className="w-3.5 h-3.5 text-stone-600" />
         <span>Designed for multi-generational storytelling & elder ergonomics</span>
       </footer>

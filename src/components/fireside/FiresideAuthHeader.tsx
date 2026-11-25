@@ -46,13 +46,19 @@ export function resolveHeaderActBadge(
   activeStage?: number,
   activeSceneMemory?: Partial<UnifiedCurriculumMemory> | null
 ): string {
-  if (typeof activeStage === 'number' && activeStage >= 1 && activeStage <= 4) {
+  if (typeof activeStage === 'number' && activeStage >= 1 && activeStage <= 5) {
+    if (activeStage === 5) return '🚀 ACT V: FAMILY PREMIERE';
     if (activeStage === 4) return '🎞️ ACT IV: SCREENING ROOM';
     if (activeStage === 3) return '🎙️ ACT III: SOUNDSTAGE';
     if (activeStage === 2) return '✨ ACT II: THE WEAVE';
     return '🎬 ACT I: SCRIPTORIUM';
   }
   const stage = activeStage ?? activeSceneMemory?.productionStage;
+  if (stage === 5 || activeSceneMemory?.status === 'published') {
+    if (typeof activeStage === 'undefined' && stage === 5) {
+      return '🚀 ACT V: FAMILY PREMIERE';
+    }
+  }
   if (
     stage === 4 ||
     activeSceneMemory?.currentStatus === 'mastered' ||
@@ -70,7 +76,7 @@ export function resolveHeaderActBadge(
 }
 
 export function resolveHeaderActBadgeStyle(headerActBadge: string): string {
-  if (headerActBadge.includes('ACT IV')) {
+  if (headerActBadge.includes('ACT IV') || headerActBadge.includes('ACT V')) {
     return 'bg-emerald-950/60 border-emerald-500/30 text-emerald-300';
   }
   if (headerActBadge.includes('ACT II') || headerActBadge.includes('ACT III')) {

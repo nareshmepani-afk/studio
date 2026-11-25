@@ -116,17 +116,30 @@ export function PromptCard(props: PromptCardProps) {
       : `Scene ${resolvedSceneNumber}`
     : null;
 
+  const isMobileViewport = () =>
+    typeof window !== 'undefined' && window.innerWidth < 768;
+
   const handleAction = (e: React.MouseEvent) => {
     if (props.isLoading) {
       e.preventDefault();
       return;
     }
     if (!canAccess) {
-        e.preventDefault();
-        router.push('/settings');
-        return;
+      e.preventDefault();
+      router.push('/settings');
+      return;
     }
-    // We let the Link handle the navigation now to fix the Next.js intercepting route bug
+    // Fireside 2.0 Mobile Routing: route < 768px taps directly into Fireside Studio / Fireside Cinema
+    if (isMobileViewport()) {
+      e.preventDefault();
+      if (isInCinema) {
+        router.push(`/studio/fireside?view=cinema&id=${encodeURIComponent(promptId)}`);
+      } else {
+        router.push(`/studio/fireside?id=${encodeURIComponent(promptId)}`);
+      }
+      return;
+    }
+    // Desktop (>= 768px): let the Link handle navigation to preserve Next.js intercepting routes
   };
 
   const toggleBrief = (e: React.MouseEvent) => {
@@ -414,7 +427,13 @@ export function PromptCard(props: PromptCardProps) {
                   {isInCinema && canAccess && (
                     <Link
                       href={`/studio/production/${targetRouteId}?act=1`}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isMobileViewport()) {
+                          e.preventDefault();
+                          router.push(`/studio/fireside?id=${encodeURIComponent(promptId)}`);
+                        }
+                      }}
                       data-testid={`prompt-card-edit-secondary-${promptId}`}
                       className="relative z-20 pointer-events-auto inline-flex items-center gap-1 px-3 h-9 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 hover:border-amber-400/40 text-xs font-semibold text-white/75 hover:text-amber-200 transition-colors"
                       title="Open in Studio to edit or re-record"

@@ -39,6 +39,9 @@ import {
   Loader2,
   RotateCcw,
   Check,
+  Lock,
+  MapPin,
+  Rocket,
 } from 'lucide-react';
 import type {
   FiresidePromptSpark,
@@ -81,6 +84,9 @@ import { useScriptCadence } from '@/hooks/studio/useScriptCadence';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { MemoryCoordinatesBar } from '@/components/studio/MemoryCoordinatesBar';
+import { FiresideAct5PremierePanel } from '@/components/fireside/FiresideAct5PremierePanel';
+import { FiresideCoordinatesSheet } from '@/components/fireside/FiresideMobileSheets';
+import type { SceneAccessEvaluation } from '@/lib/curriculum/entitlements';
 
 export interface SingleCardPromptCarouselProps {
   prompts?: FiresidePromptSpark[];
@@ -119,9 +125,18 @@ export interface SingleCardPromptCarouselProps {
   onLanguageChange?: (language: FiresideLanguage) => void;
   onPhotoPromptClick?: (photoPrompt: string) => void;
   onWarmupComplete?: () => void;
-  selectedActStage?: 1 | 2 | 3 | 4;
-  onSelectActStage?: (stage: 1 | 2 | 3 | 4) => void;
+  selectedActStage?: 1 | 2 | 3 | 4 | 5;
+  onSelectActStage?: (stage: 1 | 2 | 3 | 4 | 5) => void;
   onOpenScreeningRoom?: () => void;
+  fireside2MobileMode?: boolean;
+  isRecordingActive?: boolean;
+  sceneAccess?: SceneAccessEvaluation;
+  resolveSceneAccess?: (sceneId?: string) => SceneAccessEvaluation | undefined;
+  onOpenUpgradeSheet?: () => void;
+  onPublishToCinema?: (sceneId: string) => Promise<boolean> | void;
+  onOpenFiresideCinema?: () => void;
+  resolveDocIdForScene?: (sceneId: string) => string;
+  inlineAct3RecorderNode?: React.ReactNode;
   className?: string;
 }
 
@@ -211,6 +226,15 @@ export function SingleCardPromptCarousel({
   selectedActStage,
   onSelectActStage,
   onOpenScreeningRoom,
+  fireside2MobileMode = false,
+  isRecordingActive = false,
+  sceneAccess,
+  resolveSceneAccess,
+  onOpenUpgradeSheet,
+  onPublishToCinema,
+  onOpenFiresideCinema,
+  resolveDocIdForScene,
+  inlineAct3RecorderNode,
   className = '',
 }: SingleCardPromptCarouselProps) {
   const sparkDeck = useMemo(() => {
@@ -259,7 +283,9 @@ export function SingleCardPromptCarousel({
   const [originalScriptDraft, setOriginalScriptDraft] = useState<string | null>(null);
   const [isScriptPolished, setIsScriptPolished] = useState<boolean>(false);
   const [localProseOverride, setLocalProseOverride] = useState<string | null>(null);
-  const [selectedActTab, setSelectedActTab] = useState<'act1' | 'act2' | 'act3' | 'act4'>('act1');
+  const [selectedActTab, setSelectedActTab] = useState<'act1' | 'act2' | 'act3' | 'act4' | 'act5'>('act1');
+  const [isCoordsSheetOpen, setIsCoordsSheetOpen] = useState<boolean>(false);
+  const actSwipeTouchRef = useRef<{ x: number; y: number; blocked: boolean } | null>(null);
   const [highlightedSensoryType, setHighlightedSensoryType] = useState<
     'soundscape' | 'visual' | 'aroma' | null
   >(null);
@@ -468,7 +494,9 @@ export function SingleCardPromptCarousel({
 
   // Synchronise selectedActTab when selectedActStage prop changes or when active spark/scene changes
   useEffect(() => {
-    if (selectedActStage === 4) {
+    if (selectedActStage === 5) {
+      setSelectedActTab('act5');
+    } else if (selectedActStage === 4) {
       setSelectedActTab('act4');
     } else if (selectedActStage === 3) {
       setSelectedActTab('act3');
@@ -479,7 +507,8 @@ export function SingleCardPromptCarousel({
     } else {
       // When selectedActStage is undefined (e.g. on spark/scene switch),
       // default selectedActTab to the current scene's actual production stage
-      if (activeProductionStage === 4) setSelectedActTab('act4');
+      if (activeProductionStage >= 5) setSelectedActTab('act5');
+      else if (activeProductionStage === 4) setSelectedActTab('act4');
       else if (activeProductionStage === 3) setSelectedActTab('act3');
       else if (activeProductionStage === 2) setSelectedActTab('act2');
       else setSelectedActTab('act1');
@@ -487,13 +516,14 @@ export function SingleCardPromptCarousel({
   }, [selectedActStage, activeProductionStage, currentSpark.id]);
 
   const handleSelectActTab = useCallback(
-    (tab: 'act1' | 'act2' | 'act3' | 'act4') => {
+    (tab: 'act1' | 'act2' | 'act3' | 'act4' | 'act5') => {
       setSelectedActTab(tab);
-      const stageMap: Record<'act1' | 'act2' | 'act3' | 'act4', 1 | 2 | 3 | 4> = {
+      const stageMap: Record<'act1' | 'act2' | 'act3' | 'act4' | 'act5', 1 | 2 | 3 | 4 | 5> = {
         act1: 1,
         act2: 2,
         act3: 3,
         act4: 4,
+        act5: 5,
       };
       onSelectActStage?.(stageMap[tab]);
       if (typeof window !== 'undefined') {
@@ -507,6 +537,69 @@ export function SingleCardPromptCarousel({
     [onSelectActStage]
   );
 
+  const ACT_SEQUENCE: Array<'act1' | 'act2' | 'act3' | 'act4' | 'act5'> = useMemo(
+    () => ['act1', 'act2', 'act3', 'act4', 'act5'],
+    []
+  );
+
+  const canSwipeActs = !isRecordingActive && !isEditingScript;
+
+  const stepActBySwipe = useCallback(
+    (delta: 1 | -1) => {
+      if (!canSwipeActs) return;
+      const idx = ACT_SEQUENCE.indexOf(selectedActTab);
+      const nextIdx = idx + delta;
+      if (nextIdx >= 0 && nextIdx < ACT_SEQUENCE.length) {
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+          try {
+            navigator.vibrate(10);
+          } catch {}
+        }
+        handleSelectActTab(ACT_SEQUENCE[nextIdx]);
+      }
+    },
+    [ACT_SEQUENCE, canSwipeActs, handleSelectActTab, selectedActTab]
+  );
+
+  const isInteractiveSwipeBlockedTarget = (target: EventTarget | null): boolean => {
+    if (!target || !(target instanceof Element)) return false;
+    return Boolean(
+      target.closest('textarea, input, select, [contenteditable="true"], [data-no-act-swipe="true"]')
+    );
+  };
+
+  const handleActSwipeTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1 || !canSwipeActs) {
+      actSwipeTouchRef.current = null;
+      return;
+    }
+    actSwipeTouchRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      blocked: isInteractiveSwipeBlockedTarget(e.target),
+    };
+  };
+
+  const handleActSwipeTouchEnd = (e: React.TouchEvent) => {
+    const start = actSwipeTouchRef.current;
+    actSwipeTouchRef.current = null;
+    if (!start || start.blocked || !canSwipeActs || e.changedTouches.length === 0) return;
+
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    // Strict horizontal directional lock (prevents vertical thumb scrolling from changing Acts)
+    if (absX >= 48 && absX > absY * 1.8) {
+      if (dx < 0) {
+        stepActBySwipe(1);
+      } else {
+        stepActBySwipe(-1);
+      }
+    }
+  };
+
   const scrollToActiveSoundstage = useCallback(() => {
     if (typeof document !== 'undefined') {
       const target =
@@ -519,8 +612,16 @@ export function SingleCardPromptCarousel({
   }, []);
 
   const stageProgression = useMemo(() => {
+    const hasRecordedMedia = Boolean(
+      (Array.isArray(currentSceneMemory?.takes) &&
+        currentSceneMemory.takes.some((t) => t.status !== 'outtake' && t.status !== 'purged')) ||
+        currentSceneMemory?.videoUrl ||
+        currentSceneMemory?.audioUrl
+    );
     const effectiveStage =
-      selectedActTab === 'act4'
+      selectedActTab === 'act5'
+        ? 5
+        : selectedActTab === 'act4'
         ? 4
         : selectedActTab === 'act3'
         ? 3
@@ -528,7 +629,7 @@ export function SingleCardPromptCarousel({
         ? 2
         : activeProductionStage;
 
-    if (effectiveStage >= 3) {
+    if (effectiveStage >= 3 && (hasRecordedMedia || activeProductionStage >= 3)) {
       return {
         label: 'Watch Master Reel in Screening Room ▶',
         spineLabel: 'Watch Master Reel in Screening Room ▶',
@@ -536,7 +637,7 @@ export function SingleCardPromptCarousel({
         nextTab: 'act4' as const,
       };
     }
-    if (effectiveStage === 2) {
+    if (effectiveStage >= 2) {
       return {
         label: 'Progress to Act III: Record Performance →',
         spineLabel: 'Progress to Act III: Record Performance →',
@@ -550,7 +651,7 @@ export function SingleCardPromptCarousel({
       title: 'Advance in-place to Act II (Sensory Weave Inspector) inside Fireside Studio.',
       nextTab: 'act2' as const,
     };
-  }, [activeProductionStage, selectedActTab]);
+  }, [activeProductionStage, selectedActTab, currentSceneMemory]);
 
   const activeWeaveLabel = useMemo(() => {
     const rawVision =
@@ -617,7 +718,19 @@ export function SingleCardPromptCarousel({
     touchStartPosRef.current = null;
   };
 
+  const effectiveSceneAccess = useMemo(
+    () =>
+      sceneAccess ??
+      (resolveSceneAccess ? resolveSceneAccess(targetSceneId) : undefined),
+    [sceneAccess, resolveSceneAccess, targetSceneId]
+  );
+  const isLockedPreview = Boolean(effectiveSceneAccess?.isLockedPreview);
+
   const handleStartEditScript = () => {
+    if (isLockedPreview) {
+      onOpenUpgradeSheet?.();
+      return;
+    }
     let initialDraft = activeProse;
     if (!initialDraft && typeof window !== 'undefined') {
       try {
@@ -843,6 +956,10 @@ export function SingleCardPromptCarousel({
   }, [currentLanguage]);
 
   const handleApplySensorySeed = (seed: FiresideSensorySeed) => {
+    if (isLockedPreview) {
+      onOpenUpgradeSheet?.();
+      return;
+    }
     const starter = seed.sentenceStarter[currentLanguage] || seed.sentenceStarter.en;
     if (!isEditingScript) {
       setIsEditingScript(true);
@@ -1250,7 +1367,7 @@ export function SingleCardPromptCarousel({
       {/* 1. Compact 1-Tap 🌐 Language Popover & Hybrid Toggle (all HS_FIRESIDE_LANG_* buttons stay mounted in DOM) */}
       <div
         ref={languageMenuRef}
-        className="w-full max-w-xl mx-auto relative flex flex-col items-center mb-2"
+        className={`w-full max-w-xl mx-auto relative ${fireside2MobileMode ? 'hidden md:flex' : 'flex'} flex-col items-center mb-2`}
       >
         <div className="w-full flex items-center justify-center gap-2 px-2 py-1 rounded-2xl bg-stone-950/60 border border-stone-800/70">
           <button
@@ -1327,7 +1444,7 @@ export function SingleCardPromptCarousel({
 
       {/* 1c. Chapter Spine Rail — Unified Responsive Scene Navigation (MW-100 / MW-100-C) */}
       {spineScenes.length > 0 && (
-        <div className="w-full max-w-xl mx-auto mb-2.5">
+        <div className={`w-full max-w-xl mx-auto mb-2.5 ${fireside2MobileMode ? 'hidden md:block' : ''}`}>
           <ChapterSpineRail
             scenes={spineScenes}
             activeSceneId={activeSceneId}
@@ -1345,23 +1462,30 @@ export function SingleCardPromptCarousel({
             key={`${currentSpark.id}-${currentIndex}`}
             data-testid="HS_FIRESIDE_PROMPT_CAROUSEL_CARD"
             custom={direction}
-            drag="x"
+            drag={canSwipeActs ? 'x' : false}
+            dragDirectionLock={true}
             dragSnapToOrigin={true}
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.15}
+            onTouchStart={handleActSwipeTouchStart}
+            onTouchEnd={handleActSwipeTouchEnd}
             onDragEnd={(_e, { offset, velocity }) => {
-              const swipeThreshold = 50;
-              if (offset.x < -swipeThreshold || velocity.x < -300) {
-                handleNext();
-              } else if (offset.x > swipeThreshold || velocity.x > 300) {
-                handlePrev();
+              if (!canSwipeActs) return;
+              const absX = Math.abs(offset.x);
+              const absY = Math.abs(offset.y);
+              if (absX < 50 && Math.abs(velocity.x) < 320) return;
+              if (absY > 0 && absX < absY * 1.5) return;
+              if (offset.x < -50 || velocity.x < -320) {
+                stepActBySwipe(1);
+              } else if (offset.x > 50 || velocity.x > 320) {
+                stepActBySwipe(-1);
               }
             }}
             initial={{ opacity: 0, x: direction > 0 ? 50 : -50 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction > 0 ? -50 : 50 }}
             transition={{ duration: 0.22, ease: 'easeInOut' }}
-            className="w-full max-w-xl mx-auto bg-[#171717]/95 border border-amber-500/25 hover:border-amber-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md flex flex-col justify-between transition-colors relative overflow-hidden shrink-0"
+            className="w-full max-w-xl mx-auto bg-[#171717]/95 border border-amber-500/25 hover:border-amber-500/40 rounded-3xl p-4 sm:p-8 shadow-2xl backdrop-blur-md flex flex-col justify-between transition-colors relative overflow-hidden shrink-0"
           >
             {/* Ambient Background Warmth */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -1484,12 +1608,12 @@ export function SingleCardPromptCarousel({
                 </div>
               </div>
 
-              {/* 4-Act Production Status Spine & In-Place Progression (Stacked cleanly on < sm to prevent ellipsis truncation) */}
+              {/* 5-Act Production Status Spine & Horizontal Swipe Pager (Script -> Weave -> Record -> Cut -> Premiere) */}
               <div
                 data-testid="HS_FIRESIDE_ACT_SPINE"
-                className="mb-3.5 p-1.5 rounded-2xl bg-black/40 border border-white/10 space-y-2"
+                className="mb-3 p-1.5 rounded-2xl bg-black/40 border border-white/10 space-y-1.5"
               >
-                <div className="w-full grid grid-cols-4 gap-1 p-0.5 font-mono">
+                <div className="w-full grid grid-cols-5 gap-1 p-0.5 font-mono">
                   <button
                     type="button"
                     data-testid="HS_FIRESIDE_ACT_TAB_1"
@@ -1505,12 +1629,12 @@ export function SingleCardPromptCarousel({
                         : 'bg-stone-900/20 border-stone-800/60 text-stone-400 hover:bg-stone-900/40'
                     }`}
                   >
-                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[10px]">
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[9px]">
                       <span className="font-bold leading-none"><span className="text-amber-400">{activeProse ? '✓ ' : '● '}</span>I</span>
                       <span className="sr-only"> • </span>
                       <span className="tracking-tight leading-none">SCRIPT</span>
                     </span>
-                    <span className="hidden sm:inline text-xs">
+                    <span className="hidden sm:inline text-[11px]">
                       <span className="text-amber-400">{activeProse ? '✓ ' : '● '}</span>I • SCRIPT
                     </span>
                   </button>
@@ -1531,12 +1655,12 @@ export function SingleCardPromptCarousel({
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[10px]">
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[9px]">
                       <span className="font-bold leading-none">{hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II</span>
                       <span className="sr-only"> • </span>
                       <span className="tracking-tight leading-none">WEAVE</span>
                     </span>
-                    <span className="hidden sm:inline text-xs">
+                    <span className="hidden sm:inline text-[11px]">
                       {hasSceneCompletedReel || activeProductionStage >= 2 ? '✓ ' : activeProse ? '● ' : '○ '}II • WEAVE
                     </span>
                   </button>
@@ -1555,12 +1679,12 @@ export function SingleCardPromptCarousel({
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[10px]">
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[9px]">
                       <span className="font-bold leading-none">{hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III</span>
                       <span className="sr-only"> • </span>
                       <span className="tracking-tight leading-none">RECORD</span>
                     </span>
-                    <span className="hidden sm:inline text-xs">
+                    <span className="hidden sm:inline text-[11px]">
                       {hasSceneCompletedReel || activeProductionStage >= 3 ? '✓ ' : '○ '}III • RECORD
                     </span>
                   </button>
@@ -1569,30 +1693,63 @@ export function SingleCardPromptCarousel({
                     data-testid="HS_FIRESIDE_ACT_TAB_4"
                     onClick={() => handleSelectActTab('act4')}
                     aria-pressed={selectedActTab === 'act4'}
-                    aria-label="Act IV: Screening — Watch your completed Master Reel in the in-place Fireside Screening Room."
-                    title="Act IV: Screening — Watch your completed Master Reel in the in-place Fireside Screening Room."
+                    aria-label="Act IV: Cut & Screening — Review your recorded reel, mood, and takes in-place."
+                    title="Act IV: Cut & Screening — Review your recorded reel, mood, and takes in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act4'
                         ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
-                        : isMasteredScene || activeProductionStage === 4
+                        : isMasteredScene || activeProductionStage >= 4 || hasSceneCompletedReel
                         ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
                     }`}
                   >
-                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[10px]">
-                      <span className="font-bold leading-none">{isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV</span>
-                      <span className="sr-only"> • </span>
-                      <span className="tracking-tight leading-none">REEL</span>
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[9px]">
+                      <span className="font-bold leading-none">{isMasteredScene || activeProductionStage >= 4 ? '✓ ' : '○ '}IV</span>
+                      <span className="sr-only"> • REEL </span>
+                      <span className="tracking-tight leading-none">CUT</span>
                     </span>
-                    <span className="hidden sm:inline text-xs">
-                      {isMasteredScene || activeProductionStage === 4 ? '✓ ' : '○ '}IV • REEL
+                    <span className="hidden sm:inline text-[11px]">
+                      {isMasteredScene || activeProductionStage >= 4 ? '✓ ' : '○ '}IV • CUT<span className="sr-only"> IV • REEL</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_ACT_TAB_5"
+                    onClick={() => handleSelectActTab('act5')}
+                    aria-pressed={selectedActTab === 'act5'}
+                    aria-label="Act V: Premiere — Publish to Family Cinema and share your private family link."
+                    title="Act V: Premiere — Publish to Family Cinema and share your private family link."
+                    className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
+                      selectedActTab === 'act5'
+                        ? 'border-emerald-400/60 bg-emerald-950/60 text-emerald-200 font-bold ring-1 ring-emerald-400/50'
+                        : currentSceneMemory?.status === 'published'
+                        ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200 font-bold hover:bg-emerald-500/30'
+                        : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="sm:hidden flex flex-col items-center justify-center gap-0.5 leading-tight text-[9px]">
+                      <span className="font-bold leading-none">{currentSceneMemory?.status === 'published' ? '✓ ' : '○ '}V</span>
+                      <span className="sr-only"> • </span>
+                      <span className="tracking-tight leading-none">PREMIERE</span>
+                    </span>
+                    <span className="hidden sm:inline text-[11px]">
+                      {currentSceneMemory?.status === 'published' ? '✓ ' : '○ '}V • PREMIERE
                     </span>
                   </button>
                 </div>
 
+                {fireside2MobileMode && canSwipeActs && (
+                  <p
+                    data-testid="fireside-act-swipe-hint"
+                    className="md:hidden text-center text-[10px] font-mono text-stone-400"
+                  >
+                    ← Swipe left or right across Acts I–V →
+                  </p>
+                )}
+
                 {(Boolean(activeProse && activeProse.trim().length > 0) || activeProductionStage >= 2) &&
                   !(hideCompletedDuplicateActions && hasCurrentTake && stageProgression.nextTab === 'act4') && (
-                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <div className={`${fireside2MobileMode ? 'hidden md:flex' : 'flex'} items-center justify-between gap-2 pt-0.5`}>
                     <button
                       type="button"
                       data-testid="HS_FIRESIDE_SPINE_PROGRESS_BTN"
@@ -1618,6 +1775,32 @@ export function SingleCardPromptCarousel({
                 )}
               </div>
 
+              {/* Sandbox Free Forever Locked Chapter Preview Banner (Part II–VI Parity with StudioDashboard.tsx:374) */}
+              {isLockedPreview && (
+                <div
+                  data-testid="HS_FIRESIDE_LOCKED_PREVIEW_BANNER"
+                  className="mb-3.5 p-3.5 rounded-2xl bg-amber-950/35 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                >
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Premium Chapter Preview (Free Forever Plan)</span>
+                    </p>
+                    <p className="text-xs text-stone-300 leading-relaxed">
+                      Part I (4 scenes) is unlocked forever. Upgrade to a Director Pass or Generational Vault to weave and record this chapter.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_CARD_UPGRADE_BTN"
+                    onClick={() => onOpenUpgradeSheet?.()}
+                    className="min-h-[44px] px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-mono font-bold text-xs shrink-0 cursor-pointer shadow-md"
+                  >
+                    Upgrade →
+                  </button>
+                </div>
+              )}
+
               {/* Memory Prompt Heading (Bilingual Hierarchy — MW-88-T3 & MW-88-T6 HYBRID Gate) & Spark Prose */}
               <div className="mb-3">
                 <h3
@@ -1626,8 +1809,59 @@ export function SingleCardPromptCarousel({
                 >
                   <span className="break-words whitespace-normal">{primaryCardTitle}</span>
                 </h3>
-                {/* Synchronised Memory Coordinates Strip (CITY - COUNTRY - YEAR - I WAS parity with Desktop Soundstage) */}
-                <div className="mt-2.5">
+                {/* Synchronised Memory Coordinates Strip (Compact 1-tap bottom-sheet chip on < md mobile in Fireside 2.0; full bar on md+) */}
+                {fireside2MobileMode && (
+                  <div className="md:hidden mt-2 flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_CHIP_COORDS"
+                      onClick={() => {
+                        if (isLockedPreview) {
+                          onOpenUpgradeSheet?.();
+                          return;
+                        }
+                        setIsCoordsSheetOpen(true);
+                      }}
+                      className="min-h-[36px] px-2.5 py-1 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700/80 text-stone-200 text-[11px] font-mono inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span className="truncate max-w-[200px]">
+                        {activeCoordinateLocation || 'Where & When'}
+                        {activeCoordinateYear ? ` · ${activeCoordinateYear}` : ''}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_CHIP_DEEPEN"
+                      onClick={() => setShowFollowUps((prev) => !prev)}
+                      className="min-h-[36px] px-2.5 py-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-200 text-[11px] font-mono inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                      <span>Deepen</span>
+                    </button>
+
+                    {photoPrompt && (
+                      <button
+                        type="button"
+                        data-testid="HS_FIRESIDE_CHIP_PHOTO"
+                        onClick={() => {
+                          if (isLockedPreview) {
+                            onOpenUpgradeSheet?.();
+                            return;
+                          }
+                          onPhotoPromptClick?.(photoPrompt);
+                        }}
+                        className="min-h-[36px] px-2.5 py-1 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-amber-500/25 text-amber-200 text-[11px] font-mono inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Camera className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span>Photo</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div className={`mt-2.5 ${fireside2MobileMode ? 'hidden md:block' : ''}`}>
                   <MemoryCoordinatesBar
                     location={activeCoordinateLocation}
                     country={activeCoordinateCountry}
@@ -1743,22 +1977,38 @@ export function SingleCardPromptCarousel({
                       />
                     </div>
 
-                    <div className="flex items-center justify-end pt-1">
-                      <button
-                        type="button"
-                        data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
-                        onClick={() => {
-                          handleSelectCurrent();
-                          scrollToActiveSoundstage();
-                        }}
-                        style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
-                        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
+                    {!inlineAct3RecorderNode && (
+                      <div className="flex items-center justify-end pt-1">
+                        <button
+                          type="button"
+                          data-testid="HS_FIRESIDE_OPEN_VIEWFINDER_BTN"
+                          onClick={() => {
+                            if (isLockedPreview) {
+                              onOpenUpgradeSheet?.();
+                              return;
+                            }
+                            handleSelectCurrent();
+                            scrollToActiveSoundstage();
+                          }}
+                          style={{ minHeight: `${FIRESIDE_TOUCH_TARGETS.MIN_BUTTON_HEIGHT_PX}px` }}
+                          className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active:scale-98"
+                        >
+                          {currentCaptureMode === 'audio'
+                            ? 'Open Voice Studio & Prompter →'
+                            : 'Ignite Camera & Prompter →'}
+                        </button>
+                      </div>
+                    )}
+
+                    {inlineAct3RecorderNode && (
+                      <div
+                        data-testid="HS_FIRESIDE_INLINE_ACT3_RECORDER"
+                        data-no-act-swipe="true"
+                        className="pt-2 border-t border-stone-800/80"
                       >
-                        {currentCaptureMode === 'audio'
-                          ? 'Open Voice Studio & Prompter →'
-                          : 'Ignite Camera & Prompter →'}
-                      </button>
-                    </div>
+                        {inlineAct3RecorderNode}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1774,25 +2024,48 @@ export function SingleCardPromptCarousel({
                     Screen your woven story and recorded performance in the 2.39:1 Fireside Screening Room.
                   </p>
                   <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      data-testid="HS_FIRESIDE_INPLACE_SCREENING_BTN"
-                      onClick={() => onOpenScreeningRoom?.()}
-                      className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs font-mono font-bold shrink-0 cursor-pointer transition-all shadow-md"
-                    >
-                      Watch Master Reel in Screening Room ▶
-                    </button>
-                    {currentSceneMemory?.id && (
-                      <Link
-                        href={`/cinema/tv?id=${encodeURIComponent(currentSceneMemory.id)}&from=fireside`}
-                        data-testid="HS_FIRESIDE_OPEN_IN_CINEMA_LINK"
-                        className="min-h-[44px] px-3 py-2 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-amber-400/40 text-amber-200 hover:text-amber-100 text-xs font-mono font-bold inline-flex items-center gap-1 transition-all"
+                    {!(hideCompletedDuplicateActions && hasCurrentTake) && (
+                      <button
+                        type="button"
+                        data-testid="HS_FIRESIDE_INPLACE_SCREENING_BTN"
+                        onClick={() => onOpenScreeningRoom?.()}
+                        className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs font-mono font-bold shrink-0 cursor-pointer transition-all shadow-md"
                       >
-                        <span>Open in Cinema ↗</span>
-                      </Link>
+                        Watch Master Reel in Screening Room ▶
+                      </button>
+                    )}
+                    {onOpenFiresideCinema && (
+                      <button
+                        type="button"
+                        data-testid="HS_FIRESIDE_OPEN_IN_CINEMA_LINK"
+                        onClick={() => onOpenFiresideCinema()}
+                        className="min-h-[44px] px-3 py-2 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-amber-400/40 text-amber-200 hover:text-amber-100 text-xs font-mono font-bold inline-flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <span>Open in Fireside Cinema →</span>
+                      </button>
                     )}
                   </div>
                 </div>
+              )}
+
+              {selectedActTab === 'act5' && (
+                <FiresideAct5PremierePanel
+                  sceneTitle={primaryCardTitle}
+                  hasRecordedTake={hasCurrentTake}
+                  isPublished={currentSceneMemory?.status === 'published'}
+                  isLockedPreview={isLockedPreview}
+                  shareDocId={
+                    resolveDocIdForScene
+                      ? resolveDocIdForScene(targetSceneId)
+                      : currentSceneMemory?.id || targetSceneId
+                  }
+                  onPublishToCinema={() =>
+                    onPublishToCinema ? onPublishToCinema(targetSceneId) : undefined
+                  }
+                  onOpenFiresideCinema={() => onOpenFiresideCinema?.()}
+                  onGoToRecord={() => handleSelectActTab('act3')}
+                  onOpenUpgrade={onOpenUpgradeSheet}
+                />
               )}
 
               {/* Live Act I Prose Rendering, Armchair Script Editor & Sensory Modality Counters (MW-88-T4 / MW-88-T7 / MW-88-T9 / Rule 14 / UX-MW-131) */}
@@ -2111,7 +2384,9 @@ export function SingleCardPromptCarousel({
                       >
                         <div
                           data-testid="fireside-active-script-body"
-                          className="text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200 max-h-56 overflow-y-auto pr-1"
+                          className={`text-base sm:text-lg font-serif text-white/95 leading-relaxed tracking-wide selection:bg-amber-500/30 selection:text-amber-200 ${
+                            fireside2MobileMode ? 'md:max-h-56 md:overflow-y-auto' : 'max-h-56 overflow-y-auto'
+                          } pr-1`}
                         >
                           {renderedScriptContent}
                         </div>
@@ -2454,9 +2729,9 @@ export function SingleCardPromptCarousel({
         </AnimatePresence>
       </div>
 
-      {/* 5. Elder-Ergonomic Primary Action Dock (Hidden when FiresideCompletedReelCard already owns Watch/Retake below) */}
+      {/* 5. Elder-Ergonomic Primary Action Dock (Hidden on < md when FiresideBottomBar is active, or when FiresideCompletedReelCard owns Watch/Retake) */}
       {!(hideCompletedDuplicateActions && hasCurrentTake) && (
-        <div className="w-full mt-4 flex flex-col gap-2.5">
+        <div className={`w-full mt-4 ${fireside2MobileMode ? 'hidden md:flex' : 'flex'} flex-col gap-2.5`}>
           {/* Dual-Action Synchronised In-Place Footer Dock (MW-88-T8 & MW-88-T9: 100% Surface Containment) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
@@ -2534,6 +2809,25 @@ export function SingleCardPromptCarousel({
           mobileVariant="ribbon"
           includeDesktopSpine={false}
           className="w-full mt-3"
+        />
+      )}
+
+      {fireside2MobileMode && (
+        <FiresideCoordinatesSheet
+          open={isCoordsSheetOpen}
+          onOpenChange={setIsCoordsSheetOpen}
+          location={activeCoordinateLocation}
+          country={activeCoordinateCountry}
+          day={activeCoordinateDay}
+          month={activeCoordinateMonth}
+          year={activeCoordinateYear}
+          narratorAgeAtTime={activeCoordinateAge}
+          onChangeLocation={(val) => handleUpdateCoordinate('location', val)}
+          onChangeCountry={(val) => handleUpdateCoordinate('country', val)}
+          onChangeDay={(val) => handleUpdateCoordinate('day', val)}
+          onChangeMonth={(val) => handleUpdateCoordinate('month', val)}
+          onChangeYear={(val) => handleUpdateCoordinate('year', val)}
+          onChangeAge={(val) => handleUpdateCoordinate('narratorAgeAtTime', val)}
         />
       )}
     </div>

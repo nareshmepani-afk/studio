@@ -974,19 +974,19 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       );
 
       const lbTrigger = document.querySelector('[data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"]') as HTMLElement;
-      expect(lbTrigger?.textContent).toContain('[ 🗑️ Discard Take ]');
+      expect(lbTrigger?.textContent).toContain('Discard Take');
       fireEvent.click(lbTrigger);
 
       // Cancel first
       const lbCancel = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CANCEL_BTN"]') as HTMLElement;
-      expect(lbCancel?.textContent).toContain('[ Cancel ]');
+      expect(lbCancel?.textContent).toContain('Cancel');
       fireEvent.click(lbCancel);
       expect(onLightboxDiscard).not.toHaveBeenCalled();
 
       // Re-open & Confirm Discard
       fireEvent.click(document.querySelector('[data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"]') as HTMLElement);
       const lbConfirm = document.querySelector('[data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"]') as HTMLElement;
-      expect(lbConfirm?.textContent).toContain('[ Confirm Discard ]');
+      expect(lbConfirm?.textContent).toContain('Confirm Discard');
       fireEvent.click(lbConfirm);
       expect(onLightboxDiscard).toHaveBeenCalledTimes(1);
       unmountLb();
@@ -1893,15 +1893,16 @@ describe('11. MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branchi
     const { container, unmount } = render(
       React.createElement(SingleCardPromptCarousel, { activeSceneMemory: baseMemory })
     );
-    // All 4 mobile spans present
+    // All 5 mobile spans present (Acts I–V)
     const mobileSpans = container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"] span.sm\\:hidden');
-    expect(mobileSpans.length).toBe(4);
+    expect(mobileSpans.length).toBe(5);
     // Check each span contains the compact token substring
     const texts = Array.from(mobileSpans).map((s) => s.textContent ?? '');
     expect(texts.some((t) => t.includes('I • SCRIPT'))).toBe(true);
     expect(texts.some((t) => t.includes('II • WEAVE'))).toBe(true);
     expect(texts.some((t) => t.includes('III • RECORD'))).toBe(true);
     expect(texts.some((t) => t.includes('IV • REEL'))).toBe(true);
+    expect(texts.some((t) => t.includes('V • PREMIERE'))).toBe(true);
     // No button carries whitespace-nowrap
     container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"]').forEach((tab) => {
       expect(tab.className).not.toContain('whitespace-nowrap');
@@ -1914,12 +1915,13 @@ describe('11. MW-88-T10: Spine Pill Overflow Fix & Act III Recorded Take Branchi
       React.createElement(SingleCardPromptCarousel, { activeSceneMemory: baseMemory })
     );
     const desktopSpans = container.querySelectorAll('[data-testid^="HS_FIRESIDE_ACT_TAB_"] span.hidden');
-    expect(desktopSpans.length).toBe(4);
+    expect(desktopSpans.length).toBe(5);
     const texts = Array.from(desktopSpans).map((s) => s.textContent ?? '');
     expect(texts.some((t) => t.includes('I • SCRIPT'))).toBe(true);
     expect(texts.some((t) => t.includes('II • WEAVE'))).toBe(true);
     expect(texts.some((t) => t.includes('III • RECORD'))).toBe(true);
     expect(texts.some((t) => t.includes('IV • REEL'))).toBe(true);
+    expect(texts.some((t) => t.includes('V • PREMIERE'))).toBe(true);
     unmount();
   });
 });

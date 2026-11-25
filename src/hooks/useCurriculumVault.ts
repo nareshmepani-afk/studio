@@ -25,6 +25,11 @@ import {
   mapActsCompletedToProductionStage,
 } from '@/lib/curriculum/masterStoryStructure';
 import {
+  evaluateSceneAccess,
+  type EntitlementUserLike,
+  type SceneAccessEvaluation,
+} from '@/lib/curriculum/entitlements';
+import {
   UnifiedCurriculumMemory,
   MemoirTake,
   BonusMemoryNote,
@@ -94,6 +99,10 @@ export interface UseCurriculumVaultOptions {
   userId?: string | null;
   memoirId?: string | null;
   initialSceneId?: string;
+  entitlementUser?: EntitlementUserLike | null;
+  directorPassStatus?: string | null;
+  enforcePartEntitlement?: boolean;
+  onLockedSceneWrite?: (sceneId: string) => void;
 }
 
 export interface UseCurriculumVaultReturn {
@@ -183,6 +192,10 @@ export interface UseCurriculumVaultReturn {
   ) => Promise<void>;
   /** Restores a soft-discarded outtake back to alternate takes stack (MW-107) */
   restoreOuttakeTake: (sceneId: string, takeId: string) => Promise<void>;
+  /** Publishes a captured scene to Family Cinema without mutating desktop_locked master media */
+  publishSceneToCinema: (sceneId: string) => Promise<boolean>;
+  /** Evaluates Part I vs Part II-VI entitlement + Rule 7 grandfathering for a scene */
+  getSceneAccess: (sceneId: string) => SceneAccessEvaluation;
 }
 
 /**
@@ -244,6 +257,10 @@ export function useCurriculumVault({
   userId,
   memoirId,
   initialSceneId,
+  entitlementUser,
+  directorPassStatus,
+  enforcePartEntitlement = false,
+  onLockedSceneWrite,
 }: UseCurriculumVaultOptions = {}): UseCurriculumVaultReturn {
   const [scenes, setScenes] = useState<Record<string, UnifiedCurriculumMemory>>({});
   const scenesRef = useRef<Record<string, UnifiedCurriculumMemory>>({});
@@ -893,6 +910,20 @@ export function useCurriculumVault({
         scenesRef.current[canonicalSceneId] ||
         scenes[canonicalSceneId] ||
         getSceneMemory(canonicalSceneId);
+
+      if (enforcePartEntitlement) {
+        const access = evaluateSceneAccess({
+          sceneId: canonicalSceneId,
+          user: entitlementUser,
+          directorPassStatus,
+          existingMemory: current,
+        });
+        if (!access.canWrite) {
+          onLockedSceneWrite?.(canonicalSceneId);
+          return;
+        }
+      }
+
       const existingTakes = current.takes || [];
 
       const activeTakesBefore = existingTakes.filter(
@@ -1496,6 +1527,19 @@ export function useCurriculumVault({
         scenes[canonicalSceneId] ||
         getSceneMemory(canonicalSceneId);
 
+      if (enforcePartEntitlement) {
+        const access = evaluateSceneAccess({
+          sceneId: canonicalSceneId,
+          user: entitlementUser,
+          directorPassStatus,
+          existingMemory: current,
+        });
+        if (!access.canWrite) {
+          onLockedSceneWrite?.(canonicalSceneId);
+          return;
+        }
+      }
+
       const nowEpoch = Date.now();
       const nowIso = new Date(nowEpoch).toISOString();
       const preservedSensoryAnchors =
@@ -1658,6 +1702,19 @@ export function useCurriculumVault({
         scenesRef.current[canonicalSceneId] ||
         scenes[canonicalSceneId] ||
         getSceneMemory(canonicalSceneId);
+
+      if (enforcePartEntitlement) {
+        const access = evaluateSceneAccess({
+          sceneId: canonicalSceneId,
+          user: entitlementUser,
+          directorPassStatus,
+          existingMemory: current,
+        });
+        if (!access.canWrite) {
+          onLockedSceneWrite?.(canonicalSceneId);
+          return;
+        }
+      }
 
       const updatedMemory: UnifiedCurriculumMemory = {
         ...current,
@@ -1883,6 +1940,19 @@ export function useCurriculumVault({
         scenesRef.current[canonicalSceneId] ||
         scenes[canonicalSceneId] ||
         getSceneMemory(canonicalSceneId);
+
+      if (enforcePartEntitlement) {
+        const access = evaluateSceneAccess({
+          sceneId: canonicalSceneId,
+          user: entitlementUser,
+          directorPassStatus,
+          existingMemory: current,
+        });
+        if (!access.canWrite) {
+          onLockedSceneWrite?.(canonicalSceneId);
+          return;
+        }
+      }
       const updatedBonusNotes = [...(current.bonusNotes || []), newNote];
       const updatedMemory: UnifiedCurriculumMemory = {
         ...current,
@@ -2381,6 +2451,115 @@ export function useCurriculumVault({
     [userId, db, resolveDocIdForScene, getSceneMemory, scenes]
   );
 
+  const getSceneAccess = useCallback(
+    (sceneId: string): SceneAccessEvaluation => {
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = sceneDef?.id || sceneId;
+      const existing =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        (sceneDef?.promptId ? scenes[sceneDef.promptId] : undefined);
+      return evaluateSceneAccess({
+        sceneId: canonicalSceneId,
+        user: entitlementUser,
+        directorPassStatus,
+        existingMemory: existing,
+      });
+    },
+    [scenes, entitlementUser, directorPassStatus]
+  );
+
+  const publishSceneToCinema = useCallback(
+    async (sceneId: string): Promise<boolean> => {
+      const sceneDef = resolveSceneFromPromptId(sceneId) || getSceneById(sceneId);
+      const canonicalSceneId = sceneDef?.id || sceneId;
+      const mappedPromptId = sceneDef?.promptId;
+
+      const current =
+        scenesRef.current[canonicalSceneId] ||
+        scenes[canonicalSceneId] ||
+        getSceneMemory(canonicalSceneId);
+
+      if (enforcePartEntitlement) {
+        const access = evaluateSceneAccess({
+          sceneId: canonicalSceneId,
+          user: entitlementUser,
+          directorPassStatus,
+          existingMemory: current,
+        });
+        if (!access.canWrite) {
+          onLockedSceneWrite?.(canonicalSceneId);
+          return false;
+        }
+      }
+
+      if (!isSceneCompleted(current)) {
+        return false;
+      }
+
+      const nowEpoch = Date.now();
+      const nowIso = new Date(nowEpoch).toISOString();
+      const updatedMemory: UnifiedCurriculumMemory = {
+        ...current,
+        status: 'published',
+        currentStatus: 'mastered',
+        productionStage: Math.max(
+          typeof current.productionStage === 'number' ? current.productionStage : 0,
+          5
+        ),
+        lastModified: nowIso,
+      };
+
+      lastMutatedMemoryRef.current = updatedMemory;
+      const nextScenes = {
+        ...scenesRef.current,
+        [canonicalSceneId]: updatedMemory,
+      };
+      if (mappedPromptId) nextScenes[mappedPromptId] = updatedMemory;
+      scenesRef.current = nextScenes;
+
+      setScenes((prev) => {
+        const next = { ...prev, [canonicalSceneId]: updatedMemory };
+        if (mappedPromptId) next[mappedPromptId] = updatedMemory;
+        return next;
+      });
+
+      if (db && userId && !userId.startsWith('guest')) {
+        try {
+          const targetDocId = resolveDocIdForScene(canonicalSceneId);
+          const memoryDocRef = doc(db, 'users', userId, 'memories', targetDocId);
+          await setDoc(
+            memoryDocRef,
+            {
+              sceneId: canonicalSceneId,
+              promptId: mappedPromptId || canonicalSceneId,
+              status: 'published',
+              currentStatus: 'mastered',
+              productionStage: 5,
+              updatedAt: nowEpoch,
+              lastModified: nowIso,
+            },
+            { merge: true }
+          );
+        } catch (err) {
+          console.error('[useCurriculumVault] Failed to publish scene to Cinema:', err);
+        }
+      }
+
+      return true;
+    },
+    [
+      scenes,
+      getSceneMemory,
+      enforcePartEntitlement,
+      entitlementUser,
+      directorPassStatus,
+      onLockedSceneWrite,
+      userId,
+      resolveDocIdForScene,
+    ]
+  );
+
   return {
     scenes,
     activeSceneId,
@@ -2407,6 +2586,8 @@ export function useCurriculumVault({
     reorderSceneTakes,
     safeDiscardTake,
     restoreOuttakeTake,
+    publishSceneToCinema,
+    getSceneAccess,
   };
 }
 
