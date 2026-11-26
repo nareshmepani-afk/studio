@@ -229,13 +229,25 @@ export const FiresideCinemaView: React.FC<FiresideCinemaViewProps> = ({
                 (t) => t.status !== 'outtake' && t.status !== 'purged'
               );
             const firstPhoto = item.memory.photos?.[0];
-            const thumbUrl = firstPhoto
-              ? typeof firstPhoto === 'string'
-                ? firstPhoto
-                : (firstPhoto as any).storageUrl ||
-                  (firstPhoto as any).localUri ||
-                  (firstPhoto as any).url
-              : null;
+            const thumbUrl =
+              (item.memory as any).posterUrl ||
+              (item.memory as any).thumbnailUrl ||
+              (firstPhoto
+                ? typeof firstPhoto === 'string'
+                  ? firstPhoto
+                  : (firstPhoto as any).storageUrl ||
+                    (firstPhoto as any).localUri ||
+                    (firstPhoto as any).url
+                : null);
+            const fallbackVideoThumbUrl =
+              !thumbUrl &&
+              (activeTake?.mediaMode === 'video' ||
+                (!activeTake?.mediaMode && Boolean(item.memory.videoUrl)))
+                ? activeTake?.mediaUrl || item.memory.videoUrl || null
+                : null;
+            const canRenderVideoFrameThumb =
+              typeof fallbackVideoThumbUrl === 'string' &&
+              /^https?:\/\//i.test(fallbackVideoThumbUrl);
 
             return (
               <article
@@ -248,13 +260,24 @@ export const FiresideCinemaView: React.FC<FiresideCinemaViewProps> = ({
                   onClick={() => onWatchSceneReel(item.sceneId)}
                   className="relative aspect-[16/9] w-full bg-gradient-to-br from-stone-900 via-amber-950/30 to-black flex flex-col justify-between p-4 cursor-pointer group overflow-hidden"
                 >
-                  {thumbUrl && (
+                  {thumbUrl ? (
                     <img
                       src={thumbUrl}
                       alt={item.title}
                       className="absolute inset-0 w-full h-full object-cover opacity-55 group-hover:scale-105 transition-transform duration-500"
                     />
-                  )}
+                  ) : canRenderVideoFrameThumb ? (
+                    <video
+                      src={`${fallbackVideoThumbUrl}#t=0.5`}
+                      preload="metadata"
+                      muted
+                      playsInline
+                      disablePictureInPicture
+                      aria-hidden="true"
+                      data-testid={`fireside-cinema-video-thumb-${item.sceneId}`}
+                      className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none"
+                    />
+                  ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/30" />
 
                   <div className="relative z-10 flex items-center justify-between gap-2">

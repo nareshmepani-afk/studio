@@ -229,6 +229,8 @@ export default function FiresideStudioClient() {
   const initialPromptParam = searchParams.get('prompt') || undefined;
   const initialIdParam = searchParams.get('id') || undefined;
   const isDirectRecordRequested = searchParams?.get('record') === 'true' || searchParams?.get('retake') === 'true' || searchParams?.get('act') === '3';
+  const isDirectEditRequested = searchParams?.get('edit') === 'true' && !isDirectRecordRequested;
+  const searchParamsKey = searchParams?.toString() || '';
 
   const validLangs: FiresideLanguage[] = ['en', 'gu', 'pa', 'hi'];
   const resolvedLang: FiresideLanguage = initialLangParam && validLangs.includes(initialLangParam)
@@ -240,6 +242,10 @@ export default function FiresideStudioClient() {
   const [activePromptSpark, setActivePromptSpark] = useState<FiresidePromptSpark>(() =>
     resolveInitialSpark(initialIdParam || initialPromptParam)
   );
+  const activeSparkIdRef = useRef<string>(
+    resolveInitialSpark(initialIdParam || initialPromptParam).id
+  );
+  const lastAppliedSearchKeyRef = useRef<string>(searchParamsKey);
   const [selectedSpark, setSelectedSpark] = useState<FiresidePromptSpark | null>(null);
   const [photos, setPhotos] = useState<HeirloomPhotoAttachment[]>([]);
   const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
@@ -252,6 +258,8 @@ export default function FiresideStudioClient() {
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
   const [isBonusDrawerOpen, setIsBonusDrawerOpen] = useState<boolean>(false);
   const [forceRecordMode, setForceRecordMode] = useState<boolean>(Boolean(isDirectRecordRequested));
+  const [editIntentRequested, setEditIntentRequested] = useState<boolean>(Boolean(isDirectEditRequested));
+  const [isVaultToolsOpen, setIsVaultToolsOpen] = useState<boolean>(false);
   const [isReviewingTake, setIsReviewingTake] = useState<boolean>(false);
   const [isSecuringToVault, setIsSecuringToVault] = useState<boolean>(false);
   const [securingProgress, setSecuringProgress] = useState<number>(0);
@@ -260,7 +268,7 @@ export default function FiresideStudioClient() {
   const [bonusDrawerSeedPrompt, setBonusDrawerSeedPrompt] = useState<string | null>(null);
   const [editingBonusNote, setEditingBonusNote] = useState<BonusMemoryNote | null>(null);
   const [selectedActStage, setSelectedActStage] = useState<1 | 2 | 3 | 4 | 5 | undefined>(
-    isDirectRecordRequested ? 3 : undefined
+    isDirectRecordRequested ? 3 : isDirectEditRequested ? 1 : undefined
   );
   const [activeView, setActiveView] = useState<'studio' | 'cinema'>(() =>
     searchParams?.get('view') === 'cinema' ? 'cinema' : 'studio'
@@ -540,20 +548,17 @@ export default function FiresideStudioClient() {
         }
       }
     }
-    if (nextPendingSceneId) {
-      const matched = FIRESIDE_PROMPT_SPARKS.find((p) => p.linkedSceneId === nextPendingSceneId);
-      if (matched) return matched.id;
-    }
     return undefined;
-  }, [initialIdParam, initialPromptParam, nextPendingSceneId, activeSceneMemory, scenes, getSceneMemory]);
+  }, [initialIdParam, initialPromptParam, activeSceneMemory, scenes, getSceneMemory]);
 
-  // Synchronise activePromptSpark when autoSparkId resolves (e.g. via deep-link or next pending scene)
+  // Synchronise activePromptSpark when autoSparkId resolves via explicit deep-link (?id= / ?prompt=)
   useEffect(() => {
     if (autoSparkId && !selectedSpark) {
       const targetSpark = FIRESIDE_PROMPT_SPARKS.find(
         (p) => p.id === autoSparkId || p.linkedSceneId === autoSparkId
       );
       if (targetSpark && targetSpark.id !== activePromptSpark.id) {
+        activeSparkIdRef.current = targetSpark.id;
         setActivePromptSpark(targetSpark);
       }
     }
@@ -583,14 +588,37 @@ export default function FiresideStudioClient() {
     });
   }, [logEvent]);
 
-  // Sync state if URL searchParams change
+  const clearTransientUrlOverrides = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const url = new URL(window.location.href);
+      let mutated = false;
+      for (const key of ['edit', 'record', 'retake', 'act']) {
+        if (url.searchParams.has(key)) {
+          url.searchParams.delete(key);
+          mutated = true;
+        }
+      }
+      if (mutated) {
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
+  }, []);
+
+  // Sync state ONLY when serialized URL searchParamsKey genuinely changes
   useEffect(() => {
     if (initialLangParam && validLangs.includes(initialLangParam)) {
       setActiveLanguage(initialLangParam);
     }
+    const keyChanged = lastAppliedSearchKeyRef.current !== searchParamsKey;
+    lastAppliedSearchKeyRef.current = searchParamsKey;
     if (searchParams?.get('record') === 'true' || searchParams?.get('retake') === 'true' || searchParams?.get('act') === '3') {
       setForceRecordMode(true);
+      setEditIntentRequested(false);
       setSelectedActStage(3);
+    } else if (keyChanged && searchParams?.get('edit') === 'true') {
+      setEditIntentRequested(true);
+      setSelectedActStage(1);
     }
     if (searchParams?.get('view') === 'cinema') {
       setActiveView('cinema');
@@ -600,7 +628,7 @@ export default function FiresideStudioClient() {
     if (searchParams?.get('soundcheck') === 'true') {
       setIsMobileWarmupOpen(true);
     }
-  }, [initialLangParam, searchParams]);
+  }, [initialLangParam, searchParamsKey, searchParams]);
 
   const handleSelectFiresideView = useCallback((nextView: 'studio' | 'cinema') => {
     setActiveView(nextView);
@@ -684,13 +712,46 @@ export default function FiresideStudioClient() {
     };
   }, [notification, mediaMode]);
 
-  const handleActivePromptChange = useCallback((spark: FiresidePromptSpark) => {
-    setSelectedSpark(spark);
+  const handleActivePromptChange = useCallback(
+    (spark: FiresidePromptSpark) => {
+      if (spark.id === activeSparkIdRef.current) {
+        return;
+      }
+      activeSparkIdRef.current = spark.id;
+      setSelectedSpark(spark);
+      setForceRecordMode(false);
+      setEditIntentRequested(false);
+      setIsVaultToolsOpen(false);
+      setPinnedPrompterQuestion(null);
+      setSelectedActStage(undefined);
+      setActivePromptSpark(spark);
+      clearTransientUrlOverrides();
+    },
+    [clearTransientUrlOverrides]
+  );
+
+  const handleDoneEditing = useCallback(() => {
+    if (!isFiresideRecording) {
+      if (
+        videoRecorderRef.current &&
+        videoRecorderRef.current.status !== 'recording' &&
+        videoRecorderRef.current.status !== 'paused'
+      ) {
+        videoRecorderRef.current.releaseHardwareStream?.();
+      }
+      if (
+        recorderRef.current &&
+        recorderRef.current.status !== 'recording' &&
+        recorderRef.current.status !== 'paused'
+      ) {
+        recorderRef.current.releaseHardwareStream?.();
+      }
+    }
     setForceRecordMode(false);
-    setPinnedPrompterQuestion(null);
+    setEditIntentRequested(false);
     setSelectedActStage(undefined);
-    setActivePromptSpark(spark);
-  }, []);
+    clearTransientUrlOverrides();
+  }, [isFiresideRecording, clearTransientUrlOverrides]);
 
   const handlePinQuestionToPrompter = useCallback((question: string) => {
     setPinnedPrompterQuestion((prev) => {
@@ -761,6 +822,7 @@ export default function FiresideStudioClient() {
   );
 
   const handleSelectPrompt = (spark: FiresidePromptSpark, _language: FiresideLanguage) => {
+    activeSparkIdRef.current = spark.id;
     setSelectedSpark(spark);
     setSelectedActStage(3);
     setForceRecordMode(true);
@@ -867,12 +929,20 @@ export default function FiresideStudioClient() {
   const handleKeepRecording = useCallback(() => {
     setIsReviewingTake(false);
     setForceRecordMode(false);
+    setEditIntentRequested(false);
+    setSelectedActStage(undefined);
+    clearTransientUrlOverrides();
+    if (!takeIsPreferredRef.current) {
+      setIsVaultToolsOpen(true);
+    }
     setTimeout(() => {
-      document
-        .getElementById('fireside-completed-reel-card')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const target =
+        document.getElementById('HS_FIRESIDE_CAROUSEL_SHOWCASE_CARD') ||
+        document.getElementById('fireside-active-studio') ||
+        document.getElementById('fireside-completed-reel-card');
+      target?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
     }, 60);
-  }, []);
+  }, [clearTransientUrlOverrides]);
 
   const handleLanguageChange = (lang: FiresideLanguage) => {
     setActiveLanguage(lang);
@@ -1271,10 +1341,17 @@ export default function FiresideStudioClient() {
       ? 'Sandbox Free Forever'
       : 'Guest Session';
 
+  const isPublishedScene =
+    activeSceneMemory?.status === 'published' ||
+    (activeSceneMemory as any)?.currentStatus === 'published';
+  const isClientShowcaseMode = Boolean(
+    hasCompletedReel && !editIntentRequested && !forceRecordMode
+  );
+
   const effectiveActStage: 1 | 2 | 3 | 4 | 5 =
     selectedActStage ??
-    (activeSceneMemory?.status === 'published'
-      ? 4
+    (isPublishedScene
+      ? 5
       : hasCompletedReel
       ? 4
       : ((activeSceneMemory?.productionStage as 1 | 2 | 3 | 4 | undefined) || 1));
@@ -1283,6 +1360,10 @@ export default function FiresideStudioClient() {
 
   const bottomPrimaryCtaLabel = isActiveSceneLockedPreview
     ? 'Unlock Chapter'
+    : isClientShowcaseMode
+    ? isPublishedScene
+      ? 'Watch in Cinema ▶'
+      : 'Watch Take ▶'
     : effectiveActStage === 1
     ? 'Next: Weave'
     : effectiveActStage === 2
@@ -1293,13 +1374,17 @@ export default function FiresideStudioClient() {
       : 'Record Scene'
     : effectiveActStage === 4
     ? 'Next: Premiere'
-    : activeSceneMemory?.status === 'published'
+    : isPublishedScene
     ? 'Open Cinema'
     : 'Premiere';
 
   const handleBottomPrimaryAction = () => {
     if (isActiveSceneLockedPreview) {
       setIsUpgradeSheetOpen(true);
+      return;
+    }
+    if (isClientShowcaseMode) {
+      setIsLightboxOpen(true);
       return;
     }
     if (effectiveActStage === 1) {
@@ -1316,7 +1401,7 @@ export default function FiresideStudioClient() {
     } else if (effectiveActStage === 4) {
       setSelectedActStage(5);
     } else {
-      if (activeSceneMemory?.status === 'published') {
+      if (isPublishedScene) {
         handleSelectFiresideView('cinema');
       } else {
         void publishSceneToCinema(effectiveSceneId);
@@ -1328,11 +1413,32 @@ export default function FiresideStudioClient() {
     (sceneId: string) => {
       const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === sceneId);
       if (spark) {
+        setEditIntentRequested(false);
+        setForceRecordMode(false);
+        setSelectedActStage(undefined);
+        clearTransientUrlOverrides();
         handleActivePromptChange(spark);
         handleSelectFiresideView('studio');
       }
     },
-    [handleActivePromptChange, handleSelectFiresideView]
+    [handleActivePromptChange, handleSelectFiresideView, clearTransientUrlOverrides]
+  );
+
+  const handleOpenSceneInEditMode = useCallback(
+    (sceneId: string) => {
+      const spark = FIRESIDE_PROMPT_SPARKS.find((s) => s.linkedSceneId === sceneId);
+      if (spark) {
+        activeSparkIdRef.current = spark.id;
+        setSelectedSpark(spark);
+        setActivePromptSpark(spark);
+        setForceRecordMode(false);
+        setPinnedPrompterQuestion(null);
+        setSelectedActStage(1);
+        setEditIntentRequested(true);
+        handleSelectFiresideView('studio');
+      }
+    },
+    [handleSelectFiresideView]
   );
 
   const handleWatchSceneFromCinema = useCallback(
@@ -1525,8 +1631,8 @@ export default function FiresideStudioClient() {
         <div className="hidden md:block w-full">
         {/* Discreet Elder Auth Header with Desktop Stage Ingress & Dynamic Stage Badge */}
         <FiresideAuthHeader
-          activePartTitle={activePartTitle}
-          activeStage={selectedActStage ?? activeSceneMemory?.productionStage}
+          activePartTitle={`${activePartRoman} • Scene ${activeSceneNumInPart}`}
+          activeStage={effectiveActStage}
           activeSceneMemory={activeSceneMemory}
         />
 
@@ -1716,7 +1822,7 @@ export default function FiresideStudioClient() {
             getSceneMemory={(id: string) => getSceneMemoryWithDefaults(id)}
             resolveDocIdForScene={resolveDocIdForScene}
             onWatchSceneReel={handleWatchSceneFromCinema}
-            onOpenSceneInStudio={handleSelectSceneById}
+            onOpenSceneInStudio={handleOpenSceneInEditMode}
           />
         ) : (
           <>
@@ -1731,6 +1837,12 @@ export default function FiresideStudioClient() {
                 hideBottomRibbon={true}
                 hideCompletedDuplicateActions={hasCompletedReel}
                 fireside2MobileMode={true}
+                forceRecordMode={forceRecordMode}
+                editIntentRequested={editIntentRequested}
+                onEditIntentChange={setEditIntentRequested}
+                onDoneEditing={handleDoneEditing}
+                onOpenBonusDrawer={handleOpenBonusDrawer}
+                isVaultLoading={isVaultLoading}
                 isRecordingActive={isFiresideRecording}
                 sceneAccess={activeSceneAccess}
                 resolveSceneAccess={(sceneId?: string) =>
@@ -1774,6 +1886,50 @@ export default function FiresideStudioClient() {
               />
             </div>
 
+            {/* Entitlement-Aware "Up Next" Continuation Card (Visible beneath Watch-First Showcase Mode) */}
+            {isClientShowcaseMode && nextPendingSceneId && nextPendingSceneId !== effectiveSceneId && (() => {
+              const nextSceneDef = getSceneById(nextPendingSceneId);
+              if (!nextSceneDef) return null;
+              const nextPartDef = getPartForScene(nextPendingSceneId);
+              const nextAccessEval = getSceneAccess(nextPendingSceneId);
+              const isNextLocked = Boolean(nextAccessEval?.isLockedPreview);
+              const nextPartShort = nextPartDef?.title?.split(':')[0] || `Part ${nextSceneDef.partNumber}`;
+
+              return (
+                <div
+                  data-testid="HS_FIRESIDE_SPINE_UP_NEXT_CARD"
+                  data-hotspot-id="HS_FIRESIDE_SPINE_UP_NEXT_CARD"
+                  className="w-full max-w-xl mx-auto p-4 rounded-2xl bg-stone-950/90 border border-amber-500/35 shadow-lg flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0 space-y-0.5 text-left">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">
+                      {isNextLocked
+                        ? 'Part I Complete · Premium Chapter Preview'
+                        : `Up Next in ${nextPartShort}`}
+                    </p>
+                    <p className="text-sm sm:text-base font-serif text-white leading-snug">
+                      Scene {nextSceneDef.sceneNumber}: {nextSceneDef.title}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_UP_NEXT_CONTINUE_BTN"
+                    onClick={() => {
+                      if (isNextLocked) {
+                        setIsUpgradeSheetOpen(true);
+                        return;
+                      }
+                      handleSelectSceneById(nextPendingSceneId);
+                    }}
+                    className="min-h-[48px] px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-mono font-bold text-xs shrink-0 cursor-pointer transition-colors shadow-md"
+                  >
+                    {isNextLocked ? 'Preview 🔒' : 'Continue →'}
+                  </button>
+                </div>
+              );
+            })()}
+
             {/* Active Recording Surface below card (rendered when NOT already mounted inline inside Act III) */}
             {!isCompleted && !isInlineAct3Active && recorderStudioBlock}
 
@@ -1796,55 +1952,98 @@ export default function FiresideStudioClient() {
               </div>
             )}
 
-            {/* Celebratory Completed Reel Card (Visible whenever scene has a recorded take) */}
-            {hasCompletedReel && (
-              <div
-                id={isCompleted ? 'fireside-active-studio' : 'fireside-completed-reel-section'}
-                className="w-full max-w-xl mx-auto pt-3 border-t border-stone-900/80 flex flex-col items-center"
-              >
-                <FiresideCompletedReelCard
-                  sceneId={effectiveSceneId}
-                  sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
-                  sceneMemory={activeSceneMemory}
-                  editingAuthority={activeEditingAuthority}
-                  sessionPhotos={photos}
-                  overrideDurationSeconds={
-                    mediaMode === 'video' && recordedVideoDuration > 0
-                      ? recordedVideoDuration
-                      : recordedAudioDuration > 0
-                      ? recordedAudioDuration
-                      : undefined
-                  }
-                  activeLanguage={activeLanguage}
-                  onWatchTheatricalReel={() => setIsLightboxOpen(true)}
-                  onAddBonusNote={() => {
-                    setBonusDrawerSeedPrompt(null);
-                    setEditingBonusNote(null);
-                    setIsBonusDrawerOpen(true);
-                  }}
-                  onEditBonusNote={(note) => {
-                    setBonusDrawerSeedPrompt(null);
-                    setEditingBonusNote(note);
-                    setIsBonusDrawerOpen(true);
-                  }}
-                  onDeleteBonusNote={async (noteId) => {
-                    await deleteBonusMemoryNote(effectiveSceneId, noteId);
-                    setNotification('Bonus recollection removed from vault.');
-                    setTimeout(() => setNotification(null), 3000);
-                  }}
-                  onDiscardTake={handleDiscardActiveTake}
-                  onPromoteMasterTake={(takeId) => promotePreferredTake(effectiveSceneId, takeId)}
-                  onReorderTakes={(orderedIds) => reorderSceneTakes(effectiveSceneId, orderedIds)}
-                  onSafeDiscardTake={(discardId, fallbackId) => safeDiscardTake(effectiveSceneId, discardId, fallbackId)}
-                  onRestoreTake={(takeId) => restoreOuttakeTake(effectiveSceneId, takeId)}
-                  onReRecordRequest={() => {
-                    setIsReviewingTake(false);
-                    setForceRecordMode(true);
-                    setSelectedActStage(3);
-                  }}
-                />
-              </div>
-            )}
+            {/* Celebratory Completed Reel Card (Tucked into CSS-Hidden Vault Tools Drawer in Showcase Mode; auto-open with Bonus Notes or Session Photos) */}
+            {hasCompletedReel && (() => {
+              const activeTakesCount = Array.isArray(activeSceneMemory?.takes)
+                ? activeSceneMemory.takes.filter((t) => t.status !== 'outtake' && t.status !== 'purged').length
+                : 1;
+              const vaultPhotosCount =
+                photos.length > 0
+                  ? photos.length
+                  : Array.isArray(activeSceneMemory?.photos)
+                  ? activeSceneMemory.photos.length
+                  : 0;
+              const bonusCount = Array.isArray(activeSceneMemory?.bonusNotes)
+                ? activeSceneMemory.bonusNotes.length
+                : 0;
+              const effectiveVaultDrawerOpen =
+                !isClientShowcaseMode || isVaultToolsOpen || bonusCount > 0 || photos.length > 0;
+
+              return (
+                <div
+                  id={isCompleted ? 'fireside-active-studio' : 'fireside-completed-reel-section'}
+                  className="w-full max-w-xl mx-auto pt-2 border-t border-stone-900/80 flex flex-col items-center"
+                >
+                  {isClientShowcaseMode && (
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_DRAWER_VAULT_TOOLS_BTN"
+                      data-hotspot-id="HS_FIRESIDE_DRAWER_VAULT_TOOLS_BTN"
+                      aria-expanded={effectiveVaultDrawerOpen}
+                      onClick={() => setIsVaultToolsOpen((prev) => !prev)}
+                      className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-950/90 hover:bg-stone-900 border border-stone-800 hover:border-amber-500/40 text-stone-300 hover:text-amber-200 font-mono text-xs flex items-center justify-between gap-2 cursor-pointer transition-colors"
+                    >
+                      <span className="inline-flex items-center gap-2 font-semibold">
+                        <span>🎞️ Takes, Photos &amp; Bonus Notes</span>
+                        <span className="text-[11px] text-stone-400 font-normal">
+                          ({activeTakesCount} {activeTakesCount === 1 ? 'take' : 'takes'} · {vaultPhotosCount} {vaultPhotosCount === 1 ? 'photo' : 'photos'} · {bonusCount} {bonusCount === 1 ? 'note' : 'notes'})
+                        </span>
+                      </span>
+                      <span className="text-amber-400 font-bold">
+                        {effectiveVaultDrawerOpen ? '▴' : '▾'}
+                      </span>
+                    </button>
+                  )}
+
+                  <div
+                    data-testid="HS_FIRESIDE_VAULT_TOOLS_PANEL"
+                    className={effectiveVaultDrawerOpen ? 'w-full mt-2' : 'hidden'}
+                  >
+                    <FiresideCompletedReelCard
+                      sceneId={effectiveSceneId}
+                      sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
+                      sceneMemory={activeSceneMemory}
+                      editingAuthority={activeEditingAuthority}
+                      sessionPhotos={photos}
+                      overrideDurationSeconds={
+                        mediaMode === 'video' && recordedVideoDuration > 0
+                          ? recordedVideoDuration
+                          : recordedAudioDuration > 0
+                          ? recordedAudioDuration
+                          : undefined
+                      }
+                      activeLanguage={activeLanguage}
+                      onWatchTheatricalReel={() => setIsLightboxOpen(true)}
+                      onAddBonusNote={() => {
+                        setBonusDrawerSeedPrompt(null);
+                        setEditingBonusNote(null);
+                        setIsBonusDrawerOpen(true);
+                      }}
+                      onEditBonusNote={(note) => {
+                        setBonusDrawerSeedPrompt(null);
+                        setEditingBonusNote(note);
+                        setIsBonusDrawerOpen(true);
+                      }}
+                      onDeleteBonusNote={async (noteId) => {
+                        await deleteBonusMemoryNote(effectiveSceneId, noteId);
+                        setNotification('Bonus recollection removed from vault.');
+                        setTimeout(() => setNotification(null), 3000);
+                      }}
+                      onDiscardTake={handleDiscardActiveTake}
+                      onPromoteMasterTake={(takeId) => promotePreferredTake(effectiveSceneId, takeId)}
+                      onReorderTakes={(orderedIds) => reorderSceneTakes(effectiveSceneId, orderedIds)}
+                      onSafeDiscardTake={(discardId, fallbackId) => safeDiscardTake(effectiveSceneId, discardId, fallbackId)}
+                      onRestoreTake={(takeId) => restoreOuttakeTake(effectiveSceneId, takeId)}
+                      onReRecordRequest={() => {
+                        setIsReviewingTake(false);
+                        setForceRecordMode(true);
+                        setSelectedActStage(3);
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </>
         )}
 

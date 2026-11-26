@@ -94,9 +94,10 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
     draft:     'text-amber-400',
     empty:     isNextRecommended ? 'text-emerald-400' : 'text-stone-500',
   };
+  const isSceneDone = scene.hasCompletedReel || scene.takesCount > 0;
   const DotIcon =
-    state === 'completed' ? CheckCircle2
-    : state === 'draft'   ? Disc
+    isSceneDone           ? CheckCircle2
+    : scene.hasDraftProse ? Disc
     :                       Circle;
 
   // Container ring when active or Next Recommended
@@ -124,7 +125,7 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
           containerActive,
           'flex-col gap-0.5 px-3 py-1',
           'min-h-[44px]',
-          isActive ? 'min-w-[120px] max-w-[200px]' : 'min-w-[44px]',
+          isActive ? 'min-w-[130px] max-w-[220px]' : 'min-w-[44px]',
         ].join(' ')}
         style={{ minHeight: 44 }}
       >
@@ -142,10 +143,10 @@ function SceneToken({ scene, isActive, isNextRecommended, orientation, onSelect 
         {isActive && (
           <span
             data-testid="HS_SPINE_ACTIVE_SCENE"
-            title={`${displaySceneNum} · ${scene.title}`}
-            className="text-[10px] font-mono font-bold text-emerald-300 leading-tight text-center whitespace-nowrap max-w-[170px] truncate px-1"
+            title={`Scene ${displaySceneNum} · ${scene.title}`}
+            className="text-[10px] font-mono font-bold text-emerald-300 leading-tight text-center whitespace-nowrap max-w-[195px] truncate px-1"
           >
-            {displaySceneNum} · {scene.title}
+            Scene {displaySceneNum} · {scene.title}
           </span>
         )}
         {!isActive && (

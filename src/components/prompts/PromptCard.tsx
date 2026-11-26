@@ -193,7 +193,7 @@ export function PromptCard(props: PromptCardProps) {
     ? `/cinema/tv?id=${memoryId}`
     : `/studio/production/${targetRouteId}${isCompleted ? '?act=1' : ''}`;
   const secondaryEditHref = isMobileScreen
-    ? `/studio/fireside?id=${encodeURIComponent(promptId)}`
+    ? `/studio/fireside?id=${encodeURIComponent(promptId)}&edit=true`
     : `/studio/production/${targetRouteId}?act=1`;
 
   const mainButton = (
@@ -447,7 +447,7 @@ export function PromptCard(props: PromptCardProps) {
                         e.stopPropagation();
                         if (isMobileViewport()) {
                           e.preventDefault();
-                          router.push(`/studio/fireside?id=${encodeURIComponent(promptId)}`);
+                          router.push(`/studio/fireside?id=${encodeURIComponent(promptId)}&edit=true`);
                         }
                       }}
                       data-testid={`prompt-card-edit-secondary-${promptId}`}

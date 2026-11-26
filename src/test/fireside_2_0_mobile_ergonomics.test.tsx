@@ -312,7 +312,7 @@ describe('Fireside 2.0 Mobile Ergonomics, 5-Act Swipe, In-App Cinema & Entitleme
         mockPush.mockClear();
 
         // 2. Published IN CINEMA card (p1) -> Watch in Cinema routes to /studio/fireside?view=cinema&id=p1,
-        //    and secondary Edit pill routes to /studio/fireside?id=p1
+        //    and secondary Edit pill routes to /studio/fireside?id=p1&edit=true
         const { unmount: u2, container: c2 } = render(
           <PromptCard
             promptId="p1"
@@ -334,7 +334,7 @@ describe('Fireside 2.0 Mobile Ergonomics, 5-Act Swipe, In-App Cinema & Entitleme
         mockPush.mockClear();
         const editPill = screen.getByTestId('prompt-card-edit-secondary-p1');
         fireEvent.click(editPill);
-        expect(mockPush).toHaveBeenCalledWith('/studio/fireside?id=p1');
+        expect(mockPush).toHaveBeenCalledWith('/studio/fireside?id=p1&edit=true');
         u2();
       } finally {
         Object.defineProperty(window, 'innerWidth', {

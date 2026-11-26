@@ -42,6 +42,13 @@ import {
   Lock,
   MapPin,
   Rocket,
+  Film,
+  Play,
+  Share2,
+  PencilLine,
+  AlertTriangle,
+  PlusCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import type {
   FiresidePromptSpark,
@@ -142,6 +149,12 @@ export interface SingleCardPromptCarouselProps {
   onOpenFiresideCinema?: () => void;
   resolveDocIdForScene?: (sceneId: string) => string;
   inlineAct3RecorderNode?: React.ReactNode;
+  forceRecordMode?: boolean;
+  editIntentRequested?: boolean;
+  onEditIntentChange?: (requested: boolean) => void;
+  onDoneEditing?: () => void;
+  onOpenBonusDrawer?: () => void;
+  isVaultLoading?: boolean;
   className?: string;
 }
 
@@ -240,6 +253,12 @@ export function SingleCardPromptCarousel({
   onOpenFiresideCinema,
   resolveDocIdForScene,
   inlineAct3RecorderNode,
+  forceRecordMode = false,
+  editIntentRequested,
+  onEditIntentChange,
+  onDoneEditing,
+  onOpenBonusDrawer,
+  isVaultLoading = false,
   className = '',
 }: SingleCardPromptCarouselProps) {
   const sparkDeck = useMemo(() => {
@@ -290,6 +309,11 @@ export function SingleCardPromptCarousel({
   const [localProseOverride, setLocalProseOverride] = useState<string | null>(null);
   const [selectedActTab, setSelectedActTab] = useState<'act1' | 'act2' | 'act3' | 'act4' | 'act5'>('act1');
   const [isCoordsSheetOpen, setIsCoordsSheetOpen] = useState<boolean>(false);
+  const [internalEditIntent, setInternalEditIntent] = useState<boolean>(false);
+  const [confirmedEditSceneId, setConfirmedEditSceneId] = useState<string | null>(null);
+  const [pendingEditTargetTab, setPendingEditTargetTab] = useState<'act1' | 'act2' | 'act3' | 'act5' | null>(null);
+  const [pendingCoordsSheetAfterConfirm, setPendingCoordsSheetAfterConfirm] = useState<boolean>(false);
+  const [showShowcasePremierePanel, setShowShowcasePremierePanel] = useState<boolean>(false);
   const [showFiresideSpokenSlate, setShowFiresideSpokenSlate] = useState<boolean>(() => {
     const cached = readPrompterSlateFromStorage(null);
     return cached ? cached.showSpokenSlate : true;
@@ -348,6 +372,11 @@ export function SingleCardPromptCarousel({
     setLocalProseOverride(null);
     setIsEditingScript(false);
     setHighlightedSensoryType(null);
+    setInternalEditIntent(false);
+    setConfirmedEditSceneId(null);
+    setPendingEditTargetTab(null);
+    setPendingCoordsSheetAfterConfirm(false);
+    setShowShowcasePremierePanel(false);
   }, [currentSpark.id]);
 
   // Cleanly release local optimistic override once server prose catches up
@@ -388,20 +417,53 @@ export function SingleCardPromptCarousel({
   const activeProse =
     localProseOverride !== null ? localProseOverride.trim() : rawSceneProse;
   const hasSceneCompletedReel = isSceneCompleted(currentSceneMemory);
+  const isPublishedInCinema =
+    currentSceneMemory?.status === 'published' ||
+    (currentSceneMemory as any)?.currentStatus === 'published';
   const isMasteredScene =
     currentSceneMemory?.currentStatus === 'mastered' ||
     Boolean(currentSceneMemory?.directorialPolish?.masterReelUrl);
 
   const activeProductionStage = useMemo(() => {
+    if (fireside2MobileMode) {
+      if (isPublishedInCinema) return 5;
+      if (hasSceneCompletedReel) return 4;
+    }
     const stage = currentSceneMemory?.productionStage;
     if (stage === 4 || isMasteredScene) return 4;
     if (stage === 3 || hasSceneCompletedReel) return 3;
     if (stage === 2) return 2;
     return 1;
-  }, [currentSceneMemory?.productionStage, isMasteredScene, hasSceneCompletedReel]);
+  }, [fireside2MobileMode, isPublishedInCinema, currentSceneMemory?.productionStage, isMasteredScene, hasSceneCompletedReel]);
 
   const targetSceneId =
     currentSpark.linkedSceneId || currentSceneMemory?.sceneId || 'part-1-scene-1';
+
+  const effectiveEditIntent =
+    typeof editIntentRequested === 'boolean' ? editIntentRequested : internalEditIntent;
+  const setEffectiveEditIntent = useCallback(
+    (next: boolean) => {
+      setInternalEditIntent(next);
+      onEditIntentChange?.(next);
+    },
+    [onEditIntentChange]
+  );
+  const isContinuityGateRequired = Boolean(
+    fireside2MobileMode &&
+      (isPublishedInCinema || (hasSceneCompletedReel && cardEditingAuthority === 'desktop_locked'))
+  );
+  const isContinuityConfirmed = confirmedEditSceneId === targetSceneId;
+  const isContinuityModalOpen = Boolean(
+    effectiveEditIntent && isContinuityGateRequired && !isContinuityConfirmed
+  );
+  const effectiveEditExpanded = Boolean(
+    effectiveEditIntent &&
+      (!isContinuityGateRequired || isContinuityConfirmed) &&
+      !(isVaultLoading && !currentSceneMemory && fireside2MobileMode)
+  );
+  const isShowcaseMode = Boolean(
+    fireside2MobileMode && hasSceneCompletedReel && !effectiveEditExpanded && !forceRecordMode
+  );
 
   const [localCoordinatesOverride, setLocalCoordinatesOverride] = useState<{
     location?: string;
@@ -454,6 +516,11 @@ export function SingleCardPromptCarousel({
 
   const handleUpdateCoordinate = useCallback(
     (field: string, value: any) => {
+      if (isContinuityGateRequired && !isContinuityConfirmed) {
+        setPendingEditTargetTab('act1');
+        setEffectiveEditIntent(true);
+        return;
+      }
       const updated = {
         location: activeCoordinateLocation,
         country: activeCoordinateCountry,
@@ -489,6 +556,9 @@ export function SingleCardPromptCarousel({
       onSaveCoordinates?.(targetSceneId, updated);
     },
     [
+      isContinuityGateRequired,
+      isContinuityConfirmed,
+      setEffectiveEditIntent,
       activeCoordinateLocation,
       activeCoordinateCountry,
       activeCoordinateDay,
@@ -524,7 +594,7 @@ export function SingleCardPromptCarousel({
     }
   }, [selectedActStage, activeProductionStage, currentSpark.id]);
 
-  const handleSelectActTab = useCallback(
+  const applyActTabSelection = useCallback(
     (tab: 'act1' | 'act2' | 'act3' | 'act4' | 'act5') => {
       setSelectedActTab(tab);
       const stageMap: Record<'act1' | 'act2' | 'act3' | 'act4' | 'act5', 1 | 2 | 3 | 4 | 5> = {
@@ -546,12 +616,43 @@ export function SingleCardPromptCarousel({
     [onSelectActStage]
   );
 
+  const handleSelectActTab = useCallback(
+    (tab: 'act1' | 'act2' | 'act3' | 'act4' | 'act5') => {
+      if (isShowcaseMode) {
+        if (tab === 'act4') {
+          onOpenScreeningRoom?.();
+          return;
+        }
+        if (tab === 'act5') {
+          applyActTabSelection('act5');
+          setShowShowcasePremierePanel((prev) => !prev);
+          return;
+        }
+        if (isContinuityGateRequired && !isContinuityConfirmed) {
+          setPendingEditTargetTab(tab);
+          setEffectiveEditIntent(true);
+          return;
+        }
+        setEffectiveEditIntent(true);
+      }
+      applyActTabSelection(tab);
+    },
+    [
+      isShowcaseMode,
+      isContinuityGateRequired,
+      isContinuityConfirmed,
+      onOpenScreeningRoom,
+      applyActTabSelection,
+      setEffectiveEditIntent,
+    ]
+  );
+
   const ACT_SEQUENCE: Array<'act1' | 'act2' | 'act3' | 'act4' | 'act5'> = useMemo(
     () => ['act1', 'act2', 'act3', 'act4', 'act5'],
     []
   );
 
-  const canSwipeActs = !isRecordingActive && !isEditingScript;
+  const canSwipeActs = !isRecordingActive && !isEditingScript && !isShowcaseMode;
 
   const stepActBySwipe = useCallback(
     (delta: 1 | -1) => {
@@ -1603,7 +1704,45 @@ export function SingleCardPromptCarousel({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {fireside2MobileMode && (
+                    <span
+                      data-testid="HS_FIRESIDE_CAROUSEL_SCENE_BADGE"
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/50 text-amber-300 text-[10px] font-mono font-bold uppercase tracking-wider shadow-sm"
+                      title={`Active Chapter & Scene: ${activePartRoman} • Scene ${activeSceneNumInPart} of ${totalScenesInActivePart}`}
+                    >
+                      {activePartRoman.toUpperCase()} • SCENE {activeSceneNumInPart} OF {totalScenesInActivePart}
+                    </span>
+                  )}
+
+                  {fireside2MobileMode && hasSceneCompletedReel && effectiveEditExpanded && !isRecordingActive && (
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_CAROUSEL_DONE_EDIT_BTN"
+                      data-hotspot-id="HS_FIRESIDE_CAROUSEL_DONE_EDIT_BTN"
+                      onClick={() => {
+                        if (isEditingScript) {
+                          const trimmed = draftProse.trim();
+                          if (trimmed.length > 0 && trimmed !== activeProse) {
+                            handleSaveScript();
+                          } else {
+                            handleCancelEditScript();
+                          }
+                        }
+                        setConfirmedEditSceneId(null);
+                        setPendingEditTargetTab(null);
+                        setPendingCoordsSheetAfterConfirm(false);
+                        setEffectiveEditIntent(false);
+                        onDoneEditing?.();
+                      }}
+                      className="min-h-[36px] px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-[11px] font-mono font-bold inline-flex items-center gap-1 shadow-md shadow-emerald-500/20 cursor-pointer transition-colors"
+                      title="Save any script changes and return to the Cinema Screening Stage"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Done Editing</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     data-hotspot-id="HS_FIRESIDE_RANDOM_SPARK_BTN"
@@ -1632,7 +1771,11 @@ export function SingleCardPromptCarousel({
                     title="Act I: Script — Review or edit your story hook and narrative prose in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act1'
-                        ? 'border-sky-500/50 bg-stone-900/90 text-sky-300 font-bold ring-1 ring-sky-400/40'
+                        ? fireside2MobileMode
+                          ? 'border-sky-500/50 bg-sky-950/75 text-sky-300 font-bold ring-2 ring-sky-400/60 shadow-md shadow-sky-500/20'
+                          : 'border-sky-500/50 bg-stone-900/90 text-sky-300 font-bold ring-1 ring-sky-400/40'
+                        : fireside2MobileMode
+                        ? 'bg-stone-950/70 border-stone-800/80 text-stone-400 hover:text-stone-200 hover:border-stone-700 font-medium opacity-75'
                         : activeProse
                         ? 'bg-stone-900/40 border-stone-800 text-stone-300 hover:text-sky-300 hover:border-sky-500/30 font-medium'
                         : 'bg-stone-900/20 border-stone-800/60 text-stone-400 hover:bg-stone-900/40'
@@ -1656,7 +1799,11 @@ export function SingleCardPromptCarousel({
                     title="Act II: Weave — Inspect and pulse-highlight sensory anchor cues in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act2'
-                        ? 'border-amber-500/50 bg-amber-950/40 text-amber-300 font-bold ring-1 ring-amber-400/40'
+                        ? fireside2MobileMode
+                          ? 'border-amber-400 bg-amber-500/25 text-amber-100 font-bold ring-2 ring-amber-400/70 shadow-md shadow-amber-500/20'
+                          : 'border-amber-500/50 bg-amber-950/40 text-amber-300 font-bold ring-1 ring-amber-400/40'
+                        : fireside2MobileMode
+                        ? 'bg-stone-950/70 border-stone-800/80 text-stone-400 hover:text-stone-200 hover:border-stone-700 font-medium opacity-75'
                         : hasSceneCompletedReel || activeProductionStage >= 2
                         ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/20'
                         : activeProse
@@ -1682,7 +1829,11 @@ export function SingleCardPromptCarousel({
                     title="Act III: Record — Capture your spoken voice or selfie video performance in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act3'
-                        ? 'border-amber-500/50 bg-amber-950/40 text-amber-300 font-bold ring-1 ring-amber-400/40'
+                        ? fireside2MobileMode
+                          ? 'border-amber-400 bg-amber-500/25 text-amber-100 font-bold ring-2 ring-amber-400/70 shadow-md shadow-amber-500/20'
+                          : 'border-amber-500/50 bg-amber-950/40 text-amber-300 font-bold ring-1 ring-amber-400/40'
+                        : fireside2MobileMode
+                        ? 'bg-stone-950/70 border-stone-800/80 text-stone-400 hover:text-stone-200 hover:border-stone-700 font-medium opacity-75'
                         : hasSceneCompletedReel || activeProductionStage >= 3
                         ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 font-bold hover:bg-amber-500/20'
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
@@ -1706,7 +1857,11 @@ export function SingleCardPromptCarousel({
                     title="Act IV: Cut & Screening — Review your recorded reel, mood, and takes in-place."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act4'
-                        ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
+                        ? fireside2MobileMode
+                          ? 'border-emerald-400 bg-emerald-500/30 text-emerald-100 font-bold ring-2 ring-emerald-400/80 shadow-md shadow-emerald-500/25'
+                          : 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300 font-bold ring-1 ring-emerald-400/40'
+                        : fireside2MobileMode
+                        ? 'bg-stone-950/70 border-stone-800/80 text-stone-400 hover:text-stone-200 hover:border-stone-700 font-medium opacity-75'
                         : isMasteredScene || activeProductionStage >= 4 || hasSceneCompletedReel
                         ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/20'
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
@@ -1730,7 +1885,11 @@ export function SingleCardPromptCarousel({
                     title="Act V: Premiere — Publish to Family Cinema and share your private family link."
                     className={`min-h-[44px] px-1 py-1.5 rounded-xl border text-center transition-all cursor-pointer flex items-center justify-center font-mono ${
                       selectedActTab === 'act5'
-                        ? 'border-emerald-400/60 bg-emerald-950/60 text-emerald-200 font-bold ring-1 ring-emerald-400/50'
+                        ? fireside2MobileMode
+                          ? 'border-emerald-400 bg-emerald-500/35 text-emerald-100 font-bold ring-2 ring-emerald-400/80 shadow-md shadow-emerald-500/25'
+                          : 'border-emerald-400/60 bg-emerald-950/60 text-emerald-200 font-bold ring-1 ring-emerald-400/50'
+                        : fireside2MobileMode
+                        ? 'bg-stone-950/70 border-stone-800/80 text-stone-400 hover:text-stone-200 hover:border-stone-700 font-medium opacity-75'
                         : currentSceneMemory?.status === 'published'
                         ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200 font-bold hover:bg-emerald-500/30'
                         : 'bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10'
@@ -1746,6 +1905,25 @@ export function SingleCardPromptCarousel({
                     </span>
                   </button>
                 </div>
+
+                {fireside2MobileMode && (
+                  <p
+                    data-testid="HS_FIRESIDE_ACTIVE_ACT_CAPTION"
+                    className="text-center text-[10px] font-mono uppercase tracking-wider text-amber-200/90 pt-0.5"
+                  >
+                    {selectedActTab === 'act5'
+                      ? isPublishedInCinema
+                        ? 'Viewing Act V of V · Premiered in Family Cinema'
+                        : 'Viewing Act V of V · Ready to Premiere'
+                      : selectedActTab === 'act4'
+                      ? 'Viewing Act IV of V · Screening Stage'
+                      : selectedActTab === 'act3'
+                      ? 'Viewing Act III of V · Recording Floor'
+                      : selectedActTab === 'act2'
+                      ? 'Viewing Act II of V · Sensory Weave'
+                      : 'Viewing Act I of V · Script Bench'}
+                  </p>
+                )}
 
                 {fireside2MobileMode && canSwipeActs && (
                   <p
@@ -1820,13 +1998,18 @@ export function SingleCardPromptCarousel({
                 </h3>
                 {/* Synchronised Memory Coordinates Strip (Compact 1-tap bottom-sheet chip on < md mobile in Fireside 2.0; full bar on md+) */}
                 {fireside2MobileMode && (
-                  <div className="md:hidden mt-2 flex flex-wrap items-center gap-1.5">
+                  <div className={`${isShowcaseMode ? 'hidden' : 'md:hidden'} mt-2 flex flex-wrap items-center gap-1.5`}>
                     <button
                       type="button"
                       data-testid="HS_FIRESIDE_CHIP_COORDS"
                       onClick={() => {
                         if (isLockedPreview) {
                           onOpenUpgradeSheet?.();
+                          return;
+                        }
+                        if (isContinuityGateRequired && !isContinuityConfirmed) {
+                          setPendingCoordsSheetAfterConfirm(true);
+                          setEffectiveEditIntent(true);
                           return;
                         }
                         setIsCoordsSheetOpen(true);
@@ -1879,7 +2062,7 @@ export function SingleCardPromptCarousel({
                   </div>
                 )}
 
-                <div className={`mt-2.5 ${fireside2MobileMode ? 'hidden md:block' : ''}`}>
+                <div className={`mt-2.5 ${isShowcaseMode ? 'hidden' : fireside2MobileMode ? 'hidden md:block' : ''}`}>
                   <MemoryCoordinatesBar
                     location={activeCoordinateLocation}
                     country={activeCoordinateCountry}
@@ -1908,6 +2091,334 @@ export function SingleCardPromptCarousel({
                 )}
               </div>
 
+              {isShowcaseMode ? (() => {
+                const activeShowcaseTakes = Array.isArray(currentSceneMemory?.takes)
+                  ? currentSceneMemory.takes.filter((t) => t.status !== 'outtake' && t.status !== 'purged')
+                  : [];
+                const preferredShowcaseTake =
+                  activeShowcaseTakes.find((t) => t.status === 'master') ||
+                  activeShowcaseTakes.find((t) => t.isPreferred) ||
+                  activeShowcaseTakes[0] ||
+                  null;
+                const firstPhotoObj = Array.isArray(currentSceneMemory?.photos)
+                  ? currentSceneMemory.photos[0]
+                  : null;
+                const showcasePosterUrl =
+                  (currentSceneMemory as any)?.posterUrl ||
+                  (currentSceneMemory as any)?.thumbnailUrl ||
+                  (firstPhotoObj
+                    ? typeof firstPhotoObj === 'string'
+                      ? firstPhotoObj
+                      : (firstPhotoObj as any).storageUrl ||
+                        (firstPhotoObj as any).localUri ||
+                        (firstPhotoObj as any).url ||
+                        null
+                    : null);
+                const isVideoReel =
+                  preferredShowcaseTake?.mediaMode === 'video' ||
+                  (!preferredShowcaseTake?.mediaMode && Boolean(currentSceneMemory?.videoUrl));
+                const candidateVideoUrl = isVideoReel
+                  ? preferredShowcaseTake?.mediaUrl || currentSceneMemory?.videoUrl || null
+                  : null;
+                const canUseVideoFrame =
+                  !showcasePosterUrl &&
+                  typeof candidateVideoUrl === 'string' &&
+                  /^https?:\/\//i.test(candidateVideoUrl);
+                const durationSecs = preferredShowcaseTake?.durationSeconds || 0;
+                const formattedDur =
+                  durationSecs > 0
+                    ? `${Math.floor(durationSecs / 60)}m ${String(Math.round(durationSecs % 60)).padStart(2, '0')}s`
+                    : 'Recorded Reel';
+                const datelineParts = [
+                  activeCoordinateLocation &&
+                  activeCoordinateLocation !== 'undefined' &&
+                  activeCoordinateLocation !== 'none'
+                    ? activeCoordinateLocation
+                    : null,
+                  activeCoordinateCountry &&
+                  activeCoordinateCountry !== 'undefined' &&
+                  activeCoordinateCountry !== 'none'
+                    ? activeCoordinateCountry
+                    : null,
+                  activeCoordinateYear &&
+                  activeCoordinateYear !== 'undefined' &&
+                  activeCoordinateYear !== 'none' &&
+                  activeCoordinateYear !== '-'
+                    ? activeCoordinateYear
+                    : null,
+                  typeof activeCoordinateAge === 'number' && activeCoordinateAge > 0
+                    ? `Age ${activeCoordinateAge}`
+                    : null,
+                ].filter(Boolean);
+                const showcasePhotosCount = Array.isArray(currentSceneMemory?.photos)
+                  ? currentSceneMemory.photos.length
+                  : 0;
+                const shareDocId = resolveDocIdForScene
+                  ? resolveDocIdForScene(targetSceneId)
+                  : currentSceneMemory?.id || targetSceneId;
+
+                const handleShowcaseShare = async () => {
+                  const shareUrl =
+                    typeof window !== 'undefined'
+                      ? `${window.location.origin}/cinema?id=${encodeURIComponent(shareDocId)}`
+                      : `https://memoryweaver.studio/cinema?id=${encodeURIComponent(shareDocId)}`;
+                  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+                    try {
+                      await navigator.share({
+                        title: `${primaryCardTitle} — Family Cinema`,
+                        text: `Watch "${primaryCardTitle}" in our Family Cinema:`,
+                        url: shareUrl,
+                      });
+                      return;
+                    } catch (err: any) {
+                      if (err?.name === 'AbortError') return;
+                    }
+                  }
+                  try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    toast.success('Family Cinema screening link copied!');
+                  } catch {
+                    toast.info(shareUrl);
+                  }
+                };
+
+                return (
+                  <div
+                    id="HS_FIRESIDE_CAROUSEL_SHOWCASE_CARD"
+                    data-testid="HS_FIRESIDE_CAROUSEL_SHOWCASE_CARD"
+                    data-hotspot-id="HS_FIRESIDE_CAROUSEL_SHOWCASE_CARD"
+                    className="space-y-3.5"
+                  >
+                    {/* Enlarged 16:9 Theatrical Movie Screening Hero Stage */}
+                    <button
+                      type="button"
+                      data-testid="HS_FIRESIDE_CAROUSEL_SHOWCASE_POSTER_BTN"
+                      data-hotspot-id="HS_FIRESIDE_CAROUSEL_SHOWCASE_POSTER_BTN"
+                      onClick={() => onOpenScreeningRoom?.()}
+                      aria-label={`Watch ${primaryCardTitle} in Fireside Screening Room`}
+                      className="relative w-full aspect-[16/9] min-h-[220px] sm:min-h-[260px] rounded-2xl overflow-hidden border border-emerald-500/45 hover:border-amber-400/70 bg-gradient-to-br from-stone-950 via-emerald-950/35 to-amber-950/30 shadow-[0_0_35px_rgba(16,185,129,0.16)] flex flex-col justify-between p-3.5 sm:p-5 text-left cursor-pointer group transition-all"
+                    >
+                      {showcasePosterUrl ? (
+                        <img
+                          src={showcasePosterUrl}
+                          alt={primaryCardTitle}
+                          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+                        />
+                      ) : canUseVideoFrame ? (
+                        <video
+                          src={`${candidateVideoUrl}#t=0.5`}
+                          preload="metadata"
+                          muted
+                          playsInline
+                          disablePictureInPicture
+                          aria-hidden="true"
+                          data-testid="HS_FIRESIDE_SHOWCASE_VIDEO_FRAME"
+                          className="absolute inset-0 w-full h-full object-cover opacity-65 pointer-events-none"
+                        />
+                      ) : null}
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/40 pointer-events-none" />
+                      <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-emerald-400/80 via-amber-300/90 to-emerald-400/80 pointer-events-none" />
+
+                      {/* Top Poster Badges: Status + Provenance */}
+                      <div className="relative z-10 w-full flex items-center justify-between gap-2 flex-wrap">
+                        {isPublishedInCinema ? (
+                          <span
+                            data-testid="HS_FIRESIDE_SHOWCASE_STATUS_BADGE"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/25 border border-emerald-400/60 text-emerald-200 text-[11px] font-mono font-bold uppercase tracking-wider shadow-sm backdrop-blur-sm"
+                          >
+                            <Rocket className="w-3.5 h-3.5 text-amber-300" />
+                            <span>In Cinema</span>
+                          </span>
+                        ) : (
+                          <span
+                            data-testid="HS_FIRESIDE_SHOWCASE_STATUS_BADGE"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-950/85 border border-teal-400/50 text-teal-200 text-[11px] font-mono font-bold uppercase tracking-wider shadow-sm backdrop-blur-sm"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-teal-300" />
+                            <span>Captured</span>
+                          </span>
+                        )}
+
+                        <span
+                          data-testid="HS_FIRESIDE_SHOWCASE_ORIGIN_BADGE"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/70 border border-amber-400/35 text-amber-200 text-[10px] font-mono font-semibold uppercase tracking-wider backdrop-blur-sm"
+                        >
+                          <Film className="w-3 h-3 text-amber-400" />
+                          <span>
+                            {cardEditingAuthority === 'desktop_locked'
+                              ? `Soundstage · ${activeWeaveLabel}`
+                              : 'Fireside Studio'}
+                          </span>
+                        </span>
+                      </div>
+
+                      {/* Centre Big 64px Movie & Play Medallion */}
+                      <div className="relative z-10 my-auto mx-auto flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-500/95 group-hover:bg-emerald-400 text-stone-950 border-2 border-amber-300/80 shadow-[0_0_32px_rgba(16,185,129,0.55)] flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                          <Play className="w-7 h-7 sm:w-8 sm:h-8 fill-stone-950 text-stone-950 ml-1" />
+                        </div>
+                        <span className="px-3 py-0.5 rounded-full bg-black/75 border border-white/15 text-[11px] font-mono font-semibold text-amber-200 tracking-wide">
+                          2.39:1 Fireside Screening Room
+                        </span>
+                      </div>
+
+                      {/* Bottom Poster Strip: Compact Dateline + Duration / Photo Count */}
+                      <div className="relative z-10 w-full flex items-center justify-between gap-2 flex-wrap">
+                        <span
+                          data-testid="HS_FIRESIDE_SHOWCASE_DATELINE"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-mono text-stone-200 bg-black/65 border border-white/10 px-2.5 py-1 rounded-xl"
+                        >
+                          <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                          <span>
+                            {datelineParts.length > 0
+                              ? datelineParts.join(' · ')
+                              : `${activePartRoman} · Scene ${activeSceneNumInPart}`}
+                          </span>
+                        </span>
+
+                        <div className="inline-flex items-center gap-1.5">
+                          {showcasePhotosCount > 1 && (
+                            <span className="px-2.5 py-1 rounded-xl bg-black/70 border border-amber-400/30 text-[11px] font-mono text-amber-200 inline-flex items-center gap-1">
+                              <Camera className="w-3 h-3 text-amber-400" />
+                              <span>{showcasePhotosCount} Photos</span>
+                            </span>
+                          )}
+                          <span className="px-2.5 py-1 rounded-xl bg-black/75 border border-emerald-400/35 text-[11px] font-mono font-bold text-emerald-200">
+                            {formattedDur}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Calm Read-Only Story Excerpt (Zero Accidental Click-to-Type) */}
+                    {activeProse && (
+                      <div
+                        data-testid="HS_FIRESIDE_SHOWCASE_QUOTE"
+                        className="p-3.5 sm:p-4 rounded-2xl bg-stone-950/85 border border-stone-800/80 flex flex-col gap-2"
+                      >
+                        <p className="text-sm sm:text-base font-serif italic text-stone-200 leading-relaxed line-clamp-3 select-text">
+                          &ldquo;{activeProse}&rdquo;
+                        </p>
+                        <div className="flex items-center justify-between gap-2 text-[11px] font-mono text-stone-400">
+                          <span>
+                            Read-only cinema excerpt · ~{scriptCadence.estimatedSpokenSeconds}s spoken
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowFollowUps((prev) => !prev)}
+                            className="text-amber-300 hover:text-amber-200 underline underline-offset-2 cursor-pointer"
+                          >
+                            {showFollowUps ? 'Hide Prompts ▴' : 'Deepen ▾'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Optional Act V Premiere / QR Share Panel when V • PREMIERE pill is toggled */}
+                    {showShowcasePremierePanel && (
+                      <FiresideAct5PremierePanel
+                        sceneTitle={primaryCardTitle}
+                        hasRecordedTake={hasCurrentTake}
+                        isPublished={isPublishedInCinema}
+                        isLockedPreview={isLockedPreview}
+                        shareDocId={shareDocId}
+                        onPublishToCinema={() =>
+                          onPublishToCinema ? onPublishToCinema(targetSceneId) : undefined
+                        }
+                        onOpenFiresideCinema={() => onOpenFiresideCinema?.()}
+                        onGoToRecord={() => handleSelectActTab('act3')}
+                        onOpenUpgrade={onOpenUpgradeSheet}
+                      />
+                    )}
+
+                    {/* 80/20 Watch-First Action Row (>= 48px Elder Touch Targets) */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        data-testid="HS_FIRESIDE_CAROUSEL_SHOWCASE_EDIT_BTN"
+                        data-hotspot-id="HS_FIRESIDE_CAROUSEL_SHOWCASE_EDIT_BTN"
+                        onClick={() => {
+                          if (isLockedPreview) {
+                            onOpenUpgradeSheet?.();
+                            return;
+                          }
+                          setPendingEditTargetTab('act1');
+                          if (!isContinuityGateRequired || isContinuityConfirmed) {
+                            applyActTabSelection('act1');
+                          }
+                          setEffectiveEditIntent(true);
+                        }}
+                        className="min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-900/90 hover:bg-stone-800 border border-stone-700 hover:border-amber-400/50 text-stone-200 hover:text-amber-200 font-mono font-semibold text-xs inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        title={
+                          isContinuityGateRequired
+                            ? 'Protected cinema script — opens continuity check before editing'
+                            : 'Edit script, weave, or coordinates'
+                        }
+                      >
+                        {isContinuityGateRequired ? (
+                          <Lock className="w-3.5 h-3.5 text-amber-400" />
+                        ) : (
+                          <PencilLine className="w-3.5 h-3.5 text-stone-300" />
+                        )}
+                        <span>Edit</span>
+                      </button>
+
+                      <div className="flex-1 flex flex-wrap items-center justify-end gap-2">
+                        {isPublishedInCinema ? (
+                          <>
+                            <button
+                              type="button"
+                              data-testid="HS_FIRESIDE_CAROUSEL_SHOWCASE_SHARE_BTN"
+                              onClick={handleShowcaseShare}
+                              className="min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-amber-500/35 text-amber-200 font-mono font-semibold text-xs inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                            >
+                              <Share2 className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Share</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              data-testid="HS_FIRESIDE_CAROUSEL_SHOWCASE_WATCH_BTN"
+                              data-hotspot-id="HS_FIRESIDE_CAROUSEL_SHOWCASE_WATCH_BTN"
+                              onClick={() => onOpenScreeningRoom?.()}
+                              className="flex-1 sm:flex-initial min-h-[48px] px-5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-mono font-black text-xs sm:text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-98"
+                            >
+                              <Film className="w-4 h-4" />
+                              <span>Watch in Cinema ▶</span>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              data-testid="HS_FIRESIDE_CAROUSEL_SHOWCASE_WATCH_BTN"
+                              data-hotspot-id="HS_FIRESIDE_CAROUSEL_SHOWCASE_WATCH_BTN"
+                              onClick={() => onOpenScreeningRoom?.()}
+                              className="min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-teal-400/45 text-teal-200 font-mono font-bold text-xs inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-teal-300 text-teal-300" />
+                              <span>Watch Take ▶</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              data-testid="HS_FIRESIDE_CAROUSEL_SHOWCASE_PUBLISH_BTN"
+                              data-hotspot-id="HS_FIRESIDE_CAROUSEL_SHOWCASE_PUBLISH_BTN"
+                              onClick={() => onPublishToCinema?.(targetSceneId)}
+                              className="flex-1 sm:flex-initial min-h-[48px] px-5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-mono font-black text-xs sm:text-sm inline-flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/25 cursor-pointer transition-all active:scale-98"
+                            >
+                              <Rocket className="w-4 h-4" />
+                              <span>Publish to Cinema</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })() : (
+              <>
               {/* Mobile-Lite In-Place Stage Contextual Banner (Act II Weave / Act III Record / Act IV Screening — MW-88-T9) */}
               {selectedActTab === 'act2' && (
                 <div
@@ -1928,7 +2439,7 @@ export function SingleCardPromptCarousel({
                   activeSceneMemory?.takes && activeSceneMemory.takes.length > 0
                 );
 
-                if (hasRecordedTake) {
+                if (hasRecordedTake && !forceRecordMode) {
                   return (
                     <div
                       data-testid="HS_FIRESIDE_ACT3_RECORDED_VIEW"
@@ -2651,10 +3162,12 @@ export function SingleCardPromptCarousel({
                   </div>
                 </div>
               )}
+              </>
+              )}
             </div>
 
-            {/* 3. Expandable Follow-Up Inquiries Drawer (MW-88-T6 Two-Action Model) */}
-            <div className="mt-6 pt-4 border-t border-white/10">
+            {/* 3. Expandable Follow-Up Inquiries Drawer (MW-88-T6 Two-Action Model — CSS hidden in Showcase Mode unless ✨ Deepen is toggled) */}
+            <div className={isShowcaseMode && !showFollowUps ? 'hidden' : 'mt-6 pt-4 border-t border-white/10'}>
               <button
                 type="button"
                 data-hotspot-id="HS_FIRESIDE_FOLLOWUPS_DRAWER_BTN"
@@ -2872,6 +3385,111 @@ export function SingleCardPromptCarousel({
           onChangeYear={(val) => handleUpdateCoordinate('year', val)}
           onChangeAge={(val) => handleUpdateCoordinate('narratorAgeAtTime', val)}
         />
+      )}
+
+      {/* Origin-Aware Cinema Continuity Warning Modal (Gates Script & Coordinates on Published / Soundstage-Mastered Scenes) */}
+      {isContinuityModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="fireside-continuity-modal-title"
+          data-testid="HS_FIRESIDE_MODAL_CONTINUITY_WARN"
+          data-hotspot-id="HS_FIRESIDE_MODAL_CONTINUITY_WARN"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+        >
+          <div className="w-full max-w-md rounded-3xl bg-stone-950 border border-amber-500/50 shadow-2xl p-6 space-y-4 text-left">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/50 text-amber-300 text-[11px] font-mono font-bold uppercase tracking-wider">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                <span>
+                  {cardEditingAuthority === 'desktop_locked' && isPublishedInCinema
+                    ? 'Soundstage Master · Live in Cinema'
+                    : isPublishedInCinema
+                    ? 'Live in Family Cinema'
+                    : 'Soundstage Master Script'}
+                </span>
+              </span>
+            </div>
+
+            <h3
+              id="fireside-continuity-modal-title"
+              className="text-lg sm:text-xl font-serif text-white leading-snug"
+            >
+              {cardEditingAuthority === 'desktop_locked'
+                ? `Edit "${primaryCardTitle}" from Fireside?`
+                : `Edit Published Cinema Chapter "${primaryCardTitle}"?`}
+            </h3>
+
+            <div className="space-y-2 text-xs sm:text-sm text-stone-300 leading-relaxed">
+              {cardEditingAuthority === 'desktop_locked' ? (
+                <p>
+                  This chapter&apos;s script (<span className="text-amber-300 font-semibold">{activeWeaveLabel}</span>) was woven
+                  {isPublishedInCinema ? ' and premiered ' : ' '}in <strong className="text-white">Desktop Soundstage</strong>.
+                </p>
+              ) : (
+                <p>
+                  This story is currently premiered in your <strong className="text-white">Family Cinema</strong>.
+                </p>
+              )}
+              <p className="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-amber-100 text-xs leading-relaxed">
+                Editing written prose or coordinates here updates your live story card, Pre-Roll Title Slate, and Lower-Third immediately — <strong>but will not change the spoken words already recorded in your video/voice reel</strong>.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 pt-1">
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_MODAL_CONTINUITY_KEEP_SAFE_BTN"
+                onClick={() => {
+                  setPendingEditTargetTab(null);
+                  setPendingCoordsSheetAfterConfirm(false);
+                  setEffectiveEditIntent(false);
+                  onDoneEditing?.();
+                }}
+                className="w-full min-h-[48px] px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-mono font-bold text-xs sm:text-sm cursor-pointer transition-colors"
+              >
+                Keep Safe (Stay on Cinema Stage)
+              </button>
+
+              {onOpenBonusDrawer && (
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_MODAL_CONTINUITY_BONUS_BTN"
+                  onClick={() => {
+                    setPendingEditTargetTab(null);
+                    setPendingCoordsSheetAfterConfirm(false);
+                    setEffectiveEditIntent(false);
+                    onDoneEditing?.();
+                    onOpenBonusDrawer();
+                  }}
+                  className="w-full min-h-[48px] px-4 py-3 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-amber-500/40 text-amber-200 font-mono font-semibold text-xs sm:text-sm inline-flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                >
+                  <PlusCircle className="w-4 h-4 text-amber-400" />
+                  <span>Add Bonus Note or Photo Instead</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_MODAL_CONTINUITY_UNLOCK_BTN"
+                onClick={() => {
+                  const nextTab = pendingEditTargetTab || 'act1';
+                  const shouldOpenCoords = pendingCoordsSheetAfterConfirm;
+                  setConfirmedEditSceneId(targetSceneId);
+                  setPendingEditTargetTab(null);
+                  setPendingCoordsSheetAfterConfirm(false);
+                  applyActTabSelection(nextTab);
+                  if (shouldOpenCoords) {
+                    setIsCoordsSheetOpen(true);
+                  }
+                }}
+                className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-950 hover:bg-stone-900 border border-stone-700 hover:border-amber-400/50 text-stone-300 hover:text-amber-200 font-mono font-medium text-xs cursor-pointer transition-colors"
+              >
+                Unlock Script &amp; Coordinates Anyway
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
