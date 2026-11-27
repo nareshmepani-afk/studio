@@ -49,6 +49,9 @@ export interface FiresideCompletedReelCardProps {
   sceneTitle: string;
   sceneMemory?: UnifiedCurriculumMemory;
   editingAuthority?: EditingAuthority;
+  isProtectedMasterReel?: boolean;
+  isPublishedInCinema?: boolean;
+  activeWeaveLabel?: string | null;
   sessionPhotos?: any[];
   overrideDurationSeconds?: number;
   activeLanguage?: FiresideLanguage;
@@ -77,6 +80,9 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
   sceneTitle,
   sceneMemory,
   editingAuthority,
+  isProtectedMasterReel = false,
+  isPublishedInCinema = false,
+  activeWeaveLabel = null,
   sessionPhotos = [],
   overrideDurationSeconds,
   activeLanguage = 'en',
@@ -522,7 +528,7 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
             )}
 
             {activeTakes.length > 1 ? (
-              /* Case 1: Multiple Active Takes -> Direct Master Replacement Interlock */
+              /* Case 1: Multiple Active Takes -> Selection Room (Locked Master swaps under MW-430 1i when protected) */
               <div className="flex flex-col items-center gap-1">
                 <button
                   type="button"
@@ -535,10 +541,16 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
                   className="min-h-[48px] px-4 py-2 rounded-xl bg-stone-900/80 hover:bg-amber-950/40 border border-amber-500/40 hover:border-amber-500/60 text-amber-300 hover:text-amber-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer active:scale-95"
                 >
                   <Film className="w-4 h-4 text-amber-400" />
-                  <span>Replace Master Reel</span>
+                  <span>
+                    {isProtectedMasterReel
+                      ? `Audition & Manage Takes (${activeTakes.length})`
+                      : 'Replace Master Reel'}
+                  </span>
                 </button>
                 <span className="text-[11px] text-stone-400 font-mono">
-                  Opens Selection Room to assign a new Master before retiring this take.
+                  {isProtectedMasterReel
+                    ? 'Master Reel locked in Cinema · Audition or manage alternate Fireside takes.'
+                    : 'Opens Selection Room to assign a new Master before retiring this take.'}
                 </span>
               </div>
             ) : (
@@ -563,6 +575,70 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
                 </span>
               </div>
             )}
+          </div>
+        ) : isProtectedMasterReel ? (
+          <div
+            data-testid="HS_FIRESIDE_CARD_PROTECTED_MASTER_MODAL"
+            className="w-full p-5 rounded-3xl bg-stone-950/95 border border-amber-500/45 shadow-2xl text-left space-y-3.5 animate-in fade-in zoom-in-95 duration-200"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/45 text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>
+                {isDesktopLocked && isPublishedInCinema
+                  ? 'Soundstage Master · Live in Cinema'
+                  : isDesktopLocked
+                  ? 'Soundstage Master · Protected Reel'
+                  : isPublishedInCinema
+                  ? 'Published in Family Cinema'
+                  : 'Master Reel · Protected'}
+              </span>
+            </div>
+
+            <p className="text-base font-serif text-white leading-snug">
+              Keep &ldquo;{sceneTitle}&rdquo; Master Reel Safe?
+            </p>
+
+            <p className="text-xs text-stone-300 leading-relaxed">
+              {isDesktopLocked
+                ? `This chapter's Master Reel${activeWeaveLabel ? ` (${activeWeaveLabel.toUpperCase()})` : ''} was mastered in Desktop Soundstage and cannot be cleared from Fireside mobile.`
+                : 'This premiered Master Reel is live in Family Cinema and cannot be cleared from Fireside mobile.'}{' '}
+              Your film, script, and coordinates stay 100% safe.
+            </p>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_CARD_KEEP_MASTER_BTN"
+                onClick={() => setShowDiscardConfirm(false)}
+                className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-mono font-bold text-xs cursor-pointer transition"
+              >
+                Keep Master Reel Safe
+              </button>
+              {onReRecordRequest && (
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_CARD_ALT_TAKE_BTN"
+                  onClick={() => {
+                    setShowDiscardConfirm(false);
+                    handleConfirmRetake();
+                  }}
+                  className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-amber-500/45 text-amber-200 font-mono font-bold text-xs cursor-pointer transition"
+                >
+                  Record Alternate Take Instead
+                </button>
+              )}
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_CARD_MODAL_BONUS_BTN"
+                onClick={() => {
+                  setShowDiscardConfirm(false);
+                  handleBonusClick();
+                }}
+                className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-amber-500/35 text-amber-300 font-mono font-bold text-xs cursor-pointer transition"
+              >
+                Add Bonus Note or Photo Instead
+              </button>
+            </div>
           </div>
         ) : (
           <div className="w-full p-4 rounded-2xl bg-stone-900/95 border border-rose-500/50 shadow-2xl text-left animate-in fade-in zoom-in-95 duration-200">
@@ -714,13 +790,14 @@ export const FiresideCompletedReelCard: React.FC<FiresideCompletedReelCardProps>
         </div>
       )}
 
-      {/* Video Selection Room Drawer (MW-106) */}
+      {/* Video Selection Room Drawer (MW-106 / MW-430 1i Master Lock) */}
       <VideoSelectionRoomDrawer
         isOpen={isVideoSelectionRoomOpen}
         onClose={() => setIsVideoSelectionRoomOpen(false)}
         sceneTitle={sceneTitle}
         takes={takes}
         activeTakeId={sceneMemory?.activeTakeId}
+        isProtectedMasterReel={isProtectedMasterReel}
         onPromoteMaster={async (takeId) => {
           await onPromoteMasterTake?.(takeId);
         }}

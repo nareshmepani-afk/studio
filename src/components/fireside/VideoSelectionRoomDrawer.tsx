@@ -28,6 +28,8 @@ import {
   Clock,
   Sparkles,
   RotateCcw,
+  Lock,
+  Volume2,
 } from 'lucide-react';
 import { MemoirTake } from '@/types/curriculum';
 
@@ -37,6 +39,7 @@ export interface VideoSelectionRoomDrawerProps {
   sceneTitle: string;
   takes: MemoirTake[];
   activeTakeId?: string | null;
+  isProtectedMasterReel?: boolean;
   onPromoteMaster: (takeId: string) => Promise<void> | void;
   onReorderTakes: (orderedTakeIds: string[]) => Promise<void> | void;
   onDiscardTake: (discardTakeId: string, fallbackMasterTakeId?: string) => Promise<void> | void;
@@ -70,6 +73,7 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
   sceneTitle,
   takes = [],
   activeTakeId,
+  isProtectedMasterReel = false,
   onPromoteMaster,
   onReorderTakes,
   onDiscardTake,
@@ -243,7 +247,7 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                       <button
                         type="button"
                         onClick={() => handleMoveDown(idx)}
-                        disabled={idx === sortedTakes.length - 1}
+                        disabled={idx === activeTakes.length - 1}
                         title="Move down"
                         className="min-h-[44px] min-w-[36px] p-2 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-20 text-stone-200 flex items-center justify-center transition cursor-pointer"
                       >
@@ -287,16 +291,27 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                       </p>
                     </div>
 
-                    {/* Discard Trigger */}
-                    <button
-                      type="button"
-                      data-testid={`fireside-discard-btn-${take.id}`}
-                      onClick={() => initiateDiscard(take.id)}
-                      className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-stone-900 hover:bg-rose-950/40 border border-stone-800 hover:border-rose-500/50 text-stone-400 hover:text-rose-300 flex items-center justify-center transition cursor-pointer shrink-0"
-                      title="Discard take"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {/* Discard Trigger (Locked on Protected Soundstage / Cinema Masters under MW-430 1i) */}
+                    {isMaster && isProtectedMasterReel ? (
+                      <span
+                        data-testid="fireside-master-locked-pill"
+                        className="min-h-[38px] px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/35 text-amber-300 text-[10px] font-mono font-bold inline-flex items-center gap-1 shrink-0"
+                        title="Master Reel protected in Family Cinema / Desktop Soundstage"
+                      >
+                        <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span>Protected</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        data-testid={`fireside-discard-btn-${take.id}`}
+                        onClick={() => initiateDiscard(take.id)}
+                        className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-stone-900 hover:bg-rose-950/40 border border-stone-800 hover:border-rose-500/50 text-stone-400 hover:text-rose-300 flex items-center justify-center transition cursor-pointer shrink-0"
+                        title="Discard take"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Actions Row: Audition + Promote */}
@@ -324,38 +339,66 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                       )}
                     </button>
 
-                    {!isMaster && (
-                      <button
-                        type="button"
-                        data-testid={`fireside-promote-btn-${take.id}`}
-                        onClick={() => onPromoteMaster(take.id)}
-                        className="min-h-[48px] px-4 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
-                      >
-                        <Star className="w-3.5 h-3.5 text-amber-400" />
-                        <span>★ Set as Master Reel</span>
-                      </button>
-                    )}
+                    {!isMaster &&
+                      (isProtectedMasterReel ? (
+                        <span
+                          data-testid={`fireside-desktop-swap-lock-${take.id}`}
+                          className="min-h-[48px] px-3.5 py-2 rounded-xl bg-stone-950/80 border border-stone-800 text-stone-400 text-[11px] font-mono inline-flex items-center gap-1.5"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
+                          <span>Master locked to Desktop Studio</span>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          data-testid={`fireside-promote-btn-${take.id}`}
+                          onClick={() => onPromoteMaster(take.id)}
+                          className="min-h-[48px] px-4 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Star className="w-3.5 h-3.5 text-amber-400" />
+                          <span>★ Set as Master Reel</span>
+                        </button>
+                      ))}
                   </div>
 
                   {/* Inline Audition Player */}
                   {isAuditioning && (
                     <div className="mt-3 pt-3 border-t border-stone-800 animate-in fade-in duration-200">
-                      <div className="relative aspect-video max-w-full bg-black rounded-xl overflow-hidden border border-amber-500/40">
-                        {take.mediaUrl ? (
-                          <video
-                            src={take.mediaUrl}
-                            controls
-                            autoPlay
-                            playsInline
-                            className="w-full h-full object-contain"
-                            onEnded={() => setIsPlayingAudition(false)}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-stone-500 text-xs font-mono">
-                            Media stream offline
+                      {take.mediaUrl ? (
+                        take.mediaMode === 'audio' ? (
+                          <div
+                            data-testid={`fireside-audio-audition-${take.id}`}
+                            className="p-3 rounded-xl bg-stone-950 border border-amber-500/40 space-y-2"
+                          >
+                            <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-300">
+                              <Volume2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <span>Spoken Voice Audition</span>
+                            </div>
+                            <audio
+                              src={take.mediaUrl}
+                              controls
+                              autoPlay
+                              className="w-full"
+                              onEnded={() => setIsPlayingAudition(false)}
+                            />
                           </div>
-                        )}
-                      </div>
+                        ) : (
+                          <div className="relative aspect-video max-w-full bg-black rounded-xl overflow-hidden border border-amber-500/40">
+                            <video
+                              src={take.mediaUrl}
+                              controls
+                              autoPlay
+                              playsInline
+                              className="w-full h-full object-contain"
+                              onEnded={() => setIsPlayingAudition(false)}
+                            />
+                          </div>
+                        )
+                      ) : (
+                        <div className="p-4 bg-black rounded-xl border border-stone-800 flex items-center justify-center text-stone-500 text-xs font-mono">
+                          Media stream offline
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -540,22 +583,34 @@ export const VideoSelectionRoomDrawer: React.FC<VideoSelectionRoomDrawerProps> =
                       {/* Inline Audition Player for Outtake */}
                       {isAuditioning && (
                         <div className="mt-2 pt-2 border-t border-stone-800">
-                          <div className="relative aspect-video max-w-full bg-black rounded-lg overflow-hidden border border-stone-700">
-                            {outtake.mediaUrl ? (
-                              <video
-                                src={outtake.mediaUrl}
-                                controls
-                                autoPlay
-                                playsInline
-                                className="w-full h-full object-contain"
-                                onEnded={() => setIsPlayingAudition(false)}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-stone-500 text-xs font-mono">
-                                Media stream offline
+                          {outtake.mediaUrl ? (
+                            outtake.mediaMode === 'audio' ? (
+                              <div className="p-3 rounded-lg bg-stone-950 border border-stone-700 space-y-1.5">
+                                <audio
+                                  src={outtake.mediaUrl}
+                                  controls
+                                  autoPlay
+                                  className="w-full"
+                                  onEnded={() => setIsPlayingAudition(false)}
+                                />
                               </div>
-                            )}
-                          </div>
+                            ) : (
+                              <div className="relative aspect-video max-w-full bg-black rounded-lg overflow-hidden border border-stone-700">
+                                <video
+                                  src={outtake.mediaUrl}
+                                  controls
+                                  autoPlay
+                                  playsInline
+                                  className="w-full h-full object-contain"
+                                  onEnded={() => setIsPlayingAudition(false)}
+                                />
+                              </div>
+                            )
+                          ) : (
+                            <div className="p-4 bg-black rounded-lg border border-stone-700 flex items-center justify-center text-stone-500 text-xs font-mono">
+                              Media stream offline
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

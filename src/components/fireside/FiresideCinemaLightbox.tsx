@@ -35,6 +35,8 @@ import {
   Trash2,
   Lock,
   AlertCircle,
+  AlertTriangle,
+  Mic,
 } from 'lucide-react';
 import { HeirloomPhotoAttachment } from '@/types/fireside';
 import { StoryMoodTag, EditingAuthority } from '@/types/curriculum';
@@ -50,6 +52,10 @@ export interface FiresideCinemaLightboxProps {
   onClose: () => void;
   onOpenBonusDrawer?: () => void;
   onDiscardTake?: () => void;
+  onRecordAlternateTake?: () => void;
+  isProtectedMasterReel?: boolean;
+  isPublishedInCinema?: boolean;
+  activeWeaveLabel?: string | null;
   editingAuthority?: EditingAuthority;
   sceneTitle: string;
   chapterTitle?: string | null;
@@ -73,6 +79,10 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   onClose,
   onOpenBonusDrawer,
   onDiscardTake,
+  onRecordAlternateTake,
+  isProtectedMasterReel = false,
+  isPublishedInCinema = false,
+  activeWeaveLabel = null,
   editingAuthority = 'fireside_flexible',
   sceneTitle,
   chapterTitle,
@@ -192,24 +202,6 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
     return () => clearInterval(interval);
   }, [isOpen, mediaMode, photos.length, isPlaying]);
 
-  // Keyboard navigation guard
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      } else if (e.key === ' ' && e.target === document.body) {
-        e.preventDefault();
-        togglePlayPause();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   const togglePlayPause = useCallback(() => {
     if (isPlaying || isPreRollVisible) {
       pausePlayback();
@@ -219,6 +211,28 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
       setIsPlaying((prev) => !prev);
     }
   }, [isPlaying, isPreRollVisible, mediaUrl, mediaLoadError, pausePlayback, triggerPlay]);
+
+  // Keyboard navigation guard (Esc dismisses active confirmation modal before closing Lightbox; Space locked while modal is open)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (showDiscardConfirm) {
+          setShowDiscardConfirm(false);
+          return;
+        }
+        onClose();
+      } else if (e.key === ' ' && e.target === document.body && !showDiscardConfirm) {
+        e.preventDefault();
+        togglePlayPause();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, showDiscardConfirm, togglePlayPause]);
 
   const handleToggleFullscreen = useCallback(() => {
     toggleStageFullscreen(containerRef.current, videoRef.current);
@@ -579,53 +593,24 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
               </button>
             )}
 
-            {/* Discard Take Trigger & 2-Step Safety Confirmation (MW-88-T5 / MW-88-T7 Universal Editing) */}
-            {!showDiscardConfirm ? (
-              <button
-                type="button"
-                data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
-                data-hotspot-id="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
-                onClick={() => {
-                  if (videoRef.current) videoRef.current.pause();
-                  if (audioRef.current) audioRef.current.pause();
-                  if (soundtrackAudioRef.current) soundtrackAudioRef.current.pause();
-                  setIsPlaying(false);
-                  setShowDiscardConfirm(true);
-                }}
-                className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition cursor-pointer active:scale-95"
-              >
-                <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>Discard Take</span>
-              </button>
-            ) : (
-              <div className="flex flex-wrap items-center gap-2 px-3 py-2 rounded-xl bg-stone-900/95 border border-rose-500/40 animate-in fade-in duration-150">
-                <span className="text-xs font-medium text-rose-200">
-                  Discard this take permanently?
-                </span>
-                <button
-                  type="button"
-                  data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
-                  data-hotspot-id="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
-                  onClick={() => {
-                    setShowDiscardConfirm(false);
-                    onDiscardTake?.();
-                    onClose();
-                  }}
-                  className="min-h-[40px] px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition cursor-pointer"
-                >
-                  Confirm Discard
-                </button>
-                <button
-                  type="button"
-                  data-testid="HS_FIRESIDE_DISCARD_CANCEL_BTN"
-                  data-hotspot-id="HS_FIRESIDE_DISCARD_CANCEL_BTN"
-                  onClick={() => setShowDiscardConfirm(false)}
-                  className="min-h-[40px] px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-semibold transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
+            {/* Discard Take Trigger (Opens Root Full-Card Protected Master Modal or Outtake Safety Modal — MW-430) */}
+            <button
+              type="button"
+              data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
+              data-hotspot-id="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
+              onClick={() => {
+                pausePlayback();
+                if (videoRef.current) videoRef.current.pause();
+                if (audioRef.current) audioRef.current.pause();
+                if (soundtrackAudioRef.current) soundtrackAudioRef.current.pause();
+                setIsPlaying(false);
+                setShowDiscardConfirm(true);
+              }}
+              className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition cursor-pointer active:scale-95"
+            >
+              <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>Discard Take</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-3 text-xs font-mono text-stone-400">
@@ -641,6 +626,166 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
           </div>
         </div>
       </footer>
+
+      {/* Root Full-Card Protected Master Modal & Outtake Safety Modal (MW-430) */}
+      {showDiscardConfirm && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          data-testid={
+            isProtectedMasterReel
+              ? 'HS_FIRESIDE_LIGHTBOX_PROTECTED_MASTER_MODAL'
+              : 'HS_FIRESIDE_LIGHTBOX_OUTTAKE_MODAL'
+          }
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowDiscardConfirm(false);
+          }}
+          className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+        >
+          {isProtectedMasterReel ? (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-3xl border border-amber-500/45 bg-stone-950/95 p-6 sm:p-7 shadow-[0_0_60px_rgba(245,158,11,0.2)] text-left space-y-4"
+            >
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/45 text-[11px] font-mono font-bold uppercase tracking-wider text-amber-300">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>
+                  {isDesktopLocked && isPublishedInCinema
+                    ? 'Soundstage Master · Live in Cinema'
+                    : isDesktopLocked
+                    ? 'Soundstage Master · Protected Reel'
+                    : isPublishedInCinema
+                    ? 'Published in Family Cinema'
+                    : 'Master Reel · Protected'}
+                </span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl font-serif text-white leading-snug">
+                Keep &ldquo;{sceneTitle}&rdquo; Master Reel Safe?
+              </h3>
+
+              <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
+                {isDesktopLocked ? (
+                  <>
+                    This chapter&apos;s Master Reel
+                    {activeWeaveLabel ? (
+                      <>
+                        {' '}
+                        (<span className="text-amber-300 font-semibold">{activeWeaveLabel.toUpperCase()}</span>)
+                      </>
+                    ) : null}{' '}
+                    was mastered{isPublishedInCinema ? ' and premiered' : ''} in{' '}
+                    <strong className="text-white">Desktop Soundstage</strong>.
+                  </>
+                ) : (
+                  <>
+                    This chapter&apos;s Master Reel is live in your{' '}
+                    <strong className="text-white">Family Cinema</strong>.
+                  </>
+                )}
+              </p>
+
+              <div className="rounded-2xl border border-amber-500/35 bg-amber-950/25 p-4 text-xs sm:text-sm text-stone-200 leading-relaxed">
+                Protected Master Reels cannot be deleted from Fireside mobile —{' '}
+                <strong className="text-amber-200">
+                  your recorded film, written prose, and memory coordinates stay 100% safe.
+                </strong>{' '}
+                You can record a separate alternate take or attach a bonus recollection below.
+              </div>
+
+              <div className="pt-1 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_LIGHTBOX_KEEP_MASTER_BTN"
+                  onClick={() => setShowDiscardConfirm(false)}
+                  className="w-full min-h-[52px] px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-md"
+                >
+                  <span>Keep Master Reel Safe</span>
+                </button>
+
+                {onRecordAlternateTake && (
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_LIGHTBOX_ALT_TAKE_BTN"
+                    onClick={() => {
+                      setShowDiscardConfirm(false);
+                      onRecordAlternateTake();
+                    }}
+                    className="w-full min-h-[52px] px-4 py-3 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-amber-500/45 text-amber-200 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <Mic className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Record Alternate Take Instead</span>
+                  </button>
+                )}
+
+                {onOpenBonusDrawer && (
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_LIGHTBOX_MODAL_BONUS_BTN"
+                    onClick={() => {
+                      setShowDiscardConfirm(false);
+                      onClose();
+                      onOpenBonusDrawer();
+                    }}
+                    className="w-full min-h-[52px] px-4 py-3 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-amber-500/35 text-amber-300 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <PlusCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Add Bonus Note or Photo Instead</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-3xl border border-rose-500/45 bg-stone-950/95 p-6 sm:p-7 shadow-2xl text-left space-y-4"
+            >
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-[11px] font-mono font-bold uppercase tracking-wider text-rose-300">
+                <Film className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>Fireside Take · Safety Check</span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl font-serif text-white leading-snug">
+                Move Take to Outtakes?
+              </h3>
+
+              <div className="rounded-2xl border border-stone-800 bg-stone-900/80 p-4 text-xs sm:text-sm text-stone-200 leading-relaxed">
+                <strong className="text-emerald-300">
+                  Your written script, memory coordinates, and heirloom photos stay 100% untouched.
+                </strong>{' '}
+                This recording moves safely to your Cutting Room Floor outtakes and can be restored at any time.
+              </div>
+
+              <div className="pt-1 flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_DISCARD_CANCEL_BTN"
+                  data-hotspot-id="HS_FIRESIDE_DISCARD_CANCEL_BTN"
+                  onClick={() => setShowDiscardConfirm(false)}
+                  className="w-full min-h-[52px] px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center transition cursor-pointer shadow-md"
+                >
+                  Cancel · Keep This Take
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
+                  data-hotspot-id="HS_FIRESIDE_DISCARD_CONFIRM_BTN"
+                  onClick={() => {
+                    setShowDiscardConfirm(false);
+                    onDiscardTake?.();
+                    onClose();
+                  }}
+                  className="w-full min-h-[50px] px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-mono font-bold text-xs sm:text-sm flex items-center justify-center transition cursor-pointer"
+                >
+                  Confirm Discard (Move to Outtakes)
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

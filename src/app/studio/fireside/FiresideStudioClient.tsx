@@ -281,6 +281,30 @@ export default function FiresideStudioClient() {
   const [isMobileWarmupOpen, setIsMobileWarmupOpen] = useState<boolean>(() =>
     searchParams?.get('soundcheck') === 'true'
   );
+  const [chapterSwitchUndo, setChapterSwitchUndo] = useState<{
+    fromSceneId: string;
+    fromPartRoman: string;
+    fromSceneNum: number;
+    toPartRoman: string;
+    toSceneNum: number;
+  } | null>(null);
+  const chapterSwitchUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearChapterSwitchUndo = useCallback(() => {
+    if (chapterSwitchUndoTimerRef.current) {
+      clearTimeout(chapterSwitchUndoTimerRef.current);
+      chapterSwitchUndoTimerRef.current = null;
+    }
+    setChapterSwitchUndo(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (chapterSwitchUndoTimerRef.current) {
+        clearTimeout(chapterSwitchUndoTimerRef.current);
+      }
+    };
+  }, []);
 
   const photoTrayRef = useRef<AlbumPhotoCaptureTrayRef>(null);
   const recorderRef = useRef<TactileVoiceRecorderRef>(null);
@@ -508,12 +532,31 @@ export default function FiresideStudioClient() {
 
   const preferredTake = useMemo(() => {
     if (!activeSceneMemory?.takes || activeSceneMemory.takes.length === 0) return null;
+    const activeTakes = activeSceneMemory.takes.filter(
+      (t) => t.status !== 'outtake' && t.status !== 'purged'
+    );
+    if (activeTakes.length === 0) return null;
     return (
-      activeSceneMemory.takes.find((t) => t.isPreferred) ||
-      activeSceneMemory.takes[activeSceneMemory.takes.length - 1] ||
-      activeSceneMemory.takes[0]
+      activeTakes.find((t) => t.status === 'master') ||
+      (activeSceneMemory.activeTakeId
+        ? activeTakes.find((t) => t.id === activeSceneMemory.activeTakeId)
+        : undefined) ||
+      activeTakes.find((t) => t.isPreferred) ||
+      activeTakes[activeTakes.length - 1] ||
+      activeTakes[0]
     );
   }, [activeSceneMemory]);
+
+  const isLightboxTakeMasterProtected = useMemo(() => {
+    if (!isActiveMasterProtected) return false;
+    if (!preferredTake) return true;
+    return Boolean(
+      preferredTake.isPreferred ||
+        preferredTake.status === 'master' ||
+        preferredTake.source === 'soundstage_desktop' ||
+        preferredTake.source === 'desktop_soundstage'
+    );
+  }, [isActiveMasterProtected, preferredTake]);
 
   const autoSparkId = useMemo(() => {
     const targetParam = initialIdParam || initialPromptParam;
@@ -717,6 +760,7 @@ export default function FiresideStudioClient() {
       if (spark.id === activeSparkIdRef.current) {
         return;
       }
+      clearChapterSwitchUndo();
       activeSparkIdRef.current = spark.id;
       setSelectedSpark(spark);
       setForceRecordMode(false);
@@ -727,7 +771,7 @@ export default function FiresideStudioClient() {
       setActivePromptSpark(spark);
       clearTransientUrlOverrides();
     },
-    [clearTransientUrlOverrides]
+    [clearTransientUrlOverrides, clearChapterSwitchUndo]
   );
 
   const handleDoneEditing = useCallback(() => {
@@ -1212,6 +1256,41 @@ export default function FiresideStudioClient() {
     effectiveSceneId,
   ]);
 
+  const handleRecordAlternateFromProtectedModal = useCallback(() => {
+    setIsLightboxOpen(false);
+    handleSelectFiresideView('studio');
+    setIsReviewingTake(false);
+    setEditIntentRequested(false);
+    setForceRecordMode(true);
+    setSelectedActStage(3);
+  }, [handleSelectFiresideView]);
+
+  const handleSafeDiscardTakeFromVault = useCallback(
+    async (discardTakeId: string, fallbackMasterTakeId?: string) => {
+      const targetTake = activeSceneMemory?.takes?.find((t) => t.id === discardTakeId);
+      const isTargetMaster =
+        isActiveMasterProtected &&
+        (!targetTake ||
+          targetTake.isPreferred ||
+          targetTake.status === 'master' ||
+          targetTake.source === 'soundstage_desktop' ||
+          targetTake.source === 'desktop_soundstage');
+
+      if (isTargetMaster) {
+        setNotification(
+          'Protected Soundstage / Published Master Reel cannot be discarded from Fireside mobile. Manage Master Reels in Desktop Studio.'
+        );
+        setTimeout(() => {
+          setNotification(null);
+        }, 5000);
+        return;
+      }
+
+      await safeDiscardTake(effectiveSceneId, discardTakeId, fallbackMasterTakeId);
+    },
+    [activeSceneMemory, isActiveMasterProtected, safeDiscardTake, effectiveSceneId]
+  );
+
   // Active Curriculum Part Context & Golden Thread Bilingual Hierarchy (MW-249 / MW-88-T3 / MW-100-C)
   const activeSparkIdx = useMemo(() => {
     const currentId = (selectedSpark || activePromptSpark)?.id || autoSparkId;
@@ -1362,8 +1441,8 @@ export default function FiresideStudioClient() {
     ? 'Unlock Chapter'
     : isClientShowcaseMode
     ? isPublishedScene
-      ? 'Watch in Cinema ▶'
-      : 'Watch Take ▶'
+      ? 'Watch Film'
+      : 'Watch Take'
     : effectiveActStage === 1
     ? 'Next: Weave'
     : effectiveActStage === 2
@@ -1826,6 +1905,46 @@ export default function FiresideStudioClient() {
           />
         ) : (
           <>
+            {/* Dedicated Top-of-Stage Cross-Part Switch Undo Banner (MW-430 2A — isolated from bottom-20 notification) */}
+            {chapterSwitchUndo && (
+              <div
+                data-testid="HS_FIRESIDE_CHAPTER_SWITCH_UNDO_BANNER"
+                className="w-full max-w-xl mx-auto rounded-2xl border border-indigo-400/50 bg-indigo-950/90 px-4 py-2.5 shadow-lg flex flex-wrap items-center justify-between gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200"
+              >
+                <p className="text-xs font-mono text-indigo-100 leading-snug">
+                  Switched from <strong>{chapterSwitchUndo.fromPartRoman}</strong> · Scene{' '}
+                  {chapterSwitchUndo.fromSceneNum} to{' '}
+                  <strong>{chapterSwitchUndo.toPartRoman}</strong> · Scene{' '}
+                  {chapterSwitchUndo.toSceneNum}
+                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    data-testid="HS_FIRESIDE_CHAPTER_SWITCH_UNDO_BTN"
+                    onClick={() => {
+                      const returnId = chapterSwitchUndo.fromSceneId;
+                      clearChapterSwitchUndo();
+                      handleSelectSceneById(returnId);
+                      try {
+                        window.scrollTo?.({ top: 0, behavior: 'smooth' });
+                      } catch {}
+                    }}
+                    className="min-h-[38px] px-3 py-1.5 rounded-xl bg-indigo-400 hover:bg-indigo-300 text-slate-950 font-mono font-bold text-xs cursor-pointer transition"
+                  >
+                    ← Return to {chapterSwitchUndo.fromPartRoman}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Dismiss chapter switch notice"
+                    onClick={clearChapterSwitchUndo}
+                    className="min-h-[38px] min-w-[34px] px-2 rounded-xl bg-indigo-900/70 hover:bg-indigo-800 text-indigo-200 font-mono text-xs cursor-pointer transition"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* The 5-Act Prompt Carousel & Swipe Pager */}
             <div className="w-full">
               <SingleCardPromptCarousel
@@ -1885,50 +2004,6 @@ export default function FiresideStudioClient() {
                 }}
               />
             </div>
-
-            {/* Entitlement-Aware "Up Next" Continuation Card (Visible beneath Watch-First Showcase Mode) */}
-            {isClientShowcaseMode && nextPendingSceneId && nextPendingSceneId !== effectiveSceneId && (() => {
-              const nextSceneDef = getSceneById(nextPendingSceneId);
-              if (!nextSceneDef) return null;
-              const nextPartDef = getPartForScene(nextPendingSceneId);
-              const nextAccessEval = getSceneAccess(nextPendingSceneId);
-              const isNextLocked = Boolean(nextAccessEval?.isLockedPreview);
-              const nextPartShort = nextPartDef?.title?.split(':')[0] || `Part ${nextSceneDef.partNumber}`;
-
-              return (
-                <div
-                  data-testid="HS_FIRESIDE_SPINE_UP_NEXT_CARD"
-                  data-hotspot-id="HS_FIRESIDE_SPINE_UP_NEXT_CARD"
-                  className="w-full max-w-xl mx-auto p-4 rounded-2xl bg-stone-950/90 border border-amber-500/35 shadow-lg flex items-center justify-between gap-3"
-                >
-                  <div className="min-w-0 space-y-0.5 text-left">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">
-                      {isNextLocked
-                        ? 'Part I Complete · Premium Chapter Preview'
-                        : `Up Next in ${nextPartShort}`}
-                    </p>
-                    <p className="text-sm sm:text-base font-serif text-white leading-snug">
-                      Scene {nextSceneDef.sceneNumber}: {nextSceneDef.title}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    data-testid="HS_FIRESIDE_UP_NEXT_CONTINUE_BTN"
-                    onClick={() => {
-                      if (isNextLocked) {
-                        setIsUpgradeSheetOpen(true);
-                        return;
-                      }
-                      handleSelectSceneById(nextPendingSceneId);
-                    }}
-                    className="min-h-[48px] px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-mono font-bold text-xs shrink-0 cursor-pointer transition-colors shadow-md"
-                  >
-                    {isNextLocked ? 'Preview 🔒' : 'Continue →'}
-                  </button>
-                </div>
-              );
-            })()}
 
             {/* Active Recording Surface below card (rendered when NOT already mounted inline inside Act III) */}
             {!isCompleted && !isInlineAct3Active && recorderStudioBlock}
@@ -2004,6 +2079,9 @@ export default function FiresideStudioClient() {
                       sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
                       sceneMemory={activeSceneMemory}
                       editingAuthority={activeEditingAuthority}
+                      isProtectedMasterReel={isLightboxTakeMasterProtected}
+                      isPublishedInCinema={isPublishedScene}
+                      activeWeaveLabel={activeSceneMemory?.activeVisionLabel || null}
                       sessionPhotos={photos}
                       overrideDurationSeconds={
                         mediaMode === 'video' && recordedVideoDuration > 0
@@ -2030,9 +2108,18 @@ export default function FiresideStudioClient() {
                         setTimeout(() => setNotification(null), 3000);
                       }}
                       onDiscardTake={handleDiscardActiveTake}
-                      onPromoteMasterTake={(takeId) => promotePreferredTake(effectiveSceneId, takeId)}
+                      onPromoteMasterTake={async (takeId) => {
+                        if (isLightboxTakeMasterProtected) {
+                          setNotification(
+                            'Protected Soundstage / Published Master Reel is locked to Desktop Studio.'
+                          );
+                          setTimeout(() => setNotification(null), 5000);
+                          return;
+                        }
+                        await promotePreferredTake(effectiveSceneId, takeId);
+                      }}
                       onReorderTakes={(orderedIds) => reorderSceneTakes(effectiveSceneId, orderedIds)}
-                      onSafeDiscardTake={(discardId, fallbackId) => safeDiscardTake(effectiveSceneId, discardId, fallbackId)}
+                      onSafeDiscardTake={handleSafeDiscardTakeFromVault}
                       onRestoreTake={(takeId) => restoreOuttakeTake(effectiveSceneId, takeId)}
                       onReRecordRequest={() => {
                         setIsReviewingTake(false);
@@ -2042,6 +2129,225 @@ export default function FiresideStudioClient() {
                     />
                   </div>
                 </div>
+              );
+            })()}
+
+            {/* Bottom-Anchored Two-Tier Chapter Navigation (MW-430 1A + 2A: Local Part I Pager First + Separate Bottom Indigo Switch-Chapter Panel) */}
+            {isClientShowcaseMode && (() => {
+              const nextInSamePart = canonicalPart?.scenes?.find(
+                (s) => s.sceneNumber === activeSceneNumInPart + 1
+              );
+              const firstInSamePart = canonicalPart?.scenes?.[0];
+              const activePartWovenCount = (canonicalPart?.scenes || []).filter((s) =>
+                isSceneCompleted(getSceneMemory(s.id))
+              ).length;
+
+              const nextSceneDef =
+                nextPendingSceneId && nextPendingSceneId !== effectiveSceneId
+                  ? getSceneById(nextPendingSceneId)
+                  : undefined;
+              const isCrossPartPending = Boolean(
+                nextSceneDef && nextSceneDef.partNumber !== activePart.partNumber
+              );
+
+              const samePartSpark = nextInSamePart
+                ? FIRESIDE_PROMPT_SPARKS.find((sp) => sp.linkedSceneId === nextInSamePart.id)
+                : undefined;
+              const samePartLocalizedTitle =
+                activeLanguage === 'en'
+                  ? samePartSpark?.localizedTitles?.en || nextInSamePart?.title
+                  : samePartSpark?.localizedTitles?.[activeLanguage] || nextInSamePart?.title;
+              const isSamePartNextLocked = nextInSamePart
+                ? Boolean(getSceneAccess(nextInSamePart.id)?.isLockedPreview)
+                : false;
+              const isSamePartNextWoven = nextInSamePart
+                ? isSceneCompleted(getSceneMemory(nextInSamePart.id))
+                : false;
+
+              if (!nextInSamePart && !isCrossPartPending && !firstInSamePart) {
+                return null;
+              }
+
+              return (
+                <section
+                  aria-label="Next in your memoir"
+                  data-testid="HS_FIRESIDE_NEXT_MEMOIR_PANEL"
+                  className="w-full max-w-xl mx-auto pt-3 space-y-4"
+                >
+                  {/* Tier 1: Local Same-Part Pager (Stays 100% inside the active Part) */}
+                  {nextInSamePart ? (
+                    <div
+                      data-testid="HS_FIRESIDE_SAME_PART_NEXT_CARD"
+                      className="w-full p-4 rounded-2xl bg-stone-950/90 border border-stone-800/90 shadow-md flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0 space-y-0.5 text-left">
+                        <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
+                          Next in {activePartRoman} · Scene {nextInSamePart.sceneNumber} of{' '}
+                          {totalScenesInActivePart}
+                          {isSamePartNextWoven ? ' · ✓ Woven' : ''}
+                        </p>
+                        <p className="text-sm sm:text-base font-serif text-white leading-snug">
+                          Scene {nextInSamePart.sceneNumber}: {samePartLocalizedTitle}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        data-testid={
+                          isCrossPartPending
+                            ? 'HS_FIRESIDE_SAME_PART_NEXT_BTN'
+                            : 'HS_FIRESIDE_UP_NEXT_CONTINUE_BTN'
+                        }
+                        onClick={() => {
+                          if (isSamePartNextLocked) {
+                            setIsUpgradeSheetOpen(true);
+                            return;
+                          }
+                          handleSelectSceneById(nextInSamePart.id);
+                          try {
+                            window.scrollTo?.({ top: 0, behavior: 'smooth' });
+                          } catch {}
+                        }}
+                        className="min-h-[48px] px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-emerald-500/45 text-emerald-300 font-mono font-bold text-xs shrink-0 cursor-pointer transition-colors"
+                      >
+                        {isSamePartNextLocked
+                          ? 'Preview 🔒'
+                          : `Scene ${nextInSamePart.sceneNumber} →`}
+                      </button>
+                    </div>
+                  ) : firstInSamePart && firstInSamePart.id !== effectiveSceneId ? (
+                    <div
+                      data-testid="HS_FIRESIDE_SAME_PART_END_CARD"
+                      className="w-full px-4 py-3 rounded-2xl bg-stone-950/80 border border-stone-800/80 flex items-center justify-between gap-3"
+                    >
+                      <span className="text-[11px] font-mono text-stone-400">
+                        ✓ End of {activePartRoman} ({activePartWovenCount} of{' '}
+                        {totalScenesInActivePart} woven)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSelectSceneById(firstInSamePart.id);
+                          try {
+                            window.scrollTo?.({ top: 0, behavior: 'smooth' });
+                          } catch {}
+                        }}
+                        className="min-h-[40px] px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 font-mono text-xs cursor-pointer transition"
+                      >
+                        ← {activePartRoman} · Scene 1
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {/* Tier 2: Cross-Part Chapter-Boundary Switch Panel (ONLY when nextPendingSceneId is in another Part) */}
+                  {isCrossPartPending && nextSceneDef && (() => {
+                    const nextPartDef = getPartForScene(nextSceneDef.id);
+                    const nextAccessEval = getSceneAccess(nextSceneDef.id);
+                    const isNextLocked = Boolean(nextAccessEval?.isLockedPreview);
+                    const nextPartShort =
+                      nextPartDef?.title?.split(':')[0] || `Part ${nextSceneDef.partNumber}`;
+                    const nextPartTotalScenes = nextPartDef?.scenes?.length || 4;
+                    const nextPartHeading =
+                      activeLanguage === 'en'
+                        ? nextPartDef?.localizedTitles?.en || nextPartDef?.title
+                        : nextPartDef?.localizedTitles?.[activeLanguage] || nextPartDef?.title;
+                    const nextSpark = FIRESIDE_PROMPT_SPARKS.find(
+                      (sp) => sp.linkedSceneId === nextSceneDef.id
+                    );
+                    const nextSceneLocalizedTitle =
+                      activeLanguage === 'en'
+                        ? nextSpark?.localizedTitles?.en || nextSceneDef.title
+                        : nextSpark?.localizedTitles?.[activeLanguage] || nextSceneDef.title;
+
+                    return (
+                      <div className="space-y-3 pt-1">
+                        <div
+                          className="w-full flex items-center gap-3"
+                          aria-hidden="true"
+                        >
+                          <div className="h-px flex-1 bg-indigo-500/30" />
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-indigo-300 font-bold">
+                            Leaving {activePartRoman} · Chapter Boundary
+                          </span>
+                          <div className="h-px flex-1 bg-indigo-500/30" />
+                        </div>
+
+                        <div
+                          data-testid="HS_FIRESIDE_SPINE_UP_NEXT_CARD"
+                          data-hotspot-id="HS_FIRESIDE_SPINE_UP_NEXT_CARD"
+                          className="w-full p-5 rounded-3xl bg-gradient-to-br from-indigo-950/85 via-slate-950/95 to-stone-950 border-2 border-indigo-400/45 shadow-[0_12px_36px_rgba(30,27,75,0.55)] space-y-3.5 text-left"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span
+                              data-testid="HS_FIRESIDE_UP_NEXT_PART_CROWN"
+                              className="px-2.5 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/40 text-[10px] font-mono uppercase tracking-wider text-indigo-200 font-bold"
+                            >
+                              {activePartWovenCount >= totalScenesInActivePart
+                                ? `✓ ${activePartRoman} Complete (${activePartWovenCount} of ${totalScenesInActivePart} Woven)`
+                                : `${activePartRoman} · ${activePartWovenCount} of ${totalScenesInActivePart} Woven`}
+                            </span>
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-300 font-bold">
+                              🧭 Move Away from {activePartRoman}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            {isNextLocked
+                              ? `You are viewing ${activePartRoman}. Unlock ${nextPartShort} to weave your next chapter:`
+                              : `You are viewing ${activePartRoman}. Your next unrecorded scene is in a different chapter:`}
+                          </p>
+
+                          <div className="rounded-2xl bg-indigo-950/45 border border-indigo-400/25 p-3.5 space-y-1">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-indigo-300 font-bold">
+                              📖 {nextPartHeading || nextPartShort} · Scene {nextSceneDef.sceneNumber} of{' '}
+                              {nextPartTotalScenes}
+                            </p>
+                            <p className="text-sm sm:text-base font-serif text-white leading-snug">
+                              Scene {nextSceneDef.sceneNumber}: {nextSceneLocalizedTitle}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            data-testid="HS_FIRESIDE_UP_NEXT_CONTINUE_BTN"
+                            onClick={() => {
+                              if (isNextLocked) {
+                                setIsUpgradeSheetOpen(true);
+                                return;
+                              }
+                              const switchMeta = {
+                                fromSceneId: effectiveSceneId,
+                                fromPartRoman: activePartRoman,
+                                fromSceneNum: activeSceneNumInPart,
+                                toPartRoman: nextPartShort,
+                                toSceneNum: nextSceneDef.sceneNumber,
+                              };
+                              handleSelectSceneById(nextSceneDef.id);
+                              try {
+                                window.scrollTo?.({ top: 0, behavior: 'smooth' });
+                              } catch {}
+                              if (chapterSwitchUndoTimerRef.current) {
+                                clearTimeout(chapterSwitchUndoTimerRef.current);
+                              }
+                              setChapterSwitchUndo(switchMeta);
+                              chapterSwitchUndoTimerRef.current = setTimeout(() => {
+                                setChapterSwitchUndo(null);
+                                chapterSwitchUndoTimerRef.current = null;
+                              }, 6000);
+                            }}
+                            className="w-full min-h-[50px] px-4 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-md"
+                          >
+                            <span>
+                              {isNextLocked
+                                ? `Preview ${nextPartShort} 🔒`
+                                : `Switch to ${nextPartShort} · Scene ${nextSceneDef.sceneNumber} →`}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </section>
               );
             })()}
           </>
@@ -2167,7 +2473,7 @@ export default function FiresideStudioClient() {
         }}
       />
 
-      {/* 2.39:1 Cinema Master Reel Lightbox Player (Ticket #259 & MW-88-T5) */}
+      {/* 2.39:1 Cinema Master Reel Lightbox Player (Ticket #259 & MW-88-T5 / MW-430) */}
       <FiresideCinemaLightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
@@ -2177,6 +2483,10 @@ export default function FiresideStudioClient() {
           setIsBonusDrawerOpen(true);
         }}
         onDiscardTake={handleDiscardActiveTake}
+        onRecordAlternateTake={handleRecordAlternateFromProtectedModal}
+        isProtectedMasterReel={isLightboxTakeMasterProtected}
+        isPublishedInCinema={isPublishedScene}
+        activeWeaveLabel={activeSceneMemory?.activeVisionLabel || null}
         editingAuthority={activeEditingAuthority}
         sceneTitle={selectedSpark?.title || activePromptSpark?.title || activeSceneMemory?.sceneTitle || 'Story Scene'}
         chapterTitle={activePartTitle}
