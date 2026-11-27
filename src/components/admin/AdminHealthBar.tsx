@@ -207,10 +207,10 @@ export function AdminHealthBar({ compact = false }: AdminHealthBarProps) {
 
   const verdictLabel = report
     ? overall === 'OK'
-      ? `✅ PASS — ${report.corePassedCount}/${report.coreTotalCount} Core Systems Healthy`
+      ? `🟢 System Check: ${report.corePassedCount}/${report.coreTotalCount} Core Healthy`
       : overall === 'FAIL'
-      ? `❌ FAIL — Action Required (${report.corePassedCount}/${report.coreTotalCount} Core Passed)`
-      : `⚠️ WARN — Review Needed (${report.corePassedCount}/${report.coreTotalCount} Core Passed)`
+      ? `❌ System Check FAIL — Action Required (${report.corePassedCount}/${report.coreTotalCount} Core Healthy)`
+      : `⚠️ System Check WARN — Review Needed (${report.corePassedCount}/${report.coreTotalCount} Core Healthy)`
     : 'Synthetic System Health';
 
   return (

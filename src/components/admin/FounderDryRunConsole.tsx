@@ -274,7 +274,13 @@ export function FounderDryRunConsole({
       <div className="rounded-2xl border border-indigo-500/30 bg-slate-900/70 p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/35">
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                passedCount > 0
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35'
+                  : 'bg-slate-800 text-slate-300 border-slate-700'
+              }`}
+            >
               <Sparkles className="h-3.5 w-3.5" />
               {passedCount}/{FOUNDER_DRY_RUN_STEPS.length} Journeys Passed
             </span>
@@ -424,28 +430,32 @@ export function FounderDryRunConsole({
                   <button
                     type="button"
                     data-testid={`DRY_RUN_PASS_${step.id}`}
-                    onClick={() => setStepVerdict(step.id, 'PASS')}
+                    onClick={() =>
+                      setStepVerdict(step.id, state.status === 'PASS' ? 'PENDING' : 'PASS')
+                    }
                     className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide transition cursor-pointer ${
                       state.status === 'PASS'
-                        ? 'bg-emerald-600 text-white border border-emerald-400'
-                        : 'bg-emerald-600/20 text-emerald-200 border border-emerald-500/40 hover:bg-emerald-600 hover:text-white'
+                        ? 'bg-emerald-600 text-white border border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                        : 'bg-slate-900 hover:bg-emerald-950/40 text-emerald-400 border border-slate-700 hover:border-emerald-500/50'
                     }`}
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    PASS
+                    {state.status === 'PASS' && <CheckCircle2 className="h-3.5 w-3.5" />}
+                    <span>PASS</span>
                   </button>
                   <button
                     type="button"
                     data-testid={`DRY_RUN_SNAG_${step.id}`}
-                    onClick={() => setStepVerdict(step.id, 'SNAG')}
+                    onClick={() =>
+                      setStepVerdict(step.id, state.status === 'SNAG' ? 'PENDING' : 'SNAG')
+                    }
                     className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide transition cursor-pointer ${
                       state.status === 'SNAG'
-                        ? 'bg-rose-600 text-white border border-rose-400'
-                        : 'bg-rose-500/15 text-rose-200 border border-rose-500/45 hover:bg-rose-600 hover:text-white'
+                        ? 'bg-rose-600 text-white border border-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.4)]'
+                        : 'bg-slate-900 hover:bg-rose-950/40 text-rose-400 border border-slate-700 hover:border-rose-500/50'
                     }`}
                   >
-                    <XCircle className="h-3.5 w-3.5" />
-                    SNAG
+                    {state.status === 'SNAG' && <XCircle className="h-3.5 w-3.5" />}
+                    <span>SNAG</span>
                   </button>
                   <button
                     type="button"

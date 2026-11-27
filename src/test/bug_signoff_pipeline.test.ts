@@ -171,8 +171,17 @@ describe('Option B Fast Sign-Off Queue & /admin/qa-Grade Sign-Off Cards (MW-432)
     const qaLink = getByTestId('signoff-qa-link-bug_1795020000_abc123') as HTMLAnchorElement;
     expect(qaLink.getAttribute('href')).toBe('/admin/qa#card-12');
 
+    // MW-434 (Option 1A): Unclicked PASS / FAIL / BACKLOG start in neutral dark outline with NO ✓ icon on load
+    const passBtn = getByTestId('signoff-verified-bug_1795020000_abc123');
+    expect(passBtn.className).toContain('bg-slate-900');
+    expect(passBtn.className).not.toContain('bg-emerald-500');
+    expect(passBtn.querySelector('svg')).toBeNull();
+    expect(getByTestId('signoff-reopen-bug_1795020000_abc123').querySelector('svg')).toBeNull();
+    expect(getByTestId('verdict-backlog-bug_1795020000_abc123').querySelector('svg')).toBeNull();
+    expect(getByTestId('verdict-reset-bug_1795020000_abc123')).toBeDefined();
+
     // Click PASS -> PATCH status: 'VERIFIED' and removes card from Ready for Sign-Off section
-    fireEvent.click(getByTestId('signoff-verified-bug_1795020000_abc123'));
+    fireEvent.click(passBtn);
 
     await waitFor(() => {
       expect(queryByTestId('READY_FOR_FOUNDER_SIGNOFF_SECTION')).toBeNull();
@@ -259,6 +268,22 @@ describe('Option B Fast Sign-Off Queue & /admin/qa-Grade Sign-Off Cards (MW-432)
         status: 'TRIAGED',
         founderFeedback: 'Mobile menu sheet overlapped bottom bar.',
         telemetryTrace: 'mw_telemetry_test_99',
+      });
+    });
+
+    // MW-434: Clicking ↺ Reset on a TRIAGED/VERIFIED card restores READY FOR SIGN-OFF (FIXED_ON_DEV)
+    fireEvent.click(screen.getByTestId('verdict-reset-bug_reopen_test'));
+
+    await waitFor(() => {
+      expect(getByTestId('READY_FOR_FOUNDER_SIGNOFF_SECTION')).toBeDefined();
+      const calls = fetchMock.mock.calls.filter(
+        ([u, i]) => String(u).includes('/api/admin/bugs') && i?.method === 'PATCH'
+      );
+      expect(calls.length).toBeGreaterThanOrEqual(3);
+      expect(JSON.parse(String(calls[2][1]!.body))).toEqual({
+        reportId: 'bug_reopen_test',
+        status: 'FIXED_ON_DEV',
+        checkedIndices: [],
       });
     });
   });

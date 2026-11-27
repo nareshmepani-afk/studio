@@ -18,6 +18,7 @@ import {
   Settings2,
   Rocket,
   Clock,
+  RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -177,6 +178,8 @@ export function BugTriageConsole() {
         });
       } else if (updates.status === 'TRIAGED') {
         toast.info(`Moved ${reportId} to BACKLOG (TRIAGED)`);
+      } else if (updates.status === 'FIXED_ON_DEV') {
+        toast.info(`Reset ${reportId} back to READY FOR SIGN-OFF`);
       } else {
         toast.success(`Saved ${reportId}`);
       }
@@ -484,7 +487,11 @@ export function BugTriageConsole() {
             <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
               Verification Steps &amp; Assertions
             </span>
-            <span className="text-[11px] font-mono text-emerald-400 font-semibold">
+            <span
+              className={`text-[11px] font-mono font-semibold ${
+                checked.size > 0 ? 'text-emerald-400' : 'text-slate-400'
+              }`}
+            >
               {checked.size}/{meta.verificationChecks.length} Checked
             </span>
           </div>
@@ -548,7 +555,20 @@ export function BugTriageConsole() {
             <button
               type="button"
               disabled={savingId === r.reportId}
+              title={
+                r.status === 'VERIFIED'
+                  ? 'Certified PASS — click again to unclick back to Ready for Sign-Off'
+                  : 'Click to mark PASS (VERIFIED)'
+              }
               onClick={() => {
+                if (r.status === 'VERIFIED') {
+                  setCheckedMap((prev) => ({ ...prev, [r.reportId]: new Set() }));
+                  handleUpdate(r.reportId, {
+                    status: 'FIXED_ON_DEV',
+                    checkedIndices: [],
+                  });
+                  return;
+                }
                 setCheckedMap((prev) => ({
                   ...prev,
                   [r.reportId]: new Set(meta.verificationChecks.map((_, idx) => idx)),
@@ -563,16 +583,17 @@ export function BugTriageConsole() {
               className={`min-h-[40px] px-4 py-2 rounded-lg text-xs font-mono font-bold border transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 ${
                 r.status === 'VERIFIED'
                   ? 'bg-emerald-600 text-white border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-sm'
+                  : 'bg-slate-900 hover:bg-emerald-950/40 text-emerald-400 border-slate-700 hover:border-emerald-500/50'
               }`}
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
+              {r.status === 'VERIFIED' && <CheckCircle2 className="h-3.5 w-3.5" />}
               <span>PASS</span>
             </button>
 
             <button
               type="button"
               disabled={savingId === r.reportId}
+              title="Click to mark FAIL (OPEN) and open feedback drawer"
               onClick={() => {
                 setOpenFeedbackIds((prev) => ({ ...prev, [r.reportId]: true }));
                 const extras = buildFeedbackExtras();
@@ -585,16 +606,17 @@ export function BugTriageConsole() {
               className={`min-h-[40px] px-4 py-2 rounded-lg text-xs font-mono font-bold border transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 ${
                 r.status === 'OPEN'
                   ? 'bg-rose-600 text-white border-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.4)]'
-                  : 'bg-slate-900 hover:bg-rose-950/60 text-rose-300 border-rose-500/40'
+                  : 'bg-slate-900 hover:bg-rose-950/40 text-rose-400 border-slate-700 hover:border-rose-500/50'
               }`}
             >
-              <XCircle className="h-3.5 w-3.5" />
+              {r.status === 'OPEN' && <XCircle className="h-3.5 w-3.5" />}
               <span>FAIL</span>
             </button>
 
             <button
               type="button"
               disabled={savingId === r.reportId}
+              title="Click to move to BACKLOG (TRIAGED)"
               onClick={() => {
                 const extras = buildFeedbackExtras();
                 handleUpdate(r.reportId, {
@@ -606,11 +628,37 @@ export function BugTriageConsole() {
               className={`min-h-[40px] px-4 py-2 rounded-lg text-xs font-mono font-bold border transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 ${
                 r.status === 'TRIAGED'
                   ? 'bg-amber-600 text-white border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
-                  : 'bg-slate-900 hover:bg-amber-950/50 text-amber-300 border-amber-500/35'
+                  : 'bg-slate-900 hover:bg-amber-950/40 text-amber-400 border-slate-700 hover:border-amber-500/50'
               }`}
             >
-              <Clock className="h-3.5 w-3.5" />
+              {r.status === 'TRIAGED' && <Clock className="h-3.5 w-3.5" />}
               <span>BACKLOG</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={
+                savingId === r.reportId ||
+                (r.status === 'FIXED_ON_DEV' && checked.size === 0)
+              }
+              title="Reset verdict & ticked checks back to Ready for Sign-Off"
+              onClick={() => {
+                setCheckedMap((prev) => ({ ...prev, [r.reportId]: new Set() }));
+                if (
+                  r.status !== 'FIXED_ON_DEV' ||
+                  (Array.isArray(r.checkedIndices) && r.checkedIndices.length > 0)
+                ) {
+                  handleUpdate(r.reportId, {
+                    status: 'FIXED_ON_DEV',
+                    checkedIndices: [],
+                  });
+                }
+              }}
+              data-testid={`verdict-reset-${r.reportId}`}
+              className="min-h-[40px] px-3 py-2 rounded-lg text-xs font-mono border border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 transition cursor-pointer inline-flex items-center gap-1"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Reset</span>
             </button>
           </div>
         </div>
@@ -878,6 +926,7 @@ export function BugTriageConsole() {
                 <button
                   key={st}
                   type="button"
+                  data-testid={`filter-status-${st}`}
                   onClick={() => setStatusFilter(st)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition cursor-pointer ${
                     statusFilter === st

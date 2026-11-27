@@ -1008,7 +1008,7 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('ADMIN_HEALTH_VERDICT')).toHaveTextContent(
-          '✅ PASS — 5/5 Core Systems Healthy'
+          '🟢 System Check: 5/5 Core Healthy'
         );
       });
       // Collapsed by default in compact mode
@@ -1284,9 +1284,16 @@ describe('Option B: Founder Inbox & Red/Amber Release Controls', () => {
       expect(launchLinks).toEqual(['/studio', '/studio/fireside', '/gift']);
       expect(container.innerHTML).not.toContain('dev.memoryweaver.studio');
 
-      // Mark SoundStage PASS -> persists to localStorage
-      fireEvent.click(screen.getByTestId('DRY_RUN_PASS_soundstage-e2e'));
+      // MW-434 (Option 1A): Unclicked PASS renders neutral dark outline without ✓ icon, then shows ✓ + solid green once clicked
+      const dryRunPassBtn = screen.getByTestId('DRY_RUN_PASS_soundstage-e2e');
+      expect(dryRunPassBtn.className).toContain('bg-slate-900');
+      expect(dryRunPassBtn.querySelector('svg')).toBeNull();
+
+      // Mark SoundStage PASS -> persists to localStorage and displays ✓ + solid green
+      fireEvent.click(dryRunPassBtn);
       expect(screen.getByTestId('DRY_RUN_STATUS_soundstage-e2e')).toHaveTextContent('PASS');
+      expect(dryRunPassBtn.className).toContain('bg-emerald-600');
+      expect(dryRunPassBtn.querySelector('svg')).not.toBeNull();
       const storedAfterPass = JSON.parse(window.localStorage.getItem(DRY_RUN_STORAGE_KEY) || '{}');
       expect(storedAfterPass.steps['soundstage-e2e'].status).toBe('PASS');
 

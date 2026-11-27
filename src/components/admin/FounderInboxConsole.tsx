@@ -18,7 +18,6 @@ import {
   Rocket,
   RotateCcw,
   Ticket,
-  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -534,29 +533,46 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
             <button
               type="button"
               disabled={isBusy}
+              data-testid={`CONTROL_APPROVE_${control.id}`}
               onClick={() => handleControlAction(control, 'APPROVE')}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition cursor-pointer"
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide border disabled:opacity-50 transition cursor-pointer ${
+                control.status === 'APPROVED'
+                  ? 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+                  : 'bg-slate-900 hover:bg-emerald-950/40 border-slate-700 hover:border-emerald-500/50 text-emerald-400'
+              }`}
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              APPROVE
+              {control.status === 'APPROVED' && <CheckCircle2 className="h-3.5 w-3.5" />}
+              <span>APPROVE</span>
             </button>
             <button
               type="button"
               disabled={isBusy}
+              data-testid={`CONTROL_HOLD_${control.id}`}
               onClick={() => handleControlAction(control, 'HOLD')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide border border-rose-500/45 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 disabled:opacity-50 transition cursor-pointer"
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide border disabled:opacity-50 transition cursor-pointer ${
+                control.status === 'HELD' || control.status === 'HELD_BLOCKING'
+                  ? 'bg-rose-600 border-rose-400 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]'
+                  : 'bg-slate-900 hover:bg-rose-950/40 border-slate-700 hover:border-rose-500/50 text-rose-400'
+              }`}
             >
-              <PauseCircle className="h-3.5 w-3.5" />
-              HOLD
+              {(control.status === 'HELD' || control.status === 'HELD_BLOCKING') && (
+                <PauseCircle className="h-3.5 w-3.5" />
+              )}
+              <span>HOLD</span>
             </button>
             <button
               type="button"
               disabled={isBusy}
+              data-testid={`CONTROL_DEFER_${control.id}`}
               onClick={() => handleControlAction(control, 'DEFER_TO_PLANE', false)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide border border-amber-500/45 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 disabled:opacity-50 transition cursor-pointer"
+              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wide border disabled:opacity-50 transition cursor-pointer ${
+                control.status === 'DEFERRED_TO_PLANE'
+                  ? 'bg-amber-600 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                  : 'bg-slate-900 hover:bg-amber-950/40 border-slate-700 hover:border-amber-500/50 text-amber-400'
+              }`}
             >
-              <Ticket className="h-3.5 w-3.5" />
-              DEFER TO PLANE
+              {control.status === 'DEFERRED_TO_PLANE' && <Ticket className="h-3.5 w-3.5" />}
+              <span>DEFER TO PLANE</span>
             </button>
             <button
               type="button"
@@ -921,19 +937,17 @@ export function FounderInboxConsole({ onNavigateSuite }: FounderInboxConsoleProp
                           type="button"
                           disabled={isBusy}
                           onClick={() => handleBugSignOff(bug, 'VERIFIED')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold border border-slate-700 bg-slate-900 hover:bg-emerald-950/40 hover:border-emerald-500/50 text-emerald-400 disabled:opacity-50 transition cursor-pointer"
                         >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Sign Off (Verified)
+                          <span>PASS</span>
                         </button>
                         <button
                           type="button"
                           disabled={isBusy}
                           onClick={() => handleBugSignOff(bug, 'OPEN')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-rose-500/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25 disabled:opacity-50 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold border border-slate-700 bg-slate-900 hover:bg-rose-950/40 hover:border-rose-500/50 text-rose-400 disabled:opacity-50 transition cursor-pointer"
                         >
-                          <XCircle className="h-3.5 w-3.5" />
-                          Still Broken (Reopen)
+                          <span>FAIL</span>
                         </button>
                       </div>
                     </div>
