@@ -13,6 +13,7 @@ import { premiumPromptIds } from '@/lib/premiumPrompts';
 import { cn } from '@/lib/utils';
 
 import { PromptCard } from '@/components/prompts/PromptCard';
+import { FiresideCinemaLightbox } from '@/components/fireside/FiresideCinemaLightbox';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,159 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { Memory, PromptGroup } from '@/types';
+import { CorrelatedPrompt } from '@/hooks/studio/useStudioData';
+
+export interface ResolvedStudioCardMedia {
+  hasRecordedMedia: boolean;
+  mediaMode: 'video' | 'audio' | null;
+  mediaUrl: string | null;
+  posterUrl: string | null;
+  durationSeconds: number | null;
+  dateline: string | null;
+  originBadgeLabel: string | null;
+  photos: any[];
+}
+
+export function resolveStudioCardMedia(memory?: Memory): ResolvedStudioCardMedia {
+  if (!memory) {
+    return {
+      hasRecordedMedia: false,
+      mediaMode: null,
+      mediaUrl: null,
+      posterUrl: null,
+      durationSeconds: null,
+      dateline: null,
+      originBadgeLabel: null,
+      photos: [],
+    };
+  }
+
+  const rawTakes = Array.isArray(memory.takes) ? memory.takes : [];
+  const activeTakes = rawTakes.filter(
+    (t) => t.status !== 'outtake' && t.status !== 'purged'
+  );
+  const preferredTake =
+    activeTakes.find((t) => t.status === 'master') ||
+    (memory.activeTakeId
+      ? activeTakes.find((t) => t.id === memory.activeTakeId)
+      : undefined) ||
+    activeTakes.find((t) => t.isPreferred) ||
+    activeTakes[activeTakes.length - 1] ||
+    activeTakes[0];
+
+  const takeVideoUrl =
+    preferredTake && preferredTake.mediaMode !== 'audio'
+      ? preferredTake.mediaUrl || (preferredTake as any).videoUrl || null
+      : null;
+  const takeAudioUrl =
+    preferredTake && preferredTake.mediaMode === 'audio'
+      ? preferredTake.mediaUrl || (preferredTake as any).audioUrl || null
+      : null;
+
+  const videoAttachmentUrl =
+    memory.mediaAttachments?.find((m) => m.type?.startsWith('video'))?.url || null;
+  const audioAttachmentUrl =
+    memory.mediaAttachments?.find((m) => m.type?.startsWith('audio'))?.url || null;
+
+  const resolvedVideoUrl =
+    takeVideoUrl ||
+    (typeof memory.videoUrl === 'string' && memory.videoUrl.trim() ? memory.videoUrl.trim() : null) ||
+    memory.fusionManifest?.rawVideoUrl ||
+    videoAttachmentUrl ||
+    null;
+
+  const resolvedAudioUrl =
+    !resolvedVideoUrl
+      ? takeAudioUrl ||
+        (typeof memory.audioUrl === 'string' && memory.audioUrl.trim() ? memory.audioUrl.trim() : null) ||
+        audioAttachmentUrl ||
+        null
+      : null;
+
+  const mediaMode: 'video' | 'audio' | null = resolvedVideoUrl
+    ? 'video'
+    : resolvedAudioUrl
+    ? 'audio'
+    : null;
+  const mediaUrl = resolvedVideoUrl || resolvedAudioUrl || null;
+  const hasRecordedMedia = Boolean(mediaUrl);
+
+  const rawPhotos = Array.isArray((memory as any).photos)
+    ? (memory as any).photos
+    : Array.isArray(memory.mediaAttachments)
+    ? memory.mediaAttachments.filter((m) => m.type?.startsWith('image'))
+    : [];
+
+  const firstPhoto = rawPhotos[0];
+  const firstPhotoUrl = firstPhoto
+    ? typeof firstPhoto === 'string'
+      ? firstPhoto
+      : firstPhoto.storageUrl || firstPhoto.localUri || firstPhoto.previewUrl || firstPhoto.url || null
+    : null;
+
+  const posterUrl =
+    memory.posterImageUrl ||
+    (memory as any).posterUrl ||
+    memory.fusionManifest?.posterImageUrl ||
+    memory.imageUrl ||
+    firstPhotoUrl ||
+    null;
+
+  const rawDuration =
+    preferredTake?.durationSeconds ||
+    (memory as any).videoDuration ||
+    (memory as any).duration ||
+    memory.mediaAttachments?.find((m) => m.duration)?.duration ||
+    null;
+  const durationSeconds =
+    typeof rawDuration === 'number' && Number.isFinite(rawDuration) && rawDuration > 0
+      ? rawDuration
+      : null;
+
+  const loc = memory.narratorLocationAtEvent || memory.location;
+  const cleanLoc = loc && loc !== 'none' ? loc.trim() : '';
+  const cleanCountry =
+    memory.country && memory.country !== 'none' ? memory.country.trim() : '';
+  const cleanYear =
+    memory.dateComponents?.year && memory.dateComponents.year !== 'none'
+      ? String(memory.dateComponents.year)
+      : memory.year && String(memory.year) !== 'none'
+      ? String(memory.year)
+      : '';
+  const rawAge = memory.narratorAgeAtTime ?? memory.age;
+  const cleanAge =
+    typeof rawAge === 'number' && Number.isFinite(rawAge) && rawAge > 0
+      ? `Age ${rawAge}`
+      : '';
+
+  const datelineParts = [cleanLoc, cleanCountry, cleanYear, cleanAge].filter(Boolean);
+  const dateline = datelineParts.length > 0 ? datelineParts.join(' · ') : null;
+
+  const isSoundstage =
+    (memory as any).editingAuthority === 'desktop_locked' ||
+    (memory as any).originSurface === 'soundstage_desktop' ||
+    preferredTake?.source === 'soundstage_desktop' ||
+    (Boolean(memory.videoUrl) && !preferredTake);
+  const visionSuffix = memory.activeVisionLabel
+    ? ` · ${memory.activeVisionLabel.toUpperCase()}`
+    : '';
+  const originBadgeLabel = hasRecordedMedia
+    ? isSoundstage
+      ? `Soundstage${visionSuffix}`
+      : `Fireside${visionSuffix}`
+    : null;
+
+  return {
+    hasRecordedMedia,
+    mediaMode,
+    mediaUrl,
+    posterUrl,
+    durationSeconds,
+    dateline,
+    originBadgeLabel,
+    photos: rawPhotos,
+  };
+}
 
 export function StudioDashboard({ 
   chapters,
@@ -74,6 +228,12 @@ export function StudioDashboard({
   // Guest Upsell State
   const [isUpsellOpen, setIsUpsellOpen] = useState(false);
   const [upsellFeature, setUpsellFeature] = useState("creating new scenes");
+  const [screeningItem, setScreeningItem] = useState<{
+    cp: CorrelatedPrompt;
+    chapterTitle: string;
+    sceneNumber: number;
+    media: ResolvedStudioCardMedia;
+  } | null>(null);
 
   // THE INVISIBLE GUIDE: Identify the next logical action for the director
   const recommendedPromptId = React.useMemo(() => {
@@ -386,7 +546,8 @@ export function StudioDashboard({
                           toast.info("Premium Prompt", { description: "Upgrade your account to unlock this and all other prompts." });
                         }
                       };
-                      
+                      const cardMedia = resolveStudioCardMedia(cp.memory);
+
                       return (
                         <div key={cp.id} className="transform transition-all active:scale-[0.98]">
                           <PromptCard
@@ -404,6 +565,25 @@ export function StudioDashboard({
                             canAccess={canAccess}
                             sceneNumber={promptIdx + 1}
                             partLabel={chapter.title.split(':')[0]}
+                            hasRecordedMedia={cardMedia.hasRecordedMedia}
+                            mediaMode={cardMedia.mediaMode}
+                            mediaUrl={cardMedia.mediaUrl}
+                            posterUrl={cardMedia.posterUrl}
+                            durationSeconds={cardMedia.durationSeconds}
+                            dateline={cardMedia.dateline}
+                            originBadgeLabel={cardMedia.originBadgeLabel}
+                            activeVisionLabel={cp.memory?.activeVisionLabel || null}
+                            onPlayReel={
+                              cardMedia.hasRecordedMedia
+                                ? () =>
+                                    setScreeningItem({
+                                      cp,
+                                      chapterTitle: chapter.title,
+                                      sceneNumber: promptIdx + 1,
+                                      media: cardMedia,
+                                    })
+                                : undefined
+                            }
                             memoryDescription={(() => {
                               const isTemplate = (t?: string) => {
                                 if (!t) return true;
@@ -500,10 +680,54 @@ export function StudioDashboard({
         </div>
       </div>
 
-      <DirectorialUpsellDialog 
+      <DirectorialUpsellDialog
         isOpen={isUpsellOpen}
         onClose={() => setIsUpsellOpen(false)}
         requiredFeature={upsellFeature}
+      />
+
+      {/* MW-431 (2A): Single Shared Root 2.39:1 Screening Room Lightbox on /studio */}
+      <FiresideCinemaLightbox
+        isOpen={Boolean(screeningItem)}
+        onClose={() => setScreeningItem(null)}
+        hideDiscardControl={true}
+        tvRoomHref={
+          screeningItem?.cp.memory?.id
+            ? `/cinema/tv?id=${encodeURIComponent(screeningItem.cp.memory.id)}`
+            : null
+        }
+        sceneTitle={screeningItem?.cp.title || 'Story Scene'}
+        chapterTitle={screeningItem?.chapterTitle || null}
+        sceneNumber={screeningItem?.sceneNumber ?? null}
+        location={
+          screeningItem?.cp.memory?.narratorLocationAtEvent ||
+          screeningItem?.cp.memory?.location ||
+          null
+        }
+        year={
+          screeningItem?.cp.memory?.dateComponents?.year &&
+          screeningItem.cp.memory.dateComponents.year !== 'none'
+            ? screeningItem.cp.memory.dateComponents.year
+            : screeningItem?.cp.memory?.year ?? null
+        }
+        age={
+          screeningItem?.cp.memory?.narratorAgeAtTime ??
+          screeningItem?.cp.memory?.age ??
+          null
+        }
+        narratorName={(user as any)?.displayName || null}
+        hasBurnedInTitleSlate={Boolean((screeningItem?.cp.memory as any)?.hasBurnedInTitleSlate)}
+        mediaUrl={screeningItem?.media.mediaUrl || null}
+        mediaMode={screeningItem?.media.mediaMode || 'video'}
+        photos={screeningItem?.media.photos || []}
+        posterUrl={screeningItem?.media.posterUrl || null}
+        durationSeconds={screeningItem?.media.durationSeconds || 0}
+        soundtrackUrl={
+          screeningItem?.cp.memory?.fusionManifest?.soundtrackUrl ||
+          screeningItem?.cp.memory?.structuredScript?.generatedSoundtrackUrl ||
+          null
+        }
+        moodTag={screeningItem?.cp.memory?.moodTag}
       />
     </div>
   );

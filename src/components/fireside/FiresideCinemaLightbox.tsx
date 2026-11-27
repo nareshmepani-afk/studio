@@ -37,6 +37,8 @@ import {
   AlertCircle,
   AlertTriangle,
   Mic,
+  Tv,
+  ExternalLink,
 } from 'lucide-react';
 import { HeirloomPhotoAttachment } from '@/types/fireside';
 import { StoryMoodTag, EditingAuthority } from '@/types/curriculum';
@@ -53,6 +55,8 @@ export interface FiresideCinemaLightboxProps {
   onOpenBonusDrawer?: () => void;
   onDiscardTake?: () => void;
   onRecordAlternateTake?: () => void;
+  hideDiscardControl?: boolean;
+  tvRoomHref?: string | null;
   isProtectedMasterReel?: boolean;
   isPublishedInCinema?: boolean;
   activeWeaveLabel?: string | null;
@@ -80,6 +84,8 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
   onOpenBonusDrawer,
   onDiscardTake,
   onRecordAlternateTake,
+  hideDiscardControl = false,
+  tvRoomHref = null,
   isProtectedMasterReel = false,
   isPublishedInCinema = false,
   activeWeaveLabel = null,
@@ -593,24 +599,39 @@ export const FiresideCinemaLightbox: React.FC<FiresideCinemaLightboxProps> = ({
               </button>
             )}
 
-            {/* Discard Take Trigger (Opens Root Full-Card Protected Master Modal or Outtake Safety Modal — MW-430) */}
-            <button
-              type="button"
-              data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
-              data-hotspot-id="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
-              onClick={() => {
-                pausePlayback();
-                if (videoRef.current) videoRef.current.pause();
-                if (audioRef.current) audioRef.current.pause();
-                if (soundtrackAudioRef.current) soundtrackAudioRef.current.pause();
-                setIsPlaying(false);
-                setShowDiscardConfirm(true);
-              }}
-              className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition cursor-pointer active:scale-95"
-            >
-              <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>Discard Take</span>
-            </button>
+            {tvRoomHref && (
+              <a
+                href={tvRoomHref}
+                data-testid="HS_FIRESIDE_LIGHTBOX_TV_ROOM_LINK"
+                className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer active:scale-95"
+                title="Open full-page Smart TV Screening Room"
+              >
+                <Tv className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>TV Room</span>
+                <ExternalLink className="w-3 h-3 opacity-80 shrink-0" />
+              </a>
+            )}
+
+            {/* Discard Take Trigger (Opens Root Full-Card Protected Master Modal or Outtake Safety Modal — MW-430; hidden in read-only /studio screening via hideDiscardControl) */}
+            {!hideDiscardControl && (
+              <button
+                type="button"
+                data-testid="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
+                data-hotspot-id="HS_FIRESIDE_LIGHTBOX_DISCARD_BTN"
+                onClick={() => {
+                  pausePlayback();
+                  if (videoRef.current) videoRef.current.pause();
+                  if (audioRef.current) audioRef.current.pause();
+                  if (soundtrackAudioRef.current) soundtrackAudioRef.current.pause();
+                  setIsPlaying(false);
+                  setShowDiscardConfirm(true);
+                }}
+                className="min-h-[48px] px-3.5 rounded-xl bg-stone-900 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center gap-2 transition cursor-pointer active:scale-95"
+              >
+                <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>Discard Take</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-3 text-xs font-mono text-stone-400">
