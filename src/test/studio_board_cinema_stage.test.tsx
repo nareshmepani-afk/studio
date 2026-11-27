@@ -172,7 +172,7 @@ describe('MW-431: Desktop /studio 16:9 Movie Screening Stage, Shared 2.39:1 Ligh
     expect(screen.queryByTestId('prompt-card-media-stage-p3')).toBeNull();
   });
 
-  it('3. (2A + 3A) opens single shared read-only 2.39:1 Cinema Lightbox (with TV Room link & hidden Discard) on /studio card click and gates Edit behind Continuity Warning Modal', () => {
+  it('3. (2A + MW-433) opens single shared read-only 2.39:1 Cinema Lightbox (with TV Room link & hidden Discard) on /studio card click and navigates directly in 1 click on Edit without a card-clipped modal', () => {
     const chapters: any = [
       {
         id: 'part-i',
@@ -230,21 +230,15 @@ describe('MW-431: Desktop /studio 16:9 Movie Screening Stage, Shared 2.39:1 Ligh
     fireEvent.click(screen.getByLabelText('Close theatrical preview'));
     expect(screen.queryByTestId('HS_FIRESIDE_LIGHTBOX_STAGE')).toBeNull();
 
-    // 3A: Click secondary 🔒 Edit pill -> Continuity Warning Modal opens before routing to Desktop Studio
-    fireEvent.click(screen.getByTestId('prompt-card-edit-secondary-p1'));
-    const warnModal = screen.getByTestId('prompt-card-continuity-modal-p1');
-    expect(warnModal.textContent).toContain('Soundstage Master · Live in Cinema');
-    expect(warnModal.textContent).toContain('THE FLOW');
-    expect(mockPush).not.toHaveBeenCalled();
+    // MW-433: Clicking secondary Edit link on desktop (>= 768px) does NOT prevent default or open a card-clipped modal;
+    // it navigates directly in 1 click via href="/studio/production/ey96djU6qR1BrDGnvZwp?act=1" just like Scene 2's Edit Scene button
+    const editLink = screen.getByTestId('prompt-card-edit-secondary-p1') as HTMLAnchorElement;
+    expect(editLink.getAttribute('href')).toBe('/studio/production/ey96djU6qR1BrDGnvZwp?act=1');
 
-    // Keep Safe -> stays on /studio
-    fireEvent.click(screen.getByTestId('prompt-card-warn-keep-safe-p1'));
+    const clickAllowed = fireEvent.click(editLink);
+    expect(clickAllowed).toBe(true);
     expect(screen.queryByTestId('prompt-card-continuity-modal-p1')).toBeNull();
-
-    // Re-open -> Unlock Desktop Studio Anyway -> navigates to /studio/production/ey96djU6qR1BrDGnvZwp?act=1
-    fireEvent.click(screen.getByTestId('prompt-card-edit-secondary-p1'));
-    fireEvent.click(screen.getByTestId('prompt-card-warn-unlock-p1'));
-    expect(mockPush).toHaveBeenCalledWith('/studio/production/ey96djU6qR1BrDGnvZwp?act=1');
+    expect(screen.queryByTestId('HS_FIRESIDE_LIGHTBOX_STAGE')).toBeNull();
   });
 
   it('4. (Option 4) defers #t=0.5 video src until IntersectionObserver signals proximity', () => {

@@ -19,7 +19,6 @@ import {
   ExternalLink,
   MapPin,
   Mic,
-  AlertTriangle,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import {
@@ -77,7 +76,6 @@ function formatReelDuration(totalSeconds?: number | null): string | null {
 export function PromptCard(props: PromptCardProps) {
   const router = useRouter();
   const [isBriefOpen, setIsBriefOpen] = useState(false);
-  const [isEditWarnOpen, setIsEditWarnOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isMobileScreen, setIsMobileScreen] = useState(false);
   const [isNearViewport, setIsNearViewport] = useState<boolean>(
@@ -163,7 +161,6 @@ export function PromptCard(props: PromptCardProps) {
     durationSeconds,
     dateline,
     originBadgeLabel,
-    activeVisionLabel,
     onPlayReel,
   } = props;
 
@@ -678,19 +675,13 @@ export function PromptCard(props: PromptCardProps) {
                   if (isMobileViewport()) {
                     e.preventDefault();
                     router.push(`/studio/fireside?id=${encodeURIComponent(promptId)}&edit=true`);
-                    return;
-                  }
-                  // MW-431 (3A): Harmonised Desktop Continuity Warning Modal before entering Act I on published scenes
-                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
-                    e.preventDefault();
-                    setIsEditWarnOpen(true);
                   }
                 }}
                 data-testid={`prompt-card-edit-secondary-${promptId}`}
-                className="relative z-20 pointer-events-auto inline-flex items-center gap-1 px-3 h-9 rounded-full border border-amber-500/30 bg-stone-950/70 hover:bg-stone-900 hover:border-amber-400/60 text-xs font-semibold text-amber-200/90 hover:text-amber-100 transition-colors"
-                title="Protected Cinema scene — review continuity notice before editing"
+                className="relative z-20 pointer-events-auto inline-flex items-center gap-1.5 px-3.5 h-9 rounded-full border border-primary/30 bg-primary/5 hover:bg-primary hover:text-primary-foreground hover:border-primary text-xs font-bold tracking-tight text-primary whitespace-nowrap shadow-xl transition-all duration-300"
+                title="Open scene directly in Studio Editor (Act I)"
               >
-                <Lock className="h-3 w-3 text-amber-300" />
+                <Edit className="h-3.5 w-3.5" />
                 <span>Edit</span>
               </Link>
             )}
@@ -706,105 +697,6 @@ export function PromptCard(props: PromptCardProps) {
           isRecommended && !isCompleted ? "bg-emerald-500 opacity-[0.03]" : "bg-primary"
         )}
       />
-
-      {/* MW-431 (3A): Harmonised Desktop Continuity Warning Modal for IN CINEMA Cards */}
-      {isEditWarnOpen && (
-        <div
-          role="alertdialog"
-          aria-modal="true"
-          data-testid={`prompt-card-continuity-modal-${promptId}`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsEditWarnOpen(false);
-          }}
-          className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 cursor-default animate-in fade-in duration-200"
-        >
-          <div
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-            className="w-full max-w-md rounded-3xl border border-amber-500/45 bg-stone-950/95 p-6 sm:p-7 shadow-[0_0_60px_rgba(245,158,11,0.2)] text-left space-y-4"
-          >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/45 text-[11px] font-mono font-bold uppercase tracking-wider text-amber-300">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>
-                {originBadgeLabel?.toUpperCase().includes('FIRESIDE')
-                  ? 'Published in Family Cinema'
-                  : 'Soundstage Master · Live in Cinema'}
-              </span>
-            </div>
-
-            <h3 className="text-xl sm:text-2xl font-serif text-white leading-snug">
-              Edit &ldquo;{promptText}&rdquo; in Desktop Studio?
-            </h3>
-
-            <p className="text-xs sm:text-sm text-stone-300 leading-relaxed">
-              This chapter
-              {activeVisionLabel ? (
-                <>
-                  {' '}
-                  (<span className="text-amber-300 font-semibold">{activeVisionLabel.toUpperCase()}</span>)
-                </>
-              ) : null}{' '}
-              is premiered in your <strong className="text-white">Family Cinema</strong>.
-            </p>
-
-            <div className="rounded-2xl border border-amber-500/35 bg-amber-950/25 p-4 text-xs sm:text-sm text-stone-200 leading-relaxed">
-              Editing written prose or memory coordinates updates your live story card, Pre-Roll
-              Title Slate, and Lower-Third immediately —{' '}
-              <strong className="text-amber-200">
-                without changing the spoken words already recorded in your video or voice reel
-              </strong>{' '}
-              (unless you record a new cut in Act III / IV).
-            </div>
-
-            <div className="pt-1 flex flex-col gap-2.5">
-              <button
-                type="button"
-                data-testid={`prompt-card-warn-keep-safe-${promptId}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsEditWarnOpen(false);
-                }}
-                className="w-full min-h-[50px] px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-mono font-bold text-xs sm:text-sm flex items-center justify-center transition cursor-pointer shadow-md"
-              >
-                Keep Safe (Stay on Production Board)
-              </button>
-
-              {onPlayReel && (
-                <button
-                  type="button"
-                  data-testid={`prompt-card-warn-watch-${promptId}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditWarnOpen(false);
-                    onPlayReel();
-                  }}
-                  className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-emerald-500/40 text-emerald-300 font-mono font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer"
-                >
-                  <Film className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Watch Film in Screening Room ▶</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                data-testid={`prompt-card-warn-unlock-${promptId}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsEditWarnOpen(false);
-                  router.push(secondaryEditHref);
-                }}
-                className="w-full min-h-[48px] px-4 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 border border-stone-800 text-stone-300 hover:text-white font-mono font-semibold text-xs sm:text-sm flex items-center justify-center transition cursor-pointer"
-              >
-                Unlock Desktop Studio Anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
