@@ -65,6 +65,11 @@ export async function readBugReports(argv: string[] = process.argv.slice(2)) {
     const cardId = cardRaw && Number.isInteger(Number(cardRaw)) && Number(cardRaw) > 0 ? Number(cardRaw) : null;
     let planeIssueId = readArgValue(argv, 'plane') || null;
     const resolutionNotes = readArgValue(argv, 'notes') || '';
+    const title = readArgValue(argv, 'title') || undefined;
+    const rawSteps = readArgValue(argv, 'steps');
+    const rawChecks = readArgValue(argv, 'checks');
+    const testSteps = rawSteps ? rawSteps.split('||').map((s) => s.trim()).filter(Boolean) : undefined;
+    const verificationChecks = rawChecks ? rawChecks.split('||').map((c) => c.trim()).filter(Boolean) : undefined;
     const userEmail = readArgValue(argv, 'email') || 'nareshmepani@googlemail.com';
     const userId = readArgValue(argv, 'user-id') || 'founder_chat';
 
@@ -76,7 +81,10 @@ export async function readBugReports(argv: string[] = process.argv.slice(2)) {
       path: routePath,
       appVersion: readArgValue(argv, 'version') || 'v1.1.0-beta',
       userAgent: 'Chat Triage CLI',
+      ...(title ? { title } : {}),
       description: desc.trim(),
+      ...(testSteps && testSteps.length > 0 ? { testSteps } : {}),
+      ...(verificationChecks && verificationChecks.length > 0 ? { verificationChecks } : {}),
       status,
       createdAt: now,
       createdAtIso: new Date(now).toISOString(),
@@ -131,6 +139,16 @@ export async function readBugReports(argv: string[] = process.argv.slice(2)) {
     if (plane !== undefined) updates.planeIssueId = plane || null;
     const notes = readArgValue(argv, 'notes');
     if (notes !== undefined) updates.resolutionNotes = notes;
+    const title = readArgValue(argv, 'title');
+    if (title !== undefined) updates.title = title || null;
+    const rawSteps = readArgValue(argv, 'steps');
+    if (rawSteps !== undefined) {
+      updates.testSteps = rawSteps.split('||').map((s) => s.trim()).filter(Boolean);
+    }
+    const rawChecks = readArgValue(argv, 'checks');
+    if (rawChecks !== undefined) {
+      updates.verificationChecks = rawChecks.split('||').map((c) => c.trim()).filter(Boolean);
+    }
     const cardRaw = readArgValue(argv, 'card');
     if (cardRaw !== undefined) {
       updates.cardId = Number.isInteger(Number(cardRaw)) && Number(cardRaw) > 0 ? Number(cardRaw) : null;

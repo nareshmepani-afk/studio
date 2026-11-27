@@ -20,6 +20,21 @@ export const dynamic = 'force-dynamic';
 const COLLECTION = 'bug_reports';
 const VALID_ID_RE = /^[A-Za-z0-9_-]{4,120}$/;
 
+function sanitizeStringList(raw: unknown, maxItems = 12, maxLen = 500): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return raw
+    .map((item) => String(item ?? '').trim().slice(0, maxLen))
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
+function sanitizeIndexList(raw: unknown): number[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return raw
+    .map((n) => Number(n))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n < 50);
+}
+
 export async function GET(req: NextRequest) {
   try {
     const authResult = await requireAdminSession();
@@ -91,6 +106,8 @@ export async function POST(req: Request) {
       : generateBugReportId(now);
     const status = isValidBugReportStatus(body.status) ? body.status : 'OPEN';
     const parsedCardId = Number(body.cardId);
+    const testSteps = sanitizeStringList(body.testSteps);
+    const verificationChecks = sanitizeStringList(body.verificationChecks);
 
     const record: BugReportRecord = {
       reportId,
@@ -100,7 +117,10 @@ export async function POST(req: Request) {
       path: sanitizeBugDeepLinkRoute(body.path),
       appVersion: String(body.appVersion || 'v1.1.0-beta').trim().slice(0, 64),
       userAgent: String(body.userAgent || 'Chat Triage CLI').trim().slice(0, 240),
+      ...(body.title ? { title: String(body.title).trim().slice(0, 200) } : {}),
       description,
+      ...(testSteps ? { testSteps } : {}),
+      ...(verificationChecks ? { verificationChecks } : {}),
       status,
       createdAt: now,
       createdAtIso: new Date(now).toISOString(),
@@ -152,6 +172,43 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ success: false, error: 'Invalid status value' }, { status: 400 });
       }
       updates.status = body.status;
+      if (body.status === 'OPEN') {
+        updates.planeClosedAt = null;
+      }
+    }
+
+    if ('title' in body && body.title !== undefined) {
+      updates.title = body.title === null ? null : String(body.title).trim().slice(0, 200);
+    }
+
+    if ('testSteps' in body && body.testSteps !== undefined) {
+      const steps = sanitizeStringList(body.testSteps);
+      if (steps) updates.testSteps = steps;
+    }
+
+    if ('verificationChecks' in body && body.verificationChecks !== undefined) {
+      const checks = sanitizeStringList(body.verificationChecks);
+      if (checks) updates.verificationChecks = checks;
+    }
+
+    if ('checkedIndices' in body && body.checkedIndices !== undefined) {
+      const checked = sanitizeIndexList(body.checkedIndices);
+      if (checked) updates.checkedIndices = checked;
+    }
+
+    if ('founderFeedback' in body && body.founderFeedback !== undefined) {
+      updates.founderFeedback =
+        body.founderFeedback === null ? null : String(body.founderFeedback).trim().slice(0, 4000);
+    }
+
+    if ('consoleLog' in body && body.consoleLog !== undefined) {
+      updates.consoleLog =
+        body.consoleLog === null ? null : String(body.consoleLog).trim().slice(0, 4000);
+    }
+
+    if ('telemetryTrace' in body && body.telemetryTrace !== undefined) {
+      updates.telemetryTrace =
+        body.telemetryTrace === null ? null : String(body.telemetryTrace).trim().slice(0, 4000);
     }
 
     if ('planeIssueId' in body && body.planeIssueId !== undefined) {
@@ -194,15 +251,29 @@ export async function PATCH(req: Request) {
           reason: 'PLANE_API_KEY not bound on server runtime.',
         };
       } else {
-        let candidatePlaneId: string | null =
-          typeof updates.planeIssueId === 'string' ? updates.planeIssueId : null;
-        if (!candidatePlaneId && typeof (docRef as any).get === 'function') {
+        let existingData: Partial<BugReportRecord> | null = null;
+        if (typeof (docRef as any).get === 'function') {
           const existingSnap = await docRef.get().catch(() => null);
-          const existingData = existingSnap?.exists ? (existingSnap.data() as Partial<BugReportRecord>) : null;
-          candidatePlaneId = existingData?.planeIssueId || null;
+          existingData = existingSnap?.exists ? (existingSnap.data() as Partial<BugReportRecord>) : null;
         }
+
+        const candidatePlaneId: string | null =
+          typeof updates.planeIssueId === 'string'
+            ? updates.planeIssueId
+            : existingData?.planeIssueId || null;
         const normalisedKey = normalisePlaneIssueKey(candidatePlaneId);
-        if (normalisedKey) {
+
+        // Idempotency guard: avoid duplicate Plane transitions/comments if already closed
+        if (normalisedKey && existingData?.planeClosedAt && existingData?.status === 'VERIFIED') {
+          planeSync = {
+            attempted: false,
+            ok: true,
+            configured: true,
+            action: 'SKIPPED',
+            issueKey: normalisedKey,
+            reason: 'Already closed in Plane.',
+          };
+        } else if (normalisedKey) {
           try {
             const actor = authResult.session.email || 'admin@memoryweaver.studio';
             const updatedIssue = await updatePlaneIssueState(planeCfg, normalisedKey, 'done');

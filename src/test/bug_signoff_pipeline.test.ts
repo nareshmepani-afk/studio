@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor, screen } from '@testing-library/react';
 import {
+  deriveBugCardPresentation,
   doesCommitShaMatchLive,
   formatPlaneBrowseUrl,
   sanitizeBugDeepLinkRoute,
   type BugReportRecord,
 } from '@/lib/bugReports';
 import { BugTriageConsole } from '@/components/admin/BugTriageConsole';
+import { injectFounderSignOffBanner } from '@/app/admin/qa/route';
 
-describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
+describe('Option B Fast Sign-Off Queue & /admin/qa-Grade Sign-Off Cards (MW-432)', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
@@ -20,7 +22,7 @@ describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
     global.fetch = originalFetch;
   });
 
-  it('validates commit SHA matching, Plane browse URLs, and deep-link route sanitization', () => {
+  it('validates commit SHA matching, Plane browse URLs, deep-link route sanitization, and derived human card titles/steps', () => {
     expect(doesCommitShaMatchLive('73b480147fc6', '73b4801')).toBe(true);
     expect(doesCommitShaMatchLive('73b4801', '73b4801')).toBe(true);
     expect(doesCommitShaMatchLive('039bf36', '73b4801')).toBe(false);
@@ -35,9 +37,22 @@ describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
     );
     expect(sanitizeBugDeepLinkRoute('//evil.example.com')).toBe('/');
     expect(sanitizeBugDeepLinkRoute('https://evil.example.com')).toBe('/');
+
+    const derived = deriveBugCardPresentation({
+      reportId: 'bug_mw_427_fireside_2_0',
+      path: '/studio/fireside?id=part-1-scene-1',
+      description: '[ENV: BOTH] Fireside 2.0 Mobile UX: 52px top bar + slide-up Bottom Sheets',
+      resolutionNotes: 'Verified at 412x968.',
+      environmentHost: 'https://dev.memoryweaver.studio',
+    });
+    expect(derived.title).toBe('Fireside 2.0 Mobile UX');
+    expect(derived.routePathname).toBe('/studio/fireside');
+    expect(derived.fullTestUrl).toBe('https://dev.memoryweaver.studio/studio/fireside?id=part-1-scene-1');
+    expect(derived.testSteps.length).toBeGreaterThanOrEqual(2);
+    expect(derived.verificationChecks.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders Ready for Founder Sign-Off queue with Plane badge, green live SHA badge, Open Exact Route, QA Card pill, and Verified/Reopen buttons', async () => {
+  it('renders /admin/qa-grade Sign-Off Card without duplicating FIXED_ON_DEV items, hides raw engineering fields by default, and signs off PASS -> VERIFIED', async () => {
     const fixedReport: BugReportRecord = {
       reportId: 'bug_1795020000_abc123',
       traceId: 'mw_telemetry_yho6skt5tei',
@@ -46,7 +61,16 @@ describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
       path: '/studio/production/0xuACyXAE3uFDuahqfd8',
       appVersion: 'v1.1.0-beta',
       userAgent: 'Chrome',
+      title: 'Soundstage Header Badges & Hover Tooltips',
       description: 'Header badges looked like clicked buttons without tooltips.',
+      testSteps: [
+        'Open https://dev.memoryweaver.studio/studio/production/0xuACyXAE3uFDuahqfd8.',
+        'Hover over the top Studio Master badge.',
+      ],
+      verificationChecks: [
+        'Passive status pill does not look like a pressed button.',
+        'Hovering displays the explanatory tooltip.',
+      ],
       status: 'FIXED_ON_DEV',
       createdAt: 1795020000000,
       createdAtIso: '2026-11-18T16:00:00.000Z',
@@ -111,6 +135,20 @@ describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
 
     expect(getByTestId('LIVE_STAGING_SHA_BADGE').textContent).toContain('73b4801');
 
+    // Deduplicated: FIXED_ON_DEV card renders ONCE in sign-off section and NOT duplicated below
+    expect(getByTestId('signoff-card-bug_1795020000_abc123')).toBeDefined();
+    expect(queryByTestId('bug-report-card-bug_1795020000_abc123')).toBeNull();
+
+    // Human title, numbered steps, interactive assertion checkboxes, and collapsed engineering metadata
+    expect(getByTestId('bug-card-title-bug_1795020000_abc123').textContent).toBe(
+      'Soundstage Header Badges & Hover Tooltips'
+    );
+    expect(queryByTestId('eng-meta-panel-bug_1795020000_abc123')).toBeNull();
+    const check0 = getByTestId('bug-assertion-check-bug_1795020000_abc123-0') as HTMLInputElement;
+    expect(check0.checked).toBe(false);
+    fireEvent.click(check0);
+    expect(check0.checked).toBe(true);
+
     // Zero outbound app.plane.so links; clicking MW-411 opens in-app PlaneTicketDrawer
     expect(container.querySelectorAll('a[href*="app.plane.so"]')).toHaveLength(0);
     const planeBtn = getByTestId('signoff-plane-link-bug_1795020000_abc123');
@@ -133,7 +171,7 @@ describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
     const qaLink = getByTestId('signoff-qa-link-bug_1795020000_abc123') as HTMLAnchorElement;
     expect(qaLink.getAttribute('href')).toBe('/admin/qa#card-12');
 
-    // Click Sign Off (Verified) -> PATCH status: 'VERIFIED' and removes card from Ready for Sign-Off section
+    // Click PASS -> PATCH status: 'VERIFIED' and removes card from Ready for Sign-Off section
     fireEvent.click(getByTestId('signoff-verified-bug_1795020000_abc123'));
 
     await waitFor(() => {
@@ -150,7 +188,7 @@ describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
     });
   });
 
-  it('Still Broken (Reopen) transitions FIXED_ON_DEV report back to OPEN', async () => {
+  it('FAIL transitions FIXED_ON_DEV report to OPEN, expands inline Founder Feedback + Console/Telemetry drawer, and supports BACKLOG -> TRIAGED', async () => {
     const fixedReport: BugReportRecord = {
       reportId: 'bug_reopen_test',
       traceId: 'mw_telemetry_reopen',
@@ -197,12 +235,40 @@ describe('Option B Fast Sign-Off Queue & Unified Bug Pipeline', () => {
       expect(queryByTestId('READY_FOR_FOUNDER_SIGNOFF_SECTION')).toBeNull();
     });
 
-    const patchCall = fetchMock.mock.calls.find(
-      ([u, i]) => String(u).includes('/api/admin/bugs') && i?.method === 'PATCH'
-    );
-    expect(JSON.parse(String(patchCall![1]!.body))).toEqual({
-      reportId: 'bug_reopen_test',
-      status: 'OPEN',
+    // Card remains visible in Action Queue as OPEN with Founder Feedback + Console/Telemetry drawer expanded!
+    expect(screen.getByTestId('founder-feedback-drawer-bug_reopen_test')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('founder-feedback-input-bug_reopen_test'), {
+      target: { value: 'Mobile menu sheet overlapped bottom bar.' },
     });
+    fireEvent.change(screen.getByTestId('founder-telemetry-input-bug_reopen_test'), {
+      target: { value: 'mw_telemetry_test_99' },
+    });
+    fireEvent.click(screen.getByTestId('verdict-backlog-bug_reopen_test'));
+
+    await waitFor(() => {
+      const calls = fetchMock.mock.calls.filter(
+        ([u, i]) => String(u).includes('/api/admin/bugs') && i?.method === 'PATCH'
+      );
+      expect(calls.length).toBeGreaterThanOrEqual(2);
+      expect(JSON.parse(String(calls[0][1]!.body))).toEqual({
+        reportId: 'bug_reopen_test',
+        status: 'OPEN',
+      });
+      expect(JSON.parse(String(calls[1][1]!.body))).toEqual({
+        reportId: 'bug_reopen_test',
+        status: 'TRIAGED',
+        founderFeedback: 'Mobile menu sheet overlapped bottom bar.',
+        telemetryTrace: 'mw_telemetry_test_99',
+      });
+    });
+  });
+
+  it('(1B) injectFounderSignOffBanner injects the live Sign-Off Queue counter & link into /admin/qa HTML without mutating card anchors', () => {
+    const sampleHtml = '<!DOCTYPE html><html><body class="min-h-screen"><header>HUD</header></body></html>';
+    const injected = injectFounderSignOffBanner(sampleHtml);
+    expect(injected).toContain('id="mw-founder-signoff-bridge-banner"');
+    expect(injected).toContain('href="/admin?suite=bugs"');
+    expect(injected).toContain("fetch('/api/admin/bugs'");
+    expect(injected).toContain('<header>HUD</header>');
   });
 });
