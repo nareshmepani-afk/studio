@@ -1519,17 +1519,17 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       u4();
     });
 
-    it('pipes prose through filterDominantSensoryAnchors(detectSensoryAnchors(activeProse)) so ey96djU6qR1BrDGnvZwp reports Soundscape (1), Visual (1), Aroma (0) in lockstep with Desktop Studio', () => {
+    it('pipes prose through filterDominantSensoryAnchors(detectSensoryAnchors(activeProse)) so ey96djU6qR1BrDGnvZwp reports Soundscape (1), Visual (1), Aroma (1) in lockstep with Desktop Studio without clarity words stealing slots', () => {
       const fullProseEy96 =
         'The history I carry is an epic journey across oceans and generations, stitched together entirely from the vibrant stories my parents passed down to me. My origins begin in the sun-baked earth of Madhapur, a small farming village in the Kutch region of Gujarat, India, where my ancestors worked the soil with their bare hands.';
 
-      // Raw anchors have multiple matches across all 3 modalities, but dominant trio filter yields 1/1/0
+      // Raw anchors have multiple matches across all 3 modalities; Golden Trio filter excludes 'clarity' ('vibrant') so all 3 sensory modalities report 1/1/1
       const rawAnchors = detectSensoryAnchors(fullProseEy96);
       expect(rawAnchors.length).toBeGreaterThan(3);
       const dominantAnchors = filterDominantSensoryAnchors(rawAnchors);
       expect(dominantAnchors.filter((a) => a.type === 'soundscape').length).toBe(1);
       expect(dominantAnchors.filter((a) => a.type === 'visual').length).toBe(1);
-      expect(dominantAnchors.filter((a) => a.type === 'aroma').length).toBe(0);
+      expect(dominantAnchors.filter((a) => a.type === 'aroma').length).toBe(1);
 
       const mockDocEy96 = {
         id: 'ey96djU6qR1BrDGnvZwp',
@@ -1553,7 +1553,7 @@ describe('MW-247: Fireside Offline Vault & Resilient Sync Invariants', () => {
       expect(countersContainer).toBeTruthy();
       expect(countersContainer.textContent).toContain('Soundscape (1)');
       expect(countersContainer.textContent).toContain('Visual (1)');
-      expect(countersContainer.textContent).toContain('Aroma (0)');
+      expect(countersContainer.textContent).toContain('Aroma (1)');
 
       // Verify Script Provenance Toolbar Pills (Section 3C & Section 5)
       const weavePill = document.querySelector(

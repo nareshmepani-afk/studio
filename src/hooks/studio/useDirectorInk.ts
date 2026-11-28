@@ -7,10 +7,12 @@ export interface DetectedAnchor {
   score?: number;
 }
 
+const GOLDEN_TRIO_MODALITIES = new Set<string>(['aroma', 'soundscape', 'visual']);
+
 /**
- * Filters sensory anchors to the Golden Trio (maximum 3 distinct modalities).
+ * Filters sensory anchors to the Golden Trio (maximum 3 distinct sensory modalities: aroma, soundscape, visual).
+ * Excludes non-sensory diagnostic categories (such as 'clarity' filler warnings or 'polish') so they never steal a sensory slot.
  * Prioritises distinct modalities in order of appearance in the text.
- * If two words share a modality (e.g. two 'soundscape' triggers), picks the first one.
  * Strictly adheres to British English orthography (prioritised, categorised).
  */
 export function filterDominantSensoryAnchors(anchors: DetectedAnchor[]): DetectedAnchor[] {
@@ -19,7 +21,7 @@ export function filterDominantSensoryAnchors(anchors: DetectedAnchor[]): Detecte
 
   for (const anchor of anchors) {
     const anchorType = anchor.type;
-    if (!anchorType) continue;
+    if (!anchorType || !GOLDEN_TRIO_MODALITIES.has(anchorType)) continue;
 
     if (!usedTypes.has(anchorType) && selected.length < 3) {
       selected.push(anchor);
@@ -32,11 +34,11 @@ export function filterDominantSensoryAnchors(anchors: DetectedAnchor[]): Detecte
 // THE SENSORY DICTIONARY (Bespoke Edition with Cinematic Rationale)
 export const SENSORY_DICTIONARY_DETAILED: Record<string, { words: string[], reason: string }> = {
   aroma: {
-    words: ['soil', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'farming', 'staple', 'food', 'village', 'machinery', 'produce', 'labourers', 'oregano', 'lavender', 'musk', 'scent', 'aroma', 'spice', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty', 'perfume', 'cardamom', 'chai', 'sandalwood', 'petrichor', 'frankincense', 'jasmine', 'turmeric', 'warm', 'fragrant', 'piping'],
-    reason: 'AROMA: Scent-memories like soil, farming, or regional food detected.'
+    words: ['soil', 'earth', 'earthy', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'farming', 'staple', 'food', 'village', 'machinery', 'produce', 'labourers', 'oregano', 'lavender', 'musk', 'scent', 'scents', 'aroma', 'aromas', 'fragrance', 'fragrances', 'smell', 'smells', 'odour', 'odours', 'spice', 'spices', 'masala', 'chapati', 'chapatis', 'roti', 'rotis', 'curry', 'curries', 'simmering', 'roasting', 'baking', 'brewing', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty', 'perfume', 'cardamom', 'chai', 'tea', 'coffee', 'ginger', 'cumin', 'coriander', 'cinnamon', 'cloves', 'saffron', 'ghee', 'incense', 'sandalwood', 'petrichor', 'frankincense', 'jasmine', 'turmeric', 'warm', 'fragrant', 'piping'],
+    reason: 'AROMA: Scent-memories like soil, farming, spices, or regional food detected.'
   },
   soundscape: {
-    words: ['language', 'Gujarati', 'lessons', 'parents', 'voice', 'culture', 'education', 'mother tongue', 'skills', 'tongue', 'thunder', 'whisper', 'echo', 'melody', 'rhythm', 'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'hum', 'silence', 'clatter', 'clink', 'rustle', 'crescendo', 'monotone', 'thrum', 'chime', 'whistling', 'whistle', 'whistles', 'drumming', 'drummed', 'chorus', 'singing', 'song'],
+    words: ['language', 'Gujarati', 'lessons', 'parents', 'voice', 'sound', 'sounds', 'culture', 'education', 'mother tongue', 'skills', 'tongue', 'thunder', 'whisper', 'echo', 'melody', 'rhythm', 'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'hum', 'silence', 'clatter', 'clink', 'rustle', 'crescendo', 'monotone', 'thrum', 'chime', 'whistling', 'whistle', 'whistles', 'drumming', 'drummed', 'chorus', 'singing', 'song'],
     reason: 'SOUND: Language, dialects, education, or environmental sounds detected.'
   },
   visual: {

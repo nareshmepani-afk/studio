@@ -95,4 +95,20 @@ describe('MW-266 / Sensory Highlight & Golden Trio Modal Filter Suite', () => {
     expect(SENSORY_DICTIONARY_DETAILED.soundscape.reason).toContain('SOUND:');
     expect(SENSORY_DICTIONARY_DETAILED.visual.reason).toContain('VISUAL:');
   });
+
+  it('7. MW-440 REGRESSION SHIELD: excludes clarity filler words (just, simply, very) from stealing Golden Trio slots and detects plural/culinary aroma anchors (spices, masala, chapatis, curries, aromas)', () => {
+    const hendonPassage =
+      'Long before my own clear recollections began, my father journeyed ahead from Nairobi, determined to secure work and a shelter before the four of us crossed the sea. He managed to find a single room over a shop in Chalk Farm, London, accommodating all of us together. Being only about one year old and just learning to walk, there was simply no stopping my constant movement. The restless sound of my tumbling and playing above proved far too disruptive for the shopkeeper below, and eventually, the noise became too much, and we were asked to vacate. That departure brought us to 45 Dartmouth Road in Hendon, the house where I truly grew up. Looking back on 1969 and the years right after, my memories remain deeply fond, even though my parents had very little money and the house was thoroughly basic. Wholesome home-cooked meals layered with Indian spices, from morning masala chai through to evening fresh chapatis and simmering vegetarian curries, filled every corner. Those rich aromas kept me warm, weaving an enduring comfort that cold weather could never touch.';
+
+    const detected = detectAnchors(hendonPassage);
+    // Plural & culinary inflections must be recognised as aroma anchors
+    const aromaWords = detected.filter((a) => a.type === 'aroma').map((a) => a.word);
+    expect(aromaWords).toEqual(expect.arrayContaining(['spices', 'masala', 'chai', 'chapatis', 'curries', 'aromas']));
+
+    // Golden Trio dominant filter must yield all 3 sensory modalities (never letting 'just'/'simply'/'very' steal Aroma's slot)
+    const dominant = filterDominantSensoryAnchors(detected);
+    expect(dominant.length).toBe(3);
+    expect(dominant.map((a) => a.type).sort()).toEqual(['aroma', 'soundscape', 'visual']);
+    expect(dominant.some((a) => (a.type as string) === 'clarity')).toBe(false);
+  });
 });
