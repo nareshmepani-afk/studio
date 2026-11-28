@@ -10,6 +10,7 @@ import {
   formatHardwareDeviceLabel,
   deduplicateHardwareDevices,
 } from '@/hooks/useCamera';
+import { resolveZoomRange, clampZoom, formatZoomLabel } from '@/lib/cameraZoom';
 
 interface MockTrackOptions {
   kind: 'video' | 'audio';
@@ -469,5 +470,185 @@ describe('FEAT-MW-159: Native USB Camera & Microphone Discovery, Selection & Har
       isExternalUsb: false,
       groupId: 'grp-realtek',
     });
+  });
+});
+
+
+describe('MW-435 Phase 1: cameraZoom pure helpers', () => {
+  it('resolveZoomRange returns null unless the camera exposes a usable min/max zoom span', () => {
+    expect(resolveZoomRange(undefined)).toBeNull();
+    expect(resolveZoomRange(null)).toBeNull();
+    expect(resolveZoomRange({})).toBeNull();
+    expect(resolveZoomRange({ focusMode: ['continuous'] })).toBeNull();
+    expect(resolveZoomRange({ zoom: { min: 3, max: 3, step: 1 } })).toBeNull();
+    expect(resolveZoomRange({ zoom: { min: 'x', max: 5 } })).toBeNull();
+    expect(resolveZoomRange({ zoom: { min: 1, max: 5, step: 0.5 } })).toEqual({ min: 1, max: 5, step: 0.5 });
+    // Missing / invalid step falls back to the 0.1 default
+    expect(resolveZoomRange({ zoom: { min: 1, max: 5 } })).toEqual({ min: 1, max: 5, step: 0.1 });
+    expect(resolveZoomRange({ zoom: { min: 1, max: 5, step: 0 } })?.step).toBe(0.1);
+  });
+
+  it('clampZoom keeps requests inside the camera range and tolerates NaN', () => {
+    const range = { min: 1, max: 5, step: 0.5 };
+    expect(clampZoom(9, range)).toBe(5);
+    expect(clampZoom(0, range)).toBe(1);
+    expect(clampZoom(2.5, range)).toBe(2.5);
+    expect(clampZoom(Number.NaN, range)).toBe(1);
+  });
+
+  it('formatZoomLabel reports an honest ratio, including UVC drivers that report 100-500', () => {
+    expect(formatZoomLabel(2, { min: 1, max: 5, step: 0.5 })).toBe('2.0x');
+    expect(formatZoomLabel(300, { min: 100, max: 500, step: 1 })).toBe('3.0x');
+    expect(formatZoomLabel(100, { min: 100, max: 500, step: 1 })).toBe('1.0x');
+    expect(formatZoomLabel(1, null)).toBe('1.0x');
+  });
+});
+
+describe('MW-435 Phase 1: Hardware PTZ Zoom Permission, Capability Reset & Honest Zoom State', () => {
+  const ptzDevices = [
+    { deviceId: 'cam-ptz', groupId: 'g1', kind: 'videoinput', label: 'PTZ Pro Camera (USB)', toJSON: () => ({}) },
+    { deviceId: 'cam-fixed', groupId: 'g2', kind: 'videoinput', label: 'Integrated Laptop HD Webcam', toJSON: () => ({}) },
+    { deviceId: 'mic-1', groupId: 'g3', kind: 'audioinput', label: 'Internal Microphone Array', toJSON: () => ({}) },
+  ] as unknown as MediaDeviceInfo[];
+
+  let getUserMediaMock: ReturnType<typeof vi.fn>;
+  let lastPtzTrack: any;
+  let lastFixedTrack: any;
+
+  function buildStreamFor(deviceId: string): MediaStream {
+    const isPtz = deviceId === 'cam-ptz';
+    const videoTrack: any = {
+      kind: 'video',
+      label: isPtz ? 'PTZ Pro Camera (USB)' : 'Integrated Laptop HD Webcam',
+      stop: vi.fn(),
+      getSettings: vi.fn(() => ({ deviceId, width: 1920, height: 1080, ...(isPtz ? { zoom: 2 } : {}) })),
+      getCapabilities: vi.fn(() => (isPtz ? { zoom: { min: 1, max: 5, step: 0.5 } } : {})),
+      applyConstraints: vi.fn().mockResolvedValue(undefined),
+    };
+    if (isPtz) lastPtzTrack = videoTrack;
+    else lastFixedTrack = videoTrack;
+    const audioTrack: any = {
+      kind: 'audio',
+      label: 'Internal Microphone Array',
+      stop: vi.fn(),
+      getSettings: vi.fn(() => ({ deviceId: 'mic-1' })),
+      getCapabilities: vi.fn(() => ({})),
+      applyConstraints: vi.fn().mockResolvedValue(undefined),
+    };
+    return {
+      getTracks: () => [videoTrack, audioTrack],
+      getVideoTracks: () => [videoTrack],
+      getAudioTracks: () => [audioTrack],
+    } as unknown as MediaStream;
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    lastPtzTrack = undefined;
+    lastFixedTrack = undefined;
+
+    getUserMediaMock = vi.fn(async (constraints: MediaStreamConstraints) => {
+      const video = constraints.video as MediaTrackConstraints | boolean;
+      const exactId =
+        typeof video === 'object' && video !== null && typeof video.deviceId === 'object'
+          ? String((video.deviceId as ConstrainDOMStringParameters).exact || '')
+          : '';
+      return buildStreamFor(exactId || 'cam-ptz');
+    });
+
+    Object.defineProperty(navigator, 'mediaDevices', {
+      writable: true,
+      configurable: true,
+      value: {
+        enumerateDevices: vi.fn(async () => ptzDevices),
+        getUserMedia: getUserMediaMock,
+        ondevicechange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('adds the zoom:true PTZ permission hint to the first video constraint level', async () => {
+    const { result } = renderHook(() => useCamera({ enabled: true }));
+    await waitFor(() => expect(result.current.stream).not.toBeNull());
+
+    const firstConstraints = getUserMediaMock.mock.calls[0][0] as MediaStreamConstraints;
+    expect((firstConstraints.video as any).zoom).toBe(true);
+  });
+
+  it('falls back to plain video:true (no PTZ hint) when the hinted levels are overconstrained and exposes no zoom range', async () => {
+    getUserMediaMock.mockImplementation(async (constraints: MediaStreamConstraints) => {
+      if (typeof constraints.video === 'object') {
+        const err = new Error('Overconstrained');
+        err.name = 'OverconstrainedError';
+        throw err;
+      }
+      return buildStreamFor('cam-fixed');
+    });
+
+    const { result } = renderHook(() => useCamera({ enabled: true }));
+    await waitFor(() => expect(result.current.stream).not.toBeNull());
+
+    const lastConstraints = getUserMediaMock.mock.calls.at(-1)![0] as MediaStreamConstraints;
+    expect(lastConstraints.video).toBe(true);
+    expect(result.current.zoomRange).toBeNull();
+    expect(result.current.zoomValue).toBe(1);
+  });
+
+  it('exposes a normalised zoomRange seeded from the track, and applyZoom clamps to the camera range', async () => {
+    const { result } = renderHook(() => useCamera({ enabled: true }));
+
+    await waitFor(() => expect(result.current.zoomRange).toEqual({ min: 1, max: 5, step: 0.5 }));
+    expect(result.current.zoomValue).toBe(2);
+    expect(result.current.zoomError).toBeNull();
+
+    await act(async () => {
+      await result.current.applyZoom(9);
+    });
+
+    expect(lastPtzTrack.applyConstraints).toHaveBeenCalledWith({ advanced: [{ zoom: 5 }] });
+    expect(result.current.zoomValue).toBe(5);
+  });
+
+  it('surfaces a zoomError (and keeps the previous zoom) when the camera rejects a zoom change', async () => {
+    const { result } = renderHook(() => useCamera({ enabled: true }));
+    await waitFor(() => expect(result.current.zoomRange).not.toBeNull());
+
+    lastPtzTrack.applyConstraints.mockRejectedValueOnce(new Error('UVC busy'));
+    await act(async () => {
+      await result.current.applyZoom(3);
+    });
+
+    expect(result.current.zoomError).toBe('Zoom change was rejected by this camera');
+    expect(result.current.zoomValue).toBe(2);
+  });
+
+  it('resets zoomValue, zoomRange and capabilities when switching to a camera without hardware zoom, and applyZoom becomes a no-op', async () => {
+    const { result } = renderHook(() => useCamera({ enabled: true }));
+    await waitFor(() => expect(result.current.zoomRange).not.toBeNull());
+
+    await act(async () => {
+      await result.current.applyZoom(4);
+    });
+    expect(result.current.zoomValue).toBe(4);
+
+    await act(async () => {
+      result.current.selectVideoDevice('cam-fixed');
+    });
+
+    await waitFor(() => expect(result.current.zoomRange).toBeNull());
+    expect(result.current.zoomValue).toBe(1);
+    expect(result.current.capabilities?.zoom).toBeUndefined();
+
+    await act(async () => {
+      await result.current.applyZoom(3);
+    });
+    expect(lastFixedTrack.applyConstraints).not.toHaveBeenCalled();
+    expect(result.current.zoomValue).toBe(1);
   });
 });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { resolveZoomRange, clampZoom, type ZoomRange } from '@/lib/cameraZoom';
 
 export const PREFERRED_VIDEO_DEVICE_STORAGE_KEY = 'mw_preferred_video_device_id';
 export const PREFERRED_AUDIO_DEVICE_STORAGE_KEY = 'mw_preferred_audio_device_id';
@@ -128,6 +129,10 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [zoomValue, setZoomValue] = useState(1);
   const [capabilities, setCapabilities] = useState<any>(null);
+  // MW-435 Phase 1: normalised hardware zoom range (null when the camera exposes no usable PTZ zoom)
+  const [zoomRange, setZoomRange] = useState<ZoomRange | null>(null);
+  const [zoomError, setZoomError] = useState<string | null>(null);
+  const zoomRangeRef = useRef<ZoomRange | null>(null);
 
   // Native USB Camera & Microphone Discovery State (FEAT-MW-159)
   const [videoDevices, setVideoDevices] = useState<HardwareDeviceOption[]>([]);
@@ -335,6 +340,12 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
 
     activeStreamDevicesRef.current = { videoId: '', audioId: '', facingMode: '' };
     setStream(null);
+    // MW-435 Phase 1: never carry zoom state or capabilities across a camera switch / stream teardown
+    setCapabilities(null);
+    zoomRangeRef.current = null;
+    setZoomRange(null);
+    setZoomValue(1);
+    setZoomError(null);
   }, []);
 
   const startStream = useCallback(async () => {
@@ -396,11 +407,16 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
     };
 
     // 5-Level Adaptive Resolution & Device Fallback Cascade (4K -> 1080p -> 720p -> Default -> Video-Only)
+    // MW-435 Phase 1: requests Chrome's camera pan/tilt/zoom permission so PTZ-capable cameras expose `zoom`
+    // in getCapabilities(). Non-PTZ cameras ignore this soft (non-exact) hint, and Level 4/5 fallbacks drop it.
+    const ptzPermissionHint = { zoom: true } as unknown as MediaTrackConstraints;
+
     const constraintsList: MediaStreamConstraints[] = [
       // Level 1: Premium 4K Target with preferred USB deviceIds
       {
         video: {
           ...buildVideoBase(true),
+          ...ptzPermissionHint,
           width: { ideal: 4096, max: 4096 },
           height: { ideal: 2160, max: 2160 },
           frameRate: { ideal: 30 },
@@ -411,6 +427,7 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
       {
         video: {
           ...buildVideoBase(true),
+          ...ptzPermissionHint,
           width: { ideal: 1920, max: 1920 },
           height: { ideal: 1080, max: 1080 },
           frameRate: { ideal: 30 },
@@ -421,6 +438,7 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
       {
         video: {
           ...buildVideoBase(true),
+          ...ptzPermissionHint,
           width: { ideal: 1280 },
           height: { ideal: 720 },
           frameRate: { ideal: 30 },
@@ -495,6 +513,20 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
         if ('getCapabilities' in videoTrack && typeof videoTrack.getCapabilities === 'function') {
           const caps = videoTrack.getCapabilities() as any;
           setCapabilities(caps);
+
+          // MW-435 Phase 1: expose a normalised hardware zoom range and seed the slider from the track's real zoom
+          const nextZoomRange = resolveZoomRange(caps);
+          zoomRangeRef.current = nextZoomRange;
+          setZoomRange(nextZoomRange);
+          setZoomError(null);
+          if (nextZoomRange) {
+            const reportedZoom = Number((settings as { zoom?: number })?.zoom);
+            setZoomValue(
+              Number.isFinite(reportedZoom) ? clampZoom(reportedZoom, nextZoomRange) : nextZoomRange.min
+            );
+          } else {
+            setZoomValue(1);
+          }
 
           // Force focus to continuous if supported
           if (caps?.focusMode?.includes('continuous')) {
@@ -582,16 +614,18 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
   ]);
 
   const applyZoom = useCallback(async (value: number) => {
-    if (streamRef.current) {
-      const track = streamRef.current.getVideoTracks()[0];
-      if (track && 'applyConstraints' in track) {
-        try {
-          await track.applyConstraints({ advanced: [{ zoom: value } as any] });
-          setZoomValue(value);
-        } catch (e) {
-          console.warn('Zoom adjustment failed', e);
-        }
-      }
+    const track = streamRef.current?.getVideoTracks?.()[0];
+    const range = zoomRangeRef.current;
+    // MW-435 Phase 1: only act when the active camera really exposes hardware zoom; clamp to its range
+    if (!track || !range || typeof track.applyConstraints !== 'function') return;
+    const nextValue = clampZoom(value, range);
+    try {
+      await track.applyConstraints({ advanced: [{ zoom: nextValue } as any] });
+      setZoomValue(nextValue);
+      setZoomError(null);
+    } catch (e: any) {
+      console.warn('Zoom adjustment failed', e);
+      setZoomError('Zoom change was rejected by this camera');
     }
   }, []);
 
@@ -717,6 +751,8 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
     facingMode,
     zoomValue,
     applyZoom,
+    zoomRange,
+    zoomError,
     capabilities,
     isMuted,
     // Native USB Camera & Microphone Discovery & Selection API (FEAT-MW-159)

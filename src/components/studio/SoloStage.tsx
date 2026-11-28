@@ -33,6 +33,7 @@ import {
   isExternalHardwareDevice,
   type HardwareDeviceOption,
 } from '@/hooks/useCamera';
+import { resolveZoomRange, formatZoomLabel } from '@/lib/cameraZoom';
 import { useMediaRecorder, type EDLTrackSegment } from '@/hooks/use-media-recorder';
 import { useAudioLevel } from '@/hooks/use-audio-level';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
@@ -869,8 +870,15 @@ export default function SoloStage({
     switchInput,
     isWirelessLinked,
     refreshDevices = async () => ({ video: [], audio: [] }),
+    zoomRange = null,
+    zoomError = null,
     videoDevices = [], audioDevices = [], selectedVideoDeviceId = '', selectedAudioDeviceId = '', selectVideoDevice = () => {}, selectAudioDevice = () => {}, activeCameraLabel = 'STUDIO WEBCAM', activeMicLabel = 'DEFAULT MICROPHONE', activeResolutionLabel = '720P'
   } = useCamera({ enabled: isCameraActive });
+  // MW-435 Phase 1: hardware zoom range is only trusted for the local studio camera (never the wireless lens)
+  const hardwareZoomRange = useMemo(
+    () => (activeInput === 'wireless' ? null : (zoomRange ?? resolveZoomRange(capabilities))),
+    [activeInput, zoomRange, capabilities]
+  );
   const sanitizedVideoDevices = useMemo(() => sanitizeStudioHardwareDevices(videoDevices, 'videoinput'), [videoDevices]);
   const sanitizedAudioDevices = useMemo(() => sanitizeStudioHardwareDevices(audioDevices, 'audioinput'), [audioDevices]);
   const cleanActiveCameraLabel = useMemo(() => cleanStudioHardwareLabel(activeCameraLabel, 'STUDIO WEBCAM'), [activeCameraLabel]);
@@ -4163,24 +4171,25 @@ export default function SoloStage({
                        />
                      </div>
 
-                     {/* Zoom Control (Hardware Zoom if supported, otherwise digital scale fallback) */}
+                     {/* Zoom Control (MW-435 Phase 1: real hardware zoom when the camera exposes it, otherwise an honest unavailable state) */}
                      <div className="space-y-1.5">
                        <div className="flex items-center justify-between text-[10px] text-white/60">
                          <span>Zoom Level</span>
-                         <span className="font-mono text-emerald-400">{capabilities?.zoom ? `${zoomValue}x` : '1.0x (Standard)'}</span>
+                         <span data-testid="OPTICS_ZOOM_VALUE" className="font-mono text-emerald-400">{hardwareZoomRange ? formatZoomLabel(zoomValue, hardwareZoomRange) : 'Unavailable'}</span>
                        </div>
                        <input
                          type="range"
-                         min={capabilities?.zoom?.min || 1}
-                         max={capabilities?.zoom?.max || 3}
-                         step={capabilities?.zoom?.step || 0.1}
+                         min={hardwareZoomRange?.min ?? 1}
+                         max={hardwareZoomRange?.max ?? 3}
+                         step={hardwareZoomRange?.step ?? 0.1}
                          value={zoomValue}
                          onChange={(e) => applyZoom(Number(e.target.value))}
-                         disabled={!capabilities?.zoom}
+                          data-testid="OPTICS_ZOOM_SLIDER"
+                         disabled={!hardwareZoomRange}
                          className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed"
                        />
-                       {!capabilities?.zoom && (
-                         <span className="text-[7px] text-white/30 uppercase tracking-wider block">Hardware zoom not supported by webcam</span>
+                       {(!hardwareZoomRange || zoomError) && (
+                         <span data-testid="OPTICS_ZOOM_STATUS" className="text-[8px] text-white/50 uppercase tracking-wider block">{!hardwareZoomRange ? 'Zoom not available on this camera' : zoomError}</span>
                        )}
                      </div>
 

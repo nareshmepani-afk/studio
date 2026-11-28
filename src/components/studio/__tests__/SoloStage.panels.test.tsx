@@ -74,6 +74,11 @@ vi.mock('@/hooks/useAuth', () => ({
 // Define stable references outside the mock hook to prevent infinite render loops in video refs
 const stableStream = { getAudioTracks: () => [] };
 const stableCapabilities = {};
+// MW-435 Phase 1: per-test overridable zoom state (defaults keep every existing test on a zoom-less camera)
+let mockCapabilities: any = stableCapabilities;
+let mockZoomRange: any = undefined;
+let mockZoomValue = 1.0;
+const mockApplyZoom = vi.fn();
 
 let mockIsWirelessLinked = false;
 let mockActiveInput = 'studio';
@@ -86,9 +91,10 @@ vi.mock('@/hooks/useCamera', () => ({
     stop: vi.fn(), 
     stream: stableStream, 
     isMuted: false,
-    capabilities: stableCapabilities,
-    applyZoom: vi.fn(),
-    zoomValue: 1.0,
+    capabilities: mockCapabilities,
+    applyZoom: mockApplyZoom,
+    zoomValue: mockZoomValue,
+    zoomRange: mockZoomRange,
     switchCamera: vi.fn(),
     hasMultipleCameras: false,
     activeInput: mockActiveInput,
@@ -394,6 +400,88 @@ describe('SoloStage Calibration Panels Test', () => {
     
     // Both windows should be automatically opened/active-synced
     expect(screen.getByText('Interviewer Active')).toBeInTheDocument();
+  });
+
+  it('MW-435 Phase 1: shows an honest unavailable zoom state (no misleading 1.0x Standard label) when the camera exposes no hardware zoom', () => {
+    const formRef = React.createRef<any>();
+    render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+        mentorActive={true}
+        formRef={formRef}
+      />
+    );
+
+    expect(screen.getByTestId('OPTICS_ZOOM_VALUE')).toHaveTextContent('Unavailable');
+    expect(screen.getByTestId('OPTICS_ZOOM_SLIDER')).toBeDisabled();
+    expect(screen.getByTestId('OPTICS_ZOOM_STATUS')).toHaveTextContent('Zoom not available on this camera');
+    expect(screen.queryByText('1.0x (Standard)')).not.toBeInTheDocument();
+  });
+
+  it('MW-435 Phase 1: enables the zoom slider with a real ratio label when hardware zoom is exposed and routes changes to applyZoom', () => {
+    mockZoomRange = { min: 1, max: 5, step: 0.5 };
+    mockZoomValue = 2;
+    // An earlier pre-existing test leaves the wireless input active; force the local studio camera for this case
+    const previousActiveInput = mockActiveInput;
+    const previousWirelessLinked = mockIsWirelessLinked;
+    mockActiveInput = 'studio';
+    mockIsWirelessLinked = false;
+    try {
+      const formRef = React.createRef<any>();
+      render(
+        <SoloStage 
+          data={initialMemory} 
+          update={mockUpdate} 
+          currentStage={2}
+          mentorActive={true}
+          formRef={formRef}
+        />
+      );
+
+      const slider = screen.getByTestId('OPTICS_ZOOM_SLIDER') as HTMLInputElement;
+      expect(slider).not.toBeDisabled();
+      expect(slider.min).toBe('1');
+      expect(slider.max).toBe('5');
+      expect(screen.getByTestId('OPTICS_ZOOM_VALUE')).toHaveTextContent('2.0x');
+      expect(screen.queryByTestId('OPTICS_ZOOM_STATUS')).not.toBeInTheDocument();
+
+      fireEvent.change(slider, { target: { value: '3.5' } });
+      expect(mockApplyZoom).toHaveBeenCalledWith(3.5);
+    } finally {
+      mockZoomRange = undefined;
+      mockZoomValue = 1.0;
+      mockActiveInput = previousActiveInput;
+      mockIsWirelessLinked = previousWirelessLinked;
+    }
+  });
+
+  it('MW-435 Phase 1: never trusts local hardware zoom while the wireless lens is the active input', () => {
+    mockZoomRange = { min: 1, max: 5, step: 0.5 };
+    const previousActiveInput = mockActiveInput;
+    const previousWirelessLinked = mockIsWirelessLinked;
+    mockActiveInput = 'wireless';
+    mockIsWirelessLinked = true;
+    try {
+      const formRef = React.createRef<any>();
+      render(
+        <SoloStage 
+          data={initialMemory} 
+          update={mockUpdate} 
+          currentStage={2}
+          mentorActive={true}
+          formRef={formRef}
+        />
+      );
+
+      expect(screen.getByTestId('OPTICS_ZOOM_SLIDER')).toBeDisabled();
+      expect(screen.getByTestId('OPTICS_ZOOM_VALUE')).toHaveTextContent('Unavailable');
+    } finally {
+      mockZoomRange = undefined;
+      mockActiveInput = previousActiveInput;
+      mockIsWirelessLinked = previousWirelessLinked;
+    }
   });
 
   it('renders CinemaStageSwitch container and resolves active stage child components without structural collapse', () => {
