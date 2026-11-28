@@ -50,7 +50,7 @@ export function BugReportModal({ isOpen, onClose, user }: BugReportModalProps) {
         userId: user?.uid || 'guest_preview',
         userEmail: user?.email || 'unauthenticated',
         userAgent: navigator.userAgent,
-        path: window.location.pathname,
+        path: window.location.pathname + window.location.search,
         timestamp: new Date().toISOString(),
         version: APP_VERSION
       });
@@ -73,7 +73,7 @@ export function BugReportModal({ isOpen, onClose, user }: BugReportModalProps) {
             userId: user?.uid || 'guest_preview',
             userEmail: user?.email || 'unauthenticated',
             userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-            path: typeof window !== 'undefined' ? window.location.pathname : '',
+            path: typeof window !== 'undefined' ? window.location.pathname + window.location.search : '',
             timestamp: new Date().toISOString(),
             version: APP_VERSION
           }
@@ -98,7 +98,12 @@ export function BugReportModal({ isOpen, onClose, user }: BugReportModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isPending && onClose()}>
-      <DialogContent className="sm:max-w-[480px] bg-slate-950 border border-amber-500/20 text-white rounded-[2rem] overflow-hidden shadow-2xl p-0">
+      <DialogContent
+        overlayClassName="z-[200000]"
+        data-bug-report-modal={isOpen ? 'open' : undefined}
+        data-testid="bug-report-modal-content"
+        className="sm:max-w-[480px] z-[200001] bg-slate-950 border border-amber-500/20 text-white rounded-[2rem] overflow-hidden shadow-2xl p-0"
+      >
         <form onSubmit={handleSubmit}>
           {/* Header */}
           <div className="relative p-8 bg-gradient-to-br from-amber-500/10 via-zinc-900 to-black border-b border-white/5 overflow-hidden">

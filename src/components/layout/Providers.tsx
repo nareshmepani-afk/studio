@@ -23,7 +23,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === '/' || e.key === '?')) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === '/' || e.key === '?' || e.code === 'Slash')) {
         e.preventDefault();
         setIsReportModalOpen((prev) => !prev);
       }
@@ -31,10 +31,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
     const handleCustomEvent = () => setIsReportModalOpen(true);
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
     window.addEventListener('open-telemetry-report', handleCustomEvent);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
       window.removeEventListener('open-telemetry-report', handleCustomEvent);
     };
   }, []);

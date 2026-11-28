@@ -210,6 +210,56 @@ describe('Studio Regression Tests', () => {
       fireEvent.click(returnButton);
       expect(mockOnClose).toHaveBeenCalled();
     });
+
+    it('MW-439 REGRESSION SHIELD: renders fixed-size single-line 05 / 05 badge despite long visionFocus text, dispatches Report Issue telemetry event, and yields Escape while BugReportModal is open', () => {
+      const mockOnClose = vi.fn();
+      const telemetrySpy = vi.fn();
+      window.addEventListener('open-telemetry-report', telemetrySpy);
+
+      render(
+        <ScriptLightBox
+          isOpen={true}
+          onClose={mockOnClose}
+          originalHook="Original memory hook"
+          cleanScript="Leaving Nairobi behind, my father journeyed ahead to carve out our family foothold in north London."
+          visionLabel="The Memory Weave"
+          visionFocus="A master synthesis blending the quiet determination of East African diaspora resettlement, the innocence of early childhood in north London, and the sensory sanctuary of home-cooked warmth."
+          currentIndex={4}
+          allDrafts={[{}, {}, {}, {}, {}]}
+          onApply={() => {}}
+        />
+      );
+
+      const badge = screen.getByTestId('lightbox-vision-index-badge');
+      expect(badge.textContent).toBe('05 / 05');
+      expect(badge.textContent).not.toContain('[');
+      expect(badge.className).toContain('shrink-0');
+      expect(badge.className).toContain('whitespace-nowrap');
+      expect(badge.className).toContain('min-w-[76px]');
+
+      // Clicking Report Issue inside ScriptLightBox dispatches open-telemetry-report
+      const reportBtn = screen.getByTestId('lightbox-report-issue-btn');
+      fireEvent.click(reportBtn);
+      expect(telemetrySpy).toHaveBeenCalledTimes(1);
+
+      // Simulate BugReportModal mounted above ScriptLightBox (z-[200001] > z-[10000])
+      const dummyBugModal = document.createElement('div');
+      dummyBugModal.setAttribute('data-bug-report-modal', 'open');
+      document.body.appendChild(dummyBugModal);
+
+      try {
+        // Pressing Escape while BugReportModal is open must NOT close ScriptLightBox underneath it
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(mockOnClose).not.toHaveBeenCalled();
+      } finally {
+        document.body.removeChild(dummyBugModal);
+        window.removeEventListener('open-telemetry-report', telemetrySpy);
+      }
+
+      // Once BugReportModal is closed, Escape closes ScriptLightBox normally
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('useMemoryPersistence: Rehydration & Modality Shields', () => {

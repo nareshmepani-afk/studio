@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardCopy, ClipboardCheck, X, Sparkles, 
   Clock, FileText, ArrowRight, Eye, Video, Volume2, Heart,
-  Loader2, Pencil, RotateCcw, Check, ChevronLeft, ChevronRight
+  Loader2, Pencil, RotateCcw, Check, ChevronLeft, ChevronRight, Bug
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -132,6 +132,14 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Allow global Ctrl+/ (or Cmd+/) Telemetry modal and yield keyboard control while BugReportModal is open
+      if ((e.ctrlKey || e.metaKey) && (e.key === '/' || e.key === '?' || e.code === 'Slash')) {
+        return;
+      }
+      if (typeof document !== 'undefined' && document.querySelector('[data-bug-report-modal="open"]')) {
+        return;
+      }
+
       const targetTag = (e.target as HTMLElement)?.tagName;
       const isInputFocused = targetTag === 'INPUT' || targetTag === 'TEXTAREA';
 
@@ -283,24 +291,27 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
               <X className="w-6 h-6 pointer-events-none" />
             </button>
 
-            <div className="flex-none p-6 lg:px-12 border-b border-white/5 bg-slate-900/40 flex items-center justify-between z-20">
-              <div className="flex items-center gap-6">
-                <div className="flex flex-col">
+            <div className="flex-none p-6 lg:px-12 border-b border-white/5 bg-slate-900/40 flex items-center justify-between gap-6 z-20">
+              <div className="flex items-center gap-6 min-w-0 flex-1">
+                <div className="flex flex-col shrink-0">
                   <div className="flex items-center gap-2">
-                    <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-[10px] font-black text-emerald-400/60 uppercase tracking-[0.4em]">Directorial Review</span>
+                    <Eye className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="text-[10px] font-black text-emerald-400/60 uppercase tracking-[0.4em] whitespace-nowrap">Directorial Review</span>
                   </div>
-                  <h2 className="text-2xl font-serif italic text-white/90">
+                  <h2 className="text-2xl font-serif italic text-white/90 whitespace-nowrap">
                     {visionLabel}
                   </h2>
                 </div>
-                <div className="h-8 w-px bg-white/10 mx-2" />
-                <p className="text-xs text-emerald-300/90 font-medium italic font-serif mt-1 hidden lg:block">"{visionFocus}"</p>
+                <div className="h-8 w-px bg-white/10 mx-2 hidden lg:block shrink-0" />
+                <p className="text-xs text-emerald-300/90 font-medium italic font-serif mt-1 hidden lg:block min-w-0 flex-1 line-clamp-2 leading-relaxed">"{visionFocus}"</p>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-mono font-black text-emerald-400 tracking-widest">
-                  <span>[ {String(activeIndex + 1).padStart(2, '0')} / {String(totalVisions).padStart(2, '0')} ]</span>
+              <div className="flex items-center gap-4 shrink-0">
+                <div
+                  data-testid="lightbox-vision-index-badge"
+                  className="inline-flex items-center justify-center shrink-0 whitespace-nowrap tabular-nums min-w-[76px] h-9 px-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[11px] font-mono font-black text-emerald-400 tracking-widest"
+                >
+                  <span>{String(activeIndex + 1).padStart(2, '0')} / {String(totalVisions).padStart(2, '0')}</span>
                 </div>
 
                 {generatedSoundtrackUrl && (
@@ -309,30 +320,30 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                     onClick={toggleAudio}
                     title={isPlayingAudio ? "Pause Soundtrack" : "Play Soundtrack Preview"}
                     className={cn(
-                      "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-[10px] font-mono font-black tracking-widest transition-all cursor-pointer select-none",
+                      "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-[10px] font-mono font-black tracking-widest transition-all cursor-pointer select-none shrink-0 whitespace-nowrap",
                       isPlayingAudio 
                         ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse" 
                         : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10"
                     )}
                   >
-                    <Volume2 className={cn("w-3.5 h-3.5", isPlayingAudio ? "text-emerald-400" : "text-white/40")} />
+                    <Volume2 className={cn("w-3.5 h-3.5 shrink-0", isPlayingAudio ? "text-emerald-400" : "text-white/40")} />
                     <span>{isPlayingAudio ? "SOUNDTRACK PLAYING" : "PREVIEW SOUNDTRACK"}</span>
                   </button>
                 )}
 
-                <div className="flex items-center gap-8 px-6 py-2 bg-black/40 rounded-2xl border border-white/5 mr-12">
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Duration</span>
-                    <div className="flex items-center gap-2 text-sky-400">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span className="text-xs font-mono font-bold">~{estDuration}:00</span>
+                <div className="flex items-center gap-8 px-6 py-2 bg-black/40 rounded-2xl border border-white/5 mr-12 shrink-0">
+                  <div className="flex flex-col shrink-0">
+                    <span className="text-[8px] font-black text-white/20 uppercase tracking-widest whitespace-nowrap">Duration</span>
+                    <div className="flex items-center gap-2 text-sky-400 whitespace-nowrap">
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <span className="text-xs font-mono font-bold tabular-nums whitespace-nowrap">~{estDuration}:00</span>
                     </div>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Scale</span>
-                    <div className="flex items-center gap-2 text-emerald-400">
-                      <FileText className="w-3.5 h-3.5" />
-                      <span className="text-xs font-mono font-bold">{wordCount} words</span>
+                  <div className="flex flex-col shrink-0">
+                    <span className="text-[8px] font-black text-white/20 uppercase tracking-widest whitespace-nowrap">Scale</span>
+                    <div className="flex items-center gap-2 text-emerald-400 whitespace-nowrap">
+                      <FileText className="w-3.5 h-3.5 shrink-0" />
+                      <span className="text-xs font-mono font-bold tabular-nums whitespace-nowrap">{wordCount} words</span>
                     </div>
                   </div>
                 </div>
@@ -508,19 +519,37 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
             </div>
 
             {/* --- ACTION FOOTER --- */}
-            <div className="flex-none p-8 lg:px-12 border-t border-white/5 bg-slate-900/60 backdrop-blur-xl flex items-center justify-between z-20">
-              <button 
-                onClick={() => {
-                  console.log("[ScriptLightBox] Return clicked");
-                  handleCloseWithSave();
-                }}
-                className="group flex items-center gap-3 text-[10px] font-black text-white/30 hover:text-white uppercase tracking-[0.2em] transition-all"
-              >
-                <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-colors">
-                  <ArrowRight className="w-4 h-4 rotate-180" />
-                </div>
-                Return to Selection Deck
-              </button>
+            <div className="flex-none p-8 lg:px-12 border-t border-white/5 bg-slate-900/60 backdrop-blur-xl flex items-center justify-between gap-4 z-20">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => {
+                    console.log("[ScriptLightBox] Return clicked");
+                    handleCloseWithSave();
+                  }}
+                  className="group flex items-center gap-3 text-[10px] font-black text-white/30 hover:text-white uppercase tracking-[0.2em] transition-all shrink-0 whitespace-nowrap"
+                >
+                  <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-colors">
+                    <ArrowRight className="w-4 h-4 rotate-180" />
+                  </div>
+                  Return to Selection Deck
+                </button>
+
+                <button
+                  type="button"
+                  data-testid="lightbox-report-issue-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('open-telemetry-report'));
+                    }
+                  }}
+                  title="Report Studio Issue (Ctrl + /)"
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-amber-500/15 border border-white/10 hover:border-amber-500/30 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-amber-300 transition-all cursor-pointer shrink-0 whitespace-nowrap"
+                >
+                  <Bug className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
+                  <span>Report Issue</span>
+                </button>
+              </div>
 
               <button 
                 data-hotspot-id="HS_ACT2_LIGHTBOX_CHOOSE_BTN"
