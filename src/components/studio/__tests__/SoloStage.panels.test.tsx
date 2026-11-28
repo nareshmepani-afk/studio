@@ -78,6 +78,8 @@ const stableCapabilities = {};
 let mockCapabilities: any = stableCapabilities;
 let mockZoomRange: any = undefined;
 let mockZoomValue = 1.0;
+let mockActiveCameraLabel = 'AnkerWork C310 Webcam (USB)';
+let mockIsRecording = false;
 const mockApplyZoom = vi.fn();
 
 let mockIsWirelessLinked = false;
@@ -95,6 +97,7 @@ vi.mock('@/hooks/useCamera', () => ({
     applyZoom: mockApplyZoom,
     zoomValue: mockZoomValue,
     zoomRange: mockZoomRange,
+    activeCameraLabel: mockActiveCameraLabel,
     switchCamera: vi.fn(),
     hasMultipleCameras: false,
     activeInput: mockActiveInput,
@@ -104,7 +107,13 @@ vi.mock('@/hooks/useCamera', () => ({
 }));
 
 vi.mock('@/hooks/use-media-recorder', () => ({
-  useMediaRecorder: () => ({ status: 'inactive', startRecording: vi.fn(), stopRecording: vi.fn(), mediaBlobUrl: null }),
+  useMediaRecorder: () => ({
+    status: mockIsRecording ? 'recording' : 'inactive',
+    isRecording: mockIsRecording,
+    startRecording: vi.fn(),
+    stopRecording: vi.fn(),
+    mediaBlobUrl: null,
+  }),
 }));
 
 vi.mock('@/hooks/use-audio-level', () => ({
@@ -402,28 +411,87 @@ describe('SoloStage Calibration Panels Test', () => {
     expect(screen.getByText('Interviewer Active')).toBeInTheDocument();
   });
 
-  it('MW-435 Phase 1: shows an honest unavailable zoom state (no misleading 1.0x Standard label) when the camera exposes no hardware zoom', () => {
-    const formRef = React.createRef<any>();
-    render(
-      <SoloStage 
-        data={initialMemory} 
-        update={mockUpdate} 
-        currentStage={2}
-        mentorActive={true}
-        formRef={formRef}
-      />
-    );
+  it('MW-435 Phase 2 & MW-437 (2B): enables 1.0x–3.0x Digital Zoom + Subtle Background Softening on non-PTZ webcams, locks during recording, and guards NuroumBlur virtual cameras', () => {
+    const previousActiveInput = mockActiveInput;
+    const previousWirelessLinked = mockIsWirelessLinked;
+    mockActiveInput = 'studio';
+    mockIsWirelessLinked = false;
+    mockZoomRange = undefined;
+    mockActiveCameraLabel = 'AnkerWork C310 Webcam (USB)';
+    mockIsRecording = false;
 
-    expect(screen.getByTestId('OPTICS_ZOOM_VALUE')).toHaveTextContent('Unavailable');
-    expect(screen.getByTestId('OPTICS_ZOOM_SLIDER')).toBeDisabled();
-    expect(screen.getByTestId('OPTICS_ZOOM_STATUS')).toHaveTextContent('Zoom not available on this camera');
-    expect(screen.queryByText('1.0x (Standard)')).not.toBeInTheDocument();
+    try {
+      const formRef = React.createRef<any>();
+      const { rerender, unmount } = render(
+        <SoloStage 
+          data={initialMemory} 
+          update={mockUpdate} 
+          currentStage={2}
+          mentorActive={true}
+          formRef={formRef}
+        />
+      );
+
+      // Digital Zoom is enabled up to 3.0x on fixed-lens USB/Integrated webcams
+      const slider = screen.getByTestId('OPTICS_ZOOM_SLIDER') as HTMLInputElement;
+      expect(slider).not.toBeDisabled();
+      expect(slider.min).toBe('1');
+      expect(slider.max).toBe('3');
+      expect(screen.getByTestId('OPTICS_ZOOM_VALUE')).toHaveTextContent('1.0x');
+      expect(screen.getByTestId('OPTICS_ZOOM_STATUS')).toHaveTextContent('Digital zoom (recorded up to 3.0x)');
+
+      fireEvent.change(slider, { target: { value: '2.4' } });
+      expect(screen.getByTestId('OPTICS_ZOOM_VALUE')).toHaveTextContent('2.4x (Digital)');
+
+      // Option 2B Subtle Background Softening toggles cleanly and mounts peripheral softening overlay
+      expect(screen.getByTestId('OPTICS_BLUR_VALUE')).toHaveTextContent('Off');
+      expect(screen.queryByTestId('STUDIO_SUBTLE_SOFTENING_OVERLAY')).toBeNull();
+      fireEvent.click(screen.getByTestId('OPTICS_BLUR_SUBTLE_BTN'));
+      expect(screen.getByTestId('OPTICS_BLUR_VALUE')).toHaveTextContent('Subtle');
+      expect(screen.getByTestId('STUDIO_SUBTLE_SOFTENING_OVERLAY')).toBeInTheDocument();
+
+      // Lock while recording (Decision 3X: calibration panels unmount during active take while preserving active zoom & softening)
+      mockIsRecording = true;
+      rerender(
+        <SoloStage 
+          data={initialMemory} 
+          update={mockUpdate} 
+          currentStage={2}
+          mentorActive={true}
+          formRef={formRef}
+        />
+      );
+      expect(screen.queryByTestId('OPTICS_ZOOM_SLIDER')).toBeNull();
+      expect(screen.queryByTestId('OPTICS_BLUR_SUBTLE_BTN')).toBeNull();
+      expect(screen.getByTestId('STUDIO_SUBTLE_SOFTENING_OVERLAY')).toBeInTheDocument();
+
+      // Virtual camera guard (NuroumBlur) prevents double-blurring on fresh mount
+      unmount();
+      mockIsRecording = false;
+      mockActiveCameraLabel = 'NuroumBlur (Windows Virtual Camera) (Built-In)';
+      render(
+        <SoloStage 
+          data={initialMemory} 
+          update={mockUpdate} 
+          currentStage={2}
+          mentorActive={true}
+          formRef={formRef}
+        />
+      );
+      expect(screen.getByTestId('OPTICS_BLUR_VALUE')).toHaveTextContent('Virtual Cam');
+      expect(screen.getByTestId('OPTICS_BLUR_SUBTLE_BTN')).toBeDisabled();
+      expect(screen.getByTestId('OPTICS_BLUR_STATUS')).toHaveTextContent('Managed by virtual camera');
+    } finally {
+      mockActiveInput = previousActiveInput;
+      mockIsWirelessLinked = previousWirelessLinked;
+      mockActiveCameraLabel = 'AnkerWork C310 Webcam (USB)';
+      mockIsRecording = false;
+    }
   });
 
   it('MW-435 Phase 1: enables the zoom slider with a real ratio label when hardware zoom is exposed and routes changes to applyZoom', () => {
     mockZoomRange = { min: 1, max: 5, step: 0.5 };
     mockZoomValue = 2;
-    // An earlier pre-existing test leaves the wireless input active; force the local studio camera for this case
     const previousActiveInput = mockActiveInput;
     const previousWirelessLinked = mockIsWirelessLinked;
     mockActiveInput = 'studio';
@@ -445,7 +513,7 @@ describe('SoloStage Calibration Panels Test', () => {
       expect(slider.min).toBe('1');
       expect(slider.max).toBe('5');
       expect(screen.getByTestId('OPTICS_ZOOM_VALUE')).toHaveTextContent('2.0x');
-      expect(screen.queryByTestId('OPTICS_ZOOM_STATUS')).not.toBeInTheDocument();
+      expect(screen.getByTestId('OPTICS_ZOOM_STATUS')).toHaveTextContent('Optical camera zoom active');
 
       fireEvent.change(slider, { target: { value: '3.5' } });
       expect(mockApplyZoom).toHaveBeenCalledWith(3.5);

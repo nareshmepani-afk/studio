@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { resolveZoomRange, clampZoom, type ZoomRange } from '@/lib/cameraZoom';
+import {
+  resolveZoomRange,
+  clampZoom,
+  isVirtualCameraDevice,
+  supportsNativeBackgroundBlur,
+  type ZoomRange,
+} from '@/lib/cameraZoom';
 
 export const PREFERRED_VIDEO_DEVICE_STORAGE_KEY = 'mw_preferred_video_device_id';
 export const PREFERRED_AUDIO_DEVICE_STORAGE_KEY = 'mw_preferred_audio_device_id';
@@ -132,6 +138,8 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
   // MW-435 Phase 1: normalised hardware zoom range (null when the camera exposes no usable PTZ zoom)
   const [zoomRange, setZoomRange] = useState<ZoomRange | null>(null);
   const [zoomError, setZoomError] = useState<string | null>(null);
+  const [nativeBlurSupported, setNativeBlurSupported] = useState<boolean>(false);
+  const [nativeBlurActive, setNativeBlurActive] = useState<boolean>(false);
   const zoomRangeRef = useRef<ZoomRange | null>(null);
 
   // Native USB Camera & Microphone Discovery State (FEAT-MW-159)
@@ -346,6 +354,8 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
     setZoomRange(null);
     setZoomValue(1);
     setZoomError(null);
+    setNativeBlurSupported(false);
+    setNativeBlurActive(false);
   }, []);
 
   const startStream = useCallback(async () => {
@@ -519,6 +529,8 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
           zoomRangeRef.current = nextZoomRange;
           setZoomRange(nextZoomRange);
           setZoomError(null);
+          setNativeBlurSupported(supportsNativeBackgroundBlur(caps));
+          setNativeBlurActive(Boolean((settings as { backgroundBlur?: boolean })?.backgroundBlur));
           if (nextZoomRange) {
             const reportedZoom = Number((settings as { zoom?: number })?.zoom);
             setZoomValue(
@@ -629,6 +641,26 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
     }
   }, []);
 
+  const applyNativeBackgroundBlur = useCallback(
+    async (enableBlur: boolean): Promise<boolean> => {
+      const track = streamRef.current?.getVideoTracks?.()[0];
+      if (!track || !nativeBlurSupported || typeof track.applyConstraints !== 'function') {
+        setNativeBlurActive(false);
+        return false;
+      }
+      try {
+        await track.applyConstraints({ advanced: [{ backgroundBlur: enableBlur } as any] });
+        setNativeBlurActive(enableBlur);
+        return true;
+      } catch (e) {
+        console.warn('[useCamera] Native backgroundBlur applyConstraints failed:', e);
+        setNativeBlurActive(false);
+        return false;
+      }
+    },
+    [nativeBlurSupported]
+  );
+
   /**
    * Select a specific USB or integrated camera by deviceId and persist in localStorage (Guard 4).
    */
@@ -736,6 +768,7 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
 
   // Dynamically resolve active stream
   const activeStream = activeInput === 'wireless' ? wirelessStream : stream;
+  const isVirtualCamera = isVirtualCameraDevice(activeCameraLabel);
 
   return {
     stream: activeStream,
@@ -753,6 +786,10 @@ export function useCamera({ enabled = false, videoRef }: UseCameraOptions = {}) 
     applyZoom,
     zoomRange,
     zoomError,
+    isVirtualCamera,
+    nativeBlurSupported,
+    nativeBlurActive,
+    applyNativeBackgroundBlur,
     capabilities,
     isMuted,
     // Native USB Camera & Microphone Discovery & Selection API (FEAT-MW-159)

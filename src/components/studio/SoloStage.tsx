@@ -33,7 +33,17 @@ import {
   isExternalHardwareDevice,
   type HardwareDeviceOption,
 } from '@/hooks/useCamera';
-import { resolveZoomRange, formatZoomLabel } from '@/lib/cameraZoom';
+import {
+  resolveZoomRange,
+  formatZoomLabel,
+  clampZoom,
+  DIGITAL_ZOOM_RANGE,
+  isVirtualCameraDevice,
+} from '@/lib/cameraZoom';
+import {
+  useStudioCanvasPipeline,
+  type BackgroundSofteningMode,
+} from '@/hooks/useStudioCanvasPipeline';
 import { useMediaRecorder, type EDLTrackSegment } from '@/hooks/use-media-recorder';
 import { useAudioLevel } from '@/hooks/use-audio-level';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
@@ -872,13 +882,59 @@ export default function SoloStage({
     refreshDevices = async () => ({ video: [], audio: [] }),
     zoomRange = null,
     zoomError = null,
+    isVirtualCamera: hookIsVirtualCamera,
+    nativeBlurSupported = false,
+    nativeBlurActive = false,
+    applyNativeBackgroundBlur,
     videoDevices = [], audioDevices = [], selectedVideoDeviceId = '', selectedAudioDeviceId = '', selectVideoDevice = () => {}, selectAudioDevice = () => {}, activeCameraLabel = 'STUDIO WEBCAM', activeMicLabel = 'DEFAULT MICROPHONE', activeResolutionLabel = '720P'
   } = useCamera({ enabled: isCameraActive });
-  // MW-435 Phase 1: hardware zoom range is only trusted for the local studio camera (never the wireless lens)
+  // MW-435 Phases 1 & 2 + MW-437 (2B): hardware zoom, recorded digital zoom (1.0x-3.0x), and subtle softening
   const hardwareZoomRange = useMemo(
     () => (activeInput === 'wireless' ? null : (zoomRange ?? resolveZoomRange(capabilities))),
     [activeInput, zoomRange, capabilities]
   );
+  const [digitalZoom, setDigitalZoom] = useState<number>(1);
+  const [softeningMode, setSofteningMode] = useState<BackgroundSofteningMode>('off');
+  const isVirtualCameraActive = useMemo(
+    () =>
+      activeInput === 'wireless'
+        ? false
+        : Boolean(hookIsVirtualCamera ?? isVirtualCameraDevice(activeCameraLabel)),
+    [activeInput, hookIsVirtualCamera, activeCameraLabel]
+  );
+  const canUseDigitalZoom = Boolean(stream && activeInput !== 'wireless' && !hardwareZoomRange);
+
+  useEffect(() => {
+    setDigitalZoom(1);
+  }, [selectedVideoDeviceId, activeInput, Boolean(stream)]);
+
+  useEffect(() => {
+    if (isVirtualCameraActive && softeningMode !== 'off') {
+      setSofteningMode('off');
+    }
+  }, [isVirtualCameraActive, softeningMode]);
+
+  const handleSofteningChange = useCallback(
+    async (nextMode: BackgroundSofteningMode) => {
+      setSofteningMode(nextMode);
+      if (typeof applyNativeBackgroundBlur === 'function' && nativeBlurSupported) {
+        await applyNativeBackgroundBlur(nextMode === 'subtle');
+      }
+    },
+    [applyNativeBackgroundBlur, nativeBlurSupported]
+  );
+
+  const {
+    recordingStream,
+    showPreviewSofteningOverlay,
+    previewScale,
+  } = useStudioCanvasPipeline({
+    stream: stream as MediaStream | null,
+    digitalZoom: canUseDigitalZoom ? digitalZoom : 1,
+    hardwareZoomActive: Boolean(hardwareZoomRange),
+    softeningMode: activeInput === 'wireless' || isVirtualCameraActive ? 'off' : softeningMode,
+    nativeBlurActive,
+  });
   const sanitizedVideoDevices = useMemo(() => sanitizeStudioHardwareDevices(videoDevices, 'videoinput'), [videoDevices]);
   const sanitizedAudioDevices = useMemo(() => sanitizeStudioHardwareDevices(audioDevices, 'audioinput'), [audioDevices]);
   const cleanActiveCameraLabel = useMemo(() => cleanStudioHardwareLabel(activeCameraLabel, 'STUDIO WEBCAM'), [activeCameraLabel]);
@@ -926,7 +982,7 @@ export default function SoloStage({
     uploading, 
     uploadProgress, 
     uploadResult 
-  } = useMediaRecorder(stream);
+  } = useMediaRecorder(recordingStream);
 
   const hasExistingVideo = Boolean(!isRetakingMode && (data?.videoUrl || reviewVideoUrl || recordedBlob));
 
@@ -3319,6 +3375,8 @@ export default function SoloStage({
               (isTableReadActive || captureModality === 'raw') ? "opacity-100 scale-100" : "opacity-100 scale-100"
             )}
             style={{
+              transform: previewScale > 1.001 ? `scale(${previewScale})` : undefined,
+              transformOrigin: 'center center',
               filter: `
                 brightness(${opticsBrightness || 100}%) 
                 contrast(${opticsContrast || 100}%) 
@@ -3328,6 +3386,23 @@ export default function SoloStage({
               `
             }}
           />
+          {showPreviewSofteningOverlay && !isMuted && !reviewTake && !hasExistingVideo && (
+            <div
+              data-testid="STUDIO_SUBTLE_SOFTENING_OVERLAY"
+              aria-hidden="true"
+              className="absolute inset-0 z-[1] pointer-events-none"
+              style={{
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                maskImage:
+                  'radial-gradient(ellipse 50% 60% at 50% 48%, transparent 52%, rgba(0,0,0,0.88) 100%)',
+                WebkitMaskImage:
+                  'radial-gradient(ellipse 50% 60% at 50% 48%, transparent 52%, rgba(0,0,0,0.88) 100%)',
+                background:
+                  'radial-gradient(ellipse 64% 72% at 50% 48%, transparent 58%, rgba(0,0,0,0.22) 100%)',
+              }}
+            />
+          )}
           {mounted && isMuted && !reviewTake && !hasExistingVideo && (
             <div 
               onClick={unmuteOptics}
@@ -4085,21 +4160,21 @@ export default function SoloStage({
                    scale: 0.9, 
                    opacity: 0, 
                    x: 50,
-                   height: isOpticsMinimised ? '56px' : '420px',
+                   height: isOpticsMinimised ? '56px' : 'auto',
                    width: isOpticsMinimised ? '200px' : '288px'
                  }}
                  animate={{ 
                    scale: 1, 
                    opacity: 1, 
                    x: 0,
-                   height: isOpticsMinimised ? '56px' : '420px',
+                   height: isOpticsMinimised ? '56px' : 'auto',
                    width: isOpticsMinimised ? '200px' : '288px',
                    borderRadius: isOpticsMinimised ? '9999px' : '2.5rem'
                  }}
                  style={{ touchAction: 'none' }}
                  className={cn(
                    "flex flex-col bg-slate-900/75 backdrop-blur-2xl border border-white/10 shadow-2xl cursor-grab active:cursor-grabbing select-none",
-                   isOpticsMinimised ? "p-3 px-4 flex-row items-center justify-between w-[200px]" : "w-72 p-6 space-y-5"
+                   isOpticsMinimised ? "p-3 px-4 flex-row items-center justify-between w-[200px]" : "w-72 p-6 space-y-4 max-h-[78vh] overflow-y-auto"
                  )}
                >
                  {isOpticsMinimised ? (
@@ -4171,26 +4246,106 @@ export default function SoloStage({
                        />
                      </div>
 
-                     {/* Zoom Control (MW-435 Phase 1: real hardware zoom when the camera exposes it, otherwise an honest unavailable state) */}
+                     {/* Zoom Control (MW-435 Phases 1 & 2: Hardware PTZ when supported, otherwise recorded 1.0x–3.0x Digital Zoom, locked while recording) */}
                      <div className="space-y-1.5">
                        <div className="flex items-center justify-between text-[10px] text-white/60">
                          <span>Zoom Level</span>
-                         <span data-testid="OPTICS_ZOOM_VALUE" className="font-mono text-emerald-400">{hardwareZoomRange ? formatZoomLabel(zoomValue, hardwareZoomRange) : 'Unavailable'}</span>
+                         <span data-testid="OPTICS_ZOOM_VALUE" className="font-mono text-emerald-400">
+                           {hardwareZoomRange
+                             ? formatZoomLabel(zoomValue, hardwareZoomRange)
+                             : canUseDigitalZoom
+                             ? digitalZoom > 1.001
+                               ? `${digitalZoom.toFixed(1)}x (Digital)`
+                               : '1.0x'
+                             : 'Unavailable'}
+                         </span>
                        </div>
                        <input
                          type="range"
-                         min={hardwareZoomRange?.min ?? 1}
-                         max={hardwareZoomRange?.max ?? 3}
-                         step={hardwareZoomRange?.step ?? 0.1}
-                         value={zoomValue}
-                         onChange={(e) => applyZoom(Number(e.target.value))}
-                          data-testid="OPTICS_ZOOM_SLIDER"
-                         disabled={!hardwareZoomRange}
+                         min={(hardwareZoomRange ?? DIGITAL_ZOOM_RANGE).min}
+                         max={(hardwareZoomRange ?? DIGITAL_ZOOM_RANGE).max}
+                         step={(hardwareZoomRange ?? DIGITAL_ZOOM_RANGE).step}
+                         value={hardwareZoomRange ? zoomValue : digitalZoom}
+                         onChange={(e) => {
+                           const nextVal = Number(e.target.value);
+                           if (hardwareZoomRange) {
+                             applyZoom(nextVal);
+                           } else if (canUseDigitalZoom) {
+                             setDigitalZoom(clampZoom(nextVal, DIGITAL_ZOOM_RANGE));
+                           }
+                         }}
+                         data-testid="OPTICS_ZOOM_SLIDER"
+                         disabled={(!hardwareZoomRange && !canUseDigitalZoom) || isRecording}
                          className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed"
                        />
-                       {(!hardwareZoomRange || zoomError) && (
-                         <span data-testid="OPTICS_ZOOM_STATUS" className="text-[8px] text-white/50 uppercase tracking-wider block">{!hardwareZoomRange ? 'Zoom not available on this camera' : zoomError}</span>
-                       )}
+                       <span data-testid="OPTICS_ZOOM_STATUS" className="text-[8px] text-white/50 uppercase tracking-wider block">
+                         {!hardwareZoomRange && !canUseDigitalZoom
+                           ? 'Zoom not available on this camera'
+                           : isRecording
+                           ? 'Locked during active recording'
+                           : zoomError
+                           ? zoomError
+                           : hardwareZoomRange
+                           ? 'Optical camera zoom active'
+                           : 'Digital zoom (recorded up to 3.0x)'}
+                       </span>
+                     </div>
+
+                     {/* Background Softening (MW-437 Option 2B: Native OS blur or subtle peripheral studio softening, with Virtual Camera guard) */}
+                     <div className="space-y-1.5 pt-2 border-t border-white/5">
+                       <div className="flex items-center justify-between text-[10px] text-white/60">
+                         <span>Background Softening</span>
+                         <span data-testid="OPTICS_BLUR_VALUE" className="font-mono text-emerald-400">
+                           {isVirtualCameraActive
+                             ? 'Virtual Cam'
+                             : softeningMode === 'subtle'
+                             ? 'Subtle'
+                             : 'Off'}
+                         </span>
+                       </div>
+                       <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10">
+                         <button
+                           type="button"
+                           data-testid="OPTICS_BLUR_OFF_BTN"
+                           disabled={!stream || activeInput === 'wireless' || isRecording || isVirtualCameraActive}
+                           onClick={() => handleSofteningChange('off')}
+                           className={cn(
+                             "py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
+                             softeningMode === 'off' || isVirtualCameraActive
+                               ? "bg-white/15 text-white shadow-sm"
+                               : "text-white/50 hover:bg-white/5"
+                           )}
+                         >
+                           Off
+                         </button>
+                         <button
+                           type="button"
+                           data-testid="OPTICS_BLUR_SUBTLE_BTN"
+                           disabled={!stream || activeInput === 'wireless' || isRecording || isVirtualCameraActive}
+                           onClick={() => handleSofteningChange('subtle')}
+                           className={cn(
+                             "py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
+                             softeningMode === 'subtle' && !isVirtualCameraActive
+                               ? "bg-emerald-500 text-slate-950 font-black shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                               : "text-white/50 hover:bg-white/5"
+                           )}
+                         >
+                           Subtle
+                         </button>
+                       </div>
+                       <span data-testid="OPTICS_BLUR_STATUS" className="text-[8px] text-white/50 uppercase tracking-wider block">
+                         {isVirtualCameraActive
+                           ? 'Managed by virtual camera (e.g. NuroumBlur)'
+                           : !stream || activeInput === 'wireless'
+                           ? 'Softening unavailable while camera is inactive'
+                           : isRecording
+                           ? 'Locked during active recording'
+                           : softeningMode === 'subtle'
+                           ? nativeBlurActive
+                             ? 'OS studio background blur active'
+                             : 'Subtle peripheral softening (recorded)'
+                           : 'Gentle peripheral depth-of-field softening'}
+                       </span>
                      </div>
 
                      {/* Wireless Camera Bridge Setup & Switcher */}

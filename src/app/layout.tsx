@@ -42,6 +42,23 @@ export async function generateMetadata(): Promise<Metadata> {
       "QR code poster",
     ],
     robots: isStaging ? { index: false, follow: false } : { index: true, follow: true },
+    ...(!isStaging
+      ? {
+          manifest: '/manifest.webmanifest',
+          appleWebApp: {
+            capable: true,
+            title: 'Memory Weaver',
+            statusBarStyle: 'black-translucent',
+          },
+          icons: {
+            icon: [
+              { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+              { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+            ],
+            apple: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        }
+      : {}),
     openGraph: {
       title: "Memory Weaver — Spoken Memoir & Family Cinema Studio",
       description:

@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { useAuth } from '@/hooks/useAuth';
 import { PublicFooter } from '@/components/public/PublicFooter';
+import { ProductionInstallShareBar } from '@/components/landing/ProductionInstallShareBar';
 import { motion } from 'framer-motion';
 
 const acts = [
@@ -138,6 +139,8 @@ export default function LandingPageContent() {
                     </>
                   )}
                 </div>
+
+                <ProductionInstallShareBar variant="hero" />
 
                 {/* Subtle Scroll Guide to eliminate below-the-fold ambiguity */}
                 <a
@@ -298,6 +301,8 @@ export default function LandingPageContent() {
           </motion.div>
         </div>
       </section>
+
+      <ProductionInstallShareBar variant="footer" />
 
       <PublicFooter />
     </>
