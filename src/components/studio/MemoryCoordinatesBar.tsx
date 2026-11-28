@@ -258,6 +258,7 @@ export interface MemoryCoordinatesBarProps {
   isProductionLocked?: boolean;
   onActivity?: () => void;
   onFocusField?: (field: 'metadata') => void;
+  onBlurField?: () => void;
   variant?: 'soundstage' | 'fireside';
   className?: string;
 }
@@ -278,6 +279,7 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
   isProductionLocked = false,
   onActivity,
   onFocusField,
+  onBlurField,
   variant = 'soundstage',
   className,
 }) => {
@@ -347,6 +349,7 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
                           onActivity?.();
                         }}
                         onFocus={() => onFocusField?.('metadata')}
+                        onBlur={() => onBlurField?.()}
                         placeholder="WHERE DID IT HAPPEN?"
                         readOnly={isProductionLocked}
                         className={cn(
@@ -386,6 +389,7 @@ export const MemoryCoordinatesBar: React.FC<MemoryCoordinatesBarProps> = ({
                           onActivity?.();
                         }}
                         onFocus={() => onFocusField?.('metadata')}
+                        onBlur={() => onBlurField?.()}
                         placeholder="REGION"
                         readOnly={isProductionLocked}
                         className={cn(

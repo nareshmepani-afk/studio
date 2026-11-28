@@ -1,4 +1,4 @@
-import { render, screen, cleanup, act } from '@testing-library/react';
+import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryForm } from '../MemoryForm';
 import React from 'react';
@@ -386,5 +386,71 @@ describe('MemoryForm Data Shielding (Split-Brain Prevention)', () => {
     
     // Selection Deck compare view should be visible immediately
     expect(screen.getByText("The Soul-Print")).toBeInTheDocument();
+  });
+
+  it('MW-438 REGRESSION SHIELD: Editing CITY / VENUE (e.g. HENDON/LONDON) never snaps back to stale narratorLocationAtEvent on blur or focus switch, and flushes both location + narratorLocationAtEvent immediately on blur', async () => {
+    const seededData = {
+      ...initialData,
+      id: '5F7e9DACtBao5lgKYAxf',
+      title: 'The House I Grew Up In',
+      location: 'Munich, Germany (Family Residence)',
+      narratorLocationAtEvent: 'Munich, Germany (Family Residence)',
+      country: 'United Kingdom',
+      dateComponents: { day: '', month: '', year: '1969' },
+      year: 1884,
+      isProductionLocked: false,
+    };
+
+    const { rerender } = render(
+      <MemoryForm data={seededData} update={mockUpdate} productionStage={0} />
+    );
+
+    const cityInput = screen.getByTestId('memory-coordinates-city') as HTMLInputElement;
+    expect(cityInput.value).toBe('Munich, Germany (Family Residence)');
+
+    // 1. Focus CITY / VENUE and type HENDON/LONDON
+    await act(async () => {
+      fireEvent.focus(cityInput);
+      fireEvent.change(cityInput, { target: { value: 'HENDON/LONDON' } });
+    });
+    expect(cityInput.value).toBe('HENDON/LONDON');
+
+    // 2. Blur CITY / VENUE and focus Story Hook BEFORE parent props update (simulating pre-autosave focus switch)
+    const hookTextarea = screen.getByTestId('story-hook-textarea');
+    await act(async () => {
+      fireEvent.blur(cityInput);
+      fireEvent.focus(hookTextarea);
+    });
+
+    // Must NOT revert to Munich!
+    expect(cityInput.value).toBe('HENDON/LONDON');
+
+    // Blur should have immediately triggered flush() with dual-synced location & narratorLocationAtEvent + year
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        location: 'HENDON/LONDON',
+        narratorLocationAtEvent: 'HENDON/LONDON',
+        year: 1969,
+      })
+    );
+
+    // 3. Rerender with stale background snapshot (before Firestore echoes our write) — must STILL keep HENDON/LONDON
+    rerender(<MemoryForm data={{ ...seededData }} update={mockUpdate} productionStage={0} />);
+    expect((screen.getByTestId('memory-coordinates-city') as HTMLInputElement).value).toBe('HENDON/LONDON');
+
+    // 4. Rerender with dual-synced saved data — stays HENDON/LONDON
+    rerender(
+      <MemoryForm
+        data={{
+          ...seededData,
+          location: 'HENDON/LONDON',
+          narratorLocationAtEvent: 'HENDON/LONDON',
+          year: 1969,
+        }}
+        update={mockUpdate}
+        productionStage={0}
+      />
+    );
+    expect((screen.getByTestId('memory-coordinates-city') as HTMLInputElement).value).toBe('HENDON/LONDON');
   });
 });

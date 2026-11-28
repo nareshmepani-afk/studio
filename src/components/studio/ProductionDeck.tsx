@@ -464,7 +464,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 }
                 return isAct1Complete({
                     title: memoryData?.title,
-                    location: memoryData?.narratorLocationAtEvent || memoryData?.location,
+                    location: memoryData?.location || memoryData?.narratorLocationAtEvent,
                     country: memoryData?.country,
                     year: memoryData?.dateComponents?.year || memoryData?.year,
                     prose: memoryData?.prose,
@@ -521,7 +521,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             } else {
                 const validation = validateAct1RequiredFields({
                     title: memoryData?.title,
-                    location: memoryData?.narratorLocationAtEvent || memoryData?.location,
+                    location: memoryData?.location || memoryData?.narratorLocationAtEvent,
                     country: memoryData?.country,
                     year: memoryData?.dateComponents?.year || memoryData?.year,
                     prose: memoryData?.prose,

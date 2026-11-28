@@ -214,21 +214,23 @@ export function useMemoryPersistence({
       return { success: false, reason: 'empty_shield' };
     }
 
-    // RIGID GUARDRAIL: Timestamp Validation (Throttle rapid fires)
     const now = Date.now();
-    if (now - lastSavedTimestamp.current < 500) {
-      return { success: true, reason: 'throttled', description: s.description, prose: s.prose, latestState: s };
-    }
 
     const hasChanged = (() => {
       const checks = {
         title: s.title !== (currentData?.title || ''),
         description: s.description !== (currentData?.description || ''),
-        location: s.location !== (currentData?.location || ''),
+        location:
+          s.location !== (currentData?.location || '') ||
+          (currentData?.narratorLocationAtEvent !== undefined &&
+            s.location !== (currentData.narratorLocationAtEvent || '')),
         country: s.country !== (currentData?.country || ''),
         date: (s.day || 'none') !== (currentData?.dateComponents?.day || 'none') ||
               (s.month || 'none') !== (currentData?.dateComponents?.month || 'none') ||
-              (s.year || 'none') !== (currentData?.dateComponents?.year || 'none'),
+              (s.year || 'none') !== (currentData?.dateComponents?.year || 'none') ||
+              (currentData?.year !== undefined &&
+                s.year !== 'none' &&
+                String(s.year) !== String(currentData.year)),
         scriptBlocks: JSON.stringify(s.scriptBlocks || []) !== JSON.stringify(currentData?.scriptBlocks || []),
         chapterTitle: s.chapterTitle !== (currentData?.chapterTitle || ''),
         posterStyle: s.posterStyle !== (currentData?.posterStyle || 'cinematic'),
@@ -285,6 +287,14 @@ export function useMemoryPersistence({
     })();
 
     if (hasChanged) {
+      if (!overrides && now - lastSavedTimestamp.current < 500) {
+        const remainingMs = Math.max(50, 500 - (now - lastSavedTimestamp.current));
+        autoSaveTimerRef.current = setTimeout(() => {
+          autoSaveRef.current.flush();
+        }, remainingMs);
+        return { success: true, reason: 'throttled', description: s.description, prose: s.prose, latestState: s };
+      }
+
       console.log("[useMemoryPersistence] Manual Flush Triggered (Async Handshake)");
       setIsSaving(true);
       isSavingRef.current = true;
@@ -302,10 +312,16 @@ export function useMemoryPersistence({
                   ? s.scriptBlocks.map((b: any) => b.text).join('\n\n')
                   : (currentData?.prose || currentData?.originalHook || currentData?.description || '');
 
+        const parsedNumericYear =
+          s.year && s.year !== 'none' && !Number.isNaN(Number(s.year))
+            ? Number(s.year)
+            : undefined;
+
         const delta = {
           title: s.title || '',
           description: resolvedProse,
           location: s.location || '',
+          narratorLocationAtEvent: s.location || '',
           country: s.country || '',
           tags: s.tags || [],
           lastEdited: now,
@@ -315,6 +331,7 @@ export function useMemoryPersistence({
              month: s.month === 'none' ? '' : s.month, 
              year: s.year === 'none' ? '' : s.year 
           },
+          ...(parsedNumericYear !== undefined ? { year: parsedNumericYear } : {}),
           scriptBlocks: [{ id: s.scriptBlocks?.[0]?.id || 'block-1', text: resolvedProse, type: 'beat' as const, catalysts: [] }],
           sensory: s.sensoryValues || {},
           chapterTitle: s.chapterTitle || '',
@@ -451,7 +468,10 @@ export function useMemoryPersistence({
   // 4. UNSAVED CHANGES WARNING
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      const isDirty = description !== (dataRef.current?.description || '');
+      const isDirty =
+        description !== (dataRef.current?.description || '') ||
+        location !== (dataRef.current?.location || '') ||
+        country !== (dataRef.current?.country || '');
       if (isDirty) {
         e.preventDefault();
         e.returnValue = '';
@@ -459,7 +479,7 @@ export function useMemoryPersistence({
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [description]);
+  }, [description, location, country]);
 
   return { flush, isSaving, cancelAutosave };
 }

@@ -232,6 +232,17 @@ const StudioSelect = ({
   );
 };
 
+export function resolveMemoryLocation(data?: Partial<Memory> | null): string {
+  if (!data) return '';
+  if (typeof data.location === 'string' && data.location.trim().length > 0) {
+    return data.location;
+  }
+  if (typeof data.narratorLocationAtEvent === 'string' && data.narratorLocationAtEvent.trim().length > 0) {
+    return data.narratorLocationAtEvent;
+  }
+  return data.location ?? data.narratorLocationAtEvent ?? '';
+}
+
 export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({ 
   data, 
   update, 
@@ -358,7 +369,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     }
     return null;
   }, [data?.promptId]);
-  const [location, setLocation] = useState(data?.narratorLocationAtEvent || data?.location || '');
+  const [location, setLocation] = useState(() => resolveMemoryLocation(data));
   const [country, setCountry] = useState(data?.country && data.country !== 'none' ? data.country : '');
   const [tags, setTags] = useState<string[]>(data?.tags || []);
   const [day, setDay] = useState(data?.dateComponents?.day ? String(data.dateComponents.day) : 'none');
@@ -870,6 +881,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       setDay('none');
       setMonth('none');
       setYear('none');
+      lastSyncedLocationRef.current = '';
+      lastSyncedCountryRef.current = '';
+      lastSyncedDayRef.current = 'none';
+      lastSyncedMonthRef.current = 'none';
+      lastSyncedYearRef.current = 'none';
       setAiTakes(null);
 
       const targetProse = resetDelta.prose || '';
@@ -918,6 +934,28 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
   const lastPropsId = useRef(data?.id || data?.promptId);
   const lastPromptId = useRef(data?.promptId);
+  const lastSyncedTitleRef = useRef<string | undefined>(data?.title);
+  const lastSyncedLocationRef = useRef<string | undefined>(
+    data?.location !== undefined || data?.narratorLocationAtEvent !== undefined
+      ? resolveMemoryLocation(data)
+      : undefined
+  );
+  const lastSyncedCountryRef = useRef<string | undefined>(
+    data?.country !== undefined ? (data.country && data.country !== 'none' ? data.country : '') : undefined
+  );
+  const lastSyncedDayRef = useRef<string | undefined>(
+    data?.dateComponents?.day !== undefined ? String(data.dateComponents.day || 'none') : undefined
+  );
+  const lastSyncedMonthRef = useRef<string | undefined>(
+    data?.dateComponents?.month !== undefined ? String(data.dateComponents.month || 'none') : undefined
+  );
+  const lastSyncedYearRef = useRef<string | undefined>(
+    data?.dateComponents?.year !== undefined
+      ? String(data.dateComponents.year || 'none')
+      : data?.year !== undefined
+      ? String(data.year || 'none')
+      : undefined
+  );
   const lastSyncedAgeRef = useRef<number | undefined>(
     data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : data?.age
   );
@@ -940,7 +978,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     const isNavigation = isPromptChange || isDocIdSwitch;
 
     if (isNavigation) {
-      if (data?.title !== undefined) setTitle(data.title);
+      if (data?.title !== undefined) {
+        setTitle(data.title);
+        lastSyncedTitleRef.current = data.title;
+      }
       if (data?.description !== undefined) {
         setDescription(data.description);
        setScriptBlocks((prev) => {
@@ -957,21 +998,42 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
         setProse(data.prose);
         lastSyncedProse.current = data.prose;
       }
-      if (data?.location !== undefined) setLocation(data.location || '');
-      if (data?.country !== undefined) setCountry(data.country && data.country !== 'none' ? data.country : '');
+      if (data?.location !== undefined || data?.narratorLocationAtEvent !== undefined) {
+        const navLoc = resolveMemoryLocation(data);
+        setLocation(navLoc);
+        lastSyncedLocationRef.current = navLoc;
+      }
+      if (data?.country !== undefined) {
+        const navCountry = data.country && data.country !== 'none' ? data.country : '';
+        setCountry(navCountry);
+        lastSyncedCountryRef.current = navCountry;
+      }
       if (data?.tags !== undefined) setTags(data.tags);
       if (data?.dateComponents) {
-        setDay(data.dateComponents.day || 'none');
-        setMonth(data.dateComponents.month || 'none');
-        setYear(data.dateComponents.year || 'none');
+        const navDay = data.dateComponents.day ? String(data.dateComponents.day) : 'none';
+        const navMonth = data.dateComponents.month ? String(data.dateComponents.month) : 'none';
+        const navYear = data.dateComponents.year ? String(data.dateComponents.year) : 'none';
+        setDay(navDay);
+        setMonth(navMonth);
+        setYear(navYear);
+        lastSyncedDayRef.current = navDay;
+        lastSyncedMonthRef.current = navMonth;
+        lastSyncedYearRef.current = navYear;
       } else if (data?.year !== undefined) {
+        const navYear = data.year ? String(data.year) : 'none';
         setDay('none');
         setMonth('none');
-        setYear(data.year ? String(data.year) : 'none');
+        setYear(navYear);
+        lastSyncedDayRef.current = 'none';
+        lastSyncedMonthRef.current = 'none';
+        lastSyncedYearRef.current = navYear;
       } else {
         setDay('none');
         setMonth('none');
         setYear('none');
+        lastSyncedDayRef.current = 'none';
+        lastSyncedMonthRef.current = 'none';
+        lastSyncedYearRef.current = 'none';
       }
       if (data?.narratorAgeAtTime !== undefined) {
         setNarratorAgeAtTimeLocal(data.narratorAgeAtTime);
@@ -999,8 +1061,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     lastPromptId.current = currentPromptId;
 
 
-    // Incremental Sync (Protect active fields)
-    if (data?.title !== undefined && data.title !== title && lastFocusedField !== 'title') setTitle(data.title);
+    // Incremental Sync (Protect active fields & prevent stale prop snap-back before/after 2s autosave)
+    if (data?.title !== undefined && data.title !== lastSyncedTitleRef.current) {
+      lastSyncedTitleRef.current = data.title;
+      if (data.title !== title && lastFocusedField !== 'title') setTitle(data.title);
+    }
     
     // THE "SPLIT-BRAIN" SHIELD: Only sync if it's a major change or we aren't focused.
     // We also HARD-BLOCK sync during AI Synthesis or Review to prevent the "Vanishing Script" bug.
@@ -1031,16 +1096,45 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
        }, 0);
     }
 
-    const loc = data?.narratorLocationAtEvent || data?.location;
-    if (loc !== undefined && loc !== location && lastFocusedField !== 'metadata') setLocation(loc);
-    if (data?.country !== undefined && data.country !== country && lastFocusedField !== 'metadata') setCountry(data.country);
+    const hasIncomingLoc = data?.location !== undefined || data?.narratorLocationAtEvent !== undefined;
+    const loc = hasIncomingLoc ? resolveMemoryLocation(data) : undefined;
+    if (loc !== undefined && loc !== lastSyncedLocationRef.current) {
+      lastSyncedLocationRef.current = loc;
+      if (loc !== location && lastFocusedField !== 'metadata') setLocation(loc);
+    }
+
+    const incomingCountry =
+      data?.country !== undefined ? (data.country && data.country !== 'none' ? data.country : '') : undefined;
+    if (incomingCountry !== undefined && incomingCountry !== lastSyncedCountryRef.current) {
+      lastSyncedCountryRef.current = incomingCountry;
+      if (incomingCountry !== country && lastFocusedField !== 'metadata') setCountry(incomingCountry);
+    }
     
-    if (data?.dateComponents && lastFocusedField !== 'metadata') {
-      if (data.dateComponents.day !== undefined && String(data.dateComponents.day) !== day) setDay(String(data.dateComponents.day));
-      if (data.dateComponents.month !== undefined && String(data.dateComponents.month) !== month) setMonth(String(data.dateComponents.month));
-      if (data.dateComponents.year !== undefined && String(data.dateComponents.year) !== year) setYear(String(data.dateComponents.year));
-    } else if (data?.year !== undefined && String(data.year) !== year && lastFocusedField !== 'metadata') {
-      setYear(String(data.year));
+    if (data?.dateComponents) {
+      const incomingDay =
+        data.dateComponents.day !== undefined ? String(data.dateComponents.day || 'none') : undefined;
+      if (incomingDay !== undefined && incomingDay !== lastSyncedDayRef.current) {
+        lastSyncedDayRef.current = incomingDay;
+        if (incomingDay !== day && lastFocusedField !== 'metadata') setDay(incomingDay);
+      }
+      const incomingMonth =
+        data.dateComponents.month !== undefined ? String(data.dateComponents.month || 'none') : undefined;
+      if (incomingMonth !== undefined && incomingMonth !== lastSyncedMonthRef.current) {
+        lastSyncedMonthRef.current = incomingMonth;
+        if (incomingMonth !== month && lastFocusedField !== 'metadata') setMonth(incomingMonth);
+      }
+      const incomingYear =
+        data.dateComponents.year !== undefined ? String(data.dateComponents.year || 'none') : undefined;
+      if (incomingYear !== undefined && incomingYear !== lastSyncedYearRef.current) {
+        lastSyncedYearRef.current = incomingYear;
+        if (incomingYear !== year && lastFocusedField !== 'metadata') setYear(incomingYear);
+      }
+    } else if (data?.year !== undefined) {
+      const incomingYear = String(data.year || 'none');
+      if (incomingYear !== lastSyncedYearRef.current) {
+        lastSyncedYearRef.current = incomingYear;
+        if (incomingYear !== year && lastFocusedField !== 'metadata') setYear(incomingYear);
+      }
     }
 
     // RC1.1 Age/Scope Snap-Back Shield: only overwrite local edits when the external
@@ -2136,6 +2230,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           isProductionLocked={isProductionLocked}
                           onActivity={onActivity}
                           onFocusField={() => setLastFocusedField('metadata')}
+                          onBlurField={() => {
+                            void flush();
+                          }}
                           variant="soundstage"
                         />
                         <div className="flex flex-wrap gap-x-8 xl:gap-x-16 gap-y-6 xl:gap-y-10 pl-2 relative z-[1000]">

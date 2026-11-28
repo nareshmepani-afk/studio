@@ -414,6 +414,36 @@ describe('Studio Regression Tests', () => {
       }));
     });
 
+    it('MW-438 COORDINATES DUAL-SYNC: flushes narratorLocationAtEvent alongside location and heals split-brain narratorLocationAtEvent / year', async () => {
+      const { useMemoryPersistence } = await import('@/hooks/studio/useMemoryPersistence');
+      const localUpdate = vi.fn().mockResolvedValue({ success: true });
+      const props = {
+        ...baseProps,
+        update: localUpdate,
+        location: 'HENDON/LONDON',
+        year: '1969',
+        data: {
+          ...baseProps.data,
+          location: 'HENDON/LONDON', // Even if location already matched an earlier Soundstage write...
+          narratorLocationAtEvent: 'Munich, Germany (Family Residence)', // ...stale narratorLocationAtEvent must still trigger healing flush!
+          dateComponents: { day: '1', month: 'Jan', year: '1969' },
+          year: 1884,
+        },
+      };
+
+      const { result } = renderHook(() => useMemoryPersistence(props));
+      const flushResult = await result.current.flush();
+
+      expect(flushResult.success).toBe(true);
+      expect(localUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          location: 'HENDON/LONDON',
+          narratorLocationAtEvent: 'HENDON/LONDON',
+          year: 1969,
+        })
+      );
+    });
+
     it('SPOKEN WORD RULE SANITIZER: should strip screenplay and camera cues from generated monologues', async () => {
       const { stripScreenplayCues } = await import('@/actions/aiWeaver');
       const input = "Cut to a frame of red earth clinging to cracked palms in Kutch, a silent inheritance carried across dark waters. The lens zooms past Nairobi's equatorial blaze.";
